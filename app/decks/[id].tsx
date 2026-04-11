@@ -1,182 +1,273 @@
 /**
- * SCR-013 — Deck Detail (stub)
- * Shows deck info + commander(s) + stats placeholders. Stats in EPIC-04.
- * DATA-009 (EPIC-01)
+ * SCR-013 — Deck Detail FULL.
+ *
+ * Shows deck name, commander(s) with color chips (partner-aware), description,
+ * win rate stats bar, and the list of players who piloted this deck.
+ *
+ * Replaces DATA-009 stub (EPIC-01).
+ * HIST-007 (EPIC-04)
  */
-import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useAuth } from '@clerk/clerk-expo';
 
-import type { DeckWithCommanders } from '@/services/decks';
-import { apiFetch } from '@/services/api';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { ColorChips } from '@/components/ui/ColorChips';
+import { useDeckStats } from '@/hooks/useDeckStats';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
-const STAT_PLACEHOLDERS = [
-  { label: 'Win Rate', value: '—' },
-  { label: 'Matches', value: '0' },
-  { label: 'Wins', value: '0' },
-];
+const AMBER = '#F39C12';
 
-function CommanderCard({ commander }: { commander: { name: string; colors: string[]; isPartner: boolean } }) {
+// ─── Commander card (partner-aware) ──────────────────────────────────────────
+
+function CommanderCard({ name, cardColors, isPartner }: { name: string; cardColors: string[]; isPartner: boolean }) {
   return (
     <View style={styles.commanderCard}>
       <View style={styles.commanderHeader}>
-        <Text style={styles.commanderName} numberOfLines={1}>{commander.name}</Text>
-        {commander.isPartner && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>Partner</Text>
+        <Text style={styles.commanderName} numberOfLines={1}>{name}</Text>
+        {isPartner && (
+          <View style={styles.partnerBadge}>
+            <Text style={styles.partnerBadgeText}>Partner</Text>
           </View>
         )}
       </View>
-      <ColorChips selected={commander.colors ?? []} readonly />
+      <ColorChips selected={cardColors} readonly />
     </View>
   );
 }
 
+// ─── Stat pill ────────────────────────────────────────────────────────────────
+
+function StatPill({ value, label, highlight }: { value: string; label: string; highlight?: boolean }) {
+  return (
+    <View style={styles.statPill}>
+      <Text style={[styles.statValue, highlight && styles.statValueHighlight]}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 export default function DeckDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { getToken } = useAuth();
-  const [deck, setDeck] = useState<DeckWithCommanders | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const token = await getToken();
-        const data = await apiFetch<DeckWithCommanders>(`/api/decks/${id}`, 'GET', undefined, token ?? undefined);
-        setDeck(data);
-      } catch (e: unknown) {
-        if ((e as { status?: number }).status === 404) setNotFound(true);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [id, getToken]);
+  const insets = useSafeAreaInsets();
+  const { data, loading, error } = useDeckStats(id);
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <View style={[styles.root, { paddingTop: insets.top }]}>
         <View style={styles.center}>
           <ActivityIndicator color={colors.accent.primary} size="large" />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
-  if (notFound || !deck) {
+  if (error || !data) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <View style={[styles.root, { paddingTop: insets.top }]}>
         <View style={styles.center}>
-          <Text style={styles.errorText}>Deck not available</Text>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
-            <Text style={styles.backText}>Go back</Text>
-          </Pressable>
+          <Text style={styles.errorText}>{error ?? 'Deck not found.'}</Text>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={styles.linkText}>Volver</Text>
+          </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
+
+  const { deck, total_matches, wins, win_rate_pct, players_used_by } = data;
+  const hasMatches = total_matches > 0;
+  const winRateDisplay = win_rate_pct !== null ? `${win_rate_pct}%` : '—';
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>‹ Back</Text>
-        </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>{deck.name}</Text>
-        <View style={{ width: 60 }} />
+    <View style={[styles.root, { paddingTop: insets.top }]}>
+      {/* ── Nav header ── */}
+      <View style={styles.navHeader}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} hitSlop={8}>
+          <Text style={styles.backIcon}>‹</Text>
+        </TouchableOpacity>
+        <Text style={styles.navTitle} numberOfLines={1}>{deck.name}</Text>
+        <View style={styles.backBtn} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Commander(s) */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing[8] }]}
+      >
+        {/* ── Commander(s) ── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
             {deck.commander2 ? 'Partner Commanders' : 'Commander'}
           </Text>
-          <CommanderCard commander={deck.commander} />
+          <CommanderCard
+            name={deck.commander.name}
+            cardColors={deck.commander.colors}
+            isPartner={deck.commander.isPartner}
+          />
           {deck.commander2 && (
             <>
               <View style={styles.partnerDivider}>
                 <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>+</Text>
+                <Text style={styles.dividerPlus}>+</Text>
                 <View style={styles.dividerLine} />
               </View>
-              <CommanderCard commander={deck.commander2} />
+              <CommanderCard
+                name={deck.commander2.name}
+                cardColors={deck.commander2.colors}
+                isPartner={deck.commander2.isPartner}
+              />
             </>
           )}
         </View>
 
-        {/* Description */}
-        {deck.description && (
+        {/* ── Description ── */}
+        {deck.description ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Description</Text>
+            <Text style={styles.sectionTitle}>Descripción</Text>
             <Text style={styles.description}>{deck.description}</Text>
           </View>
-        )}
+        ) : null}
 
-        {/* Stats */}
+        {/* ── Stats ── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Stats</Text>
-          <View style={styles.statsRow}>
-            {STAT_PLACEHOLDERS.map((stat) => (
-              <View key={stat.label} style={styles.statCard}>
-                <Text style={styles.statValue}>{stat.value}</Text>
-                <Text style={styles.statLabel}>{stat.label}</Text>
-              </View>
-            ))}
-          </View>
-          <Text style={styles.statsHint}>
-            Stats will appear after completing matches with this deck.
-          </Text>
+          {hasMatches ? (
+            <View style={styles.statsRow}>
+              <StatPill value={winRateDisplay} label="Win Rate" highlight={win_rate_pct !== null} />
+              <StatPill value={String(total_matches)} label="Partidas" />
+              <StatPill value={String(wins)} label="Victorias" />
+            </View>
+          ) : (
+            <View style={styles.emptyStats}>
+              <Text style={styles.emptyStatsText}>Sin partidas con este deck</Text>
+            </View>
+          )}
         </View>
+
+        {/* ── Players who used it ── */}
+        {players_used_by.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              Jugadores{' '}
+              <Text style={styles.sectionCount}>{players_used_by.length}</Text>
+            </Text>
+            <View style={styles.playerList}>
+              {players_used_by.map((pu) => {
+                const initials = pu.player.name
+                  .split(' ')
+                  .map((w) => w[0])
+                  .join('')
+                  .slice(0, 2)
+                  .toUpperCase();
+                const wr = pu.win_rate_pct !== null ? `${pu.win_rate_pct}%` : '—';
+                return (
+                  <View key={pu.player.id} style={styles.playerRow}>
+                    <View style={styles.playerAvatar}>
+                      <Text style={styles.playerAvatarText}>{initials}</Text>
+                    </View>
+                    <Text style={styles.playerName} numberOfLines={1}>
+                      {pu.player.name}
+                    </Text>
+                    <Text style={styles.playerMatches}>{pu.matches}p</Text>
+                    <View style={[styles.wrBadge, pu.win_rate_pct !== null && styles.wrBadgeActive]}>
+                      <Text style={[styles.wrText, pu.win_rate_pct !== null && styles.wrTextActive]}>
+                        {wr}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background.primary },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing[4] },
-  header: {
+  root: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[3],
+    padding: spacing[6],
+  },
+  errorText: {
+    color: colors.text.secondary,
+    fontSize: typography.size['body-lg'],
+    textAlign: 'center',
+  },
+  linkText: {
+    color: colors.text.link,
+    fontSize: typography.size['body-lg'],
+  },
+
+  // Nav header
+  navHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
   },
-  headerTitle: {
-    flex: 1,
+  backBtn: { width: 32, alignItems: 'center' },
+  backIcon: {
+    color: colors.text.primary,
+    fontSize: 28,
+    lineHeight: 32,
+  },
+  navTitle: {
     color: colors.text.primary,
     fontSize: typography.size['body-lg'],
     fontWeight: typography.weight.semibold,
+    flex: 1,
     textAlign: 'center',
-    marginHorizontal: spacing[2],
   },
-  backBtn: { padding: spacing[1], minWidth: 60 },
-  backText: { color: colors.text.link, fontSize: typography.size['body-lg'] },
-  content: { padding: spacing[6], gap: spacing[6] },
+
+  // Content
+  content: {
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[2],
+    gap: spacing[6],
+  },
+
+  // Sections
   section: { gap: spacing[3] },
   sectionTitle: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
+    color: colors.text.muted,
+    fontSize: typography.size.label,
     fontWeight: typography.weight.semibold,
-    textTransform: 'uppercase',
     letterSpacing: 1,
+    textTransform: 'uppercase',
   },
+  sectionCount: {
+    color: colors.text.muted,
+    fontSize: typography.size.label,
+    backgroundColor: colors.background.elevated,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 1,
+    borderRadius: radius.round,
+    overflow: 'hidden',
+  },
+
+  // Commander
   commanderCard: {
     backgroundColor: colors.background.surface,
     borderRadius: radius.md,
@@ -192,13 +283,13 @@ const styles = StyleSheet.create({
     fontSize: typography.size['body-lg'],
     fontWeight: typography.weight.semibold,
   },
-  badge: {
+  partnerBadge: {
     backgroundColor: colors.accent.primary + '33',
-    borderRadius: radius.xs,
+    borderRadius: radius.sm,
     paddingHorizontal: spacing[2],
     paddingVertical: 2,
   },
-  badgeText: {
+  partnerBadgeText: {
     color: colors.accent.primary,
     fontSize: typography.size.caption,
     fontWeight: typography.weight.semibold,
@@ -208,12 +299,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing[2],
   },
-  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border.default },
-  dividerText: {
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border.subtle },
+  dividerPlus: {
     color: colors.text.muted,
     fontSize: typography.size['body-lg'],
     fontWeight: typography.weight.bold,
   },
+
+  // Description
   description: {
     color: colors.text.secondary,
     fontSize: typography.size['body-lg'],
@@ -222,12 +315,18 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: spacing[4],
   },
-  statsRow: { flexDirection: 'row', gap: spacing[3] },
-  statCard: {
+
+  // Stats row
+  statsRow: {
+    flexDirection: 'row',
+    gap: spacing[3],
+  },
+  statPill: {
     flex: 1,
     backgroundColor: colors.background.surface,
     borderRadius: radius.md,
-    padding: spacing[4],
+    paddingVertical: spacing[4],
+    paddingHorizontal: spacing[2],
     alignItems: 'center',
     gap: spacing[1],
     borderWidth: 1,
@@ -238,12 +337,73 @@ const styles = StyleSheet.create({
     fontSize: typography.size['heading-md'],
     fontWeight: typography.weight.bold,
   },
-  statLabel: { color: colors.text.muted, fontSize: typography.size.caption },
-  statsHint: {
+  statValueHighlight: { color: AMBER },
+  statLabel: {
+    color: colors.text.muted,
+    fontSize: typography.size.caption,
+  },
+  emptyStats: {
+    backgroundColor: colors.background.surface,
+    borderRadius: radius.md,
+    paddingVertical: spacing[6],
+    alignItems: 'center',
+  },
+  emptyStatsText: {
     color: colors.text.muted,
     fontSize: typography.size['body-sm'],
-    textAlign: 'center',
     fontStyle: 'italic',
   },
-  errorText: { color: colors.status.error, fontSize: typography.size['body-lg'] },
+
+  // Players used by
+  playerList: { gap: spacing[2] },
+  playerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background.surface,
+    borderRadius: radius.md,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[3],
+    gap: spacing[3],
+  },
+  playerAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.round,
+    backgroundColor: colors.background.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  playerAvatarText: {
+    color: colors.text.secondary,
+    fontSize: typography.size['body-sm'],
+    fontWeight: typography.weight.bold,
+  },
+  playerName: {
+    color: colors.text.primary,
+    fontSize: typography.size['body-lg'],
+    fontWeight: typography.weight.medium,
+    flex: 1,
+  },
+  playerMatches: {
+    color: colors.text.muted,
+    fontSize: typography.size['body-sm'],
+    flexShrink: 0,
+  },
+  wrBadge: {
+    backgroundColor: colors.background.elevated,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+    minWidth: 44,
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  wrBadgeActive: { backgroundColor: AMBER + '22' },
+  wrText: {
+    color: colors.text.muted,
+    fontSize: typography.size.label,
+    fontWeight: typography.weight.semibold,
+  },
+  wrTextActive: { color: AMBER },
 });

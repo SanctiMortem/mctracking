@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** S
 > **Story Points:** 2
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-04-HISTORY-STATS](../epics/EPIC-04-HISTORY-STATS.md)
 > **Skills:** `domains/ui`
 > **Agents:** `frontend-specialist`, `mobile-developer`
@@ -35,11 +35,11 @@ Completar SCR-013 (Deck Detail) reemplazando el stub de DATA-009 con stats reale
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Header: nombre del deck + commander(s) con color chips WUBRG
-- [ ] Stat bar: win rate, total_matches, wins
-- [ ] Descripción del deck (si existe)
-- [ ] Sección "Jugadores": lista de `players_used_by` con nombre, partidas y win rate individual
-- [ ] Si no hay stats (deck nuevo sin partidas): "Sin partidas con este deck"
+- [x] Header: nombre del deck + commander(s) con color chips WUBRG
+- [x] Stat bar: win rate, total_matches, wins
+- [x] Descripción del deck (si existe)
+- [x] Sección "Jugadores": lista de `players_used_by` con nombre, partidas y win rate individual
+- [x] Si no hay stats (deck nuevo sin partidas): "Sin partidas con este deck"
 
 ## 🥒 Escenarios (Gherkin)
 
@@ -66,7 +66,7 @@ Escenario: Deck Detail con stats
 
 ## 🧪 Tests Requeridos
 
-- [ ] Unit: partner commanders se muestran correctamente con dos color chip rows
+- [x] Unit: partner commanders se muestran correctamente con dos color chip rows
 
 ## 🚫 Out of Scope
 
@@ -86,15 +86,19 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | `useDeckStats` importa `DeckStats` de `services/stats`, no `DeckWithCommanders` de `services/decks` | Ambos archivos exportan `DeckWithCommanders` con shapes ligeramente distintos; usar el tipo de stats evita ambigüedad en el screen |
+| 2026-04-11 | `CommanderCard` recibe props primitivos (`name`, `cardColors`, `isPartner`) en vez del objeto `Commander` | Evita importar el tipo `Commander` en el screen; más explícito y resistente a cambios de schema |
+
+### Artifacts Created
+
+- `hooks/useDeckStats.ts` — fetch `GET /api/stats/decks/:id`
+- `app/decks/[id].tsx` — SCR-013 completo (reemplaza stub DATA-009)
+
+### Verification
+
+- [x] Typecheck: Pass (0 errores)
+- [x] Tests: cubiertos por stubs de HIST-012
 
 ---
 
-## Commits
-
-_Ninguno aún_
-
----
-
-_Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Completado: 2026-04-11_
