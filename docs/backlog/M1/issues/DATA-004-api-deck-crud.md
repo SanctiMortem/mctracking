@@ -4,7 +4,7 @@
 > **Priority:** P0
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-01-DATA-FOUNDATION](../epics/EPIC-01-DATA-FOUNDATION.md)
 > **Skills:** `domains/api`, `domains/db`
 > **Agents:** `backend-specialist`
@@ -105,13 +105,16 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-10 | Double alias (`cmd1`, `cmd2`) en Drizzle para el join doble sobre `commanders` | Drizzle no permite referenciar la misma tabla dos veces sin alias explícito |
+| 2026-04-10 | `?commander_id=` filtra por `commander_id OR commander_id_2` | Un deck con partner aparece en el filtro de cualquiera de sus dos commanders |
+| 2026-04-10 | `hasActiveMatch()` stub (siempre false) | `participations` no existe hasta MATCH-001 (EPIC-02); guard wired, se activará entonces |
+| 2026-04-10 | `GET /api/decks/:id` incluido en `[id]+api.ts` | El issue lo requería explícitamente para el caso de deck detail con commanders embebidos |
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+- `6a189ad` — feat(data): DATA-004 — Deck CRUD API routes + service
 
 ---
 
