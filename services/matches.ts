@@ -7,12 +7,12 @@
  * MATCH-002, MATCH-003, MATCH-004 (EPIC-02)
  * HIST-001 (EPIC-04) — listMatches
  */
-import { and, count, desc, eq, gte, inArray, isNull, lte, ne, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNull, lte, ne, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 
 import { db } from '@/services/db';
-import { commanders, decks, matchResults, matches, participations, players } from '@/db/schema';
-import type { Commander, Deck, Match, MatchResult, Participation, Player } from '@/db/index';
+import { commanders, decks, matchEvents, matchResults, matches, participations, players } from '@/db/schema';
+import type { Commander, Deck, Match, MatchEvent, MatchResult, Participation, Player } from '@/db/index';
 
 // ─────────────────────────────────────────────
 // Active-match helpers (exported for use in other services)
@@ -271,14 +271,15 @@ export type ParticipationDetail = Pick<
 };
 
 export type GetMatchByIdResult =
-  | { data: { match: Match; participations: ParticipationDetail[]; result: MatchResult | null } }
+  | { data: { match: Match; participations: ParticipationDetail[]; result: MatchResult | null; events: MatchEvent[] } }
   | { notFound: true };
 
 /**
- * Returns a match with participations (player + deck + commander[s] embedded) and optional MatchResult.
+ * Returns a match with participations (player + deck + commander[s] embedded), optional MatchResult,
+ * and the full ordered event log (asc by createdAt — UI reverses for display).
  * Returns notFound if the match doesn't exist or was created by a different user.
  *
- * MATCH-004 (EPIC-02)
+ * MATCH-004 (EPIC-02) · HIST-003 (EPIC-04) — added events
  */
 export async function getMatchById(userId: string, matchId: string): Promise<GetMatchByIdResult> {
   // 1. Fetch match — ownership check doubles as the 404 guard
@@ -341,18 +342,27 @@ export async function getMatchById(userId: string, matchId: string): Promise<Get
       : null,
   }));
 
-  // 3. Fetch match result (null when in_progress or abandoned)
-  const [matchResult] = await db
-    .select()
-    .from(matchResults)
-    .where(eq(matchResults.matchId, matchId))
-    .limit(1);
+  // 3. Fetch match result (null when in_progress or abandoned) + events in parallel
+  const [matchResult, events] = await Promise.all([
+    db
+      .select()
+      .from(matchResults)
+      .where(eq(matchResults.matchId, matchId))
+      .limit(1)
+      .then(([r]) => r ?? null),
+    db
+      .select()
+      .from(matchEvents)
+      .where(eq(matchEvents.matchId, matchId))
+      .orderBy(asc(matchEvents.createdAt)),
+  ]);
 
   return {
     data: {
       match,
       participations: participationDetails,
-      result: matchResult ?? null,
+      result: matchResult,
+      events,
     },
   };
 }

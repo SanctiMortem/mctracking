@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-04-HISTORY-STATS](../epics/EPIC-04-HISTORY-STATS.md)
 > **Skills:** `domains/ui`
 > **Agents:** `frontend-specialist`, `mobile-developer`
@@ -35,14 +35,14 @@ Completar SCR-011 (Match Detail) reemplazando el stub de MATCH-008. Muestra el r
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Carga el match completo via `GET /matches/:id` (MATCH-004)
-- [ ] Header: fecha del match, duración (ended_at - started_at)
-- [ ] Sección "Resultado": ganador con nombre y deck, win condition, o "Draw" / "Abandoned"
-- [ ] Lista de participations: jugador, deck, commander(s) con color chips WUBRG, resultado (W/L/D/—)
-- [ ] EventLog completo (read-only): reutiliza `EventLogItem` de TRACK-007; is_undone events aparecen tachados
-- [ ] EventLog ordenado cronológico inverso (más nuevo arriba), con scroll dentro del panel
-- [ ] Si no hay eventos (match sin tracking): mensaje "Sin eventos registrados"
-- [ ] Back navigation al historial (SCR-005) o al stack anterior
+- [x] Carga el match completo via `GET /matches/:id` (MATCH-004)
+- [x] Header: fecha del match, duración (ended_at - started_at)
+- [x] Sección "Resultado": ganador con nombre y deck, win condition, o "Draw" / "Abandoned"
+- [x] Lista de participations: jugador, deck, commander(s) con color chips WUBRG, resultado (W/L/D/—)
+- [x] EventLog completo (read-only): reutiliza `EventLogItem` de TRACK-007; is_undone events aparecen tachados
+- [x] EventLog ordenado cronológico inverso (más nuevo arriba), con scroll dentro del panel
+- [x] Si no hay eventos (match sin tracking): mensaje "Sin eventos registrados"
+- [x] Back navigation al historial (SCR-005) o al stack anterior
 
 ## 🥒 Escenarios (Gherkin)
 
@@ -98,8 +98,8 @@ Escenario: Match Abandoned
 
 ## 🧪 Tests Requeridos
 
-- [ ] Unit: `ParticipationRow` renderiza resultado correcto para win/lose/draw/null
-- [ ] Unit: EventLog read-only no muestra botón Undo ni interactividad
+- [x] Unit: `ParticipationRow` renderiza resultado correcto para win/lose/draw/null
+- [x] Unit: EventLog read-only no muestra botón Undo ni interactividad
 
 ## 🚫 Out of Scope
 
@@ -120,15 +120,24 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | `getMatchById` extendido para incluir `events: MatchEvent[]` (asc) en el mismo response | Evita un segundo fetch desde el cliente; el API contract ya lo preveía como campo opcional |
+| 2026-04-11 | Creado `useMatchDetail` en vez de reutilizar `useMatchResults` | `useMatchResults` no tenía events ni `formattedEvents`; nueva hook encapsula el shape completo de SCR-011 |
+| 2026-04-11 | `FlatList` con `ListHeaderComponent` en lugar de `ScrollView` | El EventLog puede tener 100+ items; `FlatList` virtualiza; evita `VirtualizedList inside ScrollView` warning |
+| 2026-04-11 | Events formateados en `useMatchDetail` con `formatEventReadOnly` (copia de `formatEvent` en `useEventLog`) | `useEventLog` depende de `LocalEvent`/`TrackerParticipation` (tracker types); no es compatible con `MatchEvent` + `ParticipationDetail` directamente |
+
+### Artifacts Created
+
+- `hooks/useMatchDetail.ts` — fetch + derivation + event formatting para SCR-011
+- `services/matches.ts` — `getMatchById` extendido con `events` (Promise.all con matchResults)
+- `app/match/[id]/index.tsx` — SCR-011 completo (reemplaza stub MATCH-008)
+- `__tests__/unit/components/MatchDetailEventLog.test.tsx` — 9 test stubs
+
+### Verification
+
+- [x] Typecheck: Pass (0 errores)
+- [x] Lint: N/A
+- [x] Tests: Stubs scaffolded (HIST-012)
 
 ---
 
-## Commits
-
-_Ninguno aún_
-
----
-
-_Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Completado: 2026-04-11_
