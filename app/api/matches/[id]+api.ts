@@ -1,13 +1,27 @@
 /**
- * PATCH /api/matches/:id — close a match (win / draw / abandon).
+ * GET    /api/matches/:id — match detail with participations + result.
+ * PATCH  /api/matches/:id — close a match (win / draw / abandon).
  *
- * MATCH-003 (EPIC-02)
+ * MATCH-003, MATCH-004 (EPIC-02)
  */
 // @ts-expect-error — @clerk/clerk-expo/server types not yet bundled; runtime works correctly
 import { getAuth } from '@clerk/clerk-expo/server';
 
-import { closeMatch } from '@/services/matches';
+import { closeMatch, getMatchById } from '@/services/matches';
 import type { CloseAction } from '@/services/matches';
+
+export async function GET(req: Request, { params }: { params: { id: string } }) {
+  const { userId } = getAuth(req);
+  if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const result = await getMatchById(userId, params.id);
+
+  if ('notFound' in result) {
+    return Response.json({ error: 'NOT_FOUND', message: 'Match not found' }, { status: 404 });
+  }
+
+  return Response.json({ success: true, data: result.data }, { status: 200 });
+}
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const { userId } = getAuth(req);

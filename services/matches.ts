@@ -4,13 +4,14 @@
  * isDeckInActiveMatch / isPlayerInActiveMatch are exported so that
  * services/decks.ts and services/players.ts can replace their stubs.
  *
- * MATCH-002, MATCH-003 (EPIC-02)
+ * MATCH-002, MATCH-003, MATCH-004 (EPIC-02)
  */
 import { and, eq, inArray, isNull, ne } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 
 import { db } from '@/services/db';
-import { decks, matchResults, matches, participations } from '@/db/schema';
-import type { Match, MatchResult, Participation } from '@/db/index';
+import { commanders, decks, matchResults, matches, participations, players } from '@/db/schema';
+import type { Commander, Deck, Match, MatchResult, Participation, Player } from '@/db/index';
 
 // ─────────────────────────────────────────────
 // Active-match helpers (exported for use in other services)
@@ -252,4 +253,105 @@ export async function closeMatch(
   });
 
   return { data: closed };
+}
+
+// ─────────────────────────────────────────────
+// getMatchById
+// ─────────────────────────────────────────────
+
+export type ParticipationDetail = Pick<
+  Participation,
+  'id' | 'matchId' | 'playerId' | 'deckId' | 'result' | 'lifeTotal' | 'poisonCounters' | 'commanderDamage' | 'createdAt'
+> & {
+  player: Pick<Player, 'id' | 'name'>;
+  deck: Pick<Deck, 'id' | 'name'>;
+  commander: Pick<Commander, 'id' | 'name' | 'colors' | 'isPartner'>;
+  commander2: Pick<Commander, 'id' | 'name' | 'colors' | 'isPartner'> | null;
+};
+
+export type GetMatchByIdResult =
+  | { data: { match: Match; participations: ParticipationDetail[]; result: MatchResult | null } }
+  | { notFound: true };
+
+/**
+ * Returns a match with participations (player + deck + commander[s] embedded) and optional MatchResult.
+ * Returns notFound if the match doesn't exist or was created by a different user.
+ *
+ * MATCH-004 (EPIC-02)
+ */
+export async function getMatchById(userId: string, matchId: string): Promise<GetMatchByIdResult> {
+  // 1. Fetch match — ownership check doubles as the 404 guard
+  const [match] = await db
+    .select()
+    .from(matches)
+    .where(and(eq(matches.id, matchId), eq(matches.createdBy, userId)))
+    .limit(1);
+
+  if (!match) return { notFound: true };
+
+  // 2. Fetch participations with player / deck / both commanders joined
+  const c1 = alias(commanders, 'commander1');
+  const c2 = alias(commanders, 'commander2');
+
+  const rows = await db
+    .select({
+      id: participations.id,
+      matchId: participations.matchId,
+      playerId: participations.playerId,
+      deckId: participations.deckId,
+      result: participations.result,
+      lifeTotal: participations.lifeTotal,
+      poisonCounters: participations.poisonCounters,
+      commanderDamage: participations.commanderDamage,
+      createdAt: participations.createdAt,
+      playerName: players.name,
+      deckName: decks.name,
+      c1Id: c1.id,
+      c1Name: c1.name,
+      c1Colors: c1.colors,
+      c1IsPartner: c1.isPartner,
+      c2Id: c2.id,
+      c2Name: c2.name,
+      c2Colors: c2.colors,
+      c2IsPartner: c2.isPartner,
+    })
+    .from(participations)
+    .innerJoin(players, eq(participations.playerId, players.id))
+    .innerJoin(decks, eq(participations.deckId, decks.id))
+    .innerJoin(c1, eq(decks.commanderId, c1.id))
+    .leftJoin(c2, eq(decks.commanderId2, c2.id))
+    .where(eq(participations.matchId, matchId));
+
+  const participationDetails: ParticipationDetail[] = rows.map((row) => ({
+    id: row.id,
+    matchId: row.matchId,
+    playerId: row.playerId,
+    deckId: row.deckId,
+    result: row.result,
+    lifeTotal: row.lifeTotal,
+    poisonCounters: row.poisonCounters,
+    commanderDamage: row.commanderDamage,
+    createdAt: row.createdAt,
+    player: { id: row.playerId, name: row.playerName },
+    deck: { id: row.deckId, name: row.deckName },
+    commander: { id: row.c1Id, name: row.c1Name, colors: row.c1Colors, isPartner: row.c1IsPartner },
+    commander2: row.c2Id !== null
+      ? { id: row.c2Id, name: row.c2Name!, colors: row.c2Colors!, isPartner: row.c2IsPartner! }
+      : null,
+  }));
+
+  // 3. Fetch match result (null when in_progress or abandoned)
+  const [matchResult] = await db
+    .select()
+    .from(matchResults)
+    .where(eq(matchResults.matchId, matchId))
+    .limit(1);
+
+  return {
+    data: {
+      match,
+      participations: participationDetails,
+      result: matchResult ?? null,
+    },
+  };
 }
