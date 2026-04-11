@@ -1,0 +1,91 @@
+# E2E — Match Lifecycle (EPIC-02)
+# Tool: Maestro (https://maestro.mobile.dev)
+# Run: maestro test e2e/match-lifecycle.spec.yaml
+#
+# Preconditions:
+#   - App running on simulator/device with an authenticated user
+#   - At least 3 players and 3 distinct decks already created
+#   - No deck is currently in an in_progress match
+#
+# MATCH-009 (EPIC-02)
+
+---
+appId: com.mtgtracker.app
+
+# ─── Scenario 1: Full lifecycle — Setup → Close with winner → Results ──────────
+
+- launchApp:
+    clearState: false
+
+# Navigate to Match Setup (SCR-007)
+- tapOn: "Nueva partida"
+
+# Select 3 players
+- tapOn:
+    text: ".*"
+    index: 0
+    label: "player chip 0"
+- tapOn:
+    text: ".*"
+    index: 1
+    label: "player chip 1"
+- tapOn:
+    text: ".*"
+    index: 2
+    label: "player chip 2"
+
+# Assign decks to each player (one per player)
+# Deck picker rows appear after player selection
+
+# Confirm match creation
+- tapOn: "Iniciar partida"
+
+# SCR-008 Match Tracker stub — just verify we landed there
+- assertVisible: ".*[Tt]racker.*|.*[Pp]artida.*"
+
+# Navigate to Close Match (SCR-009) — tap the close/end button
+- tapOn: "Finalizar"
+
+# Select "Hubo un ganador"
+- tapOn: "Hubo un ganador"
+
+# Select the first player as winner
+- tapOn:
+    index: 0
+    childOf: "player-list"
+
+# Select win condition "Combo"
+- tapOn: "Combo"
+
+# Confirm
+- tapOn: "Confirmar"
+
+# SCR-010 Match Results — verify key elements
+- assertVisible: "VICTORIA"
+- assertVisible: "Victoria por"
+- assertVisible: "Combo"
+- assertVisible: "Jugadores"
+- assertVisible: "Nueva partida"
+- assertVisible: "Inicio"
+
+# ─── Scenario 2: Close as draw ────────────────────────────────────────────────
+
+# (Requires a separate match — tagged as todo until Maestro flows are wired)
+# TODO: launch new match, navigate to close, select "Empate", confirm
+# TODO: assert SCR-010 shows "EMPATE" and all participants show "DRAW" badge
+
+# ─── Scenario 3: Abandon match ───────────────────────────────────────────────
+
+# TODO: launch new match, navigate to close, select "Abandonar", confirm warning
+# TODO: assert SCR-010 shows "ABANDONADA" and "no cuenta en las estadísticas"
+# TODO: assert "Ver detalle" CTA is NOT visible
+
+# ─── Scenario 4: SCR-011 Match Detail accessible from SCR-010 ────────────────
+
+# From the completed match results screen:
+- tapOn: "Ver detalle"
+- assertVisible: "Detalle del match"
+- assertVisible: "Fecha"
+- assertVisible: "Duración"
+- assertVisible: "Event Log"
+- assertVisible: "Próximamente"
