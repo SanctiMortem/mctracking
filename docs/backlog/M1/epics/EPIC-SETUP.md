@@ -1,8 +1,8 @@
 # EPIC-SETUP: Project Setup & Scaffolding
 
 > **Milestone:** M1
-> **Status:** 📋 Planning
-> **Issues:** 10 total (0 done)
+> **Status:** ✅ Done
+> **Issues:** 10 total (10 done)
 > **Branch:** `epic/setup` (crear al empezar)
 
 ---
@@ -19,16 +19,16 @@ Establecer la base técnica completa del proyecto MTG Commander Tracker: scaffol
 
 | ID | Título | Depende de | Priority | Status | Effort | SP |
 |----|--------|------------|----------|--------|--------|----|
-| [ADR-001](../issues/ADR-001-styling-strategy.md) | ADR: Styling strategy (NativeWind vs StyleSheet) | — | P0 | 📋 | XS | 1 |
-| [SETUP-001](../issues/SETUP-001-scaffold-expo-project.md) | Scaffold Expo + TypeScript project | — | P0 | 📋 | S | 2 |
-| [SETUP-002](../issues/SETUP-002-configure-env-vars.md) | Configure environment variables | SETUP-001 | P0 | 📋 | S | 2 |
-| [SETUP-003](../issues/SETUP-003-configure-drizzle-neon.md) | Configure Drizzle ORM + Neon connection | SETUP-001, SETUP-002 | P0 | 📋 | M | 5 |
-| [SETUP-004](../issues/SETUP-004-configure-expo-router-shell.md) | Configure Expo Router navigation shell | SETUP-001, ADR-001 | P0 | 📋 | M | 5 |
-| [SETUP-005](../issues/SETUP-005-configure-design-tokens.md) | Configure design tokens "The Mystic Archive" | SETUP-001, ADR-001 | P1 | 📋 | M | 5 |
-| [SETUP-006](../issues/SETUP-006-configure-i18n-skeleton.md) | Configure i18n skeleton (react-i18next) | SETUP-001 | P1 | 📋 | S | 2 |
-| [SETUP-007](../issues/SETUP-007-configure-clerk-sdk.md) | Configure Clerk SDK provider | SETUP-001, SETUP-002 | P0 | 📋 | M | 5 |
-| [SETUP-008](../issues/SETUP-008-configure-eas-build.md) | Configure EAS Build (iOS + Android) | SETUP-001 | P1 | 📋 | M | 5 |
-| [SETUP-009](../issues/SETUP-009-epic-tests.md) | 🧪 Epic Tests — SETUP | Todos | P2 | 📋 | S | 2 |
+| [ADR-001](../issues/ADR-001-styling-strategy.md) | ADR: Styling strategy (NativeWind vs StyleSheet) | — | P0 | ✅ | XS | 1 |
+| [SETUP-001](../issues/SETUP-001-scaffold-expo-project.md) | Scaffold Expo + TypeScript project | — | P0 | ✅ | S | 2 |
+| [SETUP-002](../issues/SETUP-002-configure-env-vars.md) | Configure environment variables | SETUP-001 | P0 | ✅ | S | 2 |
+| [SETUP-003](../issues/SETUP-003-configure-drizzle-neon.md) | Configure Drizzle ORM + Neon connection | SETUP-001, SETUP-002 | P0 | ✅ | M | 5 |
+| [SETUP-004](../issues/SETUP-004-configure-expo-router-shell.md) | Configure Expo Router navigation shell | SETUP-001, ADR-001 | P0 | ✅ | M | 5 |
+| [SETUP-005](../issues/SETUP-005-configure-design-tokens.md) | Configure design tokens "The Mystic Archive" | SETUP-001, ADR-001 | P1 | ✅ | M | 5 |
+| [SETUP-006](../issues/SETUP-006-configure-i18n-skeleton.md) | Configure i18n skeleton (react-i18next) | SETUP-001 | P1 | ✅ | S | 2 |
+| [SETUP-007](../issues/SETUP-007-configure-clerk-sdk.md) | Configure Clerk SDK provider | SETUP-001, SETUP-002 | P0 | ✅ | M | 5 |
+| [SETUP-008](../issues/SETUP-008-configure-eas-build.md) | Configure EAS Build (iOS + Android) | SETUP-001 | P1 | ✅ | M | 5 |
+| [SETUP-009](../issues/SETUP-009-epic-tests.md) | 🧪 Epic Tests — SETUP | Todos | P2 | ✅ | S | 2 |
 
 > **Total SP:** 34
 
@@ -91,7 +91,7 @@ Establecer la base técnica completa del proyecto MTG Commander Tracker: scaffol
 
 ```
 Total:     ██████████ 100% (10 issues)
-Done:      ░░░░░░░░░░   0% (0 issues)
+Done:      ██████████ 100% (10 issues)
 ```
 
 ---

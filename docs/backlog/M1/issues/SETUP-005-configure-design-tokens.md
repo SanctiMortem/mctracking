@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-SETUP](../epics/EPIC-SETUP.md)
 > **Skills:** `domains/ui`
 > **Agents:** `design-system-lead`, `design-engineer`

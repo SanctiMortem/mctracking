@@ -4,7 +4,7 @@
 > **Priority:** P0
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-SETUP](../epics/EPIC-SETUP.md)
 > **Skills:** `domains/ui`, `project/architecture`
 > **Agents:** `mobile-developer`, `layout-composer`

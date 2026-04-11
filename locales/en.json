@@ -1,0 +1,79 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "done": "Done",
+    "confirm": "Confirm",
+    "back": "Back",
+    "close": "Close",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Retry"
+  },
+  "tabs": {
+    "home": "Home",
+    "players": "Players",
+    "decks": "Decks",
+    "history": "History",
+    "stats": "Stats"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "signUp": "Sign Up",
+    "continueWithoutAccount": "Continue without account",
+    "emailPlaceholder": "email@example.com",
+    "passwordPlaceholder": "Password"
+  },
+  "game": {
+    "commander": "Commander",
+    "commanderDamage": "Commander Damage",
+    "lifeTotal": "Life Total",
+    "poison": "Poison",
+    "infect": "Infect",
+    "proliferate": "Proliferate",
+    "scoop": "Scoop",
+    "concede": "Concede",
+    "partner": "Partner",
+    "wubrg": "WUBRG"
+  },
+  "match": {
+    "newMatch": "New Match",
+    "setup": "Match Setup",
+    "tracker": "Match Tracker",
+    "close": "Close Match",
+    "results": "Results",
+    "winner": "Winner",
+    "draw": "Draw",
+    "abandon": "Abandon Match",
+    "undo": "Undo",
+    "winCondition": {
+      "combat_damage": "Combat Damage",
+      "commander_damage": "Commander Damage",
+      "infect": "Infect",
+      "combo": "Combo",
+      "mill": "Mill",
+      "scoop": "Scoop",
+      "concede": "Concede",
+      "other": "Other"
+    }
+  },
+  "player": {
+    "newPlayer": "New Player",
+    "editPlayer": "Edit Player",
+    "deletePlayer": "Delete Player"
+  },
+  "deck": {
+    "newDeck": "New Deck",
+    "editDeck": "Edit Deck",
+    "deleteDeck": "Delete Deck",
+    "colorIdentity": "Color Identity"
+  },
+  "alerts": {
+    "commanderDamageThreshold": "⚔️ 21 Commander Damage!",
+    "poisonThreshold": "☠️ 10 Poison Counters!",
+    "lowLife": "❤️ Low life total"
+  }
+}

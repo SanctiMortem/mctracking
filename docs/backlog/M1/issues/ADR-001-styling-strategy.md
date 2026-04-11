@@ -4,7 +4,7 @@
 > **Priority:** P0
 > **Effort:** XS
 > **Story Points:** 1
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-SETUP](../epics/EPIC-SETUP.md)
 > **Skills:** `project/architecture`
 > **Agents:** `architect`
@@ -122,12 +122,14 @@ StyleSheet nativo (Opción B) — el tracker 4-player con rotación de secciones
 
 ## Decisión
 
-**Pendiente** — Resolver antes de iniciar SETUP-004 y SETUP-005.
+**✅ Opción B: StyleSheet nativo + tokens TypeScript**
+
+Razón: El Match Tracker 4-player con rotación de secciones requiere interop directa con `react-native-reanimated` y `react-native-gesture-handler`. NativeWind introduce overhead de runtime y complejidad de configuración (babel plugin) que no aporta beneficio suficiente en un proyecto de 1 dev sin target web. StyleSheet nativo ofrece control total y zero deps extra.
 
 ## Afecta a
 
-- SETUP-004 (Expo Router shell)
-- SETUP-005 (Design tokens)
+- SETUP-004 (Expo Router shell) → usar `StyleSheet.create` en todos los componentes
+- SETUP-005 (Design tokens) → crear `styles/tokens.ts` con colores WUBRG, tipografía, spacing
 - Todos los issues UI de EPIC-01 en adelante
 
 ---
@@ -144,7 +146,7 @@ No aplica — funcionalidad nueva (no hay SK en este proyecto).
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | Pendiente | — |
+| 2026-04-10 | StyleSheet nativo (Opción B) | Interop con Reanimated para tracker 4-player; zero deps extra; proyecto 1 dev sin target web |
 
 ---
 

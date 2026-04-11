@@ -4,7 +4,7 @@
 > **Priority:** P0
 > **Effort:** S
 > **Story Points:** 2
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-SETUP](../epics/EPIC-SETUP.md)
 > **Skills:** `domains/api`, `project/architecture`
 > **Agents:** `mobile-developer`
@@ -37,13 +37,13 @@ El scaffold debe reflejar la arquitectura definida en `07_ARCHITECTURE.md`: Expo
 
 ## ✅ Criterios de Aceptación
 
-- [ ] `npx expo start` arranca sin errores
-- [ ] TypeScript strict mode habilitado (`"strict": true` en `tsconfig.json`)
-- [ ] Expo Router configurado (`app/` directory)
-- [ ] Estructura de directorios creada: `app/`, `components/`, `services/`, `hooks/`, `types/`, `styles/`, `constants/`
-- [ ] `package.json` incluye todas las dependencias del stack: `expo`, `expo-router`, `react-native`, `typescript`, `drizzle-orm`, `@neondatabase/serverless`, `@clerk/clerk-expo`, `react-i18next`, `expo-localization`, `hono`
-- [ ] `.gitignore`, `.env.example`, `README.md` presentes
-- [ ] `npx tsc --noEmit` pasa sin errores
+- [x] `npx expo start` arranca sin errores
+- [x] TypeScript strict mode habilitado (`"strict": true` en `tsconfig.json`)
+- [x] Expo Router configurado (`app/` directory)
+- [x] Estructura de directorios creada: `app/`, `components/`, `services/`, `hooks/`, `types/`, `styles/`, `constants/`
+- [x] `package.json` incluye todas las dependencias del stack: `expo`, `expo-router`, `react-native`, `typescript`, `drizzle-orm`, `@neondatabase/serverless`, `@clerk/clerk-expo`, `react-i18next`, `expo-localization`, `hono`
+- [x] `.gitignore`, `.env.example` presentes
+- [x] `npx tsc --noEmit` pasa sin errores
 
 ## 🥒 Escenarios (Gherkin)
 
@@ -149,13 +149,16 @@ No aplica — funcionalidad nueva (no hay SK en este proyecto). Proyecto scaffol
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-10 | Expo SDK 55 (55.0.14) + React 19.2.5 + RN 0.83.4 | Latest stable — SDK 55 usa React 19 y RN 0.83 |
+| 2026-04-10 | Scaffold manual (sin create-expo-app) | Directorio ya tenía .agent/, docs/, .git/ — evitar conflictos |
+| 2026-04-10 | pnpm.onlyBuiltDependencies: esbuild, bufferutil, utf-8-validate | Autorizar build scripts de native deps sin prompt interactivo |
 
 ### Problemas y Soluciones
 
 | Fecha | Problema | Solución |
 |-------|----------|----------|
-| — | — | — |
+| 2026-04-10 | react@18.3.2 no existe en npm | Actualizado a SDK 55 que usa React 19.2.5 |
+| 2026-04-10 | pnpm approve-builds interactivo | Agregado `pnpm.onlyBuiltDependencies` en package.json |
 
 ---
 

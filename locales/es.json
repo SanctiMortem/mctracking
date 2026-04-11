@@ -1,0 +1,79 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "done": "Listo",
+    "confirm": "Confirmar",
+    "back": "Atrás",
+    "close": "Cerrar",
+    "loading": "Cargando...",
+    "error": "Algo salió mal",
+    "retry": "Reintentar"
+  },
+  "tabs": {
+    "home": "Inicio",
+    "players": "Jugadores",
+    "decks": "Mazos",
+    "history": "Historial",
+    "stats": "Estadísticas"
+  },
+  "auth": {
+    "signIn": "Iniciar Sesión",
+    "signOut": "Cerrar Sesión",
+    "signUp": "Registrarse",
+    "continueWithoutAccount": "Continuar sin cuenta",
+    "emailPlaceholder": "correo@ejemplo.com",
+    "passwordPlaceholder": "Contraseña"
+  },
+  "game": {
+    "commander": "Commander",
+    "commanderDamage": "Commander Damage",
+    "lifeTotal": "Life Total",
+    "poison": "Poison",
+    "infect": "Infect",
+    "proliferate": "Proliferate",
+    "scoop": "Scoop",
+    "concede": "Concede",
+    "partner": "Partner",
+    "wubrg": "WUBRG"
+  },
+  "match": {
+    "newMatch": "Nueva Partida",
+    "setup": "Configurar Partida",
+    "tracker": "Tracker",
+    "close": "Cerrar Partida",
+    "results": "Resultados",
+    "winner": "Ganador",
+    "draw": "Empate",
+    "abandon": "Abandonar",
+    "undo": "Deshacer",
+    "winCondition": {
+      "combat_damage": "Daño de Combate",
+      "commander_damage": "Commander Damage",
+      "infect": "Infect",
+      "combo": "Combo",
+      "mill": "Mill",
+      "scoop": "Scoop",
+      "concede": "Conceder",
+      "other": "Otro"
+    }
+  },
+  "player": {
+    "newPlayer": "Nuevo Jugador",
+    "editPlayer": "Editar Jugador",
+    "deletePlayer": "Eliminar Jugador"
+  },
+  "deck": {
+    "newDeck": "Nuevo Mazo",
+    "editDeck": "Editar Mazo",
+    "deleteDeck": "Eliminar Mazo",
+    "colorIdentity": "Identidad de Color"
+  },
+  "alerts": {
+    "commanderDamageThreshold": "⚔️ ¡21 Commander Damage!",
+    "poisonThreshold": "☠️ ¡10 Poison Counters!",
+    "lowLife": "❤️ Vida baja"
+  }
+}

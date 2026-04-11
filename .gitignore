@@ -1,0 +1,41 @@
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Node
+node_modules/
+npm-debug.*
+*.orig.*
+
+# Environment
+.env
+.env.local
+.env.production
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# iOS
+ios/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Android
+android/
+*.keystore
+
+# Build artifacts
+/build/
+
+# TypeScript
+*.tsbuildinfo
+
+# Drizzle
+drizzle/
