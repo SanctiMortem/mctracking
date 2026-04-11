@@ -4,7 +4,7 @@
 > **Priority:** P2
 > **Effort:** S
 > **Story Points:** 2
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-02-MATCH-LIFECYCLE](../epics/EPIC-02-MATCH-LIFECYCLE.md)
 > **Skills:** `domains/ui`
 > **Agents:** `frontend-specialist`, `mobile-developer`
@@ -36,11 +36,11 @@ Implementar el stub de SCR-011 (Match Detail): pantalla que muestra información
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Muestra fecha del match, duración, status
-- [ ] Lista de participantes con jugador, deck, commander y resultado
-- [ ] Sección "Ganador" con win condition (o draw/abandoned)
-- [ ] Sección "Event Log" con placeholder "Próximamente" (se implementa en EPIC-03)
-- [ ] Accesible desde SCR-010 (CTA "Ver detalle") y eventualmente desde SCR-005 (Historial, EPIC-04)
+- [x] Muestra fecha del match, duración, status
+- [x] Lista de participantes con jugador, deck, commander y resultado
+- [x] Sección "Ganador" con win condition (o draw/abandoned)
+- [x] Sección "Event Log" con placeholder "Próximamente" (se implementa en EPIC-03)
+- [x] Accesible desde SCR-010 (CTA "Ver detalle") y eventualmente desde SCR-005 (Historial, EPIC-04)
 
 ## 🥒 Escenarios (Gherkin)
 
@@ -91,15 +91,28 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | Reusa `useMatchResults` sin nuevo hook | Misma llamada GET /api/matches/:id — no hay lógica adicional para detalle vs. resultados |
+| 2026-04-11 | Reusa `ParticipantResultRow` del MATCH-007 | Mismo formato visual; SCR-011 es más detallado que SCR-010 pero la fila es idéntica |
+| 2026-04-11 | Banner "Partida en curso" con CTA al tracker | Edge case del issue — match puede estar `in_progress` si se accede desde URL directa o historia |
+| 2026-04-11 | Event Log placeholder simple (no componente separado) | Es un stub con 2 líneas de texto; el componente real se construye en EPIC-03 |
+
+### AC Evidence
+
+| AC | Descripción | Cubierto | Evidencia |
+|----|-------------|----------|-----------|
+| 1 | Fecha, duración, status badge | ✅ | `index.tsx:metaCard` — `formatDate`, `duration`, `statusConfig` |
+| 2 | Lista participantes con player/deck/commander/resultado | ✅ | `index.tsx` → `ParticipantResultRow × N` |
+| 3 | Sección "Ganador" con win condition | ✅ | `index.tsx:outcomeCard` — `outcomeLabelConfig` + `conditionBadge` |
+| 4 | Event Log placeholder "Próximamente" | ✅ | `index.tsx:placeholderCard` |
+| 5 | Accesible desde SCR-010 | ✅ | `results.tsx` CTA "Ver detalle" → `router.push('/match/${id}')` |
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+_Ver git log — branch epic/match-lifecycle_
 
 ---
 
 _Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Última actualización: 2026-04-11_
