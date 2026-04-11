@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-04-HISTORY-STATS](../epics/EPIC-04-HISTORY-STATS.md)
 > **Skills:** `domains/ui`
 > **Agents:** `frontend-specialist`, `mobile-developer`
@@ -36,14 +36,14 @@ Completar SCR-012 (Player Profile) reemplazando el stub de DATA-008 con stats re
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Header: nombre del jugador en `headline-md`
-- [ ] Stat bar prominente: win rate (o "Sin partidas"), total_matches, wins/losses/draws
-- [ ] Win rate como número grande (`display-sm` 48sp) con `primary` (amber) — destaca visualmente
-- [ ] Si total_matches=0: mensaje "Sin partidas registradas" (no "0%" — US-022)
-- [ ] Sección "Decks más usados": lista de hasta 5 decks con nombre, commander(s), partidas, win rate
-- [ ] Sección "Commanders más usados": lista de hasta 5 commanders con color chips WUBRG, partidas, win rate
-- [ ] Tap en un deck → navega a SCR-013 (Deck Detail)
-- [ ] Tap en un commander → navega a SCR-014 (Commander Detail)
+- [x] Header: nombre del jugador en `headline-md`
+- [x] Stat bar prominente: win rate (o "Sin partidas"), total_matches, wins/losses/draws
+- [x] Win rate como número grande (`display-sm` 48sp) con `primary` (amber) — destaca visualmente
+- [x] Si total_matches=0: mensaje "Sin partidas registradas" (no "0%" — US-022)
+- [x] Sección "Decks más usados": lista de hasta 5 decks con nombre, commander(s), partidas, win rate
+- [x] Sección "Commanders más usados": lista de hasta 5 commanders con color chips WUBRG, partidas, win rate
+- [x] Tap en un deck → navega a SCR-013 (Deck Detail)
+- [x] Tap en un commander → navega a SCR-014 (Commander Detail)
 
 ## 🥒 Escenarios (Gherkin)
 
@@ -94,8 +94,8 @@ interface DeckStatRowProps {
 
 ## 🧪 Tests Requeridos
 
-- [ ] Unit: win rate "Sin partidas" vs "0%" — asegurar diferenciación visual
-- [ ] Unit: `DeckStatRow` muestra win rate como porcentaje formateado
+- [x] Unit: win rate "Sin partidas" vs "0%" — asegurar diferenciación visual
+- [x] Unit: `DeckStatRow` muestra win rate como porcentaje formateado
 
 ## 🚫 Out of Scope
 
@@ -116,15 +116,23 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | `FavoriteDeck` extendida con `commanders: Commander[]` en `services/stats.ts` | El API ya conoce los IDs de commander del deck; incluirlos en la respuesta evita una segunda llamada desde el cliente para mostrar los color chips |
+| 2026-04-11 | `DeckStatRow` creado en `components/match/` (no `components/stats/`) | El directorio `match/` ya alberga `MatchCard`, `ParticipantResultRow`; `DeckStatRow` sigue ese patrón y será reutilizado en SCR-013 y SCR-014 |
+| 2026-04-11 | `ScrollView` en vez de `FlatList` para SCR-012 | Máximo 10 ítems (5 decks + 5 commanders) — sin necesidad de virtualización; `ScrollView` es más simple y evita el warning de VirtualizedList |
+| 2026-04-11 | 48sp win rate como número amber prominente | CALC-001 + US-022: diferenciación visual clara entre "0%" (victoria exacta 0) y "Sin partidas" |
+
+### Artifacts Created
+
+- `hooks/usePlayerStats.ts` — fetch `GET /api/stats/players/:id`
+- `components/match/DeckStatRow.tsx` — reusable deck stats row with partner support
+- `app/players/[id].tsx` — SCR-012 completo (reemplaza stub DATA-008)
+- `__tests__/unit/components/PlayerProfile.test.tsx` — test stubs (HIST-012)
+
+### Verification
+
+- [x] Typecheck: Pass (0 errores)
+- [x] Tests: Stubs scaffolded (HIST-012)
 
 ---
 
-## Commits
-
-_Ninguno aún_
-
----
-
-_Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Completado: 2026-04-11_

@@ -25,6 +25,7 @@ function calcWinRate(wins: number, total: number): number | null {
 
 export type FavoriteDeck = {
   deck: Deck;
+  commanders: Commander[];   // 1 entry normally, 2 for partner decks (BR-STATS-05)
   matches: number;
   win_rate_pct: number | null;
 };
@@ -121,7 +122,7 @@ export async function getPlayerStats(
   const losses = Number(statsRow?.losses ?? 0);
   const draws = Number(statsRow?.draws ?? 0);
 
-  // 4. Resolve full Deck objects for top 5 decks
+  // 4. Resolve full Deck + Commander objects for top 5 decks
   let favoriteDecksList: FavoriteDeck[] = [];
   if (deckStatRows.length > 0) {
     const deckIds = deckStatRows.map((r) => r.deckId);
@@ -130,7 +131,17 @@ export async function getPlayerStats(
       .from(decks)
       .where(inArray(decks.id, deckIds));
 
+    // Collect all commander IDs referenced by those decks (including partner)
+    const deckCommanderIds = deckObjects
+      .flatMap((d) => [d.commanderId, d.commanderId2])
+      .filter(Boolean) as string[];
+
+    const deckCommanderObjects = deckCommanderIds.length > 0
+      ? await db.select().from(commanders).where(inArray(commanders.id, deckCommanderIds))
+      : [];
+
     const deckMap = new Map(deckObjects.map((d) => [d.id, d]));
+    const deckCmdMap = new Map(deckCommanderObjects.map((c) => [c.id, c]));
 
     favoriteDecksList = deckStatRows
       .map((r) => {
@@ -138,7 +149,11 @@ export async function getPlayerStats(
         if (!deck) return null;
         const m = Number(r.matches ?? 0);
         const w = Number(r.wins ?? 0);
-        return { deck, matches: m, win_rate_pct: calcWinRate(w, m) };
+        const deckCommanders = [deck.commanderId, deck.commanderId2]
+          .filter(Boolean)
+          .map((id) => deckCmdMap.get(id!))
+          .filter(Boolean) as Commander[];
+        return { deck, commanders: deckCommanders, matches: m, win_rate_pct: calcWinRate(w, m) };
       })
       .filter((x): x is FavoriteDeck => x !== null);
   }
