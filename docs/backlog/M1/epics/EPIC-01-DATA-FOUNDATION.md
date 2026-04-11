@@ -2,7 +2,7 @@
 
 > **Milestone:** M1
 > **Status:** 🏗️ In Progress
-> **Issues:** 11 total (6 done)
+> **Issues:** 11 total (7 done)
 > **Branch:** `epic/data-foundation` (crear al empezar)
 
 ---
@@ -43,7 +43,7 @@ Implementar las tres entidades base del dominio MTG: Commander, Player y Deck. I
 | [DATA-004](../issues/DATA-004-api-deck-crud.md) | API: Deck CRUD | DATA-001, DATA-002 | P0 | ✅ | M | 5 |
 | [DATA-005](../issues/DATA-005-ui-commanders-screen.md) | UI: SCR-016 Commanders (list + CRUD) | DATA-002 | P1 | ✅ | M | 5 |
 | [DATA-006](../issues/DATA-006-ui-players-screen.md) | UI: SCR-003 Players (list + CRUD) | DATA-003 | P1 | ✅ | M | 5 |
-| [DATA-007](../issues/DATA-007-ui-decks-screen.md) | UI: SCR-004 Decks (library + CRUD) | DATA-004 | P1 | 📋 | L | 8 |
+| [DATA-007](../issues/DATA-007-ui-decks-screen.md) | UI: SCR-004 Decks (library + CRUD) | DATA-004 | P1 | ✅ | L | 8 |
 | [DATA-008](../issues/DATA-008-ui-player-profile.md) | UI: SCR-012 Player Profile (stub) | DATA-006 | P2 | 📋 | S | 2 |
 | [DATA-009](../issues/DATA-009-ui-deck-detail.md) | UI: SCR-013 Deck Detail (stub) | DATA-007 | P2 | 📋 | S | 2 |
 | [DATA-010](../issues/DATA-010-ui-commander-detail.md) | UI: SCR-014 Commander Detail (stub) | DATA-005 | P2 | 📋 | S | 2 |
@@ -103,7 +103,7 @@ Implementar las tres entidades base del dominio MTG: Commander, Player y Deck. I
 
 ```
 Total:     ███████████ 100% (11 issues)
-Done:      ██████░░░░░  55% (6 issues)
+Done:      ███████░░░░  64% (7 issues)
 ```
 
 ---

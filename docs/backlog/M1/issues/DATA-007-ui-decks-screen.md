@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** L
 > **Story Points:** 8
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-01-DATA-FOUNDATION](../epics/EPIC-01-DATA-FOUNDATION.md)
 > **Skills:** `domains/ui`
 > **Agents:** `frontend-specialist`, `mobile-developer`
@@ -115,13 +115,17 @@ No aplica — funcionalidad nueva. `CommanderSelector` es componente nuevo reuti
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-10 | `CommanderSelector` como full-screen Modal en lugar de dropdown | Mejor UX para listas con search en móvil; el drop-down nativo no soporta búsqueda |
+| 2026-04-10 | Filtro de commander como horizontal scroll chips en lugar de picker | Acceso rápido a los commanders más usados sin abrir otro modal |
+| 2026-04-10 | Colores del deck = union de colores del commander1 + commander2 | Un deck partner tiene identidad cromática de ambos commanders — visualización más precisa |
+| 2026-04-10 | `excludeId` en CommanderSelector previene selección del mismo commander para ambos slots | Edge case: Thrasios no puede ser su propio partner |
+| 2026-04-10 | `useDecks` acepta `commanderFilter` opcional y lo pasa al API | El filtro server-side es más limpio que filtrar una lista potencialmente grande en cliente |
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+- `327cdad` — feat(data): DATA-007 — SCR-004 Decks Library UI (tab screen)
 
 ---
 
