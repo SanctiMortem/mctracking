@@ -2,7 +2,7 @@
 
 > **Milestone:** M1
 > **Status:** 🔄 In Progress
-> **Issues:** 9 total (3 done)
+> **Issues:** 9 total (7 done)
 > **Branch:** `epic/match-lifecycle` (crear al empezar)
 
 ---
@@ -39,7 +39,7 @@ Este epic completa la mitad de Batch 1 junto con EPIC-01 — al terminar, el usu
 | [MATCH-004](../issues/MATCH-004-api-match-detail.md) | API: GET /api/matches/:id (detalle) | MATCH-001 | P1 | ✅ | S | 2 |
 | [MATCH-005](../issues/MATCH-005-ui-match-setup.md) | UI: SCR-007 Match Setup | MATCH-002, DATA-003, DATA-004 | P0 | ✅ | L | 8 |
 | [MATCH-006](../issues/MATCH-006-ui-close-match.md) | UI: SCR-009 Cierre de Match (sheet) | MATCH-003 | P1 | ✅ | M | 5 |
-| [MATCH-007](../issues/MATCH-007-ui-match-results.md) | UI: SCR-010 Match Results | MATCH-003 | P1 | 📋 | M | 5 |
+| [MATCH-007](../issues/MATCH-007-ui-match-results.md) | UI: SCR-010 Match Results | MATCH-003 | P1 | ✅ | M | 5 |
 | [MATCH-008](../issues/MATCH-008-ui-match-detail.md) | UI: SCR-011 Match Detail (stub) | MATCH-004 | P2 | 📋 | S | 2 |
 | [MATCH-009](../issues/MATCH-009-epic-tests.md) | 🧪 Epic Tests — Match Lifecycle | Todos | P1 | 📋 | M | 5 |
 
@@ -99,11 +99,11 @@ Este epic completa la mitad de Batch 1 junto con EPIC-01 — al terminar, el usu
 
 ```
 Total:     █████████ 100% (9 issues)
-Done:      ██████░░░  67% (6 issues — MATCH-001–006)
-Remaining: ███░░░░░░  33% (3 issues)
+Done:      ███████░░  78% (7 issues — MATCH-001–007)
+Remaining: ██░░░░░░░  22% (2 issues)
 ```
 
 ---
 
 _Creado: 2026-04-10_
-_Última actualización: 2026-04-11_
+_Última actualización: 2026-04-11 (MATCH-007 done)_
