@@ -36,12 +36,12 @@ Implementar el componente PoisonCounter: contador de poison counters (Infect) po
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Contador de poison en sección del jugador (debajo de LifeCounter o en área separada)
-- [ ] Botones +1 y -1; floor en 0 (botón -1 disabled cuando poison_counters=0)
-- [ ] Alerta visual al llegar a 10: badge o cambio de color en el contador (BR-TRACK-05)
-- [ ] Sin acción automática al llegar a 10 (solo alerta visual)
-- [ ] Dispara `POST /api/match-events` con `event_type: "poison_change"` y delta acumulado (debounce)
-- [ ] El icono de "skull" o símbolo de poison identifica visualmente el contador
+- [x] Contador de poison en sección del jugador (debajo de LifeCounter o en área separada)
+- [x] Botones +1 y -1; floor en 0 (botón -1 disabled cuando poison_counters=0)
+- [x] Alerta visual al llegar a 10: badge o cambio de color en el contador (BR-TRACK-05)
+- [x] Sin acción automática al llegar a 10 (solo alerta visual)
+- [x] Dispara `POST /api/match-events` con `event_type: "poison_change"` y delta acumulado (debounce)
+- [x] El icono de "skull" o símbolo de poison identifica visualmente el contador
 
 ## 🥒 Escenarios (Gherkin)
 

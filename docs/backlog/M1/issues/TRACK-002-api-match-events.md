@@ -37,14 +37,14 @@ Implementar los endpoints del tracker en vivo: `POST /api/match-events` (registr
 
 ## ✅ Criterios de Aceptación
 
-- [ ] `POST /api/match-events` acepta `{ participation_id, event_type, delta, commander_id_source? }`
-- [ ] Actualiza el snapshot en `participations` (life_total o poison_counters o commander_damage JSONB) en la misma transacción
-- [ ] Inserta el MatchEvent en `match_events`
-- [ ] Retorna `400` si el match no está `in_progress`
-- [ ] `POST /api/match-events/undo?match_id=` marca el último MatchEvent no-undone como `is_undone=true` y revierte el snapshot en participations
-- [ ] Undo en match sin eventos no falla — retorna `200` con `{ undone: null }`
-- [ ] `commander_id_source` requerido si `event_type = 'commander_damage'`
-- [ ] Debounce se implementa en el cliente (React Native) — la API recibe el delta ya acumulado
+- [x] `POST /api/match-events` acepta `{ participation_id, event_type, delta, commander_id_source? }`
+- [x] Actualiza el snapshot en `participations` (life_total o poison_counters o commander_damage JSONB) en la misma transacción
+- [x] Inserta el MatchEvent en `match_events`
+- [x] Retorna `400` si el match no está `in_progress`
+- [x] `POST /api/match-events/undo?match_id=` marca el último MatchEvent no-undone como `is_undone=true` y revierte el snapshot en participations
+- [x] Undo en match sin eventos no falla — retorna `200` con `{ undone: null }`
+- [x] `commander_id_source` requerido si `event_type = 'commander_damage'`
+- [x] Debounce se implementa en el cliente (React Native) — la API recibe el delta ya acumulado
 
 ## 🥒 Escenarios (Gherkin)
 

@@ -37,14 +37,14 @@ Implementar el shell de SCR-008 (Match Tracker): la pantalla modal de pantalla c
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Modal de pantalla completa sin tab bar (tab bar hidden en SCR-008)
-- [ ] Layout 2 jugadores: 2 secciones de 50% de la pantalla (una arriba, una abajo)
-- [ ] Layout 3 jugadores: 1 sección top full-width + 2 secciones bottom de 50%
-- [ ] Layout 4 jugadores: 2x2 grid de cuadros iguales
-- [ ] Cada sección tiene orientación de contenido rotable 180° (BR-TRACK-13): long-press activa rotación de la sección individual con gesture + handle icon visible (A-06 de 15_DESIGN)
-- [ ] Header mínimo: timer del match (tiempo transcurrido) + botón "Cerrar Match" que abre SCR-009
-- [ ] Placeholder de contenido en cada sección (se rellena con TRACK-004+)
-- [ ] `GET /api/matches/:id` al montar para cargar el estado actual
+- [x] Modal de pantalla completa sin tab bar (tab bar hidden en SCR-008)
+- [x] Layout 2 jugadores: 2 secciones de 50% de la pantalla (una arriba, una abajo)
+- [x] Layout 3 jugadores: 1 sección top full-width + 2 secciones bottom de 50%
+- [x] Layout 4 jugadores: 2x2 grid de cuadros iguales
+- [x] Cada sección tiene orientación de contenido rotable 180° (BR-TRACK-13): long-press activa rotación de la sección individual con gesture + handle icon visible (A-06 de 15_DESIGN)
+- [x] Header mínimo: timer del match (tiempo transcurrido) + botón "Cerrar Match" que abre SCR-009
+- [x] Placeholder de contenido en cada sección (se rellena con TRACK-004+)
+- [x] `GET /api/matches/:id` al montar para cargar el estado actual
 
 ## 🥒 Escenarios (Gherkin)
 

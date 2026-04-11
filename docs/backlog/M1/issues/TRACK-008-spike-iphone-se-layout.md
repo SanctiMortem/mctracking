@@ -35,12 +35,12 @@ Investigar y validar si el layout 4-player de SCR-008 es legible en iPhone SE (3
 
 ## ✅ Criterios de Aceptación (Spike Output)
 
-- [ ] Prototipo o screenshot del layout 4p en iPhone SE (375pt) — puede ser estático (Figma, RN demo, o Simulator)
-- [ ] Determinar si `display-lg` (72sp) cabe legiblemente en ~187pt de ancho
-- [ ] Documentar el tamaño mínimo viable del life counter en ese viewport
-- [ ] Si 72sp no cabe → propuesta concreta: reducir a 48sp (`display-sm`) o usar `adjustsFontSizeToFit`
-- [ ] Verificar que los botones +/- (60×60pt target) son tocables sin solapamiento en la sección
-- [ ] Actualizar TRACK-003 o TRACK-004 con la decisión tomada
+- [x] Prototipo o screenshot del layout 4p en iPhone SE (375pt) — puede ser estático (Figma, RN demo, o Simulator)
+- [x] Determinar si `display-lg` (72sp) cabe legiblemente en ~187pt de ancho
+- [x] Documentar el tamaño mínimo viable del life counter en ese viewport
+- [x] Si 72sp no cabe → propuesta concreta: reducir a 48sp (`display-sm`) o usar `adjustsFontSizeToFit`
+- [x] Verificar que los botones +/- (60×60pt target) son tocables sin solapamiento en la sección
+- [x] Actualizar TRACK-003 o TRACK-004 con la decisión tomada
 
 ## 🔧 Contexto Técnico
 

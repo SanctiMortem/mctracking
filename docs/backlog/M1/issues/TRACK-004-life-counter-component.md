@@ -37,14 +37,14 @@ Implementar el componente LifeCounter (CMP-001): el display principal de vida en
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Número de vida en tipografía `display-lg` (72sp) — legible a distancia
-- [ ] Botones `-1` (izquierda) y `+1` (derecha) de al menos 60x60pt para fácil tapping
-- [ ] Long press en `-` o `+` → incremento rápido (hold repeat cada 150ms)
-- [ ] Tap en el número → modo de entrada directa (NumericInput modal o inline)
-- [ ] Los cambios se acumulan localmente con debounce (default 500ms, configurable en EPIC-05)
-- [ ] Al expirar el debounce → `POST /api/match-events` con delta acumulado
-- [ ] Alerta visual sutil cuando life_total ≤ 0 (no acción automática — BR-TRACK-01)
-- [ ] Nombre del jugador visible en la sección (header de la PlayerSection)
+- [x] Número de vida en tipografía `display-lg` (72sp) — legible a distancia
+- [x] Botones `-1` (izquierda) y `+1` (derecha) de al menos 60x60pt para fácil tapping
+- [x] Long press en `-` o `+` → incremento rápido (hold repeat cada 150ms)
+- [x] Tap en el número → modo de entrada directa (NumericInput modal o inline)
+- [x] Los cambios se acumulan localmente con debounce (default 500ms, configurable en EPIC-05)
+- [x] Al expirar el debounce → `POST /api/match-events` con delta acumulado
+- [x] Alerta visual sutil cuando life_total ≤ 0 (no acción automática — BR-TRACK-01)
+- [x] Nombre del jugador visible en la sección (header de la PlayerSection)
 
 ## 🥒 Escenarios (Gherkin)
 

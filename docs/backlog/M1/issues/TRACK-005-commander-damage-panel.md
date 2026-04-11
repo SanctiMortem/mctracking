@@ -39,12 +39,12 @@ Implementar el CommanderDamagePanel (CMP-005): panel dentro de cada PlayerSectio
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Panel accesible como sección expandible dentro de PlayerSection (tap para expandir/colapsar)
-- [ ] Una sub-row por commander enemigo en el match (A-05: todos los commanders, no solo los que ya causaron daño)
-- [ ] Si un commander tiene partner: dos sub-rows separadas (una por commander_id), con nombre visible
-- [ ] Cada sub-row: nombre del commander, botones +/- (de 1), y el valor actual
-- [ ] Al llegar a 21 → alerta visual en la sub-row (color rojo, badge "21!") — sin acción automática (BR-TRACK-04)
-- [ ] Taps disparan `POST /api/match-events` con `event_type: "commander_damage"` y `commander_id_source`
+- [x] Panel accesible como sección expandible dentro de PlayerSection (tap para expandir/colapsar)
+- [x] Una sub-row por commander enemigo en el match (A-05: todos los commanders, no solo los que ya causaron daño)
+- [x] Si un commander tiene partner: dos sub-rows separadas (una por commander_id), con nombre visible
+- [x] Cada sub-row: nombre del commander, botones +/- (de 1), y el valor actual
+- [x] Al llegar a 21 → alerta visual en la sub-row (color rojo, badge "21!") — sin acción automática (BR-TRACK-04)
+- [x] Taps disparan `POST /api/match-events` con `event_type: "commander_damage"` y `commander_id_source`
 
 ## 🥒 Escenarios (Gherkin)
 

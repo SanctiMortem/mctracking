@@ -37,13 +37,13 @@ Implementar el EventLog panel (CMP-011) y el botón de Undo en SCR-008: un panel
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Panel de event log colapsable en SCR-008 (A-07: colapsable en tracker, no solo post-match)
-- [ ] Lista scrollable de MatchEvents recientes (más nuevo arriba) con descripción legible ("Gabriel: -5 vida", "Carlos recibió 7 de commander damage de Atraxa")
-- [ ] Eventos marcados como `is_undone=true` aparecen tachados (no ocultos)
-- [ ] Botón "Undo" prominente (esquina fija o en header) — invoca `POST /api/match-events/undo`
-- [ ] Undo actualiza el estado local del tracker inmediatamente (optimistic update) y confirma con la API
-- [ ] Si no hay eventos para deshacer: botón Undo disabled o con feedback "No hay acciones para deshacer"
-- [ ] El panel también se muestra en SCR-011 (Match Detail) post-match — conectar al completar EPIC-04
+- [x] Panel de event log colapsable en SCR-008 (A-07: colapsable en tracker, no solo post-match)
+- [x] Lista scrollable de MatchEvents recientes (más nuevo arriba) con descripción legible ("Gabriel: -5 vida", "Carlos recibió 7 de commander damage de Atraxa")
+- [x] Eventos marcados como `is_undone=true` aparecen tachados (no ocultos)
+- [x] Botón "Undo" prominente (esquina fija o en header) — invoca `POST /api/match-events/undo`
+- [x] Undo actualiza el estado local del tracker inmediatamente (optimistic update) y confirma con la API
+- [x] Si no hay eventos para deshacer: botón Undo disabled o con feedback "No hay acciones para deshacer"
+- [x] El panel también se muestra en SCR-011 (Match Detail) post-match — conectar al completar EPIC-04
 
 ## 🥒 Escenarios (Gherkin)
 
