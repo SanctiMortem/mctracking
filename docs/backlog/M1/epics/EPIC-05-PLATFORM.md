@@ -41,7 +41,7 @@ Implementar la capa de plataforma que hace el producto completo: Auth multi-prov
 | [ADR-005](../issues/ADR-005-group-selection-screen.md) | ADR: Group selection screen obligatoria? | — | P1 | 📋 | XS | 1 |
 | [ADR-006](../issues/ADR-006-guest-upgrade-mid-match.md) | ADR: Guest→User upgrade mid-match | — | P2 | 📋 | XS | 1 |
 | [ADR-007](../issues/ADR-007-iap-receipt-validation.md) | ADR: IAP receipt validation — endpoint separado? | — | P1 | 📋 | XS | 1 |
-| [PLAT-001](../issues/PLAT-001-db-schema-platform.md) | DB schema: groups, group_members, user_settings | — | P0 | 📋 | S | 2 |
+| [PLAT-001](../issues/PLAT-001-db-schema-platform.md) | DB schema: groups, group_members, user_settings | — | P0 | ✅ | S | 2 |
 | [PLAT-002](../issues/PLAT-002-api-auth-settings.md) | API: Auth session + Settings CRUD | PLAT-001 | P0 | 📋 | S | 2 |
 | [PLAT-003](../issues/PLAT-003-ui-auth-screen.md) | UI: SCR-001 Auth screen (todos los providers) | PLAT-002, SETUP-007 | P0 | 📋 | L | 8 |
 | [PLAT-004](../issues/PLAT-004-ui-guest-tracker.md) | UI: SCR-019 Guest Tracker (full) | TRACK-003, TRACK-004 | P0 | 📋 | M | 5 |
