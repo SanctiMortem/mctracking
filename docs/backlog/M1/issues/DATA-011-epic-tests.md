@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-01-DATA-FOUNDATION](../epics/EPIC-01-DATA-FOUNDATION.md)
 > **Skills:** `domains/db`, `domains/ui`
 > **Agents:** `test-engineer`
