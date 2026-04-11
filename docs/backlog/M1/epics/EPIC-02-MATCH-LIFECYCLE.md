@@ -37,7 +37,7 @@ Este epic completa la mitad de Batch 1 junto con EPIC-01 — al terminar, el usu
 | [MATCH-002](../issues/MATCH-002-api-create-match.md) | API: POST /api/matches (crear match) | MATCH-001 | P0 | ✅ | M | 5 |
 | [MATCH-003](../issues/MATCH-003-api-close-match.md) | API: PATCH /api/matches/:id (cerrar match) | MATCH-001 | P0 | ✅ | M | 5 |
 | [MATCH-004](../issues/MATCH-004-api-match-detail.md) | API: GET /api/matches/:id (detalle) | MATCH-001 | P1 | ✅ | S | 2 |
-| [MATCH-005](../issues/MATCH-005-ui-match-setup.md) | UI: SCR-007 Match Setup | MATCH-002, DATA-003, DATA-004 | P0 | 📋 | L | 8 |
+| [MATCH-005](../issues/MATCH-005-ui-match-setup.md) | UI: SCR-007 Match Setup | MATCH-002, DATA-003, DATA-004 | P0 | ✅ | L | 8 |
 | [MATCH-006](../issues/MATCH-006-ui-close-match.md) | UI: SCR-009 Cierre de Match (sheet) | MATCH-003 | P1 | 📋 | M | 5 |
 | [MATCH-007](../issues/MATCH-007-ui-match-results.md) | UI: SCR-010 Match Results | MATCH-003 | P1 | 📋 | M | 5 |
 | [MATCH-008](../issues/MATCH-008-ui-match-detail.md) | UI: SCR-011 Match Detail (stub) | MATCH-004 | P2 | 📋 | S | 2 |
@@ -99,8 +99,8 @@ Este epic completa la mitad de Batch 1 junto con EPIC-01 — al terminar, el usu
 
 ```
 Total:     █████████ 100% (9 issues)
-Done:      ████░░░░░  44% (4 issues — MATCH-001, MATCH-002, MATCH-003, MATCH-004)
-Remaining: █████░░░░  56% (5 issues)
+Done:      █████░░░░  56% (5 issues — MATCH-001–005)
+Remaining: ████░░░░░  44% (4 issues)
 ```
 
 ---
