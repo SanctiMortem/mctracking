@@ -2,7 +2,7 @@
 
 > **Milestone:** M1
 > **Status:** 🏗️ In Progress
-> **Issues:** 11 total (1 done)
+> **Issues:** 11 total (2 done)
 > **Branch:** `epic/data-foundation` (crear al empezar)
 
 ---
@@ -38,7 +38,7 @@ Implementar las tres entidades base del dominio MTG: Commander, Player y Deck. I
 | ID | Título | Depende de | Priority | Status | Effort | SP |
 |----|--------|------------|----------|--------|--------|----|
 | [DATA-001](../issues/DATA-001-db-schema-entities.md) | DB schema: Commander, Player, Deck | SETUP-003 | P0 | ✅ | M | 5 |
-| [DATA-002](../issues/DATA-002-api-commander-crud.md) | API: Commander CRUD | DATA-001 | P0 | 📋 | M | 5 |
+| [DATA-002](../issues/DATA-002-api-commander-crud.md) | API: Commander CRUD | DATA-001 | P0 | ✅ | M | 5 |
 | [DATA-003](../issues/DATA-003-api-player-crud.md) | API: Player CRUD | DATA-001 | P0 | 📋 | M | 5 |
 | [DATA-004](../issues/DATA-004-api-deck-crud.md) | API: Deck CRUD | DATA-001, DATA-002 | P0 | 📋 | M | 5 |
 | [DATA-005](../issues/DATA-005-ui-commanders-screen.md) | UI: SCR-016 Commanders (list + CRUD) | DATA-002 | P1 | 📋 | M | 5 |
@@ -103,7 +103,7 @@ Implementar las tres entidades base del dominio MTG: Commander, Player y Deck. I
 
 ```
 Total:     ███████████ 100% (11 issues)
-Done:      █░░░░░░░░░░   9% (1 issues)
+Done:      ██░░░░░░░░░  18% (2 issues)
 ```
 
 ---

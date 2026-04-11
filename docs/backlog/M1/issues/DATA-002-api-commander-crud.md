@@ -4,7 +4,7 @@
 > **Priority:** P0
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-01-DATA-FOUNDATION](../epics/EPIC-01-DATA-FOUNDATION.md)
 > **Skills:** `domains/api`, `domains/db`
 > **Agents:** `backend-specialist`
@@ -127,13 +127,15 @@ No aplica — funcionalidad nueva (no hay SK en este proyecto).
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-10 | Plain Expo Router named exports (GET/POST/PATCH/DELETE) en lugar de Hono app wrapper | Consistente con health+api.ts; Hono queda disponible para EPIC-05 si se necesita middleware compuesto |
+| 2026-04-10 | `services/db.ts` singleton como cliente canónico; removido `getDb()` de `db/index.ts` | Evitar dos instancias de Neon en el mismo proceso |
+| 2026-04-10 | Uniqueness check via `lower()` SQL inline sin unique index funcional | Drizzle-kit no genera functional indexes; se valida en servicio antes de insertar |
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+- `c2bd69c` — feat(data): DATA-002 — Commander CRUD API routes + service
 
 ---
 
