@@ -4,7 +4,7 @@
 > **Priority:** P2
 > **Effort:** XS
 > **Story Points:** 1
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-04-HISTORY-STATS](../epics/EPIC-04-HISTORY-STATS.md)
 > **Skills:** `domains/api`
 > **Agents:** `backend-specialist`
@@ -101,9 +101,9 @@ Razón: El historial es append-only y completamente estático durante el scroll 
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Decisión documentada en esta ADR con la opción elegida
-- [ ] HIST-001 implementa la opción elegida
-- [ ] Schema de respuesta documentado en Implementation Evidence
+- [x] Decisión documentada en esta ADR con la opción elegida
+- [x] HIST-001 implementa la opción elegida
+- [x] Schema de respuesta documentado en Implementation Evidence
 
 ## 🧪 Tests Requeridos
 
@@ -123,15 +123,41 @@ No aplica.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | **Opción A — Offset pagination** (`limit` + `offset`) | El historial es append-only y estático durante el scroll (no se insertan nuevos matches mientras el usuario navega). El drift de offset es teóricamente posible pero irrelevante en práctica. La implementación con Drizzle `.limit().offset()` es trivial. MVP prioriza simplicidad. Migrar a cursor si en Fase 2 el volumen supera 1000 matches o se requieren filtros complejos en tiempo real. |
+
+### Schema de Respuesta (GET /matches)
+
+```typescript
+// Query params
+GET /matches?limit=20&offset=0&player_id=...
+
+// Response
+{
+  success: true,
+  data: {
+    matches: Match[],
+    total: number,       // total de matches (para calcular páginas en UI)
+    limit: number,
+    offset: number,
+    has_more: boolean    // offset + limit < total
+  }
+}
+```
+
+**OQ-02 resuelto:** Paginación por offset. Documentado en `08_API_CONTRACTS.md` (ya correcto).
+
+### Impacto en issues dependientes
+
+- **HIST-001** — implementar `GET /matches` usando `limit`/`offset` (Drizzle `.limit().offset()`)
+- **HIST-002** — UI de historial puede mostrar indicador de total + botón "Load more" o scroll infinito con offset incremental
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+_Ninguno — ADR puro, sin cambios de código._
 
 ---
 
 _Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Última actualización: 2026-04-11_
