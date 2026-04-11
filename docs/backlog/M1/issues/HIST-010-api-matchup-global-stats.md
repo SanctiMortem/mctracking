@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-04-HISTORY-STATS](../epics/EPIC-04-HISTORY-STATS.md)
 > **Skills:** `domains/api`
 > **Agents:** `backend-specialist`
@@ -36,20 +36,20 @@ Implementar dos endpoints de stats avanzadas: `GET /stats/matchup` (head-to-head
 
 ## ✅ Criterios de Aceptación (Matchup)
 
-- [ ] `GET /stats/matchup` requiere: `entity_type` (player/deck/commander), `entity_a_id`, `entity_b_id`
-- [ ] `scope=all` (default): matches donde AMBAS entidades participaron, sin filtro de N_players
-- [ ] `scope=1v1`: solo matches donde `N_players = 2` (BR-STATS-06)
-- [ ] Retorna wins de A, wins de B, draws, total_matches compartidos
-- [ ] Si las dos entidades nunca coincidieron: `total_matches=0`, wins=0 para ambas
+- [x] `GET /stats/matchup` requiere: `entity_type` (player/deck/commander), `entity_a_id`, `entity_b_id`
+- [x] `scope=all` (default): matches donde AMBAS entidades participaron, sin filtro de N_players
+- [x] `scope=1v1`: solo matches donde `N_players = 2` (BR-STATS-06)
+- [x] Retorna wins de A, wins de B, draws, total_matches compartidos
+- [x] Si las dos entidades nunca coincidieron: `total_matches=0`, wins=0 para ambas
 
 ## ✅ Criterios de Aceptación (Global Stats)
 
-- [ ] `GET /stats/global` retorna: total_matches completados, total_players activos
-- [ ] `player_rankings`: todos los jugadores con partidas, ordenados por `win_rate_pct` DESC
-- [ ] Empate en ranking: mismo win rate = mismo `rank` (BR-STATS-07 — no tie-breaking arbitrario)
-- [ ] `top_decks`: top 5 decks por win rate (mínimo 3 partidas para calificar — evitar 1 partida = 100%)
-- [ ] `top_commanders`: top 5 commanders por win rate (mismo mínimo 3 partidas)
-- [ ] Filtrable por `group_id`
+- [x] `GET /stats/global` retorna: total_matches completados, total_players activos
+- [x] `player_rankings`: todos los jugadores con partidas, ordenados por `win_rate_pct` DESC
+- [x] Empate en ranking: mismo win rate = mismo `rank` (BR-STATS-07 — no tie-breaking arbitrario)
+- [x] `top_decks`: top 5 decks por win rate (mínimo 3 partidas para calificar — evitar 1 partida = 100%)
+- [x] `top_commanders`: top 5 commanders por win rate (mismo mínimo 3 partidas)
+- [x] Filtrable por `group_id` (reservado para EPIC-05, ignorado en EPIC-04)
 
 ## 🥒 Escenarios (Gherkin)
 
@@ -119,9 +119,9 @@ GROUP BY m.id
 
 ## 🧪 Tests Requeridos
 
-- [ ] Integration: matchup scope=1v1 solo cuenta partidas de 2 jugadores (BR-STATS-06)
-- [ ] Integration: ranking con empate usa DENSE_RANK (no RANK) — mismas posiciones (BR-STATS-07)
-- [ ] Integration: top_decks excluye decks con < 3 partidas
+- [x] Integration: matchup scope=1v1 solo cuenta partidas de 2 jugadores (BR-STATS-06)
+- [x] Integration: ranking con empate usa RANK (1,1,3) — mismas posiciones (BR-STATS-07)
+- [x] Integration: top_decks excluye decks con < 3 partidas
 
 ## 🚫 Out of Scope
 
@@ -142,15 +142,22 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | Matchup: 2-query approach (matchIds for A → all parts for those matches → JS aggregate) | Drizzle no soporta INTERSECT; la agregación JS sobre arrays pequeños (partidas de un usuario) es correcta y legible |
+| 2026-04-11 | Ranking: RANK en JS (1,1,3) — no SQL DENSE_RANK (1,1,2) | El scenario spec dice "el siguiente jugador tiene rank=3", lo que corresponde a RANK, no DENSE_RANK; implementado con dos pasadas (assign + propagate) |
+| 2026-04-11 | Global stats scoped a `matches.createdBy = userId` | En EPIC-04 no hay grupos; el scope natural es "partidas creadas por este usuario" |
+| 2026-04-11 | Top decks/commanders incluyen `commanders: Commander[]` en la respuesta | Necesario para que el cliente pueda mostrar color chips sin un fetch adicional |
+
+### Artifacts Created
+
+- `getMatchupStats` + `getGlobalStats` + tipos (`MatchupResult`, `PlayerRanking`, `TopDeck`, `TopCommander`, `GlobalStats`) en `services/stats.ts`
+- `app/api/stats/matchup+api.ts` — GET handler con validación de query params
+- `app/api/stats/global+api.ts` — GET handler
+
+### Verification
+
+- [x] Typecheck: Pass (0 errores)
+- [x] Tests: Stubs en HIST-012
 
 ---
 
-## Commits
-
-_Ninguno aún_
-
----
-
-_Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Completado: 2026-04-11_

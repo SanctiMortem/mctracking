@@ -477,3 +477,355 @@ export async function getCommanderStats(
     },
   };
 }
+
+// ─── Matchup Stats (HIST-010) ─────────────────────────────────────────────────
+
+export type MatchupResult = {
+  entity_a_wins: number;
+  entity_b_wins: number;
+  draws: number;
+  total_matches: number;
+};
+
+export type GetMatchupStatsResult =
+  | { data: MatchupResult }
+  | { notFound: string }
+  | { forbidden: true };
+
+export async function getMatchupStats(
+  userId: string,
+  entityType: 'player' | 'deck' | 'commander',
+  entityAId: string,
+  entityBId: string,
+  scope: 'all' | '1v1',
+): Promise<GetMatchupStatsResult> {
+  // 1. Validate both entities exist and belong to the user
+  if (entityType === 'player') {
+    const [aRows, bRows] = await Promise.all([
+      db.select().from(players).where(and(eq(players.id, entityAId), isNull(players.deletedAt))).limit(1),
+      db.select().from(players).where(and(eq(players.id, entityBId), isNull(players.deletedAt))).limit(1),
+    ]);
+    if (!aRows[0]) return { notFound: 'entity_a' };
+    if (!bRows[0]) return { notFound: 'entity_b' };
+    if (aRows[0].createdBy !== userId || bRows[0].createdBy !== userId) return { forbidden: true };
+  } else if (entityType === 'deck') {
+    const [aRows, bRows] = await Promise.all([
+      db.select().from(decks).where(and(eq(decks.id, entityAId), isNull(decks.deletedAt))).limit(1),
+      db.select().from(decks).where(and(eq(decks.id, entityBId), isNull(decks.deletedAt))).limit(1),
+    ]);
+    if (!aRows[0]) return { notFound: 'entity_a' };
+    if (!bRows[0]) return { notFound: 'entity_b' };
+    if (aRows[0].createdBy !== userId || bRows[0].createdBy !== userId) return { forbidden: true };
+  } else {
+    const [aRows, bRows] = await Promise.all([
+      db.select().from(commanders).where(and(eq(commanders.id, entityAId), isNull(commanders.deletedAt))).limit(1),
+      db.select().from(commanders).where(and(eq(commanders.id, entityBId), isNull(commanders.deletedAt))).limit(1),
+    ]);
+    if (!aRows[0]) return { notFound: 'entity_a' };
+    if (!bRows[0]) return { notFound: 'entity_b' };
+    if (aRows[0].createdBy !== userId || bRows[0].createdBy !== userId) return { forbidden: true };
+  }
+
+  // 2. Fetch match IDs where entity A participated in completed matches
+  let matchIdsForA: string[];
+
+  if (entityType === 'player') {
+    const rows = await db
+      .select({ matchId: participations.matchId })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .where(and(eq(participations.playerId, entityAId), eq(matches.status, 'completed')));
+    matchIdsForA = rows.map((r) => r.matchId);
+  } else if (entityType === 'deck') {
+    const rows = await db
+      .select({ matchId: participations.matchId })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .where(and(eq(participations.deckId, entityAId), eq(matches.status, 'completed')));
+    matchIdsForA = rows.map((r) => r.matchId);
+  } else {
+    const rows = await db
+      .select({ matchId: participations.matchId })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .innerJoin(decks, eq(participations.deckId, decks.id))
+      .where(and(
+        or(eq(decks.commanderId, entityAId), eq(decks.commanderId2, entityAId)),
+        eq(matches.status, 'completed'),
+      ));
+    // Deduplicate — a match with 2 decks using the same commander would appear twice
+    matchIdsForA = [...new Set(rows.map((r) => r.matchId))];
+  }
+
+  if (matchIdsForA.length === 0) {
+    return { data: { entity_a_wins: 0, entity_b_wins: 0, draws: 0, total_matches: 0 } };
+  }
+
+  // 3. Fetch all participations for those matches (with deck info for commander lookups)
+  const allRows = await db
+    .select({
+      matchId: participations.matchId,
+      playerId: participations.playerId,
+      deckId: participations.deckId,
+      commanderId: decks.commanderId,
+      commanderId2: decks.commanderId2,
+      result: participations.result,
+    })
+    .from(participations)
+    .innerJoin(decks, eq(participations.deckId, decks.id))
+    .where(inArray(participations.matchId, matchIdsForA));
+
+  type PartRow = typeof allRows[number];
+
+  function isAEntity(row: PartRow): boolean {
+    if (entityType === 'player') return row.playerId === entityAId;
+    if (entityType === 'deck') return row.deckId === entityAId;
+    return row.commanderId === entityAId || row.commanderId2 === entityAId;
+  }
+
+  function isBEntity(row: PartRow): boolean {
+    if (entityType === 'player') return row.playerId === entityBId;
+    if (entityType === 'deck') return row.deckId === entityBId;
+    return row.commanderId === entityBId || row.commanderId2 === entityBId;
+  }
+
+  // 4. Group by matchId and compute head-to-head
+  const matchGroups = new Map<string, PartRow[]>();
+  for (const row of allRows) {
+    const g = matchGroups.get(row.matchId) ?? [];
+    g.push(row);
+    matchGroups.set(row.matchId, g);
+  }
+
+  let entityAWins = 0;
+  let entityBWins = 0;
+  let draws = 0;
+  let totalMatches = 0;
+
+  for (const [, parts] of matchGroups) {
+    const aRow = parts.find(isAEntity);
+    const bRow = parts.find(isBEntity);
+    // Skip matches where B didn't participate
+    if (!aRow || !bRow) continue;
+    // scope=1v1: only 2-player matches (BR-STATS-06)
+    if (scope === '1v1' && parts.length !== 2) continue;
+
+    totalMatches++;
+    if (aRow.result === 'win') entityAWins++;
+    else if (bRow.result === 'win') entityBWins++;
+    else if (aRow.result === 'draw') draws++;
+  }
+
+  return {
+    data: {
+      entity_a_wins: entityAWins,
+      entity_b_wins: entityBWins,
+      draws,
+      total_matches: totalMatches,
+    },
+  };
+}
+
+// ─── Global Stats (HIST-010) ──────────────────────────────────────────────────
+
+export type PlayerRanking = {
+  player: Player;
+  total_matches: number;
+  wins: number;
+  win_rate_pct: number | null;
+  rank: number;
+};
+
+export type TopDeck = {
+  deck: Deck;
+  commanders: Commander[];
+  total_matches: number;
+  wins: number;
+  win_rate_pct: number | null;
+};
+
+export type TopCommander = {
+  commander: Commander;
+  total_matches: number;
+  wins: number;
+  win_rate_pct: number | null;
+};
+
+export type GlobalStats = {
+  total_matches: number;
+  total_players: number;
+  player_rankings: PlayerRanking[];
+  top_decks: TopDeck[];
+  top_commanders: TopCommander[];
+};
+
+export async function getGlobalStats(userId: string): Promise<{ data: GlobalStats }> {
+  // Phase 1: All aggregation queries in parallel (scoped to matches.createdBy = userId)
+  const [totalMatchRows, playerStatRows, deckStatRows, commanderPartRows] = await Promise.all([
+    // Total completed matches
+    db
+      .select({ total: count(matches.id) })
+      .from(matches)
+      .where(and(eq(matches.createdBy, userId), eq(matches.status, 'completed'))),
+
+    // Per-player stats
+    db
+      .select({
+        playerId: participations.playerId,
+        total: count(participations.id),
+        wins: sql<number>`sum(case when ${participations.result} = 'win' then 1 else 0 end)`,
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .where(and(eq(matches.createdBy, userId), eq(matches.status, 'completed')))
+      .groupBy(participations.playerId),
+
+    // Per-deck stats (all decks; min-3 filter applied in JS)
+    db
+      .select({
+        deckId: participations.deckId,
+        total: count(participations.id),
+        wins: sql<number>`sum(case when ${participations.result} = 'win' then 1 else 0 end)`,
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .where(and(eq(matches.createdBy, userId), eq(matches.status, 'completed')))
+      .groupBy(participations.deckId),
+
+    // Commander participation rows for JS aggregation (both primary + partner)
+    db
+      .select({
+        result: participations.result,
+        commanderId1: decks.commanderId,
+        commanderId2: decks.commanderId2,
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .innerJoin(decks, eq(participations.deckId, decks.id))
+      .where(and(eq(matches.createdBy, userId), eq(matches.status, 'completed'))),
+  ]);
+
+  const totalMatchCount = Number(totalMatchRows[0]?.total ?? 0);
+
+  // ── Player rankings with RANK (1, 1, 3 — not DENSE_RANK 1, 1, 2) ─────────────
+
+  const playerStatsSorted = playerStatRows
+    .map((r) => {
+      const total = Number(r.total ?? 0);
+      const wins = Number(r.wins ?? 0);
+      return { playerId: r.playerId, total, wins, wr: calcWinRate(wins, total) };
+    })
+    .sort((a, b) => (b.wr ?? -1) - (a.wr ?? -1));
+
+  // First pass: assign rank or 0 (=tie marker); second pass: propagate
+  const ranked = playerStatsSorted.map((entry, i) => {
+    const prev = playerStatsSorted[i - 1];
+    return { ...entry, rank: prev === undefined || entry.wr !== prev.wr ? i + 1 : 0 };
+  });
+  for (let i = 1; i < ranked.length; i++) {
+    if (ranked[i].rank === 0) ranked[i].rank = ranked[i - 1].rank;
+  }
+
+  // ── Top 5 decks (min 3 matches, by win_rate DESC) ─────────────────────────────
+
+  const top5DeckEntries = deckStatRows
+    .map((r) => {
+      const total = Number(r.total ?? 0);
+      const wins = Number(r.wins ?? 0);
+      return { deckId: r.deckId, total, wins, wr: calcWinRate(wins, total) };
+    })
+    .filter((e) => e.total >= 3)
+    .sort((a, b) => (b.wr ?? -1) - (a.wr ?? -1))
+    .slice(0, 5);
+
+  // ── Top 5 commanders (min 3 matches, by win_rate DESC, both partners counted) ─
+
+  const cmdStatsMap = new Map<string, { wins: number; total: number }>();
+  for (const row of commanderPartRows) {
+    const cmdIds = [row.commanderId1, row.commanderId2].filter(Boolean) as string[];
+    for (const cId of cmdIds) {
+      const entry = cmdStatsMap.get(cId) ?? { wins: 0, total: 0 };
+      entry.total++;
+      if (row.result === 'win') entry.wins++;
+      cmdStatsMap.set(cId, entry);
+    }
+  }
+
+  const top5CmdEntries = [...cmdStatsMap.entries()]
+    .map(([id, stats]) => ({ commanderId: id, ...stats, wr: calcWinRate(stats.wins, stats.total) }))
+    .filter((e) => e.total >= 3)
+    .sort((a, b) => (b.wr ?? -1) - (a.wr ?? -1))
+    .slice(0, 5);
+
+  // ── Phase 2: Resolve objects in parallel ─────────────────────────────────────
+
+  const playerIds = ranked.map((r) => r.playerId);
+  const deckIds = top5DeckEntries.map((e) => e.deckId);
+  const topCmdIds = top5CmdEntries.map((e) => e.commanderId);
+
+  const [playerObjects, deckObjectsRaw, topCmdObjects] = await Promise.all([
+    playerIds.length > 0
+      ? db.select().from(players).where(inArray(players.id, playerIds))
+      : Promise.resolve([] as Player[]),
+    deckIds.length > 0
+      ? db.select().from(decks).where(inArray(decks.id, deckIds))
+      : Promise.resolve([] as Deck[]),
+    topCmdIds.length > 0
+      ? db.select().from(commanders).where(inArray(commanders.id, topCmdIds))
+      : Promise.resolve([] as Commander[]),
+  ]);
+
+  // Fetch commanders for top decks (color chips in UI)
+  const deckCommanderIds = deckObjectsRaw
+    .flatMap((d) => [d.commanderId, d.commanderId2])
+    .filter(Boolean) as string[];
+
+  const deckCmdObjects = deckCommanderIds.length > 0
+    ? await db.select().from(commanders).where(inArray(commanders.id, deckCommanderIds))
+    : [];
+
+  // ── Assemble response ────────────────────────────────────────────────────────
+
+  const playerMap = new Map(playerObjects.map((p) => [p.id, p]));
+  const deckMap = new Map(deckObjectsRaw.map((d) => [d.id, d]));
+  const deckCmdMap = new Map(deckCmdObjects.map((c) => [c.id, c]));
+  const topCmdMap = new Map(topCmdObjects.map((c) => [c.id, c]));
+
+  const playerRankings: PlayerRanking[] = ranked
+    .map((r) => {
+      const player = playerMap.get(r.playerId);
+      if (!player) return null;
+      return { player, total_matches: r.total, wins: r.wins, win_rate_pct: r.wr, rank: r.rank };
+    })
+    .filter((x): x is PlayerRanking => x !== null);
+
+  const topDecks: TopDeck[] = top5DeckEntries
+    .map((e) => {
+      const deck = deckMap.get(e.deckId);
+      if (!deck) return null;
+      const deckCommanders = [deck.commanderId, deck.commanderId2]
+        .filter(Boolean)
+        .map((id) => deckCmdMap.get(id!))
+        .filter(Boolean) as Commander[];
+      return { deck, commanders: deckCommanders, total_matches: e.total, wins: e.wins, win_rate_pct: e.wr };
+    })
+    .filter((x): x is TopDeck => x !== null);
+
+  const topCommanders: TopCommander[] = top5CmdEntries
+    .map((e) => {
+      const commander = topCmdMap.get(e.commanderId);
+      if (!commander) return null;
+      return { commander, total_matches: e.total, wins: e.wins, win_rate_pct: e.wr };
+    })
+    .filter((x): x is TopCommander => x !== null);
+
+  return {
+    data: {
+      total_matches: totalMatchCount,
+      total_players: playerIds.length,
+      player_rankings: playerRankings,
+      top_decks: topDecks,
+      top_commanders: topCommanders,
+    },
+  };
+}
