@@ -1,17 +1,33 @@
 /**
+ * GET    /api/commanders/:id — commander detail (owner only)
  * PATCH  /api/commanders/:id — update a commander (owner only)
  * DELETE /api/commanders/:id — soft delete a commander (owner only)
  *
- * DATA-002 (EPIC-01)
+ * DATA-002 / DATA-010 (EPIC-01)
  */
 // @ts-expect-error — @clerk/clerk-expo/server types not yet bundled; runtime works correctly
 import { getAuth } from '@clerk/clerk-expo/server';
 
 import {
+  getCommanderById,
   softDeleteCommander,
   updateCommander,
   validateColors,
 } from '@/services/commanders';
+
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } },
+) {
+  const { userId } = getAuth(req);
+  if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const commander = await getCommanderById(params.id);
+  if (!commander) return Response.json({ error: 'NOT_FOUND' }, { status: 404 });
+  if (commander.createdBy !== userId) return Response.json({ error: 'Forbidden' }, { status: 403 });
+
+  return Response.json(commander);
+}
 
 export async function PATCH(
   req: Request,

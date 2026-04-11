@@ -1,13 +1,28 @@
 /**
+ * GET    /api/players/:id — player detail (owner only)
  * PATCH  /api/players/:id — rename a player (owner only)
  * DELETE /api/players/:id — soft delete a player (owner only, no active match)
  *
- * DATA-003 (EPIC-01)
+ * DATA-003 / DATA-008 (EPIC-01)
  */
 // @ts-expect-error — @clerk/clerk-expo/server types not yet bundled; runtime works correctly
 import { getAuth } from '@clerk/clerk-expo/server';
 
-import { softDeletePlayer, updatePlayer } from '@/services/players';
+import { getPlayerById, softDeletePlayer, updatePlayer } from '@/services/players';
+
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } },
+) {
+  const { userId } = getAuth(req);
+  if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const player = await getPlayerById(params.id);
+  if (!player) return Response.json({ error: 'NOT_FOUND' }, { status: 404 });
+  if (player.createdBy !== userId) return Response.json({ error: 'Forbidden' }, { status: 403 });
+
+  return Response.json(player);
+}
 
 export async function PATCH(
   req: Request,
