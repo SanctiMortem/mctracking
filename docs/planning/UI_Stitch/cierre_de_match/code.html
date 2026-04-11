@@ -1,0 +1,258 @@
+<html class="dark"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#ffb3ad",
+                        "tertiary": "#ffb3ad",
+                        "on-error-container": "#ffdad6",
+                        "surface-bright": "#453721",
+                        "surface": "#1c1102",
+                        "on-secondary": "#003258",
+                        "outline": "#9b8f7f",
+                        "on-tertiary-fixed": "#410004",
+                        "on-tertiary": "#68000a",
+                        "secondary-container": "#0164a7",
+                        "outline-variant": "#4e4538",
+                        "surface-container-low": "#251906",
+                        "primary-container": "#c99e55",
+                        "on-surface-variant": "#d2c4b3",
+                        "on-primary-fixed-variant": "#5f4100",
+                        "inverse-primary": "#7b5815",
+                        "primary-fixed-dim": "#eebf73",
+                        "on-secondary-fixed": "#001d36",
+                        "surface-container-lowest": "#160c00",
+                        "tertiary-container": "#ff7e77",
+                        "on-background": "#f7dfbf",
+                        "inverse-surface": "#f7dfbf",
+                        "primary": "#eebf73",
+                        "on-surface": "#f7dfbf",
+                        "on-primary": "#422c00",
+                        "surface-container-high": "#352813",
+                        "surface-container": "#2a1d09",
+                        "inverse-on-surface": "#3c2e19",
+                        "secondary": "#9ecaff",
+                        "surface-variant": "#41321d",
+                        "on-secondary-container": "#c6deff",
+                        "on-secondary-fixed-variant": "#00497c",
+                        "tertiary-fixed": "#ffdad7",
+                        "on-tertiary-fixed-variant": "#930013",
+                        "surface-tint": "#eebf73",
+                        "surface-dim": "#1c1102",
+                        "on-primary-container": "#503600",
+                        "on-error": "#690005",
+                        "error-container": "#93000a",
+                        "surface-container-highest": "#41321d",
+                        "background": "#1c1102",
+                        "on-primary-fixed": "#281900",
+                        "error": "#ffb4ab",
+                        "secondary-fixed-dim": "#9ecaff",
+                        "secondary-fixed": "#d1e4ff",
+                        "primary-fixed": "#ffdeab",
+                        "on-tertiary-container": "#7c000e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Manrope"],
+                        "label": ["Manrope"]
+                    }
+                },
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(42, 29, 9, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface min-h-screen">
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 bg-[#1c1102]/80 backdrop-blur-xl shadow-[0_0_20px_rgba(238,191,115,0.1)] flex justify-between items-center px-6 py-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#eebf73]" data-icon="menu_book">menu_book</span>
+<h1 class="font-headline tracking-widest uppercase font-bold text-lg text-[#eebf73]">MYSTIC ARCHIVE</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#c99e55]/60 hover:text-[#eebf73] transition-colors cursor-pointer active:scale-95" data-icon="settings">settings</span>
+</div>
+</header>
+<!-- Main Content Background (Simulating underlying Tracker) -->
+<main class="pt-24 pb-32 px-6 max-w-2xl mx-auto opacity-40">
+<div class="space-y-6">
+<div class="flex justify-between items-end mb-8">
+<div>
+<p class="text-on-surface-variant font-label text-xs tracking-widest uppercase">Match ID: #7721</p>
+<h2 class="text-4xl font-headline font-bold text-primary">BATTLEFIELD</h2>
+</div>
+<div class="text-right">
+<p class="text-primary font-headline text-2xl font-bold">TURN 14</p>
+</div>
+</div>
+<!-- Player Rows (Background) -->
+<div class="space-y-4">
+<div class="bg-surface-container p-6 rounded-xl flex justify-between items-center">
+<div>
+<h3 class="text-xl font-headline font-bold">ALEPH</h3>
+<p class="text-on-surface-variant text-sm">Golos, Tireless Pilgrim</p>
+</div>
+<div class="text-5xl font-headline font-bold text-primary">24</div>
+</div>
+<div class="bg-surface-container p-6 rounded-xl flex justify-between items-center">
+<div>
+<h3 class="text-xl font-headline font-bold">BETH</h3>
+<p class="text-on-surface-variant text-sm">Muldrotha, the Gravetide</p>
+</div>
+<div class="text-5xl font-headline font-bold text-primary">08</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Modal Overlay -->
+<div class="fixed inset-0 bg-surface/80 backdrop-blur-sm z-[60] flex items-end sm:items-center justify-center">
+<!-- Close Match Bottom Sheet/Modal -->
+<div class="glass-panel w-full max-w-xl sm:rounded-2xl shadow-[0_-5px_40px_rgba(0,0,0,0.8)] border border-outline-variant/20 overflow-hidden">
+<!-- Modal Header -->
+<div class="px-8 pt-8 pb-4">
+<div class="w-12 h-1.5 bg-outline-variant/30 rounded-full mx-auto mb-6 sm:hidden"></div>
+<div class="flex justify-between items-start">
+<div>
+<h2 class="text-3xl font-headline font-bold text-primary tracking-tight">CONCLUDE MATCH</h2>
+<p class="text-on-surface-variant text-sm font-medium mt-1">Select the final outcome of the library records.</p>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+</div>
+<div class="px-8 pb-8 space-y-8 max-h-[663px] overflow-y-auto">
+<!-- Winner Selection -->
+<section>
+<label class="text-primary text-[10px] font-bold tracking-[0.2em] uppercase mb-4 block">1. DECIDE THE VICTOR</label>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<!-- Player Winner Card -->
+<div class="bg-primary/10 border-2 border-primary p-4 rounded-xl relative group cursor-pointer shadow-[0_0_15px_rgba(238,191,115,0.1)]">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="profile avatar of a serious tactical player in atmospheric low light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXXjpS9gT8fQ3qCwJinnGPPyp6VQX1WDjMzw_SpWZ_6GSjmXlkbr78FRb3EzvI-gnj5mZvx2v-RDHuqPaEuKBwVOgtTLizifCtFPovi88jDCEw1Dt_6r1AnXP48UpYwoLI4mFXRNvRzZjVsTkPjE5TmDL56KhjaCaTGF5IddwMUDB_T_ztioJYsmpNeGgwf_B8pgcKFMEXaiILr0XAnGDQ-4_RB_qtBa_bIi0uTuMD4r8WpeI_Iw5endF2VpSxDgcDggPhr5DBcNel"/>
+</div>
+<div>
+<h4 class="font-headline font-bold text-primary text-lg">ALEPH</h4>
+<p class="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">Commander: Golos</p>
+</div>
+</div>
+<span class="absolute top-3 right-3 material-symbols-outlined text-primary text-xl" data-icon="stars" data-weight="fill">stars</span>
+</div>
+<!-- Other Player Card -->
+<div class="bg-surface-container-high border-2 border-transparent hover:border-outline-variant p-4 rounded-xl transition-all cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 grayscale">
+<img class="w-full h-full object-cover" data-alt="profile avatar of a player in silhouette against dramatic light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUDxnZKDXk0aDO-R6eBhAhcwHeaYzBh3AQev49qwoJaGwPkP0gsN_vfDl9Jk0tTCprTsAdn1ZqfH__Rs7bhx9EHw0gmAskaRyJy_0CX-gMDAyWp_byGSgSQA3k8iLf5FoIgSR66ioglq-1QoW2d3m70XwMTaIgiX02uxswrdUk2mNodDKbHNMmuFgMKI2cO_C-l-Baz7Tw9rJL-2r1nZVPWoAYqoH1-DZ2XERmefnIUEj_GPII6KHGILtw74PVCoYFhhuceJNFMjF3"/>
+</div>
+<div>
+<h4 class="font-headline font-bold text-on-surface text-lg">BETH</h4>
+<p class="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">Commander: Muldrotha</p>
+</div>
+</div>
+</div>
+<!-- Special Outcomes -->
+<div class="bg-surface-container-high border-2 border-transparent hover:border-outline-variant p-4 rounded-xl flex items-center gap-4 cursor-pointer">
+<div class="w-12 h-12 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="balance">balance</span>
+</div>
+<h4 class="font-headline font-bold text-on-surface text-lg">DRAW / STALEMATE</h4>
+</div>
+<div class="bg-surface-container-high border-2 border-transparent hover:border-outline-variant p-4 rounded-xl flex items-center gap-4 cursor-pointer">
+<div class="w-12 h-12 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="cancel">cancel</span>
+</div>
+<h4 class="font-headline font-bold text-on-surface text-lg">ABANDONED</h4>
+</div>
+</div>
+</section>
+<!-- Win Condition Chips -->
+<section>
+<label class="text-primary text-[10px] font-bold tracking-[0.2em] uppercase mb-4 block">2. WIN CONDITION TYPE</label>
+<div class="flex flex-wrap gap-2">
+<div class="px-4 py-2 rounded-full bg-primary text-on-primary font-bold text-xs flex items-center gap-2 shadow-[0_5px_15px_rgba(238,191,115,0.3)]">
+<span class="material-symbols-outlined text-sm" data-icon="swords">swords</span>
+                            COMBAT DAMAGE
+                        </div>
+<div class="px-4 py-2 rounded-full bg-surface-container-highest text-on-surface hover:bg-surface-variant transition-colors font-bold text-xs flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="crown">crown</span>
+                            COMMANDER DMG
+                        </div>
+<div class="px-4 py-2 rounded-full bg-surface-container-highest text-on-surface hover:bg-surface-variant transition-colors font-bold text-xs flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="skull">skull</span>
+                            POISON / INFECT
+                        </div>
+<div class="px-4 py-2 rounded-full bg-surface-container-highest text-on-surface hover:bg-surface-variant transition-colors font-bold text-xs flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="auto_awesome">auto_awesome</span>
+                            COMBO / ALT WIN
+                        </div>
+<div class="px-4 py-2 rounded-full bg-surface-container-highest text-on-surface hover:bg-surface-variant transition-colors font-bold text-xs flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="cloud_off">cloud_off</span>
+                            MILL / DECKED
+                        </div>
+<div class="px-4 py-2 rounded-full bg-surface-container-highest text-on-surface hover:bg-surface-variant transition-colors font-bold text-xs flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="waving_hand">waving_hand</span>
+                            SCOOP / CONCEDED
+                        </div>
+</div>
+</section>
+<!-- Footer Actions -->
+<div class="pt-6 flex flex-col sm:flex-row gap-4">
+<button class="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary py-4 rounded-xl font-headline font-bold text-lg shadow-[0_10px_30px_rgba(238,191,115,0.3)] active:scale-95 transition-all">
+                        ARCHIVE MATCH RESULTS
+                    </button>
+<button class="px-8 py-4 text-on-surface-variant font-headline font-bold hover:text-on-surface transition-colors">
+                        CANCEL
+                    </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Nav Bar (Supressed Logic Check: Highlighting DECKBOX as current meta) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#1c1102]/90 backdrop-blur-lg shadow-[0_-5px_25px_rgba(0,0,0,0.5)] rounded-t-xl opacity-30 pointer-events-none">
+<div class="flex flex-col items-center justify-center text-[#c99e55]/50 px-4 py-1">
+<span class="material-symbols-outlined" data-icon="swords">swords</span>
+<span class="font-['Manrope'] text-[10px] font-bold tracking-[0.1em]">BATTLEFIELD</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#c99e55]/50 px-4 py-1">
+<span class="material-symbols-outlined" data-icon="history_edu">history_edu</span>
+<span class="font-['Manrope'] text-[10px] font-bold tracking-[0.1em]">CHRONICLE</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-[#eebf73]/10 text-[#eebf73] rounded-xl px-4 py-1 shadow-[0_0_15px_rgba(238,191,115,0.2)]">
+<span class="material-symbols-outlined" data-icon="layers">layers</span>
+<span class="font-['Manrope'] text-[10px] font-bold tracking-[0.1em]">DECKBOX</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#c99e55]/50 px-4 py-1">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-['Manrope'] text-[10px] font-bold tracking-[0.1em]">GRIMOIRE</span>
+</div>
+</nav>
+</body></html>

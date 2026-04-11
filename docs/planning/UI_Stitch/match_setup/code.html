@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Setup Match | Mystic Archive</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&amp;family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#00497c",
+                    "inverse-primary": "#7b5815",
+                    "inverse-on-surface": "#3c2e19",
+                    "primary-fixed": "#ffdeab",
+                    "error-container": "#93000a",
+                    "surface-container-low": "#251906",
+                    "primary-container": "#c99e55",
+                    "background": "#1c1102",
+                    "primary": "#eebf73",
+                    "surface-container-high": "#352813",
+                    "on-primary-fixed": "#281900",
+                    "tertiary": "#ffb3ad",
+                    "on-error": "#690005",
+                    "surface-bright": "#453721",
+                    "outline": "#9b8f7f",
+                    "on-secondary-container": "#c6deff",
+                    "on-tertiary-fixed-variant": "#930013",
+                    "surface-container": "#2a1d09",
+                    "on-secondary": "#003258",
+                    "surface": "#1c1102",
+                    "on-primary-fixed-variant": "#5f4100",
+                    "surface-container-highest": "#41321d",
+                    "secondary-container": "#0164a7",
+                    "on-surface": "#f7dfbf",
+                    "inverse-surface": "#f7dfbf",
+                    "secondary-fixed": "#d1e4ff",
+                    "on-background": "#f7dfbf",
+                    "surface-dim": "#1c1102",
+                    "tertiary-fixed": "#ffdad7",
+                    "on-primary-container": "#503600",
+                    "tertiary-container": "#ff7e77",
+                    "error": "#ffb4ab",
+                    "surface-tint": "#eebf73",
+                    "on-primary": "#422c00",
+                    "primary-fixed-dim": "#eebf73",
+                    "secondary": "#9ecaff",
+                    "surface-container-lowest": "#160c00",
+                    "on-tertiary-container": "#7c000e",
+                    "secondary-fixed-dim": "#9ecaff",
+                    "tertiary-fixed-dim": "#ffb3ad",
+                    "on-error-container": "#ffdad6",
+                    "outline-variant": "#4e4538",
+                    "on-tertiary": "#68000a",
+                    "surface-variant": "#41321d",
+                    "on-surface-variant": "#d2c4b3",
+                    "on-secondary-fixed": "#001d36",
+                    "on-tertiary-fixed": "#410004"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Space Grotesk"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+        }
+        .glass-panel {
+            background: rgba(42, 29, 9, 0.7);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#1c1102] dark:bg-[#1c1102] shadow-[0px_10px_30px_rgba(0,0,0,0.5)]">
+<div class="flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-primary/20">
+<img class="w-full h-full object-cover" data-alt="portrait of a wizard-like scholar with white beard and intricate robes in warm amber lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJl6mVH2uiJVpV07_HeNKWxwVEpdO51ljkt4LZvdz73-03uHTY__oBhQCdno67y6GaHVG1aufQeH_rO_iLfoEwS5RTY-QOOwuKmbvbXonQ5rlNUXluk4anOieEQsniKuCarxQuZKmLEN4U13fPiEWmR-4Ei1WMmkyKMWsWSkXKeIkF63IfD6dNMKmyYUWikgUd0wHaYxAcRqzvVJJvM5XhCjN87no6zjn5ixcVY4DnmGhZcIubPHw_1pQHjjxKulTc4FwlABPnghcP"/>
+</div>
+<h1 class="font-['Space_Grotesk'] font-bold tracking-tight text-[#eebf73] text-xl">MYSTIC ARCHIVE</h1>
+</div>
+<div class="flex gap-4 items-center">
+<span class="material-symbols-outlined text-[#c99e55]/60 hover:text-[#eebf73] cursor-pointer transition-colors" data-icon="settings">settings</span>
+<span class="material-symbols-outlined text-[#c99e55]/60 hover:text-[#eebf73] cursor-pointer transition-colors" data-icon="close">close</span>
+</div>
+</div>
+<div class="bg-gradient-to-b from-[#c99e55]/10 to-transparent h-px w-full"></div>
+</header>
+<!-- Main Content Canvas (Modal-like centered layout) -->
+<main class="flex-1 mt-24 mb-32 px-4 max-w-4xl mx-auto w-full">
+<!-- Header Section -->
+<section class="mb-10 text-center">
+<h2 class="font-headline font-black text-4xl lg:text-6xl text-primary uppercase tracking-tighter mb-2">Initialize Duel</h2>
+<p class="font-body text-on-surface-variant tracking-wide opacity-80">Assemble your pod and declare your commanders.</p>
+</section>
+<!-- Configuration Grid -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+<!-- Player Pod Selection -->
+<section class="md:col-span-8 space-y-6">
+<div class="flex justify-between items-end mb-4">
+<h3 class="font-headline font-bold text-2xl text-on-primary-fixed uppercase tracking-tight">The Pod (2-4)</h3>
+<button class="text-primary text-sm font-label font-bold tracking-widest flex items-center gap-2 hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-sm" data-icon="person_add">person_add</span>
+                        ADD PLAYER
+                    </button>
+</div>
+<!-- Player Slots (Bento-style Cards) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<!-- Player 1 Slot (Active/Selected) -->
+<div class="bg-surface-container-highest p-5 rounded-xl border-l-4 border-primary shadow-lg transition-transform active:scale-95">
+<div class="flex justify-between items-start mb-4">
+<span class="font-label text-[10px] text-primary font-bold tracking-[0.2em] uppercase">Player I</span>
+<span class="material-symbols-outlined text-primary text-lg" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="mb-4">
+<div class="text-on-surface font-headline font-bold text-xl mb-1">Kaelen Voss</div>
+<div class="text-on-surface-variant text-xs flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                Urza, Lord High Artificer
+                            </div>
+</div>
+<button class="w-full py-2 bg-surface-container-low text-on-surface-variant text-[10px] font-bold tracking-widest uppercase rounded hover:bg-surface-container transition-colors">Change Deck</button>
+</div>
+<!-- Player 2 Slot (Active/Selected) -->
+<div class="bg-surface-container-highest p-5 rounded-xl border-l-4 border-primary shadow-lg transition-transform active:scale-95">
+<div class="flex justify-between items-start mb-4">
+<span class="font-label text-[10px] text-primary font-bold tracking-[0.2em] uppercase">Player II</span>
+<span class="material-symbols-outlined text-primary text-lg" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="mb-4">
+<div class="text-on-surface font-headline font-bold text-xl mb-1">Elora Night</div>
+<div class="text-on-surface-variant text-xs flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-green-600"></span>
+                                Lathril, Blade of Elves
+                            </div>
+</div>
+<button class="w-full py-2 bg-surface-container-low text-on-surface-variant text-[10px] font-bold tracking-widest uppercase rounded hover:bg-surface-container transition-colors">Change Deck</button>
+</div>
+<!-- Player 3 Slot (Empty/Selectable) -->
+<div class="bg-surface-container-low p-5 rounded-xl border-2 border-dashed border-outline-variant group hover:border-primary/40 cursor-pointer transition-all">
+<div class="flex flex-col items-center justify-center py-6 text-center">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors text-3xl mb-2" data-icon="add">add</span>
+<span class="font-label text-[10px] text-on-surface-variant font-bold tracking-widest uppercase">Seat 3 Open</span>
+</div>
+</div>
+<!-- Player 4 Slot (Empty/Selectable) -->
+<div class="bg-surface-container-low p-5 rounded-xl border-2 border-dashed border-outline-variant group hover:border-primary/40 cursor-pointer transition-all">
+<div class="flex flex-col items-center justify-center py-6 text-center">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors text-3xl mb-2" data-icon="add">add</span>
+<span class="font-label text-[10px] text-on-surface-variant font-bold tracking-widest uppercase">Seat 4 Open</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Global Settings Column -->
+<aside class="md:col-span-4 space-y-8">
+<div class="bg-surface-container-low p-6 rounded-2xl">
+<h3 class="font-headline font-bold text-lg text-primary uppercase tracking-tight mb-6">Match Presets</h3>
+<!-- Life Total Toggle -->
+<div class="space-y-4 mb-8">
+<label class="block font-label text-[10px] text-on-surface-variant font-black tracking-[0.2em] uppercase">Starting Vitality</label>
+<div class="grid grid-cols-2 gap-2 bg-surface-container-lowest p-1 rounded-lg">
+<button class="py-2 px-4 rounded-md font-headline font-bold text-lg bg-primary text-on-primary transition-all">40</button>
+<button class="py-2 px-4 rounded-md font-headline font-bold text-lg text-on-surface-variant hover:text-on-surface transition-all">20</button>
+</div>
+</div>
+<!-- Validation Check -->
+<div class="space-y-3">
+<label class="block font-label text-[10px] text-on-surface-variant font-black tracking-[0.2em] uppercase">Pre-Flight Check</label>
+<ul class="space-y-2">
+<li class="flex items-center gap-3 text-xs text-on-surface font-medium">
+<span class="material-symbols-outlined text-green-500 text-sm" data-icon="done" style="font-variation-settings: 'wght' 700;">done</span>
+                                Minimum 2 Players
+                            </li>
+<li class="flex items-center gap-3 text-xs text-on-surface font-medium">
+<span class="material-symbols-outlined text-green-500 text-sm" data-icon="done" style="font-variation-settings: 'wght' 700;">done</span>
+                                Unique Decks Assigned
+                            </li>
+<li class="flex items-center gap-3 text-xs text-on-surface/40 font-medium">
+<span class="material-symbols-outlined text-sm" data-icon="radio_button_unchecked">radio_button_unchecked</span>
+                                All seats confirmed
+                            </li>
+</ul>
+</div>
+</div>
+<!-- Decorative Element -->
+<div class="hidden md:block relative h-40 rounded-2xl overflow-hidden shadow-2xl">
+<img class="w-full h-full object-cover" data-alt="abstract swirls of magical golden energy and smoke against a deep black cosmic background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhxT5kLT2AMf1G5hCfkSRluzleo-oQZIuFewZKPZqFO__QBi0k6cuoR_cT9q9BSCCEgMM_blLsq3jiDPoz-W78px66cEwSCD_SpSKpZvczZwEGVn63wtUlaDblw-zy3v185Iswmh4cdBU1ZiBpA3rbFStvM3asmy2ZfMvx9x4dQHppzkOFntGaVTpA-OZo0ZJi4gL9uGZR_HH2IIegfLvTQc8EdYhWN9ORIwmIpSnL9e3f44R6g0Msfhuw3QLp53SVjWqwka02iWzk"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
+<div class="absolute bottom-4 left-4">
+<p class="font-headline font-bold text-on-surface italic opacity-60">"May your library be bountiful."</p>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Fixed Bottom CTA Section -->
+<div class="fixed bottom-0 w-full z-50 bg-[#1c1102]/90 backdrop-blur-xl border-t border-[#c99e55]/10 shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
+<div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+<div class="hidden sm:block">
+<div class="text-[10px] font-bold text-primary tracking-[0.3em] uppercase">Status</div>
+<div class="text-on-surface font-headline font-medium">Ready to Settle the Score</div>
+</div>
+<button class="w-full sm:w-auto px-12 py-4 bg-gradient-to-br from-primary to-primary-container text-on-primary font-headline font-black text-xl uppercase tracking-tighter rounded-md shadow-[0_0_20px_rgba(238,191,115,0.3)] transition-transform hover:scale-[1.02] active:scale-95 duration-100">
+                Start Match
+            </button>
+</div>
+<!-- Bottom Nav Shell Logic (Visible on Mobile) -->
+<nav class="md:hidden flex justify-around items-center w-full px-2 pt-2 pb-safe border-t border-[#c99e55]/5">
+<a class="flex flex-col items-center justify-center text-[#c99e55]/40 py-2" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-['Manrope'] text-[10px] uppercase font-bold tracking-widest mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c99e55]/40 py-2" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-['Manrope'] text-[10px] uppercase font-bold tracking-widest mt-1">Players</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#eebf73] bg-gradient-to-t from-[#c99e55]/20 to-transparent rounded-lg px-3 py-2" href="#">
+<span class="material-symbols-outlined" data-icon="style">style</span>
+<span class="font-['Manrope'] text-[10px] uppercase font-bold tracking-widest mt-1">Decks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c99e55]/40 py-2" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-['Manrope'] text-[10px] uppercase font-bold tracking-widest mt-1">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c99e55]/40 py-2" href="#">
+<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+<span class="font-['Manrope'] text-[10px] uppercase font-bold tracking-widest mt-1">Stats</span>
+</a>
+</nav>
+</div>
+</body></html>

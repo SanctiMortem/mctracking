@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Stats Dashboard - Mystic Archive</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#f7dfbf",
+                        "surface": "#1c1102",
+                        "surface-container-lowest": "#160c00",
+                        "tertiary-fixed": "#ffdad7",
+                        "on-tertiary-fixed": "#410004",
+                        "on-surface-variant": "#d2c4b3",
+                        "surface-container-highest": "#41321d",
+                        "on-background": "#f7dfbf",
+                        "on-primary-container": "#503600",
+                        "tertiary-fixed-dim": "#ffb3ad",
+                        "surface-container": "#2a1d09",
+                        "inverse-on-surface": "#3c2e19",
+                        "primary-container": "#c99e55",
+                        "on-primary-fixed": "#281900",
+                        "secondary-container": "#0164a7",
+                        "primary": "#eebf73",
+                        "error": "#ffb4ab",
+                        "surface-container-low": "#251906",
+                        "primary-fixed-dim": "#eebf73",
+                        "on-secondary-fixed": "#001d36",
+                        "inverse-primary": "#7b5815",
+                        "surface-tint": "#eebf73",
+                        "background": "#1c1102",
+                        "surface-dim": "#1c1102",
+                        "on-primary-fixed-variant": "#5f4100",
+                        "on-secondary-fixed-variant": "#00497c",
+                        "tertiary-container": "#ff7e77",
+                        "secondary": "#9ecaff",
+                        "on-tertiary-container": "#7c000e",
+                        "secondary-fixed-dim": "#9ecaff",
+                        "inverse-surface": "#f7dfbf",
+                        "on-error": "#690005",
+                        "surface-container-high": "#352813",
+                        "on-secondary": "#003258",
+                        "surface-bright": "#453721",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed": "#d1e4ff",
+                        "on-tertiary-fixed-variant": "#930013",
+                        "outline-variant": "#4e4538",
+                        "on-secondary-container": "#c6deff",
+                        "outline": "#9b8f7f",
+                        "surface-variant": "#41321d",
+                        "primary-fixed": "#ffdeab",
+                        "error-container": "#93000a",
+                        "on-primary": "#422c00",
+                        "on-tertiary": "#68000a",
+                        "tertiary": "#ffb3ad"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Manrope"],
+                        "label": ["Manrope"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .premium-blur {
+            backdrop-filter: blur(20px);
+        }
+        .amber-glow {
+            box-shadow: 0 0 20px rgba(238, 191, 115, 0.1);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary/30 selection:text-primary">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#1c1102] dark:bg-[#1c1102] shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+<div class="flex items-center gap-4">
+<button class="text-[#eebf73] scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-['Space_Grotesk'] font-bold tracking-widest uppercase text-2xl font-black text-[#c99e55] drop-shadow-[0_0_10px_rgba(238,191,115,0.3)]">MYSTIC ARCHIVE</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="h-10 w-10 rounded-full border border-primary/20 overflow-hidden scale-95 active:scale-90 transition-transform cursor-pointer">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="close-up portrait of a fantasy wizard with glowing amber eyes and intricate gold jewelry" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhYRu4BcX4T6iWBxggArn3YtjdIdqGB4YJLHiUiU-_bIeQj63srir7NaaAfgeK2jryq7RJpTapQLyy6DtKLTXQNx2sI7b4h40Gq1kvkfIw-_TWGWjCjJ__jblRVqyC7ZzI94YjMaWBfidHTKy-ck-27ZLdnPM4HL_T3tHJSN5xMQ2jkpf2wlp2AUz2nV3IkxV93N99896gzC38Ne1Z9RwpypzRo7uxe4E4XCs8s2O58BKHBHi8lCuTgVuvncrvtDH3Fr_nkjS_5HYU"/>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-4 md:px-8 max-w-7xl mx-auto space-y-12">
+<!-- Hero Stats Banner -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="md:col-span-3 flex flex-col space-y-2">
+<span class="font-headline text-primary font-bold tracking-widest uppercase text-sm">Command Center</span>
+<h2 class="font-headline text-4xl md:text-6xl font-black uppercase tracking-tighter">GLOBAL ANALYTICS</h2>
+</div>
+<div class="bg-surface-container-low p-8 rounded-xl border-l-4 border-primary shadow-2xl relative overflow-hidden group">
+<div class="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
+<span class="material-symbols-outlined text-9xl" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<p class="text-on-surface-variant font-label uppercase tracking-widest text-xs mb-1">Total Games Tracked</p>
+<h3 class="text-5xl font-headline font-bold text-primary">1,248</h3>
+</div>
+<div class="bg-surface-container-low p-8 rounded-xl border-l-4 border-secondary shadow-2xl relative overflow-hidden group">
+<div class="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
+<span class="material-symbols-outlined text-9xl" data-icon="query_stats">query_stats</span>
+</div>
+<p class="text-on-surface-variant font-label uppercase tracking-widest text-xs mb-1">Avg. Game Duration</p>
+<h3 class="text-5xl font-headline font-bold text-secondary">74m</h3>
+</div>
+<div class="bg-surface-container-low p-8 rounded-xl border-l-4 border-tertiary shadow-2xl relative overflow-hidden group">
+<div class="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
+<span class="material-symbols-outlined text-9xl" data-icon="skull">skull</span>
+</div>
+<p class="text-on-surface-variant font-label uppercase tracking-widest text-xs mb-1">Total Lethal Damage</p>
+<h3 class="text-5xl font-headline font-bold text-tertiary">42.5k</h3>
+</div>
+</section>
+<!-- Main Insights Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Top Players (Ranking) -->
+<section class="lg:col-span-5 space-y-6">
+<div class="flex items-end justify-between border-b border-outline-variant/30 pb-2">
+<h3 class="font-headline text-2xl font-bold uppercase tracking-tight">Hall of Legends</h3>
+<span class="text-primary font-label text-xs uppercase tracking-widest">Top Win Rates</span>
+</div>
+<div class="space-y-4">
+<!-- Rank 1 -->
+<div class="bg-surface-container-highest p-4 rounded-xl flex items-center gap-4 hover:translate-x-2 transition-transform cursor-pointer amber-glow border-l-2 border-primary">
+<span class="font-headline text-3xl font-black text-primary w-8">01</span>
+<div class="w-12 h-12 rounded-lg bg-surface-container overflow-hidden">
+<img alt="Player 1" class="w-full h-full object-cover opacity-80" data-alt="cinematic close-up of a hooded figure with glowing runes on their face, fantasy aesthetic, dark lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0Wxd7QpBLf2GAZRyK1zGnTPmu0jcU2SZ47MISoleMHaguWn4vqCIKQkIH7LnQOpfl6AI25ct7qpbuvlcJKMsTQXTQET5DWJd3J_iOrfScXWmul3Jw61q_d3xUcdN4soPEkO_TrHlRoJtIiJ7ew_rOFIyTFT-b3n5loU4ZOg3t4ZOHdl7r63xRu2KRpJAXfrASQRvScf-J2TUCTz3GbANr9ka8ISh2ggXpOQvuFappp2UXpLBCmtvjWW_K9Jlyx-FvPEeFVobsU45Y"/>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-on-surface leading-tight">Aurelius Vance</h4>
+<p class="text-xs text-on-surface-variant uppercase tracking-tighter">Izzet Spellslinger</p>
+</div>
+<div class="text-right">
+<p class="text-primary font-headline font-bold">68.2%</p>
+<p class="text-[10px] text-on-surface-variant uppercase">Win Rate</p>
+</div>
+</div>
+<!-- Rank 2 -->
+<div class="bg-surface-container p-4 rounded-xl flex items-center gap-4 hover:translate-x-2 transition-transform cursor-pointer">
+<span class="font-headline text-3xl font-black text-on-surface-variant/40 w-8">02</span>
+<div class="w-12 h-12 rounded-lg bg-surface-container overflow-hidden">
+<img alt="Player 2" class="w-full h-full object-cover opacity-60" data-alt="highly detailed digital painting of an elven knight in emerald armor, ethereal forest background, soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCgMoxU4K-vp3BaUHBeVVXeksz2ojktr9CyPbKvFyc5Vq17eAJzNosMrDkUiD2Ddeuqt2MGDpR47RTlKSiAlx7jFQwMRAKqtVgE4GgfQQKEXUpDdFIIs5q-u2LVSXlgXnkPaxtRUKXZit7Zvxqqb5AZdLsG5NL7Z9UEnu3Wr2TTIaMYwI1BM_RvQrs80oK2JRSeD7p6Gpxe7Inuy8GqBa3w7Ca5BQH-MBl-Umnwj-srkAQmTAfh_otObPGxmIe5CzsXhjxMe7PIVW7U"/>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-on-surface leading-tight">Lysandra Moon</h4>
+<p class="text-xs text-on-surface-variant uppercase tracking-tighter">Selesnya Tokens</p>
+</div>
+<div class="text-right">
+<p class="text-on-surface font-headline font-bold">54.5%</p>
+<p class="text-[10px] text-on-surface-variant uppercase">Win Rate</p>
+</div>
+</div>
+<!-- Rank 3 -->
+<div class="bg-surface-container p-4 rounded-xl flex items-center gap-4 hover:translate-x-2 transition-transform cursor-pointer">
+<span class="font-headline text-3xl font-black text-on-surface-variant/40 w-8">03</span>
+<div class="w-12 h-12 rounded-lg bg-surface-container overflow-hidden">
+<img alt="Player 3" class="w-full h-full object-cover opacity-60" data-alt="stoic warrior with heavy metallic armor and scarred face, dramatic moody shadows, dark fantasy portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuANmmygfcvK8Zr6syOV_9PXFhxvSBOvVOvxcMVWxbBZpDAAR_a-_vAfpOMf-WwtYebTsk1bELjJsy1MRRrl0yPmUqpswq7uyUP9iqJWnhVqZPHhes5fyfoQhRleFufBzJLBpVbB75JHm7DVL7Gf9x4-nuOCezcSViiM55OpNdN4hZJaRnULXbJLVWwsyL1qZSIC24O2ovKk_f73xe-p2DXa4FPv7C9ovYHxbkOBe-d6lFgYK2WNglSxutA-XEp63jY4L0PhzKy-i1R5"/>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-on-surface leading-tight">Mordecai Stone</h4>
+<p class="text-xs text-on-surface-variant uppercase tracking-tighter">Rakdos Sacrifice</p>
+</div>
+<div class="text-right">
+<p class="text-on-surface font-headline font-bold">51.1%</p>
+<p class="text-[10px] text-on-surface-variant uppercase">Win Rate</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Win Condition Distribution (Visualization) -->
+<section class="lg:col-span-7 space-y-6">
+<div class="flex items-end justify-between border-b border-outline-variant/30 pb-2">
+<h3 class="font-headline text-2xl font-bold uppercase tracking-tight">Victorious Methods</h3>
+<span class="text-primary font-label text-xs uppercase tracking-widest">Global Distribution</span>
+</div>
+<div class="bg-surface-container-low p-8 rounded-2xl relative">
+<!-- Custom Bar Chart Visualization -->
+<div class="space-y-8">
+<div>
+<div class="flex justify-between items-center mb-2">
+<span class="font-label font-bold text-sm tracking-widest uppercase flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="swords">swords</span>
+                                    Combat Damage
+                                </span>
+<span class="text-primary font-headline font-bold">42%</span>
+</div>
+<div class="h-3 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-primary-container" style="width: 42%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-2">
+<span class="font-label font-bold text-sm tracking-widest uppercase flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="magic_button">magic_button</span>
+                                    Combo Finishers
+                                </span>
+<span class="text-secondary font-headline font-bold">28%</span>
+</div>
+<div class="h-3 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-secondary to-secondary-container" style="width: 28%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-2">
+<span class="font-label font-bold text-sm tracking-widest uppercase flex items-center gap-2">
+<span class="material-symbols-outlined text-error text-sm" data-icon="skull">skull</span>
+                                    Commander Damage
+                                </span>
+<span class="text-error font-headline font-bold">18%</span>
+</div>
+<div class="h-3 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-error to-error-container" style="width: 18%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-2">
+<span class="font-label font-bold text-sm tracking-widest uppercase flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-sm" data-icon="coronavirus">coronavirus</span>
+                                    Infect / Other
+                                </span>
+<span class="text-tertiary font-headline font-bold">12%</span>
+</div>
+<div class="h-3 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-tertiary to-tertiary-container" style="width: 12%"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Most Played Decks (Horizontal Scroll Section) -->
+<section class="space-y-6">
+<div class="flex items-end justify-between border-b border-outline-variant/30 pb-2">
+<h3 class="font-headline text-2xl font-bold uppercase tracking-tight">The Meta Library</h3>
+<span class="text-primary font-label text-xs uppercase tracking-widest">Most Played Decks</span>
+</div>
+<div class="flex gap-6 overflow-x-auto no-scrollbar pb-6 -mx-4 px-4">
+<!-- Deck Card 1 -->
+<div class="flex-shrink-0 w-72 bg-surface-container-low rounded-2xl overflow-hidden group border border-outline-variant/10 hover:border-primary/30 transition-all">
+<div class="h-40 relative">
+<img alt="Deck 1" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="ethereal floating ancient library with magical glowing books and deep blue magical essence" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdsO4zVXpF_bbqm_-saTqZ18dRuFoPEguEb-oAdn8MwnQGsGq0oNNTRlA3VSHAxri1Ei8mY5dunYhrOrGjPu1Nfdq7B1S_xcqjJoEYdg3EmEKwt9eB7oU6nPe9lNKy4MIgzwntQ30Jk3ehwJXkKZ1ugOQHNiZZ9HY0Gre-Be5FdDD-BNQmDEBXrpH2eSJwFyyNvbTrPFlTWXWH4Tn3-kOuhuPIP5XTNJ9gaoofl89DcV7EwRz8M3Q3dhPknMqkH9Ot_mGBvpzL7HrA"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-low via-transparent to-transparent"></div>
+<div class="absolute top-4 right-4 flex gap-1">
+<div class="w-6 h-6 rounded-full bg-blue-600 border border-white/20 flex items-center justify-center text-[10px] font-bold">U</div>
+<div class="w-6 h-6 rounded-full bg-red-600 border border-white/20 flex items-center justify-center text-[10px] font-bold">R</div>
+</div>
+</div>
+<div class="p-6">
+<h4 class="font-headline text-xl font-bold uppercase tracking-tighter leading-none mb-1">Mizzix of the Izmagnus</h4>
+<p class="text-on-surface-variant text-xs uppercase tracking-widest font-label mb-4">Izzet Spellslinger</p>
+<div class="flex justify-between items-center text-sm">
+<div class="flex flex-col">
+<span class="text-on-surface-variant text-[10px] uppercase">Pick Rate</span>
+<span class="font-bold">24%</span>
+</div>
+<div class="flex flex-col text-right">
+<span class="text-on-surface-variant text-[10px] uppercase">Games Played</span>
+<span class="font-bold">312</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Deck Card 2 -->
+<div class="flex-shrink-0 w-72 bg-surface-container-low rounded-2xl overflow-hidden group border border-outline-variant/10 hover:border-primary/30 transition-all">
+<div class="h-40 relative">
+<img alt="Deck 2" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="enchanted deep green forest with glowing druidic symbols on ancient trees and soft rays of light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4VpyT-urI7V3WldFzvZG6iXdPVOiXfcP5h6-fUULOFRoPvJgCNniybmDL23ie7nxTGEvJOwKsxqy3SLXlHyqmnxf2_x--QDUUcC3bG_yMMF-sHj-abgidb-0ul_9L24yMKrcnMRwhGyP5uYnjxt3lHENpl4WQYYBUcC320aY7tx3WiEqHp6-CEI0b-IUidi3OcOkeciUa61kndlOpWLvkdDfqnq0ucQKOnkJa0_oOD_LLU2CE5K81Zo_kRoYAAhYAtjJtZSrCxzXM"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-low via-transparent to-transparent"></div>
+<div class="absolute top-4 right-4 flex gap-1">
+<div class="w-6 h-6 rounded-full bg-green-700 border border-white/20 flex items-center justify-center text-[10px] font-bold">G</div>
+<div class="w-6 h-6 rounded-full bg-white border border-black/20 flex items-center justify-center text-[10px] font-bold text-black">W</div>
+</div>
+</div>
+<div class="p-6">
+<h4 class="font-headline text-xl font-bold uppercase tracking-tighter leading-none mb-1">Sythis, Harvest's Hand</h4>
+<p class="text-on-surface-variant text-xs uppercase tracking-widest font-label mb-4">Selesnya Enchantments</p>
+<div class="flex justify-between items-center text-sm">
+<div class="flex flex-col">
+<span class="text-on-surface-variant text-[10px] uppercase">Pick Rate</span>
+<span class="font-bold">18%</span>
+</div>
+<div class="flex flex-col text-right">
+<span class="text-on-surface-variant text-[10px] uppercase">Games Played</span>
+<span class="font-bold">224</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Deck Card 3 -->
+<div class="flex-shrink-0 w-72 bg-surface-container-low rounded-2xl overflow-hidden group border border-outline-variant/10 hover:border-primary/30 transition-all">
+<div class="h-40 relative">
+<img alt="Deck 3" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="dark volcanic landscape with flowing lava and obsidian peaks under a blood red sky" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVdDq8lgRwT6oBgK16IaO-fugMWlYuMbiUX37ARGs3vagojz2otzS0pmEN08stZ0gj9Gzoxsw9fUklVwR_JxwjmmtPSHvej_gLWV6XKu3RdkhY4Z9wmY-E91q0um6Ja16RSh6gEWu8qthg8vML9c0GHHplN7petwkjoJHaD9MoGd4kkfPV7xB_ymF2PulJt6Ru9t2bjhx5D5A1mzzhMFrnyMcPGzNMdZ_AeF7ljzA6bDomTVbkgv3omMYfM5O67whN3Lz0ha64xjri"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-low via-transparent to-transparent"></div>
+<div class="absolute top-4 right-4 flex gap-1">
+<div class="w-6 h-6 rounded-full bg-stone-900 border border-white/20 flex items-center justify-center text-[10px] font-bold text-white">B</div>
+<div class="w-6 h-6 rounded-full bg-red-600 border border-white/20 flex items-center justify-center text-[10px] font-bold">R</div>
+</div>
+</div>
+<div class="p-6">
+<h4 class="font-headline text-xl font-bold uppercase tracking-tighter leading-none mb-1">Prosper, Tome-Bound</h4>
+<p class="text-on-surface-variant text-xs uppercase tracking-widest font-label mb-4">Rakdos Treasures</p>
+<div class="flex justify-between items-center text-sm">
+<div class="flex flex-col">
+<span class="text-on-surface-variant text-[10px] uppercase">Pick Rate</span>
+<span class="font-bold">15%</span>
+</div>
+<div class="flex flex-col text-right">
+<span class="text-on-surface-variant text-[10px] uppercase">Games Played</span>
+<span class="font-bold">189</span>
+</div>
+</div>
+</div>
+</div>
+<!-- View More Ghost Card -->
+<div class="flex-shrink-0 w-72 bg-surface-container-lowest border-2 border-dashed border-outline-variant/30 rounded-2xl flex flex-col items-center justify-center group cursor-pointer hover:border-primary/50 transition-colors">
+<span class="material-symbols-outlined text-4xl text-on-surface-variant group-hover:text-primary transition-colors mb-2" data-icon="library_books">library_books</span>
+<span class="font-headline font-bold uppercase tracking-widest text-sm text-on-surface-variant group-hover:text-primary">View Library</span>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-2 bg-[#1c1102]/90 backdrop-blur-xl shadow-[0_-10px_30px_rgba(0,0,0,0.8)] border-t border-[#c99e55]/10">
+<button class="flex flex-col items-center justify-center text-[#c99e55]/40 px-4 py-1 hover:bg-[#c99e55]/5 scale-98 active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-['Manrope'] text-[10px] font-bold uppercase tracking-tighter">Players</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#c99e55]/40 px-4 py-1 hover:bg-[#c99e55]/5 scale-98 active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="style">style</span>
+<span class="font-['Manrope'] text-[10px] font-bold uppercase tracking-tighter">Decks</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-gradient-to-br from-[#eebf73]/20 to-transparent text-[#eebf73] rounded-xl px-4 py-1 shadow-[0_0_15px_rgba(238,191,115,0.1)] scale-98 active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="leaderboard" style="font-variation-settings: 'FILL' 1;">leaderboard</span>
+<span class="font-['Manrope'] text-[10px] font-bold uppercase tracking-tighter">Stats</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#c99e55]/40 px-4 py-1 hover:bg-[#c99e55]/5 scale-98 active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-['Manrope'] text-[10px] font-bold uppercase tracking-tighter">Settings</span>
+</button>
+</nav>
+</body></html>

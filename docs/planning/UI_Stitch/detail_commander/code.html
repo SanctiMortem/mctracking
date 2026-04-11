@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Mystic Archive - Atemsis, All-Seeing</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Manrope:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: #1c1102;
+        }
+        .headline-font {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#ffb3ad",
+                        "surface-container-high": "#352813",
+                        "on-tertiary-fixed": "#410004",
+                        "tertiary-container": "#ff7e77",
+                        "secondary": "#9ecaff",
+                        "on-secondary-container": "#c6deff",
+                        "error-container": "#93000a",
+                        "surface-container-highest": "#41321d",
+                        "primary-container": "#c99e55",
+                        "secondary-container": "#0164a7",
+                        "on-primary-fixed": "#281900",
+                        "on-secondary-fixed-variant": "#00497c",
+                        "tertiary-fixed": "#ffdad7",
+                        "inverse-surface": "#f7dfbf",
+                        "outline": "#9b8f7f",
+                        "on-tertiary-fixed-variant": "#930013",
+                        "surface-container-low": "#251906",
+                        "on-primary-fixed-variant": "#5f4100",
+                        "on-error": "#690005",
+                        "on-background": "#f7dfbf",
+                        "surface-bright": "#453721",
+                        "on-primary": "#422c00",
+                        "primary-fixed": "#ffdeab",
+                        "surface-variant": "#41321d",
+                        "on-secondary": "#003258",
+                        "on-primary-container": "#503600",
+                        "secondary-fixed": "#d1e4ff",
+                        "surface-dim": "#1c1102",
+                        "on-tertiary": "#68000a",
+                        "on-surface": "#f7dfbf",
+                        "surface-container-lowest": "#160c00",
+                        "on-secondary-fixed": "#001d36",
+                        "outline-variant": "#4e4538",
+                        "inverse-primary": "#7b5815",
+                        "surface": "#1c1102",
+                        "on-error-container": "#ffdad6",
+                        "error": "#ffb4ab",
+                        "surface-tint": "#eebf73",
+                        "primary": "#eebf73",
+                        "secondary-fixed-dim": "#9ecaff",
+                        "background": "#1c1102",
+                        "inverse-on-surface": "#3c2e19",
+                        "surface-container": "#2a1d09",
+                        "tertiary": "#ffb3ad",
+                        "primary-fixed-dim": "#eebf73",
+                        "on-tertiary-container": "#7c000e",
+                        "on-surface-variant": "#d2c4b3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Manrope"],
+                        "label": ["Manrope"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#1c1102]/80 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+<div class="flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full border border-primary/30 overflow-hidden scale-95 active:scale-90 transition-transform cursor-pointer">
+<img alt="User Avatar" data-alt="Close-up portrait of a fantasy scholar with ornate golden spectacles and a velvet hood, soft candlelight illumination" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCjYRHTSo8-VJMRqQhio9McZ1yLyfB3Vr19J2f9IZJG14DuGEylfYCYuzO9sNcowgL2TFid9RMtjpM-VZx66YIQJgieM_te9TdAm9W6MGWcLg7j5BzgsKVeKYt3Bc9R1TXjDkWBb_yE9uVmbZBFD1W4ka2hBsINNiKz-Jx008GxnMrXtebR9BT1nFQwYBmGXd8X9PIfUnPCAozNfb5UPv5_EoM4q3_28tdN6kex5BpwFDY0oR3yOtUFADwtPU-REdHHkOmxNcE_T6s"/>
+</div>
+<h1 class="text-2xl font-black text-[#eebf73] drop-shadow-[0_0_10px_rgba(238,191,115,0.3)] font-['Space_Grotesk'] tracking-tight">The Mystic Archive</h1>
+</div>
+<div class="flex items-center gap-6">
+<nav class="hidden md:flex gap-8 items-center font-['Space_Grotesk'] font-bold">
+<a class="text-slate-400 hover:text-[#c99e55] transition-colors" href="#">Home</a>
+<a class="text-[#eebf73] hover:text-[#c99e55] transition-colors" href="#">Commander</a>
+<a class="text-slate-400 hover:text-[#c99e55] transition-colors" href="#">Decks</a>
+</nav>
+<button class="material-symbols-outlined text-[#eebf73] scale-95 active:scale-90 transition-transform">settings</button>
+</div>
+</div>
+</header>
+<main class="pt-24 px-6 max-w-7xl mx-auto">
+<!-- Hero Section: Asymmetric Layout -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start mt-8">
+<!-- Left: Card Image with Glassmorphism Backdrop -->
+<div class="lg:col-span-5 sticky top-28">
+<div class="relative group">
+<div class="absolute -inset-4 bg-primary/10 blur-3xl rounded-full opacity-50 group-hover:opacity-100 transition-opacity"></div>
+<div class="relative rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-outline-variant/20">
+<img alt="Commander Card" class="w-full h-auto transform group-hover:scale-105 transition-transform duration-700" data-alt="High-detail fantasy card illustration of Atemsis All-Seeing, a giant ethereal sphinx with multiple glowing eyes, hovering over a mystic library" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLxHQ1n38f4OYiAIJsv8VCeQfmPgEm9XataFFMaFRw8D-WJBGfOz-o_MaEbrRz1Ns7lh8Q6-PJYp0bx8Ojc6tIH2Hnh5La_eUcSYBk6FcDGUq5dxc49_yrC0I3qE8mo6qZc4ArkRGCmkcRN-isJpXCnWltHem1aVj-DL-PU9BD1_T1Kia51gkJB0nOu-AeemJpJVzGLycYUIDsQDmV_h52SmWMJ9oKgS-3zOp6Yml5hVCSySk-bddVzIoVX07wQw75QFqL-TQI9IfC"/>
+</div>
+<!-- Mana Identity Floating Badges -->
+<div class="absolute top-4 left-4 flex gap-2">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center shadow-lg border border-white/10" title="Blue Mana">
+<span class="text-white font-bold text-xs">U</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Content & Stats -->
+<div class="lg:col-span-7 flex flex-col gap-10">
+<!-- Headline & Primary Stat -->
+<div class="flex flex-col gap-2">
+<span class="font-['Manrope'] text-primary uppercase tracking-[0.3em] text-xs font-bold">Legendary Creature — Sphinx</span>
+<h2 class="text-6xl md:text-8xl font-black headline-font text-on-surface leading-none tracking-tighter">
+                        Atemsis, <span class="text-primary">All-Seeing</span>
+</h2>
+<p class="text-on-surface-variant text-lg max-w-xl mt-4 font-light leading-relaxed">
+                        Whenever Atemsis, All-Seeing deals damage to a player, you may reveal your hand. If cards with at least six different mana values are revealed this way, that player loses the game.
+                    </p>
+</div>
+<!-- Bento Grid Stats Section -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="bg-surface-container-low p-6 rounded-2xl flex flex-col items-center justify-center gap-2 group hover:bg-surface-container-high transition-all">
+<span class="text-primary-container font-headline font-bold text-3xl">62.4%</span>
+<span class="text-slate-500 uppercase text-[10px] tracking-widest font-bold">Win Rate</span>
+</div>
+<div class="bg-surface-container-low p-6 rounded-2xl flex flex-col items-center justify-center gap-2 group hover:bg-surface-container-high transition-all">
+<span class="text-on-surface font-headline font-bold text-3xl">1.2k</span>
+<span class="text-slate-500 uppercase text-[10px] tracking-widest font-bold">Total Games</span>
+</div>
+<div class="bg-surface-container-low p-6 rounded-2xl flex flex-col items-center justify-center gap-2 group hover:bg-surface-container-high transition-all">
+<span class="text-on-surface font-headline font-bold text-3xl">4.2</span>
+<span class="text-slate-500 uppercase text-[10px] tracking-widest font-bold">Avg Salt</span>
+</div>
+<div class="bg-surface-container-low p-6 rounded-2xl flex flex-col items-center justify-center gap-2 group hover:bg-surface-container-high transition-all">
+<span class="text-on-surface font-headline font-bold text-3xl">#42</span>
+<span class="text-slate-500 uppercase text-[10px] tracking-widest font-bold">Rank</span>
+</div>
+</div>
+<!-- Featured Decks: Glassmorphism Cards -->
+<div class="flex flex-col gap-6">
+<h3 class="headline-font font-bold text-2xl flex items-center gap-3">
+<span class="w-8 h-px bg-primary"></span>
+                        Top Performing Decks
+                    </h3>
+<div class="space-y-4">
+<div class="bg-surface-container-low rounded-2xl p-4 flex items-center justify-between hover:translate-x-2 transition-transform cursor-pointer">
+<div class="flex items-center gap-5">
+<div class="w-16 h-16 rounded-xl bg-surface-container-highest overflow-hidden">
+<img alt="Deck 1" class="w-full h-full object-cover" data-alt="Abstract mystical energy orb with blue and purple nebula swirls, cinematic lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBI3bw_gbcAEOcMndlleDN4_AcvF9Rvel45HcCA4hbcb7IViJ-JiZ7XVaGnLWOui8TecFkDCZJi4o5EBTrX3yzbreaBhW7YQWG3WPl6Aubc7ZjpUpvXfegc7zzgEBcquRZlge6WHni0BNflwSEZtfs0f-G8MiEqK9VIB7V-2-1C8EOX1QRPu_VwAUHxtRHOclU8BOC-oU2A5QH0g35LYE6gjpvJKS_qu0372XdSDCkadFgMf519Dcx8ajROmVUVd1pp-F7656daOWuJ"/>
+</div>
+<div>
+<h4 class="font-bold text-lg text-on-surface">Sphinx Tribal Control</h4>
+<p class="text-sm text-slate-500">68% Win Rate • 45 Games</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary">arrow_forward_ios</span>
+</div>
+<div class="bg-surface-container-low rounded-2xl p-4 flex items-center justify-between hover:translate-x-2 transition-transform cursor-pointer">
+<div class="flex items-center gap-5">
+<div class="w-16 h-16 rounded-xl bg-surface-container-highest overflow-hidden">
+<img alt="Deck 2" class="w-full h-full object-cover" data-alt="Close up of ancient weathered scrolls on a dark wooden table, dusty library atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZPrD2WMbyIn13QXRcg6iJjmUuIcZbGViTghbi4o__lEMCPuf0jVjPFOkEUJRDiI7Jx7_Ijb-r3xnnthiSgumr-mt7CATtQOW9DIG6sotbxTHEkqmltSxS5DMPpY-BvpRRhuihKsPIV759NLLluOk-6b-Pp7EF9Mo4cH67tLBMIDQn4v7TGg_4jMpCw0epY8Ku2oVzOsNT2Cm81AHnh46dmh3v7yU3WeoBXzpN1fp-18o1GTnX2tuuEOZoPoNNQ75Umd3t4kQyGmSN"/>
+</div>
+<div>
+<h4 class="font-bold text-lg text-on-surface">The Hand Reveal Stompy</h4>
+<p class="text-sm text-slate-500">59% Win Rate • 112 Games</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary">arrow_forward_ios</span>
+</div>
+</div>
+</div>
+<!-- Top Piloting Players -->
+<div class="flex flex-col gap-6">
+<h3 class="headline-font font-bold text-2xl flex items-center gap-3">
+<span class="w-8 h-px bg-primary"></span>
+                        Master Pilots
+                    </h3>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div class="bg-surface-container p-4 rounded-full flex items-center gap-4 border border-outline-variant/10">
+<img alt="Player 1" class="w-10 h-10 rounded-full" data-alt="Stylized portrait avatar of a gamer with neon blue backlighting, futuristic aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhd0Qi3D59yQUJ8uCSReZwLTdQiOkGI4eUF9YmTx55ubr3QRdw7EnPyMMLG3OClzl18YlkagScZFThK2qotn2dV2tTZ4QBvpNGJaNeZequIBGXZ0iuDdcz6cKAeZHLhK4zqOAKhqI1e5BZ19EtHmzKJ-cmvpepzVTso7BcPzZGhbqMlvMGFYj6vTiR9DgSvzZjQTy3TBY9So5_-Z1ZCl2Bh3QHkwygr27ahXkGKwTeLtsArZdySMWvWGe8dXkjGDLW-Y_8b5G3MR1q"/>
+<div>
+<div class="font-bold text-sm">Archmage_Zephyr</div>
+<div class="text-[10px] text-primary uppercase font-bold tracking-widest">Grandmaster</div>
+</div>
+</div>
+<div class="bg-surface-container p-4 rounded-full flex items-center gap-4 border border-outline-variant/10">
+<img alt="Player 2" class="w-10 h-10 rounded-full" data-alt="Stylized portrait avatar of a woman with mystical silver hair and glowing blue eyes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdz1m8thkh4cDLH5xQEdahQZd6aFPIByrW1wkKJJO9jRYURRwnE9_HNHcHdJ3K4TBLF-VOCl0-9-sl2PHLoIARhG2vvRyJAdFaiuvq0Xy5SlecVXXus9-qPB5Jha7DovSO2FHM0gE3KkMgqxZT3Z0qQpG8uLMRxgynMspQy5rspqQHNgWKuihJ9F-vaC_w3iA4hyQ7iK3Iq0JdffhDrT351menopULKAlyI_4dkj6ukyP47TEJDHpYpedOe9zGdw-hz7vrqiUukX_j"/>
+<div>
+<div class="font-bold text-sm">SphinxWhisperer</div>
+<div class="text-[10px] text-primary uppercase font-bold tracking-widest">Master III</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#1c1102]/90 backdrop-blur-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.8)] rounded-t-3xl border-t border-[#c99e55]/10">
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-70 hover:opacity-100 hover:text-[#eebf73] cursor-pointer">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Manrope'] text-[10px] uppercase tracking-widest font-semibold mt-1">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-70 hover:opacity-100 hover:text-[#eebf73] cursor-pointer">
+<span class="material-symbols-outlined">group</span>
+<span class="font-['Manrope'] text-[10px] uppercase tracking-widest font-semibold mt-1">Players</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-[#c99e55]/20 text-[#eebf73] rounded-xl px-3 py-1 shadow-[0_0_15px_rgba(238,191,115,0.2)] active:scale-95 duration-200 ease-out cursor-pointer">
+<span class="material-symbols-outlined">style</span>
+<span class="font-['Manrope'] text-[10px] uppercase tracking-widest font-semibold mt-1">Decks</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-70 hover:opacity-100 hover:text-[#eebf73] cursor-pointer">
+<span class="material-symbols-outlined">history</span>
+<span class="font-['Manrope'] text-[10px] uppercase tracking-widest font-semibold mt-1">History</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-70 hover:opacity-100 hover:text-[#eebf73] cursor-pointer">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="font-['Manrope'] text-[10px] uppercase tracking-widest font-semibold mt-1">Stats</span>
+</div>
+</nav>
+</body></html>

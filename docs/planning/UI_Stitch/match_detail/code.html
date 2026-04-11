@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Match Detail | The Mystic Archive</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed": "#ffdeab",
+                    "on-secondary-fixed": "#001d36",
+                    "primary-container": "#c99e55",
+                    "inverse-surface": "#f7dfbf",
+                    "primary": "#eebf73",
+                    "error": "#ffb4ab",
+                    "on-surface": "#f7dfbf",
+                    "on-surface-variant": "#d2c4b3",
+                    "inverse-primary": "#7b5815",
+                    "background": "#1c1102",
+                    "tertiary-fixed-dim": "#ffb3ad",
+                    "on-tertiary-fixed": "#410004",
+                    "on-background": "#f7dfbf",
+                    "on-tertiary-fixed-variant": "#930013",
+                    "surface": "#1c1102",
+                    "error-container": "#93000a",
+                    "on-primary-fixed": "#281900",
+                    "on-error-container": "#ffdad6",
+                    "surface-variant": "#41321d",
+                    "secondary": "#9ecaff",
+                    "outline": "#9b8f7f",
+                    "on-tertiary-container": "#7c000e",
+                    "primary-fixed-dim": "#eebf73",
+                    "surface-dim": "#1c1102",
+                    "on-primary-container": "#503600",
+                    "tertiary-fixed": "#ffdad7",
+                    "surface-tint": "#eebf73",
+                    "on-secondary-fixed-variant": "#00497c",
+                    "secondary-fixed": "#d1e4ff",
+                    "on-primary-fixed-variant": "#5f4100",
+                    "surface-bright": "#453721",
+                    "outline-variant": "#4e4538",
+                    "on-primary": "#422c00",
+                    "tertiary": "#ffb3ad",
+                    "on-tertiary": "#68000a",
+                    "on-error": "#690005",
+                    "surface-container-high": "#352813",
+                    "tertiary-container": "#ff7e77",
+                    "on-secondary": "#003258",
+                    "surface-container-lowest": "#160c00",
+                    "inverse-on-surface": "#3c2e19",
+                    "secondary-container": "#0164a7",
+                    "surface-container-low": "#251906",
+                    "surface-container-highest": "#41321d",
+                    "surface-container": "#2a1d09",
+                    "secondary-fixed-dim": "#9ecaff",
+                    "on-secondary-container": "#c6deff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Space Grotesk"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #1c1102;
+            color: #f7dfbf;
+            font-family: 'Manrope', sans-serif;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#1c1102] dark:bg-[#1c1102] bg-gradient-to-b from-[#c99e55]/10 to-transparent shadow-[0_0_20px_rgba(201,158,85,0.1)]">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 duration-150 text-[#eebf73] transition-colors">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-['Space_Grotesk'] font-bold tracking-tight uppercase text-[#eebf73] text-xl">The Mystic Archive</h1>
+</div>
+<button class="active:scale-95 duration-150 text-[#eebf73] transition-colors">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</header>
+<main class="pt-24 px-4 max-w-5xl mx-auto">
+<!-- Summary Header Section -->
+<section class="relative overflow-hidden rounded-xl bg-surface-container-low mb-8 shadow-[0_0_40px_rgba(0,0,0,0.4)]">
+<div class="absolute inset-0 opacity-20">
+<img alt="Magic cards and textures" class="w-full h-full object-cover" data-alt="Abstract ethereal magical energy swirling with dark metallic textures and golden particles in a cinematic atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDb7MSVyaabQP-FBUw-zrt1n0k0wwBMzdfeURkHvq1eq4qzTuDC98cO1Djm4YWvHUBiG8AIDwe5NjADElQX3HkFGLgYNyWRZqJUKYEn1IVa8yjvWkT391oYZkdlan2mNDjUgzAxlXKv67R1eZVHh0a9_40SFBDrUWD3IZ5iX8H6tjqzSU5nMVA6vKUka11RhnxgOu2_BrFPsW6nkdff3p-mFT9FeA58hGF4DIVVgRPejBGBOPCmsgChsUaZAbM4us88uXTwiz6P92St"/>
+</div>
+<div class="relative z-10 p-8 flex flex-col md:flex-row items-center justify-between gap-8 bg-gradient-to-r from-surface-container-low via-transparent to-transparent">
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-2">
+<span class="bg-primary/20 text-primary px-3 py-0.5 rounded-full text-[10px] font-bold tracking-widest uppercase border border-primary/10">COMMANDER</span>
+<span class="text-on-surface-variant text-xs font-medium">OCT 24, 2023 • 1H 42M</span>
+</div>
+<h2 class="font-headline text-4xl md:text-6xl font-bold text-on-surface leading-tight mb-4 tracking-tighter">Match Result</h2>
+<div class="flex flex-col gap-1">
+<span class="text-on-surface-variant text-sm uppercase tracking-widest font-semibold">Victor</span>
+<div class="flex items-center gap-3">
+<span class="font-headline text-2xl font-bold text-primary">Kaelen the Wise</span>
+<div class="flex gap-1">
+<span class="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></span>
+<span class="w-3 h-3 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]"></span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-center">
+<div class="relative group">
+<div class="absolute -inset-4 bg-primary/20 blur-2xl rounded-full opacity-50 group-hover:opacity-75 transition-opacity"></div>
+<div class="relative w-32 h-32 md:w-48 md:h-48 rounded-full border-4 border-primary bg-surface-container-highest flex items-center justify-center">
+<span class="font-headline text-5xl md:text-7xl font-extrabold text-primary drop-shadow-[0_0_15px_rgba(238,191,115,0.5)]">VICTORY</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Participants Bento Grid -->
+<h3 class="font-headline text-xl font-bold uppercase tracking-widest text-[#c99e55] mb-6 px-2">Final Stats</h3>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
+<!-- Player 1 (Winner) -->
+<div class="bg-surface-container-highest rounded-xl p-5 border border-primary/20 shadow-lg">
+<div class="flex justify-between items-start mb-4">
+<span class="text-xs font-bold text-primary tracking-widest uppercase">Winner</span>
+<span class="material-symbols-outlined text-primary" data-icon="workspace_premium" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+</div>
+<p class="font-headline text-lg font-bold truncate">Kaelen</p>
+<p class="text-on-surface-variant text-xs mb-4">The Wise Grimoire</p>
+<div class="space-y-2">
+<div class="flex justify-between text-xs">
+<span class="text-on-surface-variant">Life</span>
+<span class="font-bold text-primary">28</span>
+</div>
+<div class="w-full h-1 bg-surface-container-low rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[70%]"></div>
+</div>
+<div class="flex justify-between text-[10px] pt-1">
+<span class="text-on-surface-variant/60 uppercase">Poison: 0</span>
+<span class="text-on-surface-variant/60 uppercase">Tax: 2</span>
+</div>
+</div>
+</div>
+<!-- Player 2 -->
+<div class="bg-surface-container rounded-xl p-5 hover:bg-surface-container-high transition-colors">
+<div class="flex justify-between items-start mb-4">
+<span class="text-xs font-bold text-on-surface-variant/40 tracking-widest uppercase">Defeated</span>
+</div>
+<p class="font-headline text-lg font-bold truncate">Valerius</p>
+<p class="text-on-surface-variant text-xs mb-4">Sunblade Legion</p>
+<div class="space-y-2 opacity-60">
+<div class="flex justify-between text-xs">
+<span class="text-on-surface-variant">Life</span>
+<span class="font-bold">0</span>
+</div>
+<div class="w-full h-1 bg-surface-container-low rounded-full overflow-hidden">
+<div class="bg-error h-full w-[0%]"></div>
+</div>
+<div class="flex justify-between text-[10px] pt-1">
+<span class="text-on-surface-variant/60 uppercase">Poison: 3</span>
+<span class="text-on-surface-variant/60 uppercase">Tax: 6</span>
+</div>
+</div>
+</div>
+<!-- Player 3 -->
+<div class="bg-surface-container rounded-xl p-5 hover:bg-surface-container-high transition-colors">
+<div class="flex justify-between items-start mb-4">
+<span class="text-xs font-bold text-on-surface-variant/40 tracking-widest uppercase">Defeated</span>
+</div>
+<p class="font-headline text-lg font-bold truncate">Xyla</p>
+<p class="text-on-surface-variant text-xs mb-4">Void Weaver</p>
+<div class="space-y-2 opacity-60">
+<div class="flex justify-between text-xs">
+<span class="text-on-surface-variant">Life</span>
+<span class="font-bold">0</span>
+</div>
+<div class="w-full h-1 bg-surface-container-low rounded-full overflow-hidden">
+<div class="bg-error h-full w-[0%]"></div>
+</div>
+<div class="flex justify-between text-[10px] pt-1">
+<span class="text-on-surface-variant/60 uppercase">Poison: 10</span>
+<span class="text-on-surface-variant/60 uppercase">Tax: 4</span>
+</div>
+</div>
+</div>
+<!-- Player 4 -->
+<div class="bg-surface-container rounded-xl p-5 hover:bg-surface-container-high transition-colors">
+<div class="flex justify-between items-start mb-4">
+<span class="text-xs font-bold text-on-surface-variant/40 tracking-widest uppercase">Defeated</span>
+</div>
+<p class="font-headline text-lg font-bold truncate">Morg</p>
+<p class="text-on-surface-variant text-xs mb-4">Swamp Dread</p>
+<div class="space-y-2 opacity-60">
+<div class="flex justify-between text-xs">
+<span class="text-on-surface-variant">Life</span>
+<span class="font-bold">0</span>
+</div>
+<div class="w-full h-1 bg-surface-container-low rounded-full overflow-hidden">
+<div class="bg-error h-full w-[0%]"></div>
+</div>
+<div class="flex justify-between text-[10px] pt-1">
+<span class="text-on-surface-variant/60 uppercase">Poison: 0</span>
+<span class="text-on-surface-variant/60 uppercase">Tax: 0</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Event Log Timeline -->
+<div class="flex flex-col md:flex-row gap-8">
+<div class="md:w-2/3">
+<h3 class="font-headline text-xl font-bold uppercase tracking-widest text-[#c99e55] mb-6 px-2">Battle Timeline</h3>
+<div class="space-y-1 relative before:absolute before:left-[19px] before:top-2 before:bottom-2 before:w-[2px] before:bg-surface-container-highest">
+<!-- Event 1 -->
+<div class="relative pl-12 pb-8">
+<div class="absolute left-0 top-1 w-10 h-10 rounded-full bg-surface-container-highest border border-primary/30 flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-primary text-xl" data-icon="skull">skull</span>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl border-l-4 border-error">
+<div class="flex justify-between items-center mb-1">
+<span class="font-headline font-bold text-on-surface">Morg eliminated</span>
+<span class="text-[10px] font-mono text-on-surface-variant">01:34:12</span>
+</div>
+<p class="text-sm text-on-surface-variant">Lethal damage dealt by <span class="text-primary font-bold">Kaelen</span> (Commander Damage).</p>
+</div>
+</div>
+<!-- Event 2 -->
+<div class="relative pl-12 pb-8">
+<div class="absolute left-0 top-1 w-10 h-10 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-secondary text-xl" data-icon="ecg_heart">ecg_heart</span>
+</div>
+<div class="bg-surface-container p-4 rounded-xl">
+<div class="flex justify-between items-center mb-1">
+<span class="font-headline font-bold text-on-surface">Mass Life Shift</span>
+<span class="text-[10px] font-mono text-on-surface-variant">01:12:05</span>
+</div>
+<div class="grid grid-cols-2 gap-2 mt-2">
+<div class="flex items-center gap-2">
+<span class="text-error text-xs font-bold">-12</span>
+<span class="text-[10px] text-on-surface-variant uppercase">Xyla</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-secondary text-xs font-bold">+12</span>
+<span class="text-[10px] text-on-surface-variant uppercase">Valerius</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Event 3 -->
+<div class="relative pl-12 pb-8">
+<div class="absolute left-0 top-1 w-10 h-10 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-error text-xl" data-icon="biotech">biotech</span>
+</div>
+<div class="bg-surface-container p-4 rounded-xl">
+<div class="flex justify-between items-center mb-1">
+<span class="font-headline font-bold text-on-surface">Poison Threshold</span>
+<span class="text-[10px] font-mono text-on-surface-variant">00:45:18</span>
+</div>
+<p class="text-sm text-on-surface-variant">Xyla reaches <span class="text-error font-bold">8 Poison counters</span>.</p>
+</div>
+</div>
+<!-- Event 4 -->
+<div class="relative pl-12">
+<div class="absolute left-0 top-1 w-10 h-10 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-on-surface-variant text-xl" data-icon="play_circle">play_circle</span>
+</div>
+<div class="bg-surface-container p-4 rounded-xl">
+<div class="flex justify-between items-center mb-1">
+<span class="font-headline font-bold text-on-surface">Game Started</span>
+<span class="text-[10px] font-mono text-on-surface-variant">00:00:00</span>
+</div>
+<p class="text-sm text-on-surface-variant">All players started with 40 Life.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Meta Stats Sidebar -->
+<div class="md:w-1/3">
+<h3 class="font-headline text-xl font-bold uppercase tracking-widest text-[#c99e55] mb-6 px-2">Game Info</h3>
+<div class="space-y-4">
+<div class="bg-surface-container-low rounded-xl p-6">
+<h4 class="text-[10px] font-bold text-primary uppercase tracking-widest mb-4">Mana Efficiency</h4>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between text-xs mb-1">
+<span class="text-on-surface-variant">Average Turn</span>
+<span class="text-on-surface font-bold">6.2m</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full">
+<div class="bg-primary-container h-full w-[65%] rounded-full"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs mb-1">
+<span class="text-on-surface-variant">Spells Cast</span>
+<span class="text-on-surface font-bold">142 Total</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full">
+<div class="bg-primary-container h-full w-[85%] rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container rounded-xl p-6 relative overflow-hidden">
+<div class="absolute -right-4 -bottom-4 opacity-5 rotate-12">
+<span class="material-symbols-outlined text-9xl" data-icon="history_edu">history_edu</span>
+</div>
+<h4 class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">Location</h4>
+<p class="font-headline text-lg font-bold">Dragon's Hoard Games</p>
+<p class="text-xs text-on-surface-variant">Table 4 • Pod Alpha</p>
+</div>
+<button class="w-full py-4 rounded-xl bg-surface-container-highest text-primary font-bold text-xs uppercase tracking-[0.2em] hover:bg-primary/10 transition-colors border border-primary/20 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="share">share</span>
+                        Export Archive
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-2 bg-[#1c1102]/90 backdrop-blur-xl border-t border-[#c99e55]/10 shadow-[0_-5px_25px_rgba(0,0,0,0.5)] rounded-t-2xl">
+<a class="flex flex-col items-center justify-center text-[#c99e55]/40 px-4 py-1.5 hover:bg-[#c99e55]/10" href="#">
+<span class="material-symbols-outlined" data-icon="swords">swords</span>
+<span class="font-['Manrope'] text-[10px] font-semibold uppercase tracking-tighter">Matches</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#c99e55]/20 text-[#eebf73] rounded-xl px-4 py-1.5 shadow-[0_0_15px_rgba(238,191,115,0.2)]" href="#">
+<span class="material-symbols-outlined" data-icon="history_edu">history_edu</span>
+<span class="font-['Manrope'] text-[10px] font-semibold uppercase tracking-tighter">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c99e55]/40 px-4 py-1.5 hover:bg-[#c99e55]/10" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-['Manrope'] text-[10px] font-semibold uppercase tracking-tighter">Profile</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c99e55]/40 px-4 py-1.5 hover:bg-[#c99e55]/10" href="#">
+<span class="material-symbols-outlined" data-icon="style">style</span>
+<span class="font-['Manrope'] text-[10px] font-semibold uppercase tracking-tighter">Collection</span>
+</a>
+</nav>
+</body></html>

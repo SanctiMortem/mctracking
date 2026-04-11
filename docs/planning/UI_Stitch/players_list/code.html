@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Players - Mystic Archive</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#f7dfbf",
+                        "surface": "#1c1102",
+                        "surface-container-lowest": "#160c00",
+                        "tertiary-fixed": "#ffdad7",
+                        "on-tertiary-fixed": "#410004",
+                        "on-surface-variant": "#d2c4b3",
+                        "surface-container-highest": "#41321d",
+                        "on-background": "#f7dfbf",
+                        "on-primary-container": "#503600",
+                        "tertiary-fixed-dim": "#ffb3ad",
+                        "surface-container": "#2a1d09",
+                        "inverse-on-surface": "#3c2e19",
+                        "primary-container": "#c99e55",
+                        "on-primary-fixed": "#281900",
+                        "secondary-container": "#0164a7",
+                        "primary": "#eebf73",
+                        "error": "#ffb4ab",
+                        "surface-container-low": "#251906",
+                        "primary-fixed-dim": "#eebf73",
+                        "on-secondary-fixed": "#001d36",
+                        "inverse-primary": "#7b5815",
+                        "surface-tint": "#eebf73",
+                        "background": "#1c1102",
+                        "surface-dim": "#1c1102",
+                        "on-primary-fixed-variant": "#5f4100",
+                        "on-secondary-fixed-variant": "#00497c",
+                        "tertiary-container": "#ff7e77",
+                        "secondary": "#9ecaff",
+                        "on-tertiary-container": "#7c000e",
+                        "secondary-fixed-dim": "#9ecaff",
+                        "inverse-surface": "#f7dfbf",
+                        "on-error": "#690005",
+                        "surface-container-high": "#352813",
+                        "on-secondary": "#003258",
+                        "surface-bright": "#453721",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed": "#d1e4ff",
+                        "on-tertiary-fixed-variant": "#930013",
+                        "outline-variant": "#4e4538",
+                        "on-secondary-container": "#c6deff",
+                        "outline": "#9b8f7f",
+                        "surface-variant": "#41321d",
+                        "primary-fixed": "#ffdeab",
+                        "error-container": "#93000a",
+                        "on-primary": "#422c00",
+                        "on-tertiary": "#68000a",
+                        "tertiary": "#ffb3ad"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Manrope"],
+                        "label": ["Manrope"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: #1c1102;
+            color: #f7dfbf;
+        }
+        .text-legendary {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .glass-card {
+            background: rgba(65, 50, 29, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface selection:bg-primary selection:text-on-primary">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#1c1102] dark:bg-[#1c1102] shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#eebf73] cursor-pointer active:scale-90 transition-transform">menu</span>
+<h1 class="text-2xl font-black text-[#c99e55] drop-shadow-[0_0_10px_rgba(238,191,115,0.3)] font-['Space_Grotesk'] font-bold tracking-widest uppercase">MYSTIC ARCHIVE</h1>
+</div>
+<div class="h-10 w-10 rounded-full border border-primary/20 overflow-hidden shadow-[0_0_15px_rgba(238,191,115,0.2)] active:scale-90 transition-transform cursor-pointer">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Portrait of a wizard-like scholar with gold glowing eyes and ethereal robes against a dark cosmic background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA88U1r3ylZDNvMDUhKo8MBjApKZrxpP6hzuu0F_WExnKZuDeq1b5vV8w-sQ-RZ5ZdBPyxK3R5RPBsXJbERfZjLwDHAjFJCc9OxZsu-8SF2bPAP-cHH1WHiZDPo1gLvJQFb__Jy70xYGYBTL0xz8ZfX5brgwI0skK1pvx97Cu2q1t8OW7tbICQZhIxhaqpjgoPma-kpe-VQzlKYUdVne8VBT-K6ZPZnEuZKEWYA24Wk3VeU6jgJN0-GY41B7tg_2BV58Jmw0uuks4bf"/>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="pt-24 pb-32 px-6 max-w-5xl mx-auto min-h-screen">
+<!-- Header Section -->
+<div class="flex justify-between items-end mb-10">
+<div>
+<p class="text-primary font-bold tracking-[0.2em] text-xs uppercase mb-1">Commanders Circle</p>
+<h2 class="text-4xl md:text-6xl font-headline font-bold text-on-surface tracking-tight">Players</h2>
+</div>
+<button class="bg-gradient-to-br from-primary to-primary-container text-on-primary px-6 py-3 rounded-xl flex items-center gap-2 font-bold shadow-[0_10px_20px_rgba(238,191,115,0.15)] active:scale-95 transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'wght' 700;">person_add</span>
+<span class="hidden md:block">Add Player</span>
+</button>
+</div>
+<!-- Players Grid (Asymmetric Bento Layout) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Player Card 1: Top Player (Featured Size) -->
+<div class="md:col-span-2 glass-card rounded-2xl p-8 relative overflow-hidden group border border-primary/5">
+<div class="absolute -right-12 -top-12 w-64 h-64 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors duration-500"></div>
+<div class="relative z-10 flex flex-col md:flex-row md:items-center gap-8">
+<div class="relative">
+<div class="w-32 h-32 rounded-2xl overflow-hidden shadow-[0_0_30px_rgba(238,191,115,0.2)]">
+<img class="w-full h-full object-cover" data-alt="Close-up portrait of a fantasy warrior with golden armor and stoic expression, cinematic fantasy lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCz2zbyeTJODM4xytUJpWHB-tODaOL0LS3QwGWKB4fshF7sWSkbeisyCJEkmyy7wW_5hUI-57gDw2dNKnyuxKh8q84tr1SWoCUffqQiSzK6v0MUH4lzjWeQ6NwQ5pTDN2v8-15iCFDuN6IsLwTeHExPhT5wiQO6LiB9Xibp-Vsj3KbCmPGmPG3FOtEfUcfwfGH9vhe2kX9vXkC7PxzNM-d4xQDrnbucn6qfRFBE9HNv7-tU1x7nTxLl3ZFVig0OoNs91_1fm22PNKYp"/>
+</div>
+<div class="absolute -bottom-2 -right-2 bg-primary text-on-primary px-3 py-1 rounded-lg text-xs font-black tracking-widest">RANK 1</div>
+</div>
+<div class="flex-1">
+<h3 class="text-3xl font-headline font-bold text-on-surface mb-1">Merrick the Wise</h3>
+<p class="text-primary/60 text-sm font-medium tracking-wide uppercase mb-6">Master of Eldritch Arts</p>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-low/50 p-4 rounded-xl">
+<span class="text-[10px] text-primary/50 uppercase font-bold tracking-widest block mb-1">Win Rate</span>
+<span class="text-2xl font-headline font-bold text-primary">68.4%</span>
+</div>
+<div class="bg-surface-container-low/50 p-4 rounded-xl">
+<span class="text-[10px] text-primary/50 uppercase font-bold tracking-widest block mb-1">Games Played</span>
+<span class="text-2xl font-headline font-bold text-on-surface">142</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Player Card 2 -->
+<div class="glass-card rounded-2xl p-6 border border-primary/5 hover:bg-surface-container-highest transition-colors duration-300">
+<div class="flex items-center gap-4 mb-6">
+<div class="w-16 h-16 rounded-xl bg-surface-container-highest flex items-center justify-center text-primary font-headline text-2xl font-bold shadow-inner">
+                        LS
+                    </div>
+<div>
+<h3 class="text-xl font-headline font-bold text-on-surface leading-none">Lyra Swift</h3>
+<span class="text-xs text-primary/40 font-bold uppercase tracking-tighter">Aggro Specialist</span>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between items-end">
+<span class="text-xs text-on-surface-variant font-bold uppercase">Win Rate</span>
+<span class="text-xl font-headline font-bold text-primary">52.1%</span>
+</div>
+<div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[52.1%] shadow-[0_0_8px_#eebf73]"></div>
+</div>
+<div class="flex justify-between items-center pt-2">
+<span class="text-xs text-on-surface-variant font-bold uppercase">Games</span>
+<span class="text-lg font-headline font-bold text-on-surface">89</span>
+</div>
+</div>
+</div>
+<!-- Player Card 3 -->
+<div class="glass-card rounded-2xl p-6 border border-primary/5 hover:bg-surface-container-highest transition-colors duration-300">
+<div class="flex items-center gap-4 mb-6">
+<div class="w-16 h-16 rounded-xl overflow-hidden">
+<img class="w-full h-full object-cover grayscale brightness-75 hover:grayscale-0 transition-all duration-500" data-alt="Portrait of a young man with glasses and creative attire in a modern studio setting with warm directional light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtYmADWqpYxf3naVZdb3Gg4IugVo6yyFe1FyPihC3-eB9UXgo-1i6p7RJH7YXxYGE44TEauVEfo1nuH7bRqtrDTKTMfMH_mR8-pyG8Hlg4yCDeiLlr4nvxA6M8waA37sWbgGFOBhHg988YPNu5gwYU0Hk_9foQ8tjDbINNlwiP2EywtYec6DFQkj04S5eDFzn2cr37v4VKam5_fe6o85fQVgz4R47fajiqnDWVNRMa_1EzIvKB8nr4wYU0d213fCTe-4QDaazS5tbd"/>
+</div>
+<div>
+<h3 class="text-xl font-headline font-bold text-on-surface leading-none">Kaelen Sun</h3>
+<span class="text-xs text-primary/40 font-bold uppercase tracking-tighter">The Librarian</span>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between items-end">
+<span class="text-xs text-on-surface-variant font-bold uppercase">Win Rate</span>
+<span class="text-xl font-headline font-bold text-primary">48.9%</span>
+</div>
+<div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[48.9%] shadow-[0_0_8px_#eebf73]"></div>
+</div>
+<div class="flex justify-between items-center pt-2">
+<span class="text-xs text-on-surface-variant font-bold uppercase">Games</span>
+<span class="text-lg font-headline font-bold text-on-surface">215</span>
+</div>
+</div>
+</div>
+<!-- Player Card 4 -->
+<div class="glass-card rounded-2xl p-6 border border-primary/5 hover:bg-surface-container-highest transition-colors duration-300">
+<div class="flex items-center gap-4 mb-6">
+<div class="w-16 h-16 rounded-xl bg-surface-container-highest flex items-center justify-center text-primary font-headline text-2xl font-bold">
+                        V
+                    </div>
+<div>
+<h3 class="text-xl font-headline font-bold text-on-surface leading-none">Vane</h3>
+<span class="text-xs text-primary/40 font-bold uppercase tracking-tighter">Stax Enthusiast</span>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between items-end">
+<span class="text-xs text-on-surface-variant font-bold uppercase">Win Rate</span>
+<span class="text-xl font-headline font-bold text-primary">44.2%</span>
+</div>
+<div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[44.2%] shadow-[0_0_8px_#eebf73]"></div>
+</div>
+<div class="flex justify-between items-center pt-2">
+<span class="text-xs text-on-surface-variant font-bold uppercase">Games</span>
+<span class="text-lg font-headline font-bold text-on-surface">67</span>
+</div>
+</div>
+</div>
+<!-- Player Card 5 (Vertical Stretch) -->
+<div class="glass-card rounded-2xl p-6 border border-primary/5 hover:bg-surface-container-highest transition-colors duration-300">
+<div class="flex flex-col h-full">
+<div class="flex items-center gap-4 mb-8">
+<div class="w-16 h-16 rounded-xl overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of a mysterious woman with silver hair and intricate mystical tattoos on her face, dark moody lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA40Dca1nOUI4lWn8YLsAzMyH8GDhXoejEW0-QH-gcI3KJzKm0dZaG2NQXCV7e_8dcipYTl0JZjwu7-tErFm1c_YbzU7vBr_iEVyqjknR4Ey287gp4t1N8ZMQDnJ1aEUmBir4N9bSfgo2sDBPIu6q60nzGqFmd_cKgEnm8xbvtv5QTpwd8dAVn4Osf3NL4Rr7dnGebBuVdZnUl_d0JmpPfzo1W1qyqOLKtCo2wdt3fXYjRh0uJ1Ey_aRTeTo6hKebIvHgvMbGOIa-aS"/>
+</div>
+<div>
+<h3 class="text-xl font-headline font-bold text-on-surface leading-none">The Oracle</h3>
+<span class="text-xs text-primary/40 font-bold uppercase tracking-tighter">Control Deck</span>
+</div>
+</div>
+<div class="mt-auto space-y-4">
+<div class="flex justify-between items-baseline">
+<span class="text-3xl font-headline font-bold text-primary">31.0%</span>
+<span class="text-[10px] text-on-surface-variant font-black tracking-widest uppercase">Win Rate</span>
+</div>
+<div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[31%] shadow-[0_0_8px_#eebf73]"></div>
+</div>
+<div class="flex justify-between items-center pt-2">
+<span class="text-xs text-on-surface-variant font-bold uppercase">Games Played</span>
+<span class="text-lg font-headline font-bold text-on-surface">12</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB for mobile -->
+<div class="md:hidden fixed bottom-24 right-6 z-50">
+<button class="w-14 h-14 rounded-full bg-primary text-on-primary shadow-[0_10px_30px_rgba(238,191,115,0.4)] flex items-center justify-center active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'wght' 600;">add</span>
+</button>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-2 bg-[#1c1102]/90 backdrop-blur-xl border-t border-[#c99e55]/10 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center bg-gradient-to-br from-[#eebf73]/20 to-transparent text-[#eebf73] rounded-xl px-4 py-1 shadow-[0_0_15px_rgba(238,191,115,0.1)] transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-['Manrope'] text-[10px] font-bold uppercase tracking-tighter">Players</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c99e55]/40 px-4 py-1 hover:bg-[#c99e55]/5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="style">style</span>
+<span class="font-['Manrope'] text-[10px] font-bold uppercase tracking-tighter">Decks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c99e55]/40 px-4 py-1 hover:bg-[#c99e55]/5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+<span class="font-['Manrope'] text-[10px] font-bold uppercase tracking-tighter">Stats</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c99e55]/40 px-4 py-1 hover:bg-[#c99e55]/5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-['Manrope'] text-[10px] font-bold uppercase tracking-tighter">Settings</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Deck Detail - Mystic Archive</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed-dim": "#ffb3ad",
+                    "tertiary": "#ffb3ad",
+                    "on-error-container": "#ffdad6",
+                    "surface-bright": "#453721",
+                    "surface": "#1c1102",
+                    "on-secondary": "#003258",
+                    "outline": "#9b8f7f",
+                    "on-tertiary-fixed": "#410004",
+                    "on-tertiary": "#68000a",
+                    "secondary-container": "#0164a7",
+                    "outline-variant": "#4e4538",
+                    "surface-container-low": "#251906",
+                    "primary-container": "#c99e55",
+                    "on-surface-variant": "#d2c4b3",
+                    "on-primary-fixed-variant": "#5f4100",
+                    "inverse-primary": "#7b5815",
+                    "primary-fixed-dim": "#eebf73",
+                    "on-secondary-fixed": "#001d36",
+                    "surface-container-lowest": "#160c00",
+                    "tertiary-container": "#ff7e77",
+                    "on-background": "#f7dfbf",
+                    "inverse-surface": "#f7dfbf",
+                    "primary": "#eebf73",
+                    "on-surface": "#f7dfbf",
+                    "on-primary": "#422c00",
+                    "surface-container-high": "#352813",
+                    "surface-container": "#2a1d09",
+                    "inverse-on-surface": "#3c2e19",
+                    "secondary": "#9ecaff",
+                    "surface-variant": "#41321d",
+                    "on-secondary-container": "#c6deff",
+                    "on-secondary-fixed-variant": "#00497c",
+                    "tertiary-fixed": "#ffdad7",
+                    "on-tertiary-fixed-variant": "#930013",
+                    "surface-tint": "#eebf73",
+                    "surface-dim": "#1c1102",
+                    "on-primary-container": "#503600",
+                    "on-error": "#690005",
+                    "error-container": "#93000a",
+                    "surface-container-highest": "#41321d",
+                    "background": "#1c1102",
+                    "on-primary-fixed": "#281900",
+                    "error": "#ffb4ab",
+                    "secondary-fixed-dim": "#9ecaff",
+                    "secondary-fixed": "#d1e4ff",
+                    "primary-fixed": "#ffdeab",
+                    "on-tertiary-container": "#7c000e"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Space Grotesk"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(42, 29, 9, 0.7);
+            backdrop-filter: blur(20px);
+        }
+        .gold-glow {
+            box-shadow: 0 0 20px rgba(238, 191, 115, 0.1);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body min-h-screen pb-32 selection:bg-primary/30">
+<!-- Top Navigation Anchor -->
+<header class="fixed top-0 w-full z-50 bg-[#1c1102]/80 backdrop-blur-xl flex justify-between items-center px-6 py-4 w-full shadow-[0_0_20px_rgba(238,191,115,0.1)]">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#eebf73]" data-icon="menu_book">menu_book</span>
+<span class="font-['Space_Grotesk'] tracking-widest uppercase font-bold text-lg text-[#eebf73]">MYSTIC ARCHIVE</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="active:scale-95 transition-transform hover:text-[#eebf73] transition-colors duration-300 text-[#c99e55]/60">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+<button class="active:scale-95 transition-transform hover:text-[#eebf73] transition-colors duration-300 text-[#c99e55]/60">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+</header>
+<main class="pt-24 px-4 md:px-8 max-w-7xl mx-auto">
+<!-- Hero Section: Deck Identity -->
+<section class="relative overflow-hidden rounded-xl mb-8 group">
+<div class="absolute inset-0 bg-gradient-to-t from-surface via-surface/60 to-transparent z-10"></div>
+<img alt="Deck Banner" class="w-full h-[400px] object-cover object-center group-hover:scale-105 transition-transform duration-700" data-alt="dramatic cinematic digital painting of a mystical wizard tower under a starry purple sky with amber light glowing from windows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSbZTFcTdVWebCeUWEAsYmfeEtkUMF7B3Oo_mcaZT98EYX04Eacq7wzYJy_4lX8ivyWWGtYWEz7AzKveRMSaF4lqQVtRTM3SzLqiOBc22rlV83UGVE38Eg1s1CKSXAseXrJ45MRe-UEyaFASzp08hm1YtDeq59P-TnTXCMOyYSpfytXVxM4rgZblxqdXbosuPyx_X1qMiic2Wzbhm2enR613_Nxp63yjo2eRLbf24dT0I-zPwPRzWjdQ5APYouWN3YaVQXR0DSAJSq"/>
+<div class="absolute bottom-0 left-0 w-full p-6 md:p-10 z-20 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+<div class="flex items-center gap-6">
+<div class="relative">
+<div class="w-24 h-24 md:w-32 md:h-32 rounded-xl overflow-hidden shadow-2xl border-2 border-primary/20 bg-surface">
+<img alt="Commander Portrait" class="w-full h-full object-cover" data-alt="close-up fantasy art portrait of an elven commander with golden armor and glowing amber eyes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcaMssF12cLd7qXg3EzeqHWtQd1GEFOR_wg55h8-7Bq_gZVB_X9o3r2BZCuoNeC0DRIakOGv1qyY8e4f4XqO49173rp_p3Xi5SZWveUkAPBDWj3VDksnfrSE4U49stqL4FJFOVHK_1L9qupIjsYnTV7fRoSm7S4Q7Ung3UdU-BipA0loSnDn_s7wnAyo6itoEwEwzkxSYiyMRtS_CoJdCmUe-ydIkUodiGXs2XBa0gg66jVZ4S3JjRNXIIMvoStn58uRsNrluYf3XY"/>
+</div>
+<div class="absolute -bottom-2 -right-2 bg-primary text-on-primary px-3 py-1 rounded-lg text-xs font-bold tracking-tighter flex items-center gap-1 shadow-lg">
+<span class="material-symbols-outlined text-sm" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+                            MYTHIC
+                        </div>
+</div>
+<div class="space-y-1">
+<h1 class="font-headline text-4xl md:text-6xl font-black text-primary tracking-tight leading-none italic uppercase">Solaris Sanctum</h1>
+<p class="font-label text-sm md:text-base text-on-surface-variant/80 tracking-widest font-medium">HELENE, VOICE OF LIGHT // COMMANDER</p>
+<div class="flex gap-2 mt-2">
+<span class="w-5 h-5 rounded-full bg-[#f9fafb] flex items-center justify-center text-[10px] text-black font-bold shadow-inner">W</span>
+<span class="w-5 h-5 rounded-full bg-[#3b82f6] flex items-center justify-center text-[10px] text-white font-bold shadow-inner">U</span>
+</div>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="bg-primary-container text-on-primary-container px-6 py-3 rounded-xl font-bold text-sm tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="play_arrow">play_arrow</span>
+                        BATTLE
+                    </button>
+<button class="bg-surface-container-highest text-primary px-4 py-3 rounded-xl hover:bg-surface-variant active:scale-95 transition-all border border-outline-variant/20">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Stats Bento Grid -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+<div class="md:col-span-2 bg-surface-container-low p-6 rounded-xl relative overflow-hidden flex flex-col justify-between min-h-[180px]">
+<div class="flex justify-between items-start">
+<span class="text-xs font-bold tracking-widest text-on-surface-variant uppercase opacity-60">Global Win Rate</span>
+<span class="material-symbols-outlined text-primary/40" data-icon="trending_up">trending_up</span>
+</div>
+<div class="mt-4">
+<div class="flex items-baseline gap-2">
+<span class="font-headline text-6xl font-bold text-primary">68.4</span>
+<span class="font-headline text-2xl font-bold text-primary/60">%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-variant rounded-full mt-4 overflow-hidden">
+<div class="h-full bg-primary shadow-[0_0_10px_rgba(238,191,115,0.5)]" style="width: 68.4%"></div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-low p-6 rounded-xl flex flex-col justify-between min-h-[180px]">
+<span class="text-xs font-bold tracking-widest text-on-surface-variant uppercase opacity-60">Total Games</span>
+<div class="flex flex-col">
+<span class="font-headline text-5xl font-bold text-on-surface">142</span>
+<span class="text-xs text-on-surface-variant mt-1">97 Wins / 45 Losses</span>
+</div>
+</div>
+<div class="bg-surface-container-low p-6 rounded-xl flex flex-col justify-between min-h-[180px]">
+<span class="text-xs font-bold tracking-widest text-on-surface-variant uppercase opacity-60">Avg. Turn to Win</span>
+<div class="flex flex-col">
+<span class="font-headline text-5xl font-bold text-on-surface">7.2</span>
+<span class="text-xs text-on-surface-variant mt-1">High Efficiency</span>
+</div>
+</div>
+<div class="md:col-span-4 bg-surface-container-low p-6 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+<div class="flex flex-col">
+<span class="text-xs font-bold tracking-widest text-on-surface-variant uppercase opacity-60">Most Common Win Condition</span>
+<span class="font-headline text-2xl font-bold text-on-surface mt-2 tracking-tight">Approach of the Second Sun</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="px-4 py-2 bg-surface-variant rounded-full text-xs font-bold text-primary tracking-widest uppercase">Combo</div>
+<div class="px-4 py-2 bg-surface-variant rounded-full text-xs font-bold text-primary tracking-widest uppercase">Control</div>
+</div>
+</div>
+</section>
+<!-- Recent Matches -->
+<section>
+<div class="flex items-center justify-between mb-6">
+<h2 class="font-headline text-2xl font-bold tracking-tight uppercase">Recent Chronicles</h2>
+<button class="text-xs font-bold tracking-widest text-primary uppercase flex items-center gap-1 hover:opacity-80">
+                    View Archive
+                    <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<div class="space-y-3">
+<!-- Match Item 1 -->
+<div class="group bg-surface-container-low hover:bg-surface-container transition-all duration-300 rounded-xl p-4 flex flex-col md:flex-row items-center gap-6 border-l-4 border-primary">
+<div class="flex flex-col items-center md:items-start min-w-[100px]">
+<span class="text-[10px] font-bold tracking-[0.2em] text-primary uppercase">Victory</span>
+<span class="text-xs text-on-surface-variant opacity-60">2 days ago</span>
+</div>
+<div class="flex-grow flex items-center gap-4">
+<div class="hidden md:flex -space-x-3">
+<img alt="Opponent" class="w-10 h-10 rounded-full border-2 border-surface" data-alt="headshot of a fantasy player avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDiIpGUTEOMzsWqnUv9JO6NdGaHH_gF1ft5yZ2n6WjFUm3Mt3mBaeQaEg_7Iu1octRY3nBqxw0RT-erakNuAtfZESF8jMclfPn3rH7qK7S1nt0dd4MOldoFfu82I1f0jiLe3e3kRx3mt0KuhWeE7t-XKrTnESogcBrZp0oGvqsOgkYkd6tom0vCtRYHVxUyjlK62rsknj62YE0EHebB1JATaW79yibq6XFVb7sHgjwvaEfQDmPB4ZH6PFonIsaq4-xgWmrIRuSJMG3y"/>
+<img alt="Opponent" class="w-10 h-10 rounded-full border-2 border-surface" data-alt="headshot of another fantasy player avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBaEgaF6GMC-PLmjmL1rTgR8U9CQUhJ-Hyw-NBcNK55klj38NX9seGjoBAuLMRJWvX404bqjEd2wvxK1cqowBT0Be1I_yeVNgMA3bGXM-XH3dz0WFuzgnUBCXPMBTDK3PvMsri7w-XZekZ0g3iBPMDV8OyUoze4KZXnhSuoosObX5fUgzxNHLplViPh11uQyR9om5V1SYQI5gyCwkl_C-co48z8w3tjvw_fZwgyfI4A9h9_mfU00q7nAWy-h7nIQjde-BFNfbqDMLW3"/>
+<img alt="Opponent" class="w-10 h-10 rounded-full border-2 border-surface" data-alt="headshot of a third fantasy player avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRDRDVOvZVNufb49ZhMsut1_EFbEKYmxsk8z2Pzraj_dwDPV9G56yIye4RLcfFrNG2pBYtwIpsEv0C5ZoLiAWBO571mhU3y62ED20-rIHDVW3EewlN8d4p_n2dPE3QFc8x00qsSVgpuu4v9PHXvRsWxePSdE0dtuaje1MleTaml1fiPlHYMYFxqnWp8s-apNHnyTZH0XE1IUYfBoGEAobBWdpq9-XOpjpqMyHdjCDmbmozCcUxFNpLDjOWyPxkG7CSN0w7zFqAR1n1"/>
+</div>
+<div>
+<p class="font-bold text-on-surface tracking-tight">4-Player Commander Pod</p>
+<p class="text-xs text-on-surface-variant">Lvl 8 Power Level • Win by Spell Combo</p>
+</div>
+</div>
+<div class="flex items-center gap-8">
+<div class="text-center">
+<span class="block text-[10px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">Turns</span>
+<span class="font-headline text-lg font-bold">11</span>
+</div>
+<div class="text-center">
+<span class="block text-[10px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">Life</span>
+<span class="font-headline text-lg font-bold text-primary">24</span>
+</div>
+<button class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Match Item 2 -->
+<div class="group bg-surface-container-low hover:bg-surface-container transition-all duration-300 rounded-xl p-4 flex flex-col md:flex-row items-center gap-6 border-l-4 border-error/50">
+<div class="flex flex-col items-center md:items-start min-w-[100px]">
+<span class="text-[10px] font-bold tracking-[0.2em] text-error/80 uppercase">Defeat</span>
+<span class="text-xs text-on-surface-variant opacity-60">5 days ago</span>
+</div>
+<div class="flex-grow flex items-center gap-4">
+<div class="hidden md:flex -space-x-3 opacity-50 grayscale">
+<img alt="Opponent" class="w-10 h-10 rounded-full border-2 border-surface" data-alt="fantasy avatar face portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzRKm5Li4suIpd24JOBMHsb8yDhHHV4_ZC5QkehYbs-FaA7ctnQNmfnG3jQWiY73hb6_JW84nUciAqiBAABePp-pk8o6q_uwgA7LBJDfLmYB5u_-sqwCiRiuob8Jg4Jc0bEvgp8uG_GpYcDFKqod14OUoSdMlJNMAXsJo4ivm4NngIcKZq-92eo5cTwQjD6ArUMOH2gS-7X9VtjrPMhg0f69IRD3uRR4mejtuPAk4z-G04aT2zdbULSudBJTavsrq4ZeS0_gr9YSad"/>
+</div>
+<div>
+<p class="font-bold text-on-surface tracking-tight">1v1 Playtest</p>
+<p class="text-xs text-on-surface-variant">Vs. Grixis Control • Loss by Commander Damage</p>
+</div>
+</div>
+<div class="flex items-center gap-8">
+<div class="text-center">
+<span class="block text-[10px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">Turns</span>
+<span class="font-headline text-lg font-bold">14</span>
+</div>
+<div class="text-center">
+<span class="block text-[10px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">Life</span>
+<span class="font-headline text-lg font-bold text-error/80">0</span>
+</div>
+<button class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Match Item 3 -->
+<div class="group bg-surface-container-low hover:bg-surface-container transition-all duration-300 rounded-xl p-4 flex flex-col md:flex-row items-center gap-6 border-l-4 border-primary">
+<div class="flex flex-col items-center md:items-start min-w-[100px]">
+<span class="text-[10px] font-bold tracking-[0.2em] text-primary uppercase">Victory</span>
+<span class="text-xs text-on-surface-variant opacity-60">1 week ago</span>
+</div>
+<div class="flex-grow flex items-center gap-4">
+<div class="hidden md:flex -space-x-3">
+<img alt="Opponent" class="w-10 h-10 rounded-full border-2 border-surface" data-alt="fantasy avatar face portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhUBL2qGn5qYRoaUTM0eLH64iwXOjSGOVtCeypMGElH6HJLCozivqW8qtPtzysJZbyhFCj0XixvVS5-ThQR4Q5B3BR3HpV0qCF_cd65SE8g7dbw0WoCCjHWv47vAh1aRZQ7nCBsJvzVlM5WNvJHX7eEop9s24d_ERd_3AjAWdxzKJch669dLDMG-jt18d8nMhf5IoxkCLpIuP1QdC26AEVrni7QZRC6lb8ld2YcVCsjM1oUuCXJY2yVMR3lmvAibX5vODJ1DpU4isr"/>
+<img alt="Opponent" class="w-10 h-10 rounded-full border-2 border-surface" data-alt="fantasy avatar face portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDT8gnMHMbIZktx0JQ0iG_yWYeTv6JyhcfnWw1J6wMtIFlvpTZc1R9PBwR8oOER8ogJFYRh3OdyXxYsraACyehX_PxmiZF-P4cfdqVbE3XKSGsfAEEmfT6J9TQxVVDObgItva8SQcZgAE61gPVVVO0pB4NTMfGc_gHTbrqQ5tgm5Tru-CYyQqNiC3NuScAd3fw8T-cp-mgcjpjLcWxfeKoYe_kiEaWxaqyMC3a3gqT9EnlBAyip90eY--dH38xIsh6JjRFfUv_oIUGg"/>
+</div>
+<div>
+<p class="font-bold text-on-surface tracking-tight">3-Player Casual Pod</p>
+<p class="text-xs text-on-surface-variant">Mid Power • Win by Combat Damage</p>
+</div>
+</div>
+<div class="flex items-center gap-8">
+<div class="text-center">
+<span class="block text-[10px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">Turns</span>
+<span class="font-headline text-lg font-bold">8</span>
+</div>
+<div class="text-center">
+<span class="block text-[10px] font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">Life</span>
+<span class="font-headline text-lg font-bold text-primary">32</span>
+</div>
+<button class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Anchor -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#1c1102]/90 backdrop-blur-lg rounded-t-xl shadow-[0_-5px_25px_rgba(0,0,0,0.5)]">
+<a class="flex flex-col items-center justify-center text-[#c99e55]/50 px-4 py-1 hover:bg-[#c99e55]/5 transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="swords">swords</span>
+<span class="font-['Manrope'] text-[10px] font-bold tracking-[0.1em] uppercase">BATTLEFIELD</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c99e55]/50 px-4 py-1 hover:bg-[#c99e55]/5 transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="history_edu">history_edu</span>
+<span class="font-['Manrope'] text-[10px] font-bold tracking-[0.1em] uppercase">CHRONICLE</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#eebf73]/10 text-[#eebf73] rounded-xl px-4 py-1 shadow-[0_0_15px_rgba(238,191,115,0.2)] active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="layers">layers</span>
+<span class="font-['Manrope'] text-[10px] font-bold tracking-[0.1em] uppercase">DECKBOX</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c99e55]/50 px-4 py-1 hover:bg-[#c99e55]/5 transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-['Manrope'] text-[10px] font-bold tracking-[0.1em] uppercase">GRIMOIRE</span>
+</a>
+</nav>
+</body></html>

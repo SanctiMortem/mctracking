@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mystic Archive - Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&amp;family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface": "#f7dfbf",
+                    "surface": "#1c1102",
+                    "surface-container-lowest": "#160c00",
+                    "tertiary-fixed": "#ffdad7",
+                    "on-tertiary-fixed": "#410004",
+                    "on-surface-variant": "#d2c4b3",
+                    "surface-container-highest": "#41321d",
+                    "on-background": "#f7dfbf",
+                    "on-primary-container": "#503600",
+                    "tertiary-fixed-dim": "#ffb3ad",
+                    "surface-container": "#2a1d09",
+                    "inverse-on-surface": "#3c2e19",
+                    "primary-container": "#c99e55",
+                    "on-primary-fixed": "#281900",
+                    "secondary-container": "#0164a7",
+                    "primary": "#eebf73",
+                    "error": "#ffb4ab",
+                    "surface-container-low": "#251906",
+                    "primary-fixed-dim": "#eebf73",
+                    "on-secondary-fixed": "#001d36",
+                    "inverse-primary": "#7b5815",
+                    "surface-tint": "#eebf73",
+                    "background": "#1c1102",
+                    "surface-dim": "#1c1102",
+                    "on-primary-fixed-variant": "#5f4100",
+                    "on-secondary-fixed-variant": "#00497c",
+                    "tertiary-container": "#ff7e77",
+                    "secondary": "#9ecaff",
+                    "on-tertiary-container": "#7c000e",
+                    "secondary-fixed-dim": "#9ecaff",
+                    "inverse-surface": "#f7dfbf",
+                    "on-error": "#690005",
+                    "surface-container-high": "#352813",
+                    "on-secondary": "#003258",
+                    "surface-bright": "#453721",
+                    "on-error-container": "#ffdad6",
+                    "secondary-fixed": "#d1e4ff",
+                    "on-tertiary-fixed-variant": "#930013",
+                    "outline-variant": "#4e4538",
+                    "on-secondary-container": "#c6deff",
+                    "outline": "#9b8f7f",
+                    "surface-variant": "#41321d",
+                    "primary-fixed": "#ffdeab",
+                    "error-container": "#93000a",
+                    "on-primary": "#422c00",
+                    "on-tertiary": "#68000a",
+                    "tertiary": "#ffb3ad"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Space Grotesk"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Manrope', sans-serif; }
+        h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; }
+        .glass-panel {
+            background: rgba(42, 29, 9, 0.7);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#1c1102] dark:bg-[#1c1102] shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#eebf73] cursor-pointer hover:text-[#eebf73] transition-colors scale-95 active:scale-90 transition-transform" data-icon="menu">menu</span>
+<h1 class="text-2xl font-black text-[#c99e55] drop-shadow-[0_0_10px_rgba(238,191,115,0.3)] font-['Space_Grotesk'] font-bold tracking-widest uppercase">MYSTIC ARCHIVE</h1>
+</div>
+<div class="w-10 h-10 rounded-full border-2 border-[#c99e55]/30 overflow-hidden cursor-pointer hover:text-[#eebf73] transition-colors scale-95 active:scale-90 transition-transform">
+<img alt="Profile" class="w-full h-full object-cover" data-alt="close up stylized avatar of a mystical character with glowing amber eyes and dark ornate robes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuClrm2jdA8Pzj7t3s-nHfDe9rEnv7z93QTCxdFBQwq2QW-jMpEpEbDvw48ayWRqP_4Es7iqvNDEsQLZmjqDFc8Jrz6kvTeH-MzcnL6Zc3Du_e2Q1lchr0h9lOtAM0VlU-xwsdOz4BUV4L0GmVmXoaznaV1P15h-hR8bjsDN3EZHyC4jI4OCE3D3-YW-jg1USo-GZkQxSUKgNfupxKP6m9DLPFBZPswUAef5ul5sVkZR-u4PGpgDbF-FgKaSi3IAkCwpY1GDurh3kVgO"/>
+</div>
+</header>
+<main class="pt-24 px-6 max-w-2xl mx-auto space-y-10">
+<!-- Page Title Editorial -->
+<section class="relative">
+<span class="absolute -top-6 -left-2 text-6xl font-black opacity-5 text-[#c99e55] select-none">GRIMOIRE</span>
+<h2 class="text-4xl font-bold tracking-tight text-primary">Settings</h2>
+<p class="text-on-surface-variant text-sm mt-1 font-medium tracking-wide">Configure your digital battlefield parameters.</p>
+</section>
+<!-- Tracker Settings Group -->
+<section class="space-y-4">
+<h3 class="text-xs font-black uppercase tracking-[0.2em] text-[#c99e55]/60 px-2">Tracker Settings</h3>
+<div class="space-y-1 bg-surface-container-low rounded-xl overflow-hidden p-1 shadow-lg">
+<!-- Swipe Gestures -->
+<div class="flex items-center justify-between p-4 bg-surface-container-high rounded-lg">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-lg text-primary">
+<span class="material-symbols-outlined" data-icon="swipe">swipe</span>
+</div>
+<div>
+<p class="font-bold text-on-surface">Swipe Gestures</p>
+<p class="text-xs text-on-surface-variant">Enable life shortcuts on player cards</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-on-surface after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Debounce Threshold -->
+<div class="p-4 bg-surface-container-high rounded-lg space-y-3">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-lg text-primary">
+<span class="material-symbols-outlined" data-icon="timer">timer</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center">
+<p class="font-bold text-on-surface">Debounce Threshold</p>
+<span class="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">800ms</span>
+</div>
+<p class="text-xs text-on-surface-variant">Input delay before updating state</p>
+</div>
+</div>
+<input class="w-full h-1 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary" max="2000" min="200" step="100" type="range" value="800"/>
+<div class="flex justify-between text-[10px] text-on-surface-variant font-bold uppercase tracking-tighter">
+<span>200ms</span>
+<span>2000ms</span>
+</div>
+</div>
+<!-- Default Life Total -->
+<div class="flex items-center justify-between p-4 bg-surface-container-high rounded-lg">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-lg text-primary">
+<span class="material-symbols-outlined" data-icon="favorite">favorite</span>
+</div>
+<div>
+<p class="font-bold text-on-surface">Default Life Total</p>
+<p class="text-xs text-on-surface-variant">Starting health for new games</p>
+</div>
+</div>
+<div class="flex bg-surface-container-highest p-1 rounded-lg">
+<button class="px-4 py-1.5 rounded-md text-xs font-bold bg-primary text-on-primary shadow-lg transition-all">40</button>
+<button class="px-4 py-1.5 rounded-md text-xs font-bold text-on-surface-variant hover:text-primary transition-all">20</button>
+</div>
+</div>
+</div>
+</section>
+<!-- App Settings Group -->
+<section class="space-y-4">
+<h3 class="text-xs font-black uppercase tracking-[0.2em] text-[#c99e55]/60 px-2">App Settings</h3>
+<div class="space-y-1 bg-surface-container-low rounded-xl overflow-hidden p-1 shadow-lg">
+<!-- Language -->
+<div class="flex items-center justify-between p-4 bg-surface-container-high rounded-lg">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-lg text-primary">
+<span class="material-symbols-outlined" data-icon="translate">translate</span>
+</div>
+<div>
+<p class="font-bold text-on-surface">Language</p>
+</div>
+</div>
+<select class="bg-surface-container-highest border-none text-on-surface text-xs font-bold rounded-lg focus:ring-primary focus:border-primary block p-2 transition-all">
+<option selected="">ENGLISH (EN)</option>
+<option>ESPAÑOL (ES)</option>
+</select>
+</div>
+<!-- Require Commander -->
+<div class="flex items-center justify-between p-4 bg-surface-container-high rounded-lg">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-lg text-primary">
+<span class="material-symbols-outlined" data-icon="shield_person">shield_person</span>
+</div>
+<div>
+<p class="font-bold text-on-surface">Require Commander</p>
+<p class="text-xs text-on-surface-variant">Players must select a card</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-on-surface after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+</div>
+</section>
+<!-- Account & Group Group -->
+<section class="space-y-4">
+<h3 class="text-xs font-black uppercase tracking-[0.2em] text-[#c99e55]/60 px-2">Account &amp; Group</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Profile Edit Card -->
+<div class="p-5 bg-surface-container-low rounded-xl flex flex-col items-center text-center gap-3 border border-outline-variant/10 hover:bg-surface-container transition-all cursor-pointer group shadow-xl">
+<div class="relative">
+<img alt="Profile" class="w-16 h-16 rounded-full border-2 border-primary/40 group-hover:border-primary transition-all" data-alt="avatar of a player with mystical headgear and amber glow" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCG-8hXJDaXcHNAZf6RtT04qS7mv0NHWYOhvRp5LJVLmKuWLsi5csl5FvX2iBSXAg1fJCNHKNCTXfwMHwhWkz6Kwt351enA2mx7jsK2Z7dcjSO9yAChCwU0ay_WMpTqhVm3jkM_-_4zJkiQlw3yVKC2tYqXdG_cnS5jjz6CnnP4hZzSx7FteuEd4_sjNEV4K0CM7afzdDYcBoxKoUSuVWE59rg0UrPXqzUtoQtOI2te-IxELSM9uElWhVd9kHCYKlq1UBZutthOF3AZ"/>
+<div class="absolute bottom-0 right-0 w-6 h-6 bg-primary text-on-primary rounded-full flex items-center justify-center text-[10px] shadow-lg">
+<span class="material-symbols-outlined !text-sm" data-icon="edit">edit</span>
+</div>
+</div>
+<div>
+<p class="font-bold text-on-surface">Player Profile</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-widest">Edit your persona</p>
+</div>
+</div>
+<!-- Invitations Card -->
+<div class="p-5 bg-surface-container-low rounded-xl flex flex-col items-center text-center gap-3 border border-outline-variant/10 hover:bg-surface-container transition-all cursor-pointer shadow-xl relative overflow-hidden">
+<div class="absolute -right-2 -top-2 w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center opacity-20">
+<span class="material-symbols-outlined !text-4xl" data-icon="mail">mail</span>
+</div>
+<div class="w-12 h-12 flex items-center justify-center bg-secondary-container/20 rounded-full text-secondary">
+<span class="material-symbols-outlined" data-icon="group_add" style="font-variation-settings: 'FILL' 1;">group_add</span>
+</div>
+<div>
+<div class="flex items-center gap-2 justify-center">
+<p class="font-bold text-on-surface">Invitations</p>
+<span class="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+</div>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-widest">3 pending requests</p>
+</div>
+</div>
+</div>
+<!-- Danger Zone / Leave Group -->
+<button class="w-full mt-4 flex items-center justify-center gap-3 p-4 bg-error-container/10 border border-error/20 text-error rounded-xl hover:bg-error-container/20 transition-all font-bold group">
+<span class="material-symbols-outlined group-hover:rotate-12 transition-transform" data-icon="logout">logout</span>
+                LEAVE CURRENT GROUP
+            </button>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-2 bg-[#1c1102]/90 backdrop-blur-xl shadow-[0_-10px_30px_rgba(0,0,0,0.8)] border-t border-[#c99e55]/10">
+<div class="flex flex-col items-center justify-center text-[#c99e55]/40 px-4 py-1 hover:bg-[#c99e55]/5 scale-98 active:scale-95 transition-all duration-200 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-['Manrope'] text-[10px] font-bold uppercase tracking-tighter">Players</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#c99e55]/40 px-4 py-1 hover:bg-[#c99e55]/5 scale-98 active:scale-95 transition-all duration-200 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="style">style</span>
+<span class="font-['Manrope'] text-[10px] font-bold uppercase tracking-tighter">Decks</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#c99e55]/40 px-4 py-1 hover:bg-[#c99e55]/5 scale-98 active:scale-95 transition-all duration-200 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+<span class="font-['Manrope'] text-[10px] font-bold uppercase tracking-tighter">Stats</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-gradient-to-br from-[#eebf73]/20 to-transparent text-[#eebf73] rounded-xl px-4 py-1 shadow-[0_0_15px_rgba(238,191,115,0.1)] scale-98 active:scale-95 transition-all duration-200 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="settings" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-['Manrope'] text-[10px] font-bold uppercase tracking-tighter">Settings</span>
+</div>
+</nav>
+</body></html>

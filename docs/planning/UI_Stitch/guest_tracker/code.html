@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Mystic Archive - Guest Tracker</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Manrope:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#ffb3ad",
+                        "surface-container-high": "#352813",
+                        "on-tertiary-fixed": "#410004",
+                        "tertiary-container": "#ff7e77",
+                        "secondary": "#9ecaff",
+                        "on-secondary-container": "#c6deff",
+                        "error-container": "#93000a",
+                        "surface-container-highest": "#41321d",
+                        "primary-container": "#c99e55",
+                        "secondary-container": "#0164a7",
+                        "on-primary-fixed": "#281900",
+                        "on-secondary-fixed-variant": "#00497c",
+                        "tertiary-fixed": "#ffdad7",
+                        "inverse-surface": "#f7dfbf",
+                        "outline": "#9b8f7f",
+                        "on-tertiary-fixed-variant": "#930013",
+                        "surface-container-low": "#251906",
+                        "on-primary-fixed-variant": "#5f4100",
+                        "on-error": "#690005",
+                        "on-background": "#f7dfbf",
+                        "surface-bright": "#453721",
+                        "on-primary": "#422c00",
+                        "primary-fixed": "#ffdeab",
+                        "surface-variant": "#41321d",
+                        "on-secondary": "#003258",
+                        "on-primary-container": "#503600",
+                        "secondary-fixed": "#d1e4ff",
+                        "surface-dim": "#1c1102",
+                        "on-tertiary": "#68000a",
+                        "on-surface": "#f7dfbf",
+                        "surface-container-lowest": "#160c00",
+                        "on-secondary-fixed": "#001d36",
+                        "outline-variant": "#4e4538",
+                        "inverse-primary": "#7b5815",
+                        "surface": "#1c1102",
+                        "on-error-container": "#ffdad6",
+                        "error": "#ffb4ab",
+                        "surface-tint": "#eebf73",
+                        "primary": "#eebf73",
+                        "secondary-fixed-dim": "#9ecaff",
+                        "background": "#1c1102",
+                        "inverse-on-surface": "#3c2e19",
+                        "surface-container": "#2a1d09",
+                        "tertiary": "#ffb3ad",
+                        "primary-fixed-dim": "#eebf73",
+                        "on-tertiary-container": "#7c000e",
+                        "on-surface-variant": "#d2c4b3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Manrope"],
+                        "label": ["Manrope"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .life-total-text {
+            text-shadow: 0 0 20px rgba(238, 191, 115, 0.4);
+        }
+        .glass-panel {
+            background: rgba(28, 17, 2, 0.7);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top Navigation Shell -->
+<nav class="fixed top-0 w-full z-50 bg-[#1c1102]/80 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.5)] flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-3">
+<span class="text-2xl font-black text-[#eebf73] drop-shadow-[0_0_10px_rgba(238,191,115,0.3)] font-['Space_Grotesk'] tracking-tight">The Mystic Archive</span>
+<div class="hidden md:flex gap-6 ml-10">
+<span class="text-slate-400 font-['Manrope'] font-semibold tracking-widest text-xs uppercase cursor-pointer hover:text-[#c99e55] transition-colors">Rules</span>
+<span class="text-slate-400 font-['Manrope'] font-semibold tracking-widest text-xs uppercase cursor-pointer hover:text-[#c99e55] transition-colors">Banlist</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-surface-container-highest px-4 py-2 rounded-xl text-primary font-headline font-bold text-sm tracking-tight scale-95 active:scale-90 transition-transform hover:bg-surface-bright">
+                RESET
+            </button>
+<button class="bg-error-container/20 text-error px-4 py-2 rounded-xl font-headline font-bold text-sm tracking-tight scale-95 active:scale-90 transition-transform hover:bg-error-container/40">
+                LEAVE
+            </button>
+<div class="w-10 h-10 rounded-full border border-primary/20 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Stylized gold and ebony profile avatar in an ornate circular frame with mystical ember particles" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMzX29n1eRzcxlxeX0cyeCku0aQibYk1lg_TRtYx0esWoNzdV9hd3NU8L7nnINmPEzN2vbUdqdtoETOfE1xqrTi7hiAQpIWknWPvrPUu675O46UHuby2rsFam3e67bt9jCR-vNv_0OWkBBs0N4gyRunY7uj4F-TRzChLpPEojpgyk1K5vq167jYDn1PdWwkyfmY5f3shMwebUOLtHqen09JuG80Owl0-X33JtqB4yw3CJOrNxpsABjUMPOwI2ixdGIPNHuoTtr1ePn"/>
+</div>
+</div>
+</nav>
+<!-- Main Gameplay Canvas -->
+<main class="h-screen w-full pt-20 pb-24 px-4 md:px-8 grid grid-cols-2 grid-rows-2 gap-4">
+<!-- Player 1 Zone (Top Left) -->
+<section class="relative bg-surface-container-low rounded-3xl overflow-hidden group">
+<div class="absolute inset-0 opacity-10 pointer-events-none bg-center bg-cover" data-alt="Subtle dark magical sigil texture with smoke patterns and ancient runes on a deep ebony background" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDfQogpELe5zN_OLTUqkhu7BhWSseIGcX4I-oKZSbtHYbRkeEFmu0UsKknKV74d4wVM_wnVXV4znZP7ZcsQeLQ_OiOGdj6Uqwj0W5i2AEEMiezZ6JlMn2twBMNKtqztq4Fq757yxonTSwQ4JZ4t9kOfnwxwZVFAUIEJDB5qsPBl_jYcDv0Wramx0XQPECpVMqoPyFMG9qaXMyHpWzqOZf9LaO-ia7K92NtbluLyINUQB1hHS5hjSMsNYroWsK8ooDrrF2Av0JvsX8cp')"></div>
+<div class="relative h-full w-full flex flex-col items-center justify-center p-6">
+<header class="w-full flex justify-between items-center mb-4">
+<span class="font-headline font-extrabold text-2xl text-on-surface tracking-tighter opacity-80 uppercase">Player 1</span>
+<div class="flex gap-2">
+<div class="flex items-center gap-1 bg-tertiary/10 text-tertiary px-3 py-1 rounded-full border border-tertiary/20">
+<span class="material-symbols-outlined text-sm">skull</span>
+<span class="text-xs font-bold font-label">0</span>
+</div>
+</div>
+</header>
+<div class="flex-1 flex flex-col items-center justify-center space-y-2">
+<button class="text-surface-container-highest hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-4xl">expand_less</span>
+</button>
+<div class="life-total-text font-headline font-black text-8xl md:text-9xl text-primary leading-none select-none">40</div>
+<button class="text-surface-container-highest hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-4xl">expand_more</span>
+</button>
+</div>
+<footer class="w-full flex justify-around mt-4 pt-4 border-t border-white/5">
+<div class="flex flex-col items-center opacity-50 hover:opacity-100 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined text-secondary">shield</span>
+<span class="text-[10px] font-bold mt-1 uppercase tracking-widest text-on-surface-variant">Tax 0</span>
+</div>
+<div class="flex flex-col items-center opacity-50 hover:opacity-100 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined text-error">swords</span>
+<span class="text-[10px] font-bold mt-1 uppercase tracking-widest text-on-surface-variant">Cmd 0</span>
+</div>
+</footer>
+</div>
+</section>
+<!-- Player 2 Zone (Top Right) -->
+<section class="relative bg-surface-container-low rounded-3xl overflow-hidden group">
+<div class="absolute inset-0 opacity-10 pointer-events-none bg-center bg-cover" data-alt="Abstract blue energy swirl background with floating water droplets and ethereal glow on deep navy surface" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCROpXOrZCHob7wMIX6lIHaHGJPupg0o4kYZNXgAlteqvKwbufcYf8G7sX862jxLKGU7zycSjiAxQKzPvKttRTjgsAMALp5s8tfKUbUDQDa3_p4R37zbUIFUHXwnuxR3tEHb0dVCkJ7nRRswGyvm47vRbvPLOypBk66I_6_OyZ9DVi-bzYBa_WajOiEO20u1s2mDiOFUFdc768TlB-J1bHVaTVhl2OAPIBpWmgi-FjOvmguB9cRDb6v0KhblSw-GqV9BYWeM94Au66p')"></div>
+<div class="relative h-full w-full flex flex-col items-center justify-center p-6">
+<header class="w-full flex justify-between items-center mb-4">
+<span class="font-headline font-extrabold text-2xl text-on-surface tracking-tighter opacity-80 uppercase">Player 2</span>
+<div class="flex gap-2">
+<div class="flex items-center gap-1 bg-tertiary/10 text-tertiary px-3 py-1 rounded-full border border-tertiary/20">
+<span class="material-symbols-outlined text-sm">skull</span>
+<span class="text-xs font-bold font-label">2</span>
+</div>
+</div>
+</header>
+<div class="flex-1 flex flex-col items-center justify-center space-y-2">
+<button class="text-surface-container-highest hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-4xl">expand_less</span>
+</button>
+<div class="life-total-text font-headline font-black text-8xl md:text-9xl text-primary leading-none select-none">38</div>
+<button class="text-surface-container-highest hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-4xl">expand_more</span>
+</button>
+</div>
+<footer class="w-full flex justify-around mt-4 pt-4 border-t border-white/5">
+<div class="flex flex-col items-center opacity-50 hover:opacity-100 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined text-secondary">shield</span>
+<span class="text-[10px] font-bold mt-1 uppercase tracking-widest text-on-surface-variant">Tax 2</span>
+</div>
+<div class="flex flex-col items-center opacity-50 hover:opacity-100 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined text-error">swords</span>
+<span class="text-[10px] font-bold mt-1 uppercase tracking-widest text-on-surface-variant">Cmd 5</span>
+</div>
+</footer>
+</div>
+</section>
+<!-- Player 3 Zone (Bottom Left) -->
+<section class="relative bg-surface-container-low rounded-3xl overflow-hidden group">
+<div class="absolute inset-0 opacity-10 pointer-events-none bg-center bg-cover" data-alt="Dramatic magma cracks and ember sparks across a volcanic stone texture background" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB_FInkfibuVJBNP5Q0z-Geu_6OKxq6qYzC9-Iax6gggq_7AvdAYNg1EB_oBBM6xpl63Re15O_4b9nCB9ojprZSnG4UR_hYGayOVkeLK-jtqTUNMp3Tb0r9PYkhNi8ndxFPakr36Q4dlEJ4HNGEw75i-TxGPt5CTvQpNappi2-dCIHfzuM64u6MBgTFYUKmIfxH7ZC_kXAOMXv72zYDpqw0N56ceK-ptpiedswcMEdLb11bZ2YizB4r3PftwLdTnSLzs-mQ7ukJRfB6')"></div>
+<div class="relative h-full w-full flex flex-col items-center justify-center p-6">
+<header class="w-full flex justify-between items-center mb-4">
+<span class="font-headline font-extrabold text-2xl text-on-surface tracking-tighter opacity-80 uppercase">Player 3</span>
+<div class="flex gap-2">
+<div class="flex items-center gap-1 bg-tertiary/10 text-tertiary px-3 py-1 rounded-full border border-tertiary/20">
+<span class="material-symbols-outlined text-sm">skull</span>
+<span class="text-xs font-bold font-label">0</span>
+</div>
+</div>
+</header>
+<div class="flex-1 flex flex-col items-center justify-center space-y-2">
+<button class="text-surface-container-highest hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-4xl">expand_less</span>
+</button>
+<div class="life-total-text font-headline font-black text-8xl md:text-9xl text-primary leading-none select-none">40</div>
+<button class="text-surface-container-highest hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-4xl">expand_more</span>
+</button>
+</div>
+<footer class="w-full flex justify-around mt-4 pt-4 border-t border-white/5">
+<div class="flex flex-col items-center opacity-50 hover:opacity-100 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined text-secondary">shield</span>
+<span class="text-[10px] font-bold mt-1 uppercase tracking-widest text-on-surface-variant">Tax 0</span>
+</div>
+<div class="flex flex-col items-center opacity-50 hover:opacity-100 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined text-error">swords</span>
+<span class="text-[10px] font-bold mt-1 uppercase tracking-widest text-on-surface-variant">Cmd 0</span>
+</div>
+</footer>
+</div>
+</section>
+<!-- Player 4 Zone (Bottom Right) -->
+<section class="relative bg-surface-container-low rounded-3xl overflow-hidden group">
+<div class="absolute inset-0 opacity-10 pointer-events-none bg-center bg-cover" data-alt="Lush dark emerald leaf patterns with golden vein textures and mystic forest mist" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCjEjerzBGmqGYD8LR7zZ-LOH86ZEStMmxfW2eQJoW8Jb_9dVp0Pb_qZ8pg8x_Hz91TNfemdH1nVwTH7SUxE3mIjGZdi-FplUG-XkPIF62OixUcSquF7uV2r7GDsQTYsEagD-Cl70Oga4ir8Qp7tQoq6F2l5ok87GHqOGnOBTuSVcpzcMKzIvzKDb1aSDorhbSy8Cu4JtFppXL9zH_NXfOS2yyww7Ak-sn_AtIAb0EF8FbTpEpxy95mMOZi9CLvyyDw4WiSG0o4enoa')"></div>
+<div class="relative h-full w-full flex flex-col items-center justify-center p-6">
+<header class="w-full flex justify-between items-center mb-4">
+<span class="font-headline font-extrabold text-2xl text-on-surface tracking-tighter opacity-80 uppercase">Player 4</span>
+<div class="flex gap-2">
+<div class="flex items-center gap-1 bg-tertiary/10 text-tertiary px-3 py-1 rounded-full border border-tertiary/20">
+<span class="material-symbols-outlined text-sm">skull</span>
+<span class="text-xs font-bold font-label">0</span>
+</div>
+</div>
+</header>
+<div class="flex-1 flex flex-col items-center justify-center space-y-2">
+<button class="text-surface-container-highest hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-4xl">expand_less</span>
+</button>
+<div class="life-total-text font-headline font-black text-8xl md:text-9xl text-primary leading-none select-none">40</div>
+<button class="text-surface-container-highest hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-4xl">expand_more</span>
+</button>
+</div>
+<footer class="w-full flex justify-around mt-4 pt-4 border-t border-white/5">
+<div class="flex flex-col items-center opacity-50 hover:opacity-100 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined text-secondary">shield</span>
+<span class="text-[10px] font-bold mt-1 uppercase tracking-widest text-on-surface-variant">Tax 0</span>
+</div>
+<div class="flex flex-col items-center opacity-50 hover:opacity-100 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined text-error">swords</span>
+<span class="text-[10px] font-bold mt-1 uppercase tracking-widest text-on-surface-variant">Cmd 0</span>
+</div>
+</footer>
+</div>
+</section>
+</main>
+<!-- Phase / Game State Overlay (Center Asymmetric Component) -->
+<div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40">
+<div class="glass-panel border border-primary/20 rounded-full px-6 py-2 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex items-center gap-4">
+<span class="font-headline font-bold text-xs tracking-widest text-primary/60 uppercase">Active Phase</span>
+<div class="h-4 w-[1px] bg-primary/20"></div>
+<span class="font-headline font-black text-xl text-primary tracking-tight">MAIN 1</span>
+</div>
+</div>
+<!-- Bottom Navigation Shell -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#1c1102]/90 backdrop-blur-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.8)] rounded-t-3xl border-t border-[#c99e55]/10">
+<div class="flex flex-col items-center justify-center bg-[#c99e55]/20 text-[#eebf73] rounded-xl px-3 py-1 shadow-[0_0_15px_rgba(238,191,115,0.2)] duration-200 ease-out active:scale-95 cursor-pointer">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Manrope'] text-[10px] uppercase tracking-widest font-semibold mt-1">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-70 hover:opacity-100 hover:text-[#eebf73] transition-colors cursor-pointer">
+<span class="material-symbols-outlined">group</span>
+<span class="font-['Manrope'] text-[10px] uppercase tracking-widest font-semibold mt-1">Players</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-70 hover:opacity-100 hover:text-[#eebf73] transition-colors cursor-pointer">
+<span class="material-symbols-outlined">style</span>
+<span class="font-['Manrope'] text-[10px] uppercase tracking-widest font-semibold mt-1">Decks</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-70 hover:opacity-100 hover:text-[#eebf73] transition-colors cursor-pointer">
+<span class="material-symbols-outlined">history</span>
+<span class="font-['Manrope'] text-[10px] uppercase tracking-widest font-semibold mt-1">History</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 opacity-70 hover:opacity-100 hover:text-[#eebf73] transition-colors cursor-pointer">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="font-['Manrope'] text-[10px] uppercase tracking-widest font-semibold mt-1">Stats</span>
+</div>
+</nav>
+<!-- Floating Global Counter (Optional utility for floating tokens) -->
+<div class="fixed bottom-24 right-8 z-50">
+<button class="w-14 h-14 bg-gradient-to-br from-primary to-primary-container rounded-full shadow-[0_10px_30px_rgba(238,191,115,0.4)] flex items-center justify-center scale-100 active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-on-primary text-3xl font-bold">add</span>
+</button>
+</div>
+</body></html>
