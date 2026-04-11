@@ -14,11 +14,11 @@
 | EPIC-01 | Data Foundation | 11 | 49 | 11 | 0 | ✅ Done |
 | EPIC-02 | Match Lifecycle | 9 | 42 | 9 | 0 | ✅ Done |
 | EPIC-03 | Live Tracking | 11 | 44 | 11 | 0 | ✅ Done |
-| EPIC-04 | History & Stats | 13 | 52 | 4 | 9 | 🔄 In Progress |
+| EPIC-04 | History & Stats | 13 | 52 | 12 | 1 | 🔄 In Progress |
 | EPIC-05 | Platform | 18 | 68 | 0 | 18 | 📋 Planning |
 | **M1 Total** | — | **72** | **289** | **41** | **31** | — |
 
-**Progress:** 52/72 issues done (72%) · 208/289 SP completed (72%)
+**Progress:** 60/72 issues done (83%) · 244/289 SP completed (84%)
 
 ---
 
@@ -99,9 +99,9 @@
 
 ---
 
-## EPIC-04 — History & Stats 📋 Planning
+## EPIC-04 — History & Stats 🔄 In Progress
 
-> 13 issues · 52 SP · 0% complete
+> 13 issues · 52 SP · 92% complete
 > **Dependency:** EPIC-02 ✅, EPIC-03 ✅ — **Ready to start**
 
 | ID | Title | Priority | SP | Status |
@@ -117,7 +117,7 @@
 | HIST-008 | API — Commander Stats (GET /stats/commanders/:id) | P1 | 2 | ✅ Done |
 | HIST-009 | UI — SCR-014 Commander Detail FULL | P1 | 2 | ✅ Done |
 | HIST-010 | API — Matchup Stats + Global Stats | P1 | 5 | ✅ Done |
-| HIST-011 | UI — SCR-006 Stats Dashboard + SCR-015 Matchup Stats | P1 | 8 | 📋 Backlog |
+| HIST-011 | UI — SCR-006 Stats Dashboard + SCR-015 Matchup Stats | P1 | 8 | ✅ Done |
 | HIST-012 | 🧪 Epic Tests — History & Stats | P1 | 5 | 📋 Backlog |
 
 ---
@@ -152,18 +152,18 @@
 
 ## Kanban View
 
-### ✅ Done (52 issues · 208 SP)
+### ✅ Done (60 issues · 244 SP)
 
 `ADR-001` `SETUP-001` `SETUP-002` `SETUP-003` `SETUP-004` `SETUP-005` `SETUP-006` `SETUP-007` `SETUP-008` `SETUP-009`
 `DATA-001` `DATA-002` `DATA-003` `DATA-004` `DATA-005` `DATA-006` `DATA-007` `DATA-008` `DATA-009` `DATA-010` `DATA-011`
 `MATCH-001` `MATCH-002` `MATCH-003` `MATCH-004` `MATCH-005` `MATCH-006` `MATCH-007` `MATCH-008` `MATCH-009`
 `ADR-002` `ADR-003` `TRACK-001` `TRACK-002` `TRACK-003` `TRACK-004` `TRACK-005` `TRACK-006` `TRACK-007` `TRACK-008` `TRACK-009`
-`ADR-008` `HIST-001` `HIST-002` `HIST-003` `HIST-004` `HIST-005` `HIST-006` `HIST-007` `HIST-008` `HIST-009` `HIST-010`
+`ADR-008` `HIST-001` `HIST-002` `HIST-003` `HIST-004` `HIST-005` `HIST-006` `HIST-007` `HIST-008` `HIST-009` `HIST-010` `HIST-011`
 
-### 📋 Backlog (31 issues · 120 SP)
+### 📋 Backlog (23 issues · 93 SP)
 
 **EPIC-04 — In Progress:**
-`HIST-011` `HIST-012`
+`HIST-012`
 
 **EPIC-05 — After EPIC-04:**
 `ADR-004` `ADR-005` `ADR-006` `ADR-007` `PLAT-001` `PLAT-002` `PLAT-003` `PLAT-004` `PLAT-005` `PLAT-006` `PLAT-007` `PLAT-008` `PLAT-009` `PLAT-010` `PLAT-011` `PLAT-012` `PLAT-013` `PLAT-014`
