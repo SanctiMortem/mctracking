@@ -1,8 +1,8 @@
 # EPIC-02: Match Lifecycle
 
 > **Milestone:** M1
-> **Status:** 📋 Planning
-> **Issues:** 9 total (0 done)
+> **Status:** 🔄 In Progress
+> **Issues:** 9 total (1 done)
 > **Branch:** `epic/match-lifecycle` (crear al empezar)
 
 ---

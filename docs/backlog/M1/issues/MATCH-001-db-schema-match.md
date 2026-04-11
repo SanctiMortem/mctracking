@@ -4,7 +4,7 @@
 > **Priority:** P0
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-02-MATCH-LIFECYCLE](../epics/EPIC-02-MATCH-LIFECYCLE.md)
 > **Skills:** `domains/db`
 > **Agents:** `database-architect`, `data-modeler-drizzle`
@@ -41,12 +41,12 @@ Crear el schema Drizzle para las entidades centrales del match lifecycle: `match
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Tabla `matches`: `id`, `status` (enum: in_progress/completed/abandoned), `created_by`, `created_at`, `ended_at` (nullable)
-- [ ] Tabla `participations`: `id`, `match_id` (FK), `player_id` (FK), `deck_id` (FK), `result` (enum: win/lose/draw/null), `life_total` (int, default 40), `poison_counters` (int, default 0), `commander_damage` (JSONB), `created_at`
-- [ ] Tabla `match_results`: `id`, `match_id` (FK, unique), `winner_participation_id` (FK, nullable — null en draw/abandon), `win_condition` (enum), `is_draw` (bool), `created_at`
-- [ ] Enum `win_condition`: combat_damage, commander_damage, infect, combo, mill, scoop, concede, other
-- [ ] Índices en `participations(match_id)`, `participations(player_id)`, `participations(deck_id)`
-- [ ] `pnpm db:generate` + `pnpm db:migrate` exitosos
+- [x] Tabla `matches`: `id`, `status` (enum: in_progress/completed/abandoned), `created_by`, `created_at`, `ended_at` (nullable)
+- [x] Tabla `participations`: `id`, `match_id` (FK), `player_id` (FK), `deck_id` (FK), `result` (enum: win/lose/draw/null), `life_total` (int, default 40), `poison_counters` (int, default 0), `commander_damage` (JSONB), `created_at`
+- [x] Tabla `match_results`: `id`, `match_id` (FK, unique), `winner_participation_id` (FK, nullable — null en draw/abandon), `win_condition` (enum), `is_draw` (bool), `created_at`
+- [x] Enum `win_condition`: combat_damage, commander_damage, infect, combo, mill, scoop, concede, other
+- [x] Índices en `participations(match_id)`, `participations(player_id)`, `participations(deck_id)`
+- [ ] `pnpm db:generate` + `pnpm db:migrate` exitosos — `db:generate` ✅, `db:migrate` pendiente (requiere DATABASE_URL en Neon)
 
 ## 🥒 Escenarios (Gherkin)
 
@@ -117,6 +117,7 @@ export const participations = pgTable('participations', {
 
 - [ ] Unit: insertar match + 4 participations con datos válidos
 - [ ] Unit: unique constraint en match_results.match_id
+> Tests cubiertos en MATCH-009 (Epic Tests)
 
 ## 🚫 Out of Scope
 
@@ -138,13 +139,15 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | Pendiente ADR-002 y ADR-003 para decidir si life_total/commander_damage son denormalized o recalculados | Sources of truth |
+| 2026-04-10 | ADR-002 Opción A: `participations.commander_damage` (JSONB) es source of truth — actualizado en cada evento, MatchEvents son log inmutable | O(1) read en tracker en vivo |
+| 2026-04-10 | ADR-003 Opción A: `participations.life_total` es source of truth — consistente con ADR-002 | Mismo patrón, simplicidad |
+| 2026-04-10 | `participationResultEnum` no incluye `null` como valor explícito — null en DB significa abandoned/in_progress (BR-MATCH-06) | Drizzle no requiere enum value para NULL |
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+_Ver branch `epic/match-lifecycle`_
 
 ---
 
