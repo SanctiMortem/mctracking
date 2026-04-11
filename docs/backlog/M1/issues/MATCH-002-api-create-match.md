@@ -4,7 +4,7 @@
 > **Priority:** P0
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-02-MATCH-LIFECYCLE](../epics/EPIC-02-MATCH-LIFECYCLE.md)
 > **Skills:** `domains/api`, `domains/db`
 > **Agents:** `backend-specialist`
@@ -37,14 +37,14 @@ Implementar `POST /api/matches`: crea un Match con status `in_progress` y las Pa
 
 ## ✅ Criterios de Aceptación
 
-- [ ] `POST /api/matches` acepta array de `{ player_id, deck_id }` (2-4 elementos)
-- [ ] Retorna `400` si hay menos de 2 o más de 4 participantes
-- [ ] Retorna `400` si un mismo `deck_id` aparece más de una vez en el request
-- [ ] Retorna `400` si algún deck ya está en otro match con status `in_progress`
-- [ ] Crea Match (status: `in_progress`) + N Participations en una transacción
-- [ ] Participations inicializan `life_total = 40`, `poison_counters = 0`, `commander_damage = {}`
-- [ ] Retorna el match creado con sus participations embebidas
-- [ ] `401` sin JWT, `403` si player/deck no pertenece al usuario
+- [x] `POST /api/matches` acepta array de `{ player_id, deck_id }` (2-4 elementos)
+- [x] Retorna `400` si hay menos de 2 o más de 4 participantes
+- [x] Retorna `400` si un mismo `deck_id` aparece más de una vez en el request
+- [x] Retorna `400` si algún deck ya está en otro match con status `in_progress`
+- [x] Crea Match (status: `in_progress`) + N Participations en una transacción
+- [x] Participations inicializan `life_total = 40`, `poison_counters = 0`, `commander_damage = {}`
+- [x] Retorna el match creado con sus participations embebidas
+- [x] `401` sin JWT, `403` si player/deck no pertenece al usuario
 
 ## 🥒 Escenarios (Gherkin)
 
@@ -108,6 +108,7 @@ await db.transaction(async (tx) => {
 
 - [ ] Unit: `services/matches.ts` — createMatch con deck duplicado falla
 - [ ] Integration: POST retorna 400 para deck en match activo
+> Tests cubiertos en MATCH-009 (Epic Tests)
 
 ## 🚫 Out of Scope
 
@@ -128,13 +129,15 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | `isDeckInActiveMatch` / `isPlayerInActiveMatch` exportadas desde `services/matches.ts` — reemplazan stubs en players.ts y decks.ts | Single source of truth para active-match check |
+| 2026-04-11 | Ownership check via batch `inArray` query en vez de N queries individuales | Eficiencia |
+| 2026-04-11 | Conflict check (deck activo) después del ownership check | Evitar leak de info sobre decks ajenos |
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+_Ver branch `epic/match-lifecycle`_
 
 ---
 

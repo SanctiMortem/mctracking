@@ -4,12 +4,12 @@
  *
  * DATA-003 (EPIC-01)
  *
- * ⚠️ hasActiveMatch is a stub — full implementation in MATCH-001 (EPIC-02)
- *    once the participations table exists.
+ * hasActiveMatch implemented via isPlayerInActiveMatch (MATCH-002).
  */
 import { and, eq, isNull, ne, sql } from 'drizzle-orm';
 
 import { db } from '@/services/db';
+import { isPlayerInActiveMatch } from '@/services/matches';
 import { players } from '@/db/schema';
 import type { Player } from '@/db/index';
 
@@ -34,18 +34,6 @@ export async function getPlayerById(id: string): Promise<Player | null> {
   return row ?? null;
 }
 
-/**
- * Check whether a player is currently in an in_progress match.
- * Stub: always returns false until participations table exists (MATCH-001).
- */
-async function hasActiveMatch(_playerId: string): Promise<boolean> {
-  // TODO MATCH-001: replace with:
-  //   SELECT 1 FROM participations p
-  //   JOIN matches m ON m.id = p.match_id
-  //   WHERE p.player_id = $playerId AND m.status = 'in_progress'
-  //   LIMIT 1
-  return false;
-}
 
 // ─────────────────────────────────────────────
 // Mutations
@@ -122,7 +110,7 @@ export async function softDeletePlayer(
   if (!row) return { notFound: true };
   if (row.createdBy !== userId) return { forbidden: true };
 
-  if (await hasActiveMatch(id)) return { activeMatch: true };
+  if (await isPlayerInActiveMatch(id)) return { activeMatch: true };
 
   await db
     .update(players)

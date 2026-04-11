@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** S
 > **Story Points:** 2
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-02-MATCH-LIFECYCLE](../epics/EPIC-02-MATCH-LIFECYCLE.md)
 > **Skills:** `domains/api`, `domains/db`
 > **Agents:** `backend-specialist`
@@ -70,8 +70,8 @@ Escenario: Obtener match completado
 
 ## 🧪 Tests Requeridos
 
-- [ ] Unit: getMatchById retorna null para match de otro usuario
-- [ ] Integration: GET match completado incluye MatchResult
+- [x] Unit: getMatchById retorna notFound para match de otro usuario
+- [x] Integration: GET match completado incluye MatchResult
 
 ## 🚫 Out of Scope
 
@@ -92,15 +92,26 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | `alias` importado de `drizzle-orm/pg-core` (no top-level) | En drizzle-orm 0.45.x la función `alias` para PG vive en `pg-core` |
+| 2026-04-11 | `notFound` cuando `created_by ≠ userId` | Evita info leak — el ownership check duplica como guard de 404 |
+| 2026-04-11 | `events` omitido de la respuesta | EPIC-03 scope — MatchEvent no existe aún |
+
+### AC Evidence
+
+| AC | Descripción | Cubierto | Evidencia |
+|----|-------------|----------|-----------|
+| 1 | Retorna match con participations embebidas (player.name, deck.name, commander.name + colors) | ✅ | `services/matches.ts` — `getMatchById` JOIN chain |
+| 2 | Retorna MatchResult si el match está completed | ✅ | `services/matches.ts` — query final `matchResults` |
+| 3 | Retorna 404 si el match no existe o no pertenece al usuario | ✅ | `app/api/matches/[id]+api.ts:GET` — `notFound` → 404 |
+| 4 | Retorna 401 sin JWT | ✅ | `app/api/matches/[id]+api.ts:GET` — `getAuth` guard |
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+_Ver git log — branch epic/match-lifecycle_
 
 ---
 
 _Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Última actualización: 2026-04-11_

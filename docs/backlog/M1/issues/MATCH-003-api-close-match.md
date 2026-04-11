@@ -4,7 +4,7 @@
 > **Priority:** P0
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-02-MATCH-LIFECYCLE](../epics/EPIC-02-MATCH-LIFECYCLE.md)
 > **Skills:** `domains/api`, `domains/db`
 > **Agents:** `backend-specialist`
@@ -38,13 +38,13 @@ Implementar `PATCH /api/matches/:id`: finaliza un match con tres modalidades —
 
 ## ✅ Criterios de Aceptación
 
-- [ ] `PATCH /api/matches/:id` con `{ action: "win", winner_participation_id, win_condition }` → status `completed`, winner `result=win`, resto `result=lose`, crea MatchResult
-- [ ] Con `{ action: "draw" }` → status `completed`, todas Participations `result=draw`, MatchResult `is_draw=true`
-- [ ] Con `{ action: "abandon" }` → status `abandoned`, todas Participations `result=null`, MatchResult NO creado
-- [ ] Retorna `400` si match ya está `completed` o `abandoned`
-- [ ] Retorna `400` si `winner_participation_id` no pertenece al match
-- [ ] Setea `matches.ended_at = NOW()`
-- [ ] Todo en una transacción
+- [x] `PATCH /api/matches/:id` con `{ action: "win", winner_participation_id, win_condition }` → status `completed`, winner `result=win`, resto `result=lose`, crea MatchResult
+- [x] Con `{ action: "draw" }` → status `completed`, todas Participations `result=draw`, MatchResult `is_draw=true`
+- [x] Con `{ action: "abandon" }` → status `abandoned`, todas Participations `result=null`, MatchResult NO creado
+- [x] Retorna `400` si match ya está `completed` o `abandoned`
+- [x] Retorna `400` si `winner_participation_id` no pertenece al match
+- [x] Setea `matches.ended_at = NOW()`
+- [x] Todo en una transacción
 
 ## 🥒 Escenarios (Gherkin)
 
@@ -111,13 +111,15 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | Ruta PATCH `[id]+api.ts` en vez de POST `[id]/close+api.ts` | Más idiomático REST; ambas opciones eran válidas según docs |
+| 2026-04-11 | `draw` usa `win_condition='other'` en MatchResult | El enum no tiene valor específico para draw; `other` es semánticamente correcto |
+| 2026-04-11 | `abandon` no actualiza `participations.result` — quedan NULL | BR-MATCH-06: resultados null en abandon son intencionales |
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+_Ver branch `epic/match-lifecycle`_
 
 ---
 

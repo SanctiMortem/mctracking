@@ -4,7 +4,7 @@
 > **Priority:** P0
 > **Effort:** L
 > **Story Points:** 8
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-02-MATCH-LIFECYCLE](../epics/EPIC-02-MATCH-LIFECYCLE.md)
 > **Skills:** `domains/ui`
 > **Agents:** `frontend-specialist`, `mobile-developer`
@@ -94,9 +94,9 @@ Escenario: Deck en match activo no disponible
 
 ## 🧪 Tests Requeridos
 
-- [ ] Unit: `MatchSetupForm` — deshabilita "Iniciar" con deck duplicado
-- [ ] Integration: form completo → POST /api/matches → navegación a tracker
-- [ ] E2E: happy path 3-player match setup en simulador
+- [x] Unit: `useMatchSetup` — isValid=false con deck duplicado (MATCH-009)
+- [x] Integration: form completo → POST /api/matches → navegación a tracker (MATCH-009)
+- [ ] E2E: happy path 3-player match setup en simulador (MATCH-009)
 
 ## 🚫 Out of Scope
 
@@ -117,15 +117,31 @@ No aplica — funcionalidad nueva. Reutiliza `CommanderSelector` de DATA-007.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | Player selection via chips (horizontal scroll) over explicit "+" slots | Matches SCR-007 wireframe in 15_DESIGN.md — chips are more readable with many players |
+| 2026-04-11 | Deck picker as Modal (pageSheet) instead of inline dropdown | No bottom sheet library in scope; Modal is simpler and works cross-platform |
+| 2026-04-11 | Deck-in-active-match graying deferred; handled at POST error level | DeckWithCommanders doesn't expose `inActiveMatch`; server-side error is sufficient for MVP |
+| 2026-04-11 | `PlayerSlot.tsx` merged into `MatchSetupForm.tsx` | Only used in one place; separate file adds indirection without benefit |
+
+### AC Evidence
+
+| AC | Descripción | Cubierto | Evidencia |
+|----|-------------|----------|-----------|
+| 1 | Modal full-screen, sin tab bar visible | ✅ | `_layout.tsx` — `presentation: 'fullScreenModal'` |
+| 2 | 2–4 jugadores via chips | ✅ | `useMatchSetup.ts` — `togglePlayer` guards `length >= 4` |
+| 3 | Selector de jugador + deck por slot | ✅ | `MatchSetupForm.tsx` — chip row + deck trigger per selected player |
+| 4 | Duplicate deck → error visual inline | ✅ | `useMatchSetup.ts` — `duplicateDeckIds`; `MatchSetupForm.tsx` — `deckTriggerError` border + error text |
+| 5 | "Iniciar Partida" disabled hasta valid | ✅ | `useMatchSetup.ts` — `isValid`; `MatchSetupForm.tsx` — `submitBtnDisabled` |
+| 6 | POST /api/matches → navega a tracker | ✅ | `useMatchSetup.ts:submit()`; `setup.tsx:handleSubmit` → `router.replace` |
+| 7 | Cancelar cierra modal | ✅ | `setup.tsx:handleCancel` → `router.dismiss()` |
+| 8 | Reutiliza ColorChips (CMP equiv.) | ✅ | `MatchSetupForm.tsx` — `<ColorChips readonly />` |
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+_Ver git log — branch epic/match-lifecycle_
 
 ---
 
 _Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Última actualización: 2026-04-11_

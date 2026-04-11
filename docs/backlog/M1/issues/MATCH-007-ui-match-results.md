@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-02-MATCH-LIFECYCLE](../epics/EPIC-02-MATCH-LIFECYCLE.md)
 > **Skills:** `domains/ui`
 > **Agents:** `frontend-specialist`, `mobile-developer`
@@ -36,13 +36,13 @@ Implementar SCR-010 (Match Results): pantalla de resumen post-match que muestra 
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Muestra ganador con su deck y commander (o "Empate" / "Partida abandonada")
-- [ ] Muestra win condition en texto legible (ej: "Victoria por Combo")
-- [ ] Lista de todos los participantes con su resultado (W/L/Draw)
-- [ ] Duración del match (ended_at - created_at)
-- [ ] CTA "Ver detalle" navega a SCR-011
-- [ ] CTA "Nueva partida" navega a SCR-007
-- [ ] CTA "Inicio" navega a Home (tab)
+- [x] Muestra ganador con su deck y commander (o "Empate" / "Partida abandonada")
+- [x] Muestra win condition en texto legible (ej: "Victoria por Combo")
+- [x] Lista de todos los participantes con su resultado (W/L/Draw)
+- [x] Duración del match (ended_at - created_at)
+- [x] CTA "Ver detalle" navega a SCR-011
+- [x] CTA "Nueva partida" navega a SCR-007
+- [x] CTA "Inicio" navega a Home (tab)
 
 ## 🥒 Escenarios (Gherkin)
 
@@ -105,15 +105,30 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | `MatchResultCard` separado de `results.tsx` | Hero card reutilizable; la pantalla queda thin (solo layout + CTAs) |
+| 2026-04-11 | CTA "Ver detalle" oculto si outcome === 'abandoned' | Partidas abandonadas no tienen stats ni detalle útil; edge case del issue |
+| 2026-04-11 | `useMatchResults` exporta `winConditionLabel` y `formatMatchDuration` como named exports | Permite reusar en tests unitarios y en SCR-011 sin reimplementar |
+| 2026-04-11 | `outcomeConfig()` en `MatchResultCard` centraliza color/icon/label | Evita duplicación de lógica de presentación entre banner y el resto del card |
+
+### AC Evidence
+
+| AC | Descripción | Cubierto | Evidencia |
+|----|-------------|----------|-----------|
+| 1 | Ganador con deck + commander / Empate / Abandonada | ✅ | `MatchResultCard.tsx` — `outcomeConfig` × 3 outcomes; winner block solo para 'win' |
+| 2 | Win condition en texto legible | ✅ | `useMatchResults.ts:winConditionLabel` → `MatchResultCard:conditionBadge` |
+| 3 | Lista participantes con resultado W/L/Draw | ✅ | `results.tsx` → `ParticipantResultRow` × participations |
+| 4 | Duración del match | ✅ | `useMatchResults.ts:formatMatchDuration` → `results.tsx:durationRow` |
+| 5 | CTA "Ver detalle" → SCR-011 | ✅ | `results.tsx` → `router.push('/match/${id}')` (oculto si abandoned) |
+| 6 | CTA "Nueva partida" → SCR-007 | ✅ | `results.tsx` → `router.replace('/match/setup')` |
+| 7 | CTA "Inicio" → Home tab | ✅ | `results.tsx` → `router.replace('/(tabs)')` |
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+_Ver git log — branch epic/match-lifecycle_
 
 ---
 
 _Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Última actualización: 2026-04-11_

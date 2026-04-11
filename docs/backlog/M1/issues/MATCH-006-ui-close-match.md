@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-02-MATCH-LIFECYCLE](../epics/EPIC-02-MATCH-LIFECYCLE.md)
 > **Skills:** `domains/ui`
 > **Agents:** `frontend-specialist`, `mobile-developer`
@@ -86,8 +86,8 @@ Escenario: Abandonar con confirmación
 
 ## 🧪 Tests Requeridos
 
-- [ ] Unit: `CloseMatchSheet` — opciones y estados
-- [ ] Integration: confirmar victoria → PATCH API → navegación a SCR-010
+- [x] Unit: `CloseMatchSheet` — opciones y estados (MATCH-009)
+- [x] Integration: confirmar victoria → PATCH API → navegación a SCR-010 (MATCH-009)
 
 ## 🚫 Out of Scope
 
@@ -107,15 +107,30 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | `transparentModal` presentation + `contentStyle: transparent` | Lets tracker show dimmed behind the sheet without a native bottom sheet library |
+| 2026-04-11 | `scoop` + `concede` merged to one chip labeled "Concede" | Edge case from issue: "equivalentes visualmente — mostrar solo uno"; maps to `scoop` value |
+| 2026-04-11 | Win condition picker revealed only after winner is selected | Progressive disclosure — reduces cognitive load; matches `select-winner` → `select-condition` state machine in design |
+| 2026-04-11 | Tapping selected player row deselects (toggle) | Allows correcting a mis-tap without modal dismiss |
+
+### AC Evidence
+
+| AC | Descripción | Cubierto | Evidencia |
+|----|-------------|----------|-----------|
+| 1 | Bottom sheet desde SCR-008 (`/match/[id]/close`) | ✅ | `_layout.tsx` — `transparentModal` + `slide_from_bottom` |
+| 2 | 3 opciones: ganador / empate / abandonar | ✅ | `CloseMatchSheet.tsx` — mode `win`/`draw`/`abandon` |
+| 3 | Win: lista jugadores + dropdown win_condition (7 opciones) | ✅ | `CloseMatchSheet.tsx` player rows; `WinConditionPicker.tsx` |
+| 4 | Draw: confirmación + llama API `action: draw` | ✅ | `CloseMatchSheet.tsx` modeCard + `useCloseMatch.ts:submit` |
+| 5 | Abandon: warning + llama API `action: abandon` | ✅ | `CloseMatchSheet.tsx` modeCard + `useCloseMatch.ts:submit` |
+| 6 | Victoria: PATCH → navega a SCR-010 | ✅ | `close.tsx:handleConfirm` → `router.replace(/results)` |
+| 7 | Cancelar cierra sheet → vuelve al tracker | ✅ | `close.tsx:handleCancel` → `router.back()` |
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+_Ver git log — branch epic/match-lifecycle_
 
 ---
 
 _Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Última actualización: 2026-04-11_

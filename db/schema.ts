@@ -1,11 +1,44 @@
 import {
   pgTable,
+  pgEnum,
   uuid,
   text,
   boolean,
+  integer,
+  jsonb,
   timestamp,
   index,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
+
+// ─────────────────────────────────────────────
+// enums
+// E-005 · E-007 · E-008
+// ─────────────────────────────────────────────
+export const matchStatusEnum = pgEnum('match_status', [
+  'in_progress',
+  'completed',
+  'abandoned',
+]);
+
+// NULL in DB means abandoned or in_progress (BR-MATCH-06)
+export const participationResultEnum = pgEnum('participation_result', [
+  'win',
+  'lose',
+  'draw',
+]);
+
+// BR-MATCH-09
+export const winConditionEnum = pgEnum('win_condition', [
+  'combat_damage',
+  'commander_damage',
+  'infect',
+  'combo',
+  'mill',
+  'scoop',
+  'concede',
+  'other',
+]);
 
 // ─────────────────────────────────────────────
 // commanders
@@ -71,4 +104,66 @@ export const decks = pgTable(
     index('decks_created_by_idx').on(table.createdBy),
     index('decks_commander_id_idx').on(table.commanderId),
   ],
+);
+
+// ─────────────────────────────────────────────
+// matches
+// E-005 · BR-MATCH-01 · BR-MATCH-06
+// ─────────────────────────────────────────────
+export const matches = pgTable('matches', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  status: matchStatusEnum('status').notNull().default('in_progress'),
+  createdBy: text('created_by').notNull(), // Clerk user ID
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  // Set when match transitions to completed or abandoned
+  endedAt: timestamp('ended_at'),
+});
+
+// ─────────────────────────────────────────────
+// participations
+// E-008 · ADR-002 · ADR-003 · BR-TRACK-02 · BR-TRACK-05
+// life_total + commander_damage are the source of truth (ADR-002, ADR-003 Option A)
+// ─────────────────────────────────────────────
+export const participations = pgTable(
+  'participations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    matchId: uuid('match_id').notNull().references(() => matches.id),
+    playerId: uuid('player_id').notNull().references(() => players.id),
+    deckId: uuid('deck_id').notNull().references(() => decks.id),
+    // NULL means match is in_progress or abandoned (BR-MATCH-06)
+    result: participationResultEnum('result'),
+    lifeTotal: integer('life_total').notNull().default(40),
+    poisonCounters: integer('poison_counters').notNull().default(0),
+    // Structure: { [commander_id: string]: number } — validated in API
+    // Partners have separate counters per commander_id (BR-TRACK-03)
+    commanderDamage: jsonb('commander_damage').notNull().default({}),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('participations_match_id_idx').on(table.matchId),
+    index('participations_player_id_idx').on(table.playerId),
+    index('participations_deck_id_idx').on(table.deckId),
+  ],
+);
+
+// ─────────────────────────────────────────────
+// match_results
+// E-007 · BR-MATCH-08 · BR-MATCH-09
+// ─────────────────────────────────────────────
+export const matchResults = pgTable(
+  'match_results',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    // One result per match — enforced by unique index below
+    matchId: uuid('match_id').notNull().references(() => matches.id),
+    // NULL when is_draw=true (BR-MATCH-08) — result is set on all Participations instead
+    winnerParticipationId: uuid('winner_participation_id').references(
+      () => participations.id,
+    ),
+    winCondition: winConditionEnum('win_condition').notNull(),
+    isDraw: boolean('is_draw').notNull().default(false),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('match_results_match_id_unique_idx').on(table.matchId)],
 );
