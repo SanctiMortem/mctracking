@@ -83,17 +83,17 @@ Una celda vacía en la columna Test indica una brecha de cobertura que debe reso
 
 | US | Feature | Business Rules | Endpoint(s) | Unit Test | Integration Test | E2E |
 |----|---------|---------------|-------------|-----------|-----------------|-----|
-| US-019 | FT-007 Historial | BR-STATS-02, BR-MATCH-07 | `GET /matches` | — | `GET /matches` filtros | E2E-005 |
-| US-020 | FT-007 Historial | BR-STATS-08 (filtros historial) | `GET /matches` | — | `GET /matches` con filtros | — |
-| US-021 | FT-007 Historial | — | `GET /matches/:id` | — | `GET /matches/:id` detail | — |
-| US-022 | FT-008 Stats Jugador | BR-STATS-01, CALC-001 | `GET /stats/players/:id` | `winRate.test.ts` | `GET /stats/players/:id` | E2E-005 |
-| US-023 | FT-008 Stats Jugador | BR-STATS-03 (deck stats) | `GET /stats/decks/:id` | — | `GET /stats/decks/:id` | — |
-| US-024 | FT-009 Stats Deck | BR-STATS-03, CALC-001 | `GET /stats/decks/:id` | `winRate.test.ts` | `GET /stats/decks/:id` | — |
-| US-025 | FT-010 Stats Commander | BR-STATS-04, BR-STATS-05 (partner) | `GET /stats/commanders/:id` | `commanderDamage.test.ts` | `GET /stats/commanders/:id` | — |
-| US-026 | FT-011 Matchup Stats | BR-STATS-06 (scope 1v1) | `GET /stats/matchup` | — | `GET /stats/matchup?scope=1v1` | — |
-| US-027 | FT-011 Matchup Stats | BR-STATS-06 (scope all) | `GET /stats/matchup` | — | `GET /stats/matchup?scope=all` | — |
-| US-028 | FT-012 Stats Dashboard | BR-STATS-07 (tie-breaking) | `GET /stats/global` | `rankings.test.ts` | `GET /stats/global` ties | E2E-005 |
-| US-029 | FT-012 Stats Dashboard | BR-STATS-07 | `GET /stats/global` | `rankings.test.ts` | `GET /stats/global` | — |
+| US-046 | FT-007 Historial | BR-STATS-02, BR-MATCH-07 | `GET /matches` | — | `GET /matches` filtros | E2E-005 |
+| US-047 | FT-007 Historial | BR-STATS-08 (filtros historial) | `GET /matches` | — | `GET /matches` con filtros | — |
+| US-048 | FT-007 Historial | — | `GET /matches/:id` | — | `GET /matches/:id` detail | — |
+| US-049 | FT-008 Stats Jugador | BR-STATS-01, CALC-001 | `GET /stats/players/:id` | `winRate.test.ts` | `GET /stats/players/:id` | E2E-005 |
+| US-050 | FT-008 Stats Jugador | BR-STATS-03 (deck stats) | `GET /stats/decks/:id` | — | `GET /stats/decks/:id` | — |
+| US-051 | FT-009 Stats Deck | BR-STATS-03, CALC-001 | `GET /stats/decks/:id` | `winRate.test.ts` | `GET /stats/decks/:id` | — |
+| US-052 | FT-010 Stats Commander | BR-STATS-04, BR-STATS-05 (partner) | `GET /stats/commanders/:id` | `commanderDamage.test.ts` | `GET /stats/commanders/:id` | — |
+| US-053 | FT-011 Matchup Stats | BR-STATS-06 (scope 1v1) | `GET /stats/matchup` | — | `GET /stats/matchup?scope=1v1` | — |
+| US-054 | FT-011 Matchup Stats | BR-STATS-06 (scope all) | `GET /stats/matchup` | — | `GET /stats/matchup?scope=all` | — |
+| US-055 | FT-012 Stats Dashboard | BR-STATS-07 (tie-breaking) | `GET /stats/global` | `rankings.test.ts` | `GET /stats/global` ties | E2E-005 |
+| US-056 | FT-012 Stats Dashboard | BR-STATS-07 | `GET /stats/global` | `rankings.test.ts` | `GET /stats/global` | — |
 
 ### Epic E5 — Platform & Auth
 
@@ -108,7 +108,7 @@ Una celda vacía en la columna Test indica una brecha de cobertura que debe reso
 | US-041 | FT-018 i18n | BR-I18N-01 (EN/ES) | — | — | — | Manual QA |
 | US-042 | FT-019 Settings | BR-TRACK-09, BR-TRACK-10 (debounce config) | `PATCH /settings` | `validators.test.ts` VAL-003 | `PATCH /settings` debounce | — |
 | US-043 | FT-019 Settings | BR-TRACK-01, BR-MATCH-05 (life inicial) | `PATCH /settings` | — | `PATCH /settings` life total | — |
-| US-044 | FT-020 Home/Nav | — | `GET /matches` (active banner) | — | — | E2E-001 |
+| US-044 | FT-020 Home/Nav | — | `GET /auth/session` (active_match field) | — | — | E2E-001 |
 | US-045 | FT-020 Home/Nav | — | — (navigation) | — | — | — |
 
 ---
@@ -152,7 +152,7 @@ Una celda vacía en la columna Test indica una brecha de cobertura que debe reso
 | BR-MATCH-04 (deck único en match activo) | US-011 | `POST /matches` | `validators.test.ts` VAL-004 |
 | BR-MATCH-05 (resultado siempre manual) | US-024 | `POST /matches/:id/close` | `matchStateMachine.test.ts` |
 | BR-MATCH-06 (abandoned excluido de stats) | US-026, US-027 | `POST /matches/:id/close` | `matchStateMachine.test.ts` |
-| BR-MATCH-07 (in_progress no en historial) | US-019 | `GET /matches` | Integration |
+| BR-MATCH-07 (in_progress no en historial) | US-046 | `GET /matches` | Integration |
 | BR-MATCH-08 (draw — estructura datos) | US-025 | `POST /matches/:id/close` | `matchStateMachine.test.ts` |
 | BR-MATCH-09 (win_condition 8 valores) | US-028 | `POST /matches/:id/close` | Integration |
 | BR-MATCH-10 (abandoned — participations sin resultado) | US-026 | `POST /matches/:id/close` | `matchStateMachine.test.ts` |
@@ -160,7 +160,7 @@ Una celda vacía en la columna Test indica una brecha de cobertura que debe reso
 | BR-DECK-02 (commander configurable como obligatorio) | US-004, US-043 | `POST /decks`, `PATCH /settings` | `validators.test.ts` |
 | BR-DECK-03 (partner commanders — ambos obligatorios) | US-005 | `POST /decks` | `validators.test.ts` VAL-005 |
 | BR-DECK-04 (owner de deck opcional) | US-004 | `POST /decks` | Integration |
-| BR-DECK-05 (deck usado por distintos jugadores) | US-024 | `GET /stats/decks/:id` | Integration |
+| BR-DECK-05 (deck usado por distintos jugadores) | US-051 | `GET /stats/decks/:id` | Integration |
 | BR-DECK-06 (deck no en dos matches activos) | US-011 | `POST /matches` | `validators.test.ts` |
 | BR-DECK-07 (soft delete si tiene historial) | US-007 | `DELETE /decks/:id` | `softDelete.test.ts` |
 | BR-DECK-08 (no eliminar deck en match activo) | US-007 | `DELETE /decks/:id` | Integration |
@@ -174,15 +174,15 @@ Una celda vacía en la columna Test indica una brecha de cobertura que debe reso
 | BR-TRACK-10 (debounce threshold 200-2000ms) | US-042 | `PATCH /settings` | `validators.test.ts` VAL-003 |
 | BR-TRACK-11 (unlimited undo) | US-033, US-034 | `POST /matches/:id/events/undo` | `undoStack.test.ts` |
 | BR-TRACK-13 (rotación individual por sección) | US-020 | — | E2E-003 |
-| BR-STATS-01 (win rate formula CALC-001) | US-022 | `GET /stats/players/:id` | `winRate.test.ts` |
-| BR-STATS-02 (solo completed en historial) | US-019, US-022 | `GET /matches`, `GET /stats/players/:id` | Integration |
-| BR-STATS-03 (stats por deck) | US-023, US-024 | `GET /stats/decks/:id` | Integration |
-| BR-STATS-04 (stats por commander) | US-025 | `GET /stats/commanders/:id` | Integration |
-| BR-STATS-05 (partner stats separadas) | US-025 | `GET /stats/commanders/:id` | `commanderDamage.test.ts` |
-| BR-STATS-06 (matchup scope 1v1/all) | US-026, US-027 | `GET /stats/matchup` | Integration |
-| BR-STATS-07 (empatados misma posición ranking) | US-028, US-029 | `GET /stats/global` | `rankings.test.ts` |
-| BR-STATS-08 (filtros historial) | US-020 | `GET /matches` | Integration |
-| BR-STATS-09 (stats on-demand sin cache) | US-022 | `GET /stats/players/:id` | `winRate.test.ts` |
+| BR-STATS-01 (win rate formula CALC-001) | US-049 | `GET /stats/players/:id` | `winRate.test.ts` |
+| BR-STATS-02 (solo completed en historial) | US-046, US-049 | `GET /matches`, `GET /stats/players/:id` | Integration |
+| BR-STATS-03 (stats por deck) | US-050, US-051 | `GET /stats/decks/:id` | Integration |
+| BR-STATS-04 (stats por commander) | US-052 | `GET /stats/commanders/:id` | Integration |
+| BR-STATS-05 (partner stats separadas) | US-052 | `GET /stats/commanders/:id` | `commanderDamage.test.ts` |
+| BR-STATS-06 (matchup scope 1v1/all) | US-053, US-054 | `GET /stats/matchup` | Integration |
+| BR-STATS-07 (empatados misma posición ranking) | US-055, US-056 | `GET /stats/global` | `rankings.test.ts` |
+| BR-STATS-08 (filtros historial) | US-047 | `GET /matches` | Integration |
+| BR-STATS-09 (stats on-demand sin cache) | US-049 | `GET /stats/players/:id` | `winRate.test.ts` |
 | BR-AUTH-01 (guest sin account) | US-037 | — | E2E-007 |
 | BR-AUTH-02 (multi-provider) | US-035, US-036 | Clerk SDK | E2E-001 |
 | BR-AUTH-03 (free/premium) | US-042 | `PATCH /settings` | E2E-008 |
@@ -191,7 +191,7 @@ Una celda vacía en la columna Test indica una brecha de cobertura que debe reso
 | BR-GROUP-01 (crear grupo) | US-038 | `POST /groups` | Integration |
 | BR-GROUP-02 (historial al salir) | US-040 | `POST /groups/join` | Integration |
 | BR-GROUP-03 (conflictos: último gana) | — | ADR-008 | — |
-| BR-GROUP-04 (archivar no borrar) | US-038 | `PATCH /groups/:id` | Integration |
+| BR-GROUP-04 (archivar no borrar) | US-038 | `PATCH /groups/:id` | Integration ✅ |
 | BR-GROUP-05 (invite expiry, owner only) | US-039, US-040 | `POST /groups/:id/invite`, `POST /groups/join` | Integration |
 | BR-ENTITY-01 (unique constraints) | US-001, US-004 | Multiple | `validators.test.ts` |
 | BR-ENTITY-02 (soft delete) | US-003, US-009 | Multiple | `softDelete.test.ts` |
@@ -222,22 +222,24 @@ Una celda vacía en la columna Test indica una brecha de cobertura que debe reso
 | `DELETE /decks/:id` | FT-002 | US-007 | softDelete | ✅ | — |
 | `POST /matches` | FT-004 | US-010, US-011, US-012 | matchSM | ✅ | E2E-003 |
 | `GET /matches/:id` | FT-005 | US-013 | — | ✅ | — |
-| `GET /matches` | FT-007 | US-019, US-020 | — | ✅ | E2E-005 |
+| `GET /matches` | FT-007 | US-046, US-047 | — | ✅ | E2E-005 |
 | `POST /matches/:id/close` | FT-006 | US-024→029 | matchSM | ✅ | E2E-003 |
 | `POST /matches/:id/events` | FT-005, FT-013, FT-014 | US-014→019 | debounce, lifeTotal | ✅ | E2E-003 |
 | `POST /matches/:id/events/undo` | FT-015 | US-033, US-034 | undoStack | ✅ | E2E-004 |
-| `GET /stats/players/:id` | FT-008 | US-022, US-023 | winRate | ✅ | E2E-005 |
-| `GET /stats/decks/:id` | FT-009 | US-024 | — | ✅ | — |
-| `GET /stats/commanders/:id` | FT-010 | US-025 | cmdDmg | ✅ | — |
-| `GET /stats/matchup` | FT-011 | US-026, US-027 | — | ✅ | — |
-| `GET /stats/global` | FT-012 | US-028, US-029 | rankings | ✅ | E2E-005 |
+| `GET /stats/players/:id` | FT-008 | US-049, US-050 | winRate | ✅ | E2E-005 |
+| `GET /stats/decks/:id` | FT-009 | US-051 | — | ✅ | — |
+| `GET /stats/commanders/:id` | FT-010 | US-052 | cmdDmg | ✅ | — |
+| `GET /stats/matchup` | FT-011 | US-053, US-054 | — | ✅ | — |
+| `GET /stats/global` | FT-012 | US-055, US-056 | rankings | ✅ | E2E-005 |
+| `GET /groups` | FT-017 | US-038 | — | ✅ | E2E-006 |
 | `POST /groups` | FT-017 | US-038 | — | ✅ | E2E-006 |
+| `PATCH /groups/:id` | FT-017 | US-038 | — | ✅ | — |
 | `POST /groups/:id/invite` | FT-017 | US-039 | — | ✅ | E2E-006 |
 | `POST /groups/join` | FT-017 | US-040 | — | ✅ | E2E-006 |
 | `GET /settings` | FT-019 | US-042, US-043 | — | ✅ | — |
 | `PATCH /settings` | FT-018, FT-019 | US-042, US-043 | — | ✅ | E2E-008 |
 
-**Cobertura total:** 28/28 endpoints tienen al menos integration test planificado ✅
+**Cobertura total:** 30/30 endpoints tienen al menos integration test planificado ✅
 
 ---
 
@@ -274,9 +276,9 @@ Las siguientes áreas requieren atención antes del launch:
 
 | Área | Total | Con Test | Sin Test | % |
 |------|-------|---------|---------|---|
-| User Stories (US-001→US-045) | 45 | 40 | 5 | 89% |
-| Business Rules | 58 | 52 | 6 (i18n/manual) | 90% |
-| API Endpoints | 28 | 28 | 0 | 100% |
+| User Stories (US-001→US-056) | 56 | 50 | 6 | 89% |
+| Business Rules | 58 | 55 | 3 (i18n/manual) | 95% |
+| API Endpoints | 30 | 30 | 0 | 100% |
 | E2E Flows críticos | 8 | 8 | 0 | 100% |
 | Entidades (schema) | 11 | 11 | 0 | 100% |
 | Features MVP (FT-001→020) | 20 | 20 | 0 | 100% |

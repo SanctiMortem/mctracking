@@ -39,7 +39,9 @@
 | **Stats**      | `/stats/commanders/:id`               | GET    | 🔒        | FT-010, US-025 |
 | **Stats**      | `/stats/matchup`                      | GET    | 🔒        | FT-011, US-026/027 |
 | **Stats**      | `/stats/global`                       | GET    | 🔒        | FT-012, US-028/029 |
+| **Groups**     | `/groups`                             | GET    | 🔒        | FT-017, US-038 |
 | **Groups**     | `/groups`                             | POST   | 🔒        | FT-017, US-038 |
+| **Groups**     | `/groups/:id`                         | PATCH  | 🔒        | FT-017, BR-GROUP-04 |
 | **Groups**     | `/groups/:id/invite`                  | POST   | 🔒        | FT-017, US-039 |
 | **Groups**     | `/groups/join`                        | POST   | 🔒        | FT-017, US-040 |
 | **Settings**   | `/settings`                           | GET    | 🔒        | FT-019       |
@@ -644,6 +646,27 @@ if (!parsed.success) {
 
 ## Módulo: Groups
 
+### GET /groups
+
+**Propósito:** Listar grupos a los que pertenece el usuario autenticado (owner o member).
+
+**Output:**
+```typescript
+{
+  success: true,
+  data: Array<{
+    group: Group,
+    role: 'owner' | 'member'
+  }>
+}
+```
+
+**Notes:** Grupos con `archived_at IS NOT NULL` excluidos por defecto.
+
+**Refs:** FT-017, US-038, PLAT-006, PLAT-010
+
+---
+
 ### POST /groups
 
 **Input:** `{ name: string }` (1–100 chars)
@@ -672,6 +695,27 @@ if (!parsed.success) {
 | `FORBIDDEN` | Solo Group Owner puede generar invite (P-004) |
 
 **Refs:** US-039, BR-GROUP-05
+
+---
+
+### PATCH /groups/:id
+
+**Propósito:** Archivar un grupo (soft-archive). No elimina el grupo ni su historial. (BR-GROUP-04)
+
+**Input:** `{}` (sin body — la acción es siempre archivar)
+
+**Output:** `{ success: true, data: { group: Group } }`
+
+**Errors:**
+
+| Code | Razón |
+|---|---|
+| `FORBIDDEN` | Solo el Group Owner puede archivar |
+| `NOT_FOUND` | Grupo no existe |
+
+**Side Effects:** Setea `Group.archived_at = now()`. El grupo deja de aparecer en `GET /groups` y no puede recibir nuevos miembros o matches.
+
+**Refs:** BR-GROUP-04, PLAT-005
 
 ---
 
