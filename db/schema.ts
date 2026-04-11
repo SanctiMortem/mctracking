@@ -12,6 +12,16 @@ import {
 } from 'drizzle-orm/pg-core';
 
 // ─────────────────────────────────────────────
+// enums — EPIC-03
+// E-006 · TRACK-001
+// ─────────────────────────────────────────────
+export const eventTypeEnum = pgEnum('event_type', [
+  'life_change',
+  'poison_change',
+  'commander_damage',
+]);
+
+// ─────────────────────────────────────────────
 // enums
 // E-005 · E-007 · E-008
 // ─────────────────────────────────────────────
@@ -144,6 +154,32 @@ export const participations = pgTable(
     index('participations_match_id_idx').on(table.matchId),
     index('participations_player_id_idx').on(table.playerId),
     index('participations_deck_id_idx').on(table.deckId),
+  ],
+);
+
+// ─────────────────────────────────────────────
+// match_events
+// E-006 · ADR-002 (Option A) · ADR-003 (Option A)
+// BR-TRACK-09 (debounce) · BR-TRACK-11 (undo)
+// ─────────────────────────────────────────────
+export const matchEvents = pgTable(
+  'match_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    matchId: uuid('match_id').notNull().references(() => matches.id),
+    participationId: uuid('participation_id').notNull().references(() => participations.id),
+    eventType: eventTypeEnum('event_type').notNull(),
+    // positive = gained, negative = lost (life/poison). For commander_damage always positive.
+    delta: integer('delta').notNull(),
+    // Required when event_type = 'commander_damage'. Validated at API layer.
+    commanderIdSource: uuid('commander_id_source').references(() => commanders.id),
+    // Soft undo: event stays in log, marked undone (BR-TRACK-11)
+    isUndone: boolean('is_undone').notNull().default(false),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    // Supports: find last non-undone event for undo, and event log queries
+    index('match_events_match_id_is_undone_idx').on(table.matchId, table.isUndone),
   ],
 );
 

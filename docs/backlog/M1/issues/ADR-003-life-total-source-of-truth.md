@@ -4,7 +4,7 @@
 > **Priority:** P0
 > **Effort:** XS
 > **Story Points:** 1
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-03-LIVE-TRACKING](../epics/EPIC-03-LIVE-TRACKING.md)
 > **Skills:** `project/architecture`
 > **Agents:** `architect`
@@ -83,7 +83,9 @@ Escenario: Decisión tomada de forma consistente con ADR-002
 
 ## Decisión
 
-**Pendiente** — Resolver junto con ADR-002.
+**Opción A: Participation como source of truth (consistente con ADR-002).** — 2026-04-11
+
+`participations.life_total` se actualiza en cada POST /api/match-events con `sql\`life_total + ${delta}\``. Undo revierte con delta inverso. Implementado en `services/matchEvents.ts`. Life total can go negative (no floor enforced at DB level; the UI shows a visual alert at ≤ 0 per BR-TRACK-01).
 
 ## Afecta a
 

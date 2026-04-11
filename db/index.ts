@@ -21,3 +21,6 @@ export type NewParticipation = typeof schema.participations.$inferInsert;
 
 export type MatchResult = typeof schema.matchResults.$inferSelect;
 export type NewMatchResult = typeof schema.matchResults.$inferInsert;
+
+export type MatchEvent = typeof schema.matchEvents.$inferSelect;
+export type NewMatchEvent = typeof schema.matchEvents.$inferInsert;

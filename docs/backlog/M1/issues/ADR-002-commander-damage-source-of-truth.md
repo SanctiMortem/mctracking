@@ -4,7 +4,7 @@
 > **Priority:** P0
 > **Effort:** XS
 > **Story Points:** 1
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-03-LIVE-TRACKING](../epics/EPIC-03-LIVE-TRACKING.md)
 > **Skills:** `project/architecture`
 > **Agents:** `architect`
@@ -100,7 +100,9 @@ Escenario: Decisión tomada y documentada
 
 ## Decisión
 
-**Pendiente** — Resolver antes de iniciar TRACK-001.
+**Opción A: Participation como source of truth (denormalizado).** — 2026-04-11
+
+`participations.commander_damage` (JSONB) es el snapshot del estado actual. Los MatchEvents son el log inmutable. El Undo actualiza el snapshot + marca el evento como `is_undone=true`. Implementado en `db/schema.ts` (participations.commanderDamage) y `services/matchEvents.ts` (JSONB merge en transacción).
 
 ## Afecta a
 

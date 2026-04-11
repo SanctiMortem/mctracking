@@ -1,9 +1,9 @@
 # EPIC-03: Live Tracking
 
 > **Milestone:** M1
-> **Status:** 📋 Planning
-> **Issues:** 11 total (0 done)
-> **Branch:** `epic/live-tracking` (crear al empezar)
+> **Status:** ✅ Done
+> **Issues:** 11 total (11 done)
+> **Branch:** `epic/live-tracking`
 
 ---
 
@@ -34,17 +34,17 @@ Implementar el corazón del producto: el Match Tracker en vivo (SCR-008). Incluy
 
 | ID | Título | Depende de | Priority | Status | Effort | SP |
 |----|--------|------------|----------|--------|--------|----|
-| [ADR-002](../issues/ADR-002-commander-damage-source-of-truth.md) | ADR: commander_damage source of truth | MATCH-001 | P0 | 📋 | XS | 1 |
-| [ADR-003](../issues/ADR-003-life-total-source-of-truth.md) | ADR: life_total source of truth | MATCH-001 | P0 | 📋 | XS | 1 |
-| [TRACK-001](../issues/TRACK-001-db-schema-match-events.md) | DB schema: MatchEvent | ADR-002, ADR-003, MATCH-001 | P0 | 📋 | M | 5 |
-| [TRACK-002](../issues/TRACK-002-api-match-events.md) | API: match-events (record + undo) | TRACK-001 | P0 | 📋 | M | 5 |
-| [TRACK-003](../issues/TRACK-003-ui-tracker-shell.md) | UI: SCR-008 Match Tracker shell | TRACK-001, MATCH-001 | P0 | 📋 | L | 8 |
-| [TRACK-004](../issues/TRACK-004-life-counter-component.md) | Component: LifeCounter (CMP-001) | TRACK-003 | P0 | 📋 | M | 5 |
-| [TRACK-005](../issues/TRACK-005-commander-damage-panel.md) | Component: CommanderDamagePanel (CMP-005) | TRACK-004, ADR-002 | P1 | 📋 | M | 5 |
-| [TRACK-006](../issues/TRACK-006-poison-counter-component.md) | Component: PoisonCounter | TRACK-004 | P1 | 📋 | S | 2 |
-| [TRACK-007](../issues/TRACK-007-event-log-undo.md) | Component: EventLog + Undo (CMP-011) | TRACK-002, TRACK-003 | P1 | 📋 | M | 5 |
-| [TRACK-008](../issues/TRACK-008-spike-iphone-se-layout.md) | Spike: iPhone SE 4-player layout | TRACK-003 | P2 | 📋 | S | 2 |
-| [TRACK-009](../issues/TRACK-009-epic-tests.md) | 🧪 Epic Tests — Live Tracking | Todos | P1 | 📋 | M | 5 |
+| [ADR-002](../issues/ADR-002-commander-damage-source-of-truth.md) | ADR: commander_damage source of truth | MATCH-001 | P0 | ✅ | XS | 1 |
+| [ADR-003](../issues/ADR-003-life-total-source-of-truth.md) | ADR: life_total source of truth | MATCH-001 | P0 | ✅ | XS | 1 |
+| [TRACK-001](../issues/TRACK-001-db-schema-match-events.md) | DB schema: MatchEvent | ADR-002, ADR-003, MATCH-001 | P0 | ✅ | M | 5 |
+| [TRACK-002](../issues/TRACK-002-api-match-events.md) | API: match-events (record + undo) | TRACK-001 | P0 | ✅ | M | 5 |
+| [TRACK-003](../issues/TRACK-003-ui-tracker-shell.md) | UI: SCR-008 Match Tracker shell | TRACK-001, MATCH-001 | P0 | ✅ | L | 8 |
+| [TRACK-004](../issues/TRACK-004-life-counter-component.md) | Component: LifeCounter (CMP-001) | TRACK-003 | P0 | ✅ | M | 5 |
+| [TRACK-005](../issues/TRACK-005-commander-damage-panel.md) | Component: CommanderDamagePanel (CMP-005) | TRACK-004, ADR-002 | P1 | ✅ | M | 5 |
+| [TRACK-006](../issues/TRACK-006-poison-counter-component.md) | Component: PoisonCounter | TRACK-004 | P1 | ✅ | S | 2 |
+| [TRACK-007](../issues/TRACK-007-event-log-undo.md) | Component: EventLog + Undo (CMP-011) | TRACK-002, TRACK-003 | P1 | ✅ | M | 5 |
+| [TRACK-008](../issues/TRACK-008-spike-iphone-se-layout.md) | Spike: iPhone SE 4-player layout | TRACK-003 | P2 | ✅ | S | 2 |
+| [TRACK-009](../issues/TRACK-009-epic-tests.md) | 🧪 Epic Tests — Live Tracking | Todos | P1 | ✅ | M | 5 |
 
 > **Total SP:** 44
 
@@ -90,12 +90,12 @@ Implementar el corazón del producto: el Match Tracker en vivo (SCR-008). Incluy
 
 ## ✅ QC Checklist (Al Completar Epic)
 
-- [ ] Life totals se actualizan en tiempo real con debounce
-- [ ] Commander damage por commander_id individual funcional
-- [ ] Poison counter con alerta visual a 10
-- [ ] Undo revierte el último evento (no lo borra)
-- [ ] Layout 2p/3p/4p funcional en iPhone 14 Pro
-- [ ] TRACK-008 spike resuelto o documentado
+- [x] Life totals se actualizan en tiempo real con debounce (useDebounce.ts, LifeCounter.tsx)
+- [x] Commander damage por commander_id individual funcional (CommanderDamagePanel + JSONB merge)
+- [x] Poison counter con alerta visual a 10 (PoisonCounter.tsx)
+- [x] Undo revierte el último evento (no lo borra) (is_undone=true, undoLastEvent service)
+- [x] Layout 2p/3p/4p funcional en iPhone 14 Pro (TrackerLayout.tsx)
+- [x] TRACK-008 spike: decidido usar adjustsFontSizeToFit + minimumFontScale=0.5 (LifeCounter.tsx)
 
 ---
 
@@ -103,10 +103,11 @@ Implementar el corazón del producto: el Match Tracker en vivo (SCR-008). Incluy
 
 ```
 Total:     ███████████ 100% (11 issues)
-Done:      ░░░░░░░░░░░   0% (0 issues)
+Done:      ███████████ 100% (11 issues — ADR-002/003, TRACK-001–009)
+Remaining: ░░░░░░░░░░░   0% (0 issues)
 ```
 
 ---
 
 _Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Última actualización: 2026-04-11 (EPIC-03 complete)_

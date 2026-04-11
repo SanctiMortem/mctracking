@@ -4,7 +4,7 @@
 > **Priority:** P2
 > **Effort:** S
 > **Story Points:** 2
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-03-LIVE-TRACKING](../epics/EPIC-03-LIVE-TRACKING.md)
 > **Skills:** `domains/ui`
 > **Agents:** `mobile-developer`
