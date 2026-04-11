@@ -1,9 +1,9 @@
 # EPIC-04: History & Stats
 
 > **Milestone:** M1
-> **Status:** 📋 Planning
-> **Issues:** 13 total (0 done)
-> **Branch:** `epic/history-stats` (crear al empezar)
+> **Status:** ✅ Done
+> **Issues:** 13 total (13 done)
+> **Branch:** `develop` (implemented directly on develop)
 
 ---
 
@@ -38,19 +38,19 @@ Implementar el motor de estadísticas histórico: historial de matches con filtr
 
 | ID | Título | Depende de | Priority | Status | Effort | SP |
 |----|--------|------------|----------|--------|--------|----|
-| [ADR-008](../issues/ADR-008-match-history-pagination.md) | ADR: Match history pagination (cursor vs offset) | HIST-001 | P2 | 📋 | XS | 1 |
-| [HIST-001](../issues/HIST-001-api-match-history.md) | API: Match History (GET /matches + filters) | MATCH-001, MATCH-003, ADR-008 | P1 | 📋 | M | 5 |
-| [HIST-002](../issues/HIST-002-ui-match-history-screen.md) | UI: SCR-005 Match History + MatchCard | HIST-001 | P1 | 📋 | M | 5 |
-| [HIST-003](../issues/HIST-003-ui-match-detail-full.md) | UI: SCR-011 Match Detail FULL (EventLog post-match) | HIST-001, TRACK-007 | P1 | 📋 | M | 5 |
-| [HIST-004](../issues/HIST-004-api-player-stats.md) | API: Player Stats (GET /stats/players/:id) | MATCH-001, MATCH-003 | P1 | 📋 | M | 5 |
-| [HIST-005](../issues/HIST-005-ui-player-profile-full.md) | UI: SCR-012 Player Profile FULL | HIST-004 | P1 | 📋 | M | 5 |
-| [HIST-006](../issues/HIST-006-api-deck-stats.md) | API: Deck Stats (GET /stats/decks/:id) | MATCH-001 | P1 | 📋 | S | 2 |
-| [HIST-007](../issues/HIST-007-ui-deck-detail-full.md) | UI: SCR-013 Deck Detail FULL | HIST-006 | P1 | 📋 | S | 2 |
-| [HIST-008](../issues/HIST-008-api-commander-stats.md) | API: Commander Stats (GET /stats/commanders/:id) | MATCH-001 | P1 | 📋 | S | 2 |
-| [HIST-009](../issues/HIST-009-ui-commander-detail-full.md) | UI: SCR-014 Commander Detail FULL | HIST-008 | P1 | 📋 | S | 2 |
-| [HIST-010](../issues/HIST-010-api-matchup-global-stats.md) | API: Matchup + Global Stats | MATCH-001, MATCH-003 | P1 | 📋 | M | 5 |
-| [HIST-011](../issues/HIST-011-ui-stats-dashboard.md) | UI: SCR-006 Stats Dashboard + SCR-015 Matchup Stats | HIST-010, HIST-004 | P1 | 📋 | L | 8 |
-| [HIST-012](../issues/HIST-012-epic-tests.md) | 🧪 Epic Tests — History & Stats | Todos | P1 | 📋 | M | 5 |
+| [ADR-008](../issues/ADR-008-match-history-pagination.md) | ADR: Match history pagination (cursor vs offset) | HIST-001 | P2 | ✅ | XS | 1 |
+| [HIST-001](../issues/HIST-001-api-match-history.md) | API: Match History (GET /matches + filters) | MATCH-001, MATCH-003, ADR-008 | P1 | ✅ | M | 5 |
+| [HIST-002](../issues/HIST-002-ui-match-history-screen.md) | UI: SCR-005 Match History + MatchCard | HIST-001 | P1 | ✅ | M | 5 |
+| [HIST-003](../issues/HIST-003-ui-match-detail-full.md) | UI: SCR-011 Match Detail FULL (EventLog post-match) | HIST-001, TRACK-007 | P1 | ✅ | M | 5 |
+| [HIST-004](../issues/HIST-004-api-player-stats.md) | API: Player Stats (GET /stats/players/:id) | MATCH-001, MATCH-003 | P1 | ✅ | M | 5 |
+| [HIST-005](../issues/HIST-005-ui-player-profile-full.md) | UI: SCR-012 Player Profile FULL | HIST-004 | P1 | ✅ | M | 5 |
+| [HIST-006](../issues/HIST-006-api-deck-stats.md) | API: Deck Stats (GET /stats/decks/:id) | MATCH-001 | P1 | ✅ | S | 2 |
+| [HIST-007](../issues/HIST-007-ui-deck-detail-full.md) | UI: SCR-013 Deck Detail FULL | HIST-006 | P1 | ✅ | S | 2 |
+| [HIST-008](../issues/HIST-008-api-commander-stats.md) | API: Commander Stats (GET /stats/commanders/:id) | MATCH-001 | P1 | ✅ | S | 2 |
+| [HIST-009](../issues/HIST-009-ui-commander-detail-full.md) | UI: SCR-014 Commander Detail FULL | HIST-008 | P1 | ✅ | S | 2 |
+| [HIST-010](../issues/HIST-010-api-matchup-global-stats.md) | API: Matchup + Global Stats | MATCH-001, MATCH-003 | P1 | ✅ | M | 5 |
+| [HIST-011](../issues/HIST-011-ui-stats-dashboard.md) | UI: SCR-006 Stats Dashboard + SCR-015 Matchup Stats | HIST-010, HIST-004 | P1 | ✅ | L | 8 |
+| [HIST-012](../issues/HIST-012-epic-tests.md) | 🧪 Epic Tests — History & Stats | Todos | P1 | ✅ | M | 5 |
 
 > **Total SP:** 52
 
@@ -101,11 +101,11 @@ Implementar el motor de estadísticas histórico: historial de matches con filtr
 
 ## ✅ QC Checklist (Al Completar Epic)
 
-- [ ] Historial filtra correctamente por todos los parámetros
-- [ ] Stats de jugador calculan win rate según CALC-001 (abandoned excluidos)
-- [ ] Matchup scope 'all' vs '1v1' funciona correctamente
-- [ ] Stats Dashboard muestra ranking con empate correcto (BR-STATS-07)
-- [ ] SCR-011 Match Detail muestra EventLog completo con undone events tachados
+- [x] Historial filtra correctamente por todos los parámetros
+- [x] Stats de jugador calculan win rate según CALC-001 (abandoned excluidos)
+- [x] Matchup scope 'all' vs '1v1' funciona correctamente
+- [x] Stats Dashboard muestra ranking con empate correcto (BR-STATS-07)
+- [x] SCR-011 Match Detail muestra EventLog completo con undone events tachados
 
 ---
 
@@ -113,10 +113,10 @@ Implementar el motor de estadísticas histórico: historial de matches con filtr
 
 ```
 Total:     █████████████ 100% (13 issues)
-Done:      ░░░░░░░░░░░░░   0% (0 issues)
+Done:      █████████████ 100% (13 issues)
 ```
 
 ---
 
 _Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Completado: 2026-04-11_

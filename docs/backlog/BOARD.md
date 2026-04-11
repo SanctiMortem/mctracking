@@ -16,9 +16,9 @@
 | EPIC-03 | Live Tracking | 11 | 44 | 11 | 0 | ✅ Done |
 | EPIC-04 | History & Stats | 13 | 52 | 13 | 0 | ✅ Done |
 | EPIC-05 | Platform | 18 | 68 | 0 | 18 | 📋 Planning |
-| **M1 Total** | — | **72** | **289** | **41** | **31** | — |
+| **M1 Total** | — | **72** | **289** | **54** | **18** | — |
 
-**Progress:** 61/72 issues done (85%) · 249/289 SP completed (86%)
+**Progress:** 54/72 issues done (75%) · 221/289 SP completed (77%)
 
 ---
 
@@ -125,7 +125,7 @@
 ## EPIC-05 — Platform 📋 Planning
 
 > 18 issues · 68 SP · 0% complete
-> **Dependency:** EPIC-SETUP ✅, EPIC-03 ✅, EPIC-04 📋 (partial)
+> **Dependency:** EPIC-SETUP ✅, EPIC-03 ✅, EPIC-04 ✅
 
 | ID | Title | Priority | SP | Status |
 |----|-------|----------|----|--------|
@@ -152,7 +152,7 @@
 
 ## Kanban View
 
-### ✅ Done (61 issues · 249 SP)
+### ✅ Done (54 issues · 221 SP)
 
 `ADR-001` `SETUP-001` `SETUP-002` `SETUP-003` `SETUP-004` `SETUP-005` `SETUP-006` `SETUP-007` `SETUP-008` `SETUP-009`
 `DATA-001` `DATA-002` `DATA-003` `DATA-004` `DATA-005` `DATA-006` `DATA-007` `DATA-008` `DATA-009` `DATA-010` `DATA-011`
@@ -160,7 +160,7 @@
 `ADR-002` `ADR-003` `TRACK-001` `TRACK-002` `TRACK-003` `TRACK-004` `TRACK-005` `TRACK-006` `TRACK-007` `TRACK-008` `TRACK-009`
 `ADR-008` `HIST-001` `HIST-002` `HIST-003` `HIST-004` `HIST-005` `HIST-006` `HIST-007` `HIST-008` `HIST-009` `HIST-010` `HIST-011` `HIST-012`
 
-### 📋 Backlog (22 issues · 88 SP)
+### 📋 Backlog (18 issues · 68 SP)
 
 **EPIC-05 — After EPIC-04:**
 `ADR-004` `ADR-005` `ADR-006` `ADR-007` `PLAT-001` `PLAT-002` `PLAT-003` `PLAT-004` `PLAT-005` `PLAT-006` `PLAT-007` `PLAT-008` `PLAT-009` `PLAT-010` `PLAT-011` `PLAT-012` `PLAT-013` `PLAT-014`
