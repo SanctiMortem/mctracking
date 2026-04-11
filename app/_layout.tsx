@@ -44,7 +44,14 @@ function AuthGate() {
       <Stack.Screen name="guest" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="match/setup" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="match/[id]/tracker" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
-      <Stack.Screen name="match/[id]/close" />
+      <Stack.Screen
+        name="match/[id]/close"
+        options={{
+          presentation: 'transparentModal',
+          animation: 'slide_from_bottom',
+          contentStyle: { backgroundColor: 'transparent' },
+        }}
+      />
       <Stack.Screen name="match/[id]/results" />
       <Stack.Screen name="match/[id]/index" />
       <Stack.Screen name="players/[id]" />
