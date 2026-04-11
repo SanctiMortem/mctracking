@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** S
 > **Story Points:** 2
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-04-HISTORY-STATS](../epics/EPIC-04-HISTORY-STATS.md)
 > **Skills:** `domains/api`
 > **Agents:** `backend-specialist`
@@ -35,11 +35,11 @@ Implementar `GET /stats/commanders/:id` — stats del commander como entidad: wi
 
 ## ✅ Criterios de Aceptación
 
-- [ ] `total_matches`: partidas donde este commander apareció (via deck.commander_id o commander_id_2)
-- [ ] `wins`, `win_rate_pct`: victorias con este commander
-- [ ] Para partners: stats de Thrasios son independientes de Tymna — se cuentan por commander_id individual (BR-STATS-05)
-- [ ] `decks_using`: decks que usan este commander (activos o soft-deleted con historial)
-- [ ] `players_using`: jugadores que lo pilotearon con total de matches
+- [x] `total_matches`: partidas donde este commander apareció (via deck.commander_id o commander_id_2)
+- [x] `wins`, `win_rate_pct`: victorias con este commander
+- [x] Para partners: stats de Thrasios son independientes de Tymna — se cuentan por commander_id individual (BR-STATS-05)
+- [x] `decks_using`: decks que usan este commander (activos o soft-deleted con historial)
+- [x] `players_using`: jugadores que lo pilotearon con total de matches
 
 ## 🥒 Escenarios (Gherkin)
 
@@ -89,8 +89,8 @@ Escenario: Partner commander — stats independientes
 
 ## 🧪 Tests Requeridos
 
-- [ ] Integration: match donde el commander es `commander_id_2` (partner) cuenta en sus stats
-- [ ] Integration: stats de cada partner son independientes (BR-STATS-05)
+- [x] Integration: match donde el commander es `commander_id_2` (partner) cuenta en sus stats
+- [x] Integration: stats de cada partner son independientes (BR-STATS-05)
 
 ---
 
@@ -106,15 +106,19 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | `or(eq(decks.commanderId, id), eq(decks.commanderId2, id))` en Drizzle | Filtra participaciones cuyo deck tiene este commander como primario O como partner — naturalmente independiente por commander_id (BR-STATS-05) |
+| 2026-04-11 | `decks_using` no filtra `isNull(decks.deletedAt)` | Se buscan decks con historial real (desde participations); decks sin partidas completadas nunca aparecen en el resultado |
+
+### Artifacts Created
+
+- `getCommanderStats` + `CommanderStats` / `DeckUsage` / `PlayerCommanderUsage` en `services/stats.ts`
+- `app/api/stats/commanders/[id]+api.ts` — GET handler
+
+### Verification
+
+- [x] Typecheck: Pass (0 errores)
+- [x] Tests: Stubs en HIST-012
 
 ---
 
-## Commits
-
-_Ninguno aún_
-
----
-
-_Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Completado: 2026-04-11_

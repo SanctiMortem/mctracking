@@ -1,14 +1,14 @@
 /**
- * Stats service — on-demand player + deck stats (no pre-computation — BR-STATS-09).
+ * Stats service — on-demand player + deck + commander stats (no pre-computation — BR-STATS-09).
  *
  * All queries filter matches.status = 'completed' (BR-STATS-01).
  * Abandoned matches are excluded entirely from the denominator (BR-STATS-03).
  * CALC-001: win_rate_pct = round((wins / total) * 100, 1) — null if total = 0.
  * BR-STATS-05: partner commanders (commander_id_2) counted independently.
  *
- * HIST-004, HIST-006 (EPIC-04)
+ * HIST-004, HIST-006, HIST-008 (EPIC-04)
  */
-import { and, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 
 import { db } from '@/services/db';
 import { commanders, decks, matches, participations, players } from '@/db/schema';
@@ -330,6 +330,150 @@ export async function getDeckStats(
       wins,
       win_rate_pct: calcWinRate(wins, total),
       players_used_by: playersUsedBy,
+    },
+  };
+}
+
+// ─── Commander Stats (HIST-008) ───────────────────────────────────────────────
+
+export type DeckUsage = {
+  deck: Deck;
+  matches: number;
+};
+
+export type PlayerCommanderUsage = {
+  player: Player;
+  matches: number;
+};
+
+export type CommanderStats = {
+  commander: Commander;
+  total_matches: number;
+  wins: number;
+  win_rate_pct: number | null;
+  decks_using: DeckUsage[];
+  players_using: PlayerCommanderUsage[];
+};
+
+export type GetCommanderStatsResult =
+  | { data: CommanderStats }
+  | { notFound: true }
+  | { forbidden: true };
+
+export async function getCommanderStats(
+  userId: string,
+  commanderId: string,
+): Promise<GetCommanderStatsResult> {
+  // 1. Commander lookup — existence + ownership
+  const [commander] = await db
+    .select()
+    .from(commanders)
+    .where(and(eq(commanders.id, commanderId), isNull(commanders.deletedAt)))
+    .limit(1);
+
+  if (!commander) return { notFound: true };
+  if (commander.createdBy !== userId) return { forbidden: true };
+
+  // Filter: participation's deck uses this commander (primary or partner — BR-STATS-05)
+  const commanderFilter = and(
+    or(eq(decks.commanderId, commanderId), eq(decks.commanderId2, commanderId)),
+    eq(matches.status, 'completed'),
+  );
+
+  // 2. Run aggregation queries in parallel
+  const [statsRows, perDeckRows, perPlayerRows] = await Promise.all([
+    // Overall stats
+    db
+      .select({
+        total: count(participations.id),
+        wins: sql<number>`sum(case when ${participations.result} = 'win' then 1 else 0 end)`,
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .innerJoin(decks, eq(participations.deckId, decks.id))
+      .where(commanderFilter),
+
+    // Per-deck breakdown
+    db
+      .select({
+        deckId: participations.deckId,
+        matches: count(participations.id),
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .innerJoin(decks, eq(participations.deckId, decks.id))
+      .where(commanderFilter)
+      .groupBy(participations.deckId)
+      .orderBy(desc(count(participations.id))),
+
+    // Per-player breakdown
+    db
+      .select({
+        playerId: participations.playerId,
+        matches: count(participations.id),
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .innerJoin(decks, eq(participations.deckId, decks.id))
+      .where(commanderFilter)
+      .groupBy(participations.playerId)
+      .orderBy(desc(count(participations.id))),
+  ]);
+
+  // 3. Overall numbers
+  const statsRow = statsRows[0];
+  const total = Number(statsRow?.total ?? 0);
+  const wins = Number(statsRow?.wins ?? 0);
+
+  // 4. Resolve Deck objects for decks_using
+  let decksUsing: DeckUsage[] = [];
+  if (perDeckRows.length > 0) {
+    const deckIds = perDeckRows.map((r) => r.deckId);
+    // Include soft-deleted decks that have match history
+    const deckObjects = await db
+      .select()
+      .from(decks)
+      .where(inArray(decks.id, deckIds));
+
+    const deckMap = new Map(deckObjects.map((d) => [d.id, d]));
+
+    decksUsing = perDeckRows
+      .map((r) => {
+        const deck = deckMap.get(r.deckId);
+        if (!deck) return null;
+        return { deck, matches: Number(r.matches ?? 0) };
+      })
+      .filter((x): x is DeckUsage => x !== null);
+  }
+
+  // 5. Resolve Player objects for players_using
+  let playersUsing: PlayerCommanderUsage[] = [];
+  if (perPlayerRows.length > 0) {
+    const playerIds = perPlayerRows.map((r) => r.playerId);
+    const playerObjects = await db
+      .select()
+      .from(players)
+      .where(inArray(players.id, playerIds));
+
+    const playerMap = new Map(playerObjects.map((p) => [p.id, p]));
+
+    playersUsing = perPlayerRows
+      .map((r) => {
+        const player = playerMap.get(r.playerId);
+        if (!player) return null;
+        return { player, matches: Number(r.matches ?? 0) };
+      })
+      .filter((x): x is PlayerCommanderUsage => x !== null);
+  }
+
+  return {
+    data: {
+      commander,
+      total_matches: total,
+      wins,
+      win_rate_pct: calcWinRate(wins, total),
+      decks_using: decksUsing,
+      players_using: playersUsing,
     },
   };
 }

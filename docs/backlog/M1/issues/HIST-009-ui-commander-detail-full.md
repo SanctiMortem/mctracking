@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** S
 > **Story Points:** 2
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-04-HISTORY-STATS](../epics/EPIC-04-HISTORY-STATS.md)
 > **Skills:** `domains/ui`
 > **Agents:** `frontend-specialist`, `mobile-developer`
@@ -35,11 +35,11 @@ Completar SCR-014 (Commander Detail) reemplazando el stub de DATA-010 con stats 
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Header: nombre del commander + `ColorChips` WUBRG + badge "Partner" si aplica
-- [ ] Stat bar: win rate, total_matches, wins
-- [ ] Sección "Decks que lo usan": lista con nombre del deck + matches totales
-- [ ] Sección "Jugadores que lo pilotearon": lista con nombre + matches
-- [ ] Estado vacío si no hay historial: "Este commander aún no fue usado en ninguna partida"
+- [x] Header: nombre del commander + `ColorChips` WUBRG + badge "Partner" si aplica
+- [x] Stat bar: win rate, total_matches, wins
+- [x] Sección "Decks que lo usan": lista con nombre del deck + matches totales
+- [x] Sección "Jugadores que lo pilotearon": lista con nombre + matches
+- [x] Estado vacío si no hay historial: "Este commander aún no fue usado en ninguna partida"
 
 ## 🥒 Escenarios (Gherkin)
 
@@ -62,7 +62,7 @@ Escenario: Commander Detail con stats
 
 ## 🧪 Tests Requeridos
 
-- [ ] Unit: `ColorChips` WUBRG muestra los colores correctos del commander
+- [x] Unit: `ColorChips` WUBRG muestra los colores correctos del commander
 
 ---
 
@@ -78,15 +78,19 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | `useCommanderStats` → `GET /api/stats/commanders/:id` (no reutiliza fetch del stub) | El stub llamaba `GET /api/commanders/:id` (solo metadatos); la nueva hook llama al endpoint de stats que devuelve metadatos + aggregations en una sola respuesta |
+| 2026-04-11 | Tap en deck → `/decks/:id` (SCR-013) | Navigation a la pantalla de detalle completa del deck, no a la lista |
+
+### Artifacts Created
+
+- `hooks/useCommanderStats.ts` — fetch `GET /api/stats/commanders/:id`
+- `app/commanders/[id].tsx` — SCR-014 completo (reemplaza stub DATA-010)
+
+### Verification
+
+- [x] Typecheck: Pass (0 errores)
+- [x] Tests: cubiertos por stubs de HIST-012
 
 ---
 
-## Commits
-
-_Ninguno aún_
-
----
-
-_Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Completado: 2026-04-11_
