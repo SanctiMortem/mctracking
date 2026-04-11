@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** XS
 > **Story Points:** 1
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-05-PLATFORM](../epics/EPIC-05-PLATFORM.md)
 > **Skills:** `domains/api`
 > **Agents:** `backend-specialist`
@@ -72,7 +72,7 @@ Razón: La lógica de validación de receipts (App Store StoreKit 2 + Google Pla
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Decisión documentada en esta ADR
+- [x] Decisión documentada en esta ADR
 - [ ] PLAT-012 (IAP Premium) implementa `POST /purchases/verify`
 - [ ] PLAT-007 (Settings API) deja `premium` como read-only en `PATCH /settings`
 
@@ -94,7 +94,21 @@ No aplica.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | **Opción A — `POST /purchases/verify` endpoint separado** | La validación de receipts de App Store (StoreKit 2) y Google Play Billing tiene lógica completamente distinta — mezclarla con `PATCH /settings` viola SRP. Seguridad: `PATCH /settings` debe rechazar explícitamente `premium: true` del cliente para prevenir auto-escalado de privilegios. 08_API_CONTRACTS.md ya tenía la nota exacta que lo requería. Estándar de industria (RevenueCat, Stripe) usa endpoints dedicados de verificación. |
+
+### Cambios en 08_API_CONTRACTS.md
+
+- **`PATCH /settings`:** `premium` removido del input body; añadido error `SETTINGS_PREMIUM_FIELD_REJECTED`. Nota actualizada a referencia ADR-007.
+- **`POST /purchases/verify`:** Contrato completo añadido — input (receipt, product_id, platform), output, side effects, errores.
+- **OQ-01:** Marcada 🟢 Resuelta — `POST /purchases/verify` (ADR-007).
+- **OQ-02:** Marcada 🟢 Resuelta — Cursor (ADR-008, ya cerrado).
+- **Endpoint table:** Añadida fila `POST /purchases/verify`.
+
+### Implicaciones para issues dependientes
+
+- **PLAT-007 (Settings API):** `PATCH /settings` rechaza `premium` en body. El campo `premium` en `GET /settings` es read-only, actualizado solo por `POST /purchases/verify`.
+- **PLAT-012 (IAP Premium):** Implementar `POST /api/purchases/verify`. Llamar a Apple StoreKit 2 server API o Google Play Developer API para validar receipt server-side antes de actualizar `UserSettings.premium`.
+- **Cliente (PLAT-012):** `expo-iap` o `react-native-iap` maneja el purchase flow y entrega el receipt al cliente → cliente lo envía a `POST /purchases/verify`.
 
 ---
 
@@ -105,4 +119,4 @@ _Ninguno aún_
 ---
 
 _Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Última actualización: 2026-04-11_

@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** XS
 > **Story Points:** 1
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-05-PLATFORM](../epics/EPIC-05-PLATFORM.md)
 > **Skills:** `domains/api`, `domains/ui`
 > **Agents:** `backend-specialist`
@@ -64,7 +64,7 @@ Razón: Consistente con el modelo de datos donde los recursos son scoped por gru
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Decisión documentada en esta ADR
+- [x] Decisión documentada en esta ADR
 - [ ] PLAT-010 (Home screen) implementa la opción elegida
 - [ ] Si Opción B: definir el state de "contexto activo" como Context global en `contexts/GroupContext.tsx`
 
@@ -86,7 +86,18 @@ No aplica.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | **Opción B — Grupo activo seleccionado** | El data model es group-scoped por diseño (todos los entities tienen `group_id` FK). F46 establece explícitamente que los recursos pertenecen al grupo activo seleccionado. Un `GroupContext` global es necesario de todas formas para PLAT-005/PLAT-006/PLAT-010. La Opción C crea ambigüedad sin criterio de desempate si hay 2 grupos con matches activos. La Opción A contradice la arquitectura al ocultar matches de grupo desde el punto de entrada principal. |
+
+### Implicaciones para issues dependientes
+
+- **PLAT-001** — El DB schema debe incluir la noción de "grupo activo" (o manejarlo como state en el cliente vía `GroupContext`)
+- **PLAT-010** — Home screen debe leer el contexto activo desde `GroupContext` y hacer la query: `WHERE group_id = activeGroupId AND status = 'in_progress' LIMIT 1`
+- **contexts/GroupContext.tsx** — Crear como parte de PLAT-001 o PLAT-010. Estado: `{ activeGroupId: string | null }`. `null` = contexto personal (matches sin group_id).
+- **CMP-015 (ActiveMatchBanner)** — Query scopeada al `activeGroupId` del contexto. Si no hay match activo en ese contexto, no se muestra el banner (aunque existan matches en otros grupos).
+
+### OQ-001 Resuelta
+
+`15_DESIGN.md` OQ-001 actualizado a 🟢 Resuelta — Opción B.
 
 ---
 
@@ -97,4 +108,4 @@ _Ninguno aún_
 ---
 
 _Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Última actualización: 2026-04-11_

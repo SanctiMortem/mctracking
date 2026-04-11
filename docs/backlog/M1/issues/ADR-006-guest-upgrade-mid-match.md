@@ -4,7 +4,7 @@
 > **Priority:** P2
 > **Effort:** XS
 > **Story Points:** 1
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-05-PLATFORM](../epics/EPIC-05-PLATFORM.md)
 > **Skills:** `domains/api`, `domains/ui`
 > **Agents:** `backend-specialist`
@@ -62,7 +62,7 @@ Implementar la migración de estado del Guest Tracker a un Match persistido en l
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Decisión documentada — Guest→User mid-match es Out of Scope para MVP
+- [x] Decisión documentada — Guest→User mid-match es Out of Scope para MVP
 - [ ] PLAT-003 (Auth screen) solo se muestra al iniciar la app sin sesión
 - [ ] PLAT-004 (Guest Tracker) incluye banner de invitación a crear cuenta, sin upgrade en caliente
 
@@ -84,7 +84,17 @@ No aplica.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | Diferido a v1.1 | Ya documentado en 15_DESIGN.md. Complejidad desproporcionada para MVP. |
+| 2026-04-11 | **Opción A — Diferido a v1.1. Out of Scope MVP.** | La migración Guest→User mid-match requiere serializar estado in-memory + POST match retroactivo al cloud — complejidad alta desproporcionada para MVP. El SCR-019 (Guest Tracker) es completamente in-memory sin schema de MatchEvents: literalmente no hay nada que migrar sin un diseño dedicado. La decisión ya estaba capturada en 15_DESIGN.md (SCR-001 Scope Note + OQ-004 → D-01). El flujo MVP es: Auth gate solo al iniciar la app sin sesión. Si el guest quiere loguearse, abandona el tracker primero. |
+
+### Implicaciones para issues dependientes
+
+- **PLAT-003 (SCR-001 Auth Screen)** — Solo se muestra al iniciar la app sin sesión activa. No hay punto de entrada desde el tracker activo.
+- **PLAT-004 (SCR-019 Guest Tracker)** — Incluir banner informativo "Inicia sesión para guardar tu historial" (no accionable como upgrade en caliente). Solo informativo.
+- **v1.1 Backlog** — Crear issue separado: "Guest→User upgrade mid-match: serializar local state + retroactivo POST match + migración de MatchEvents" (referencia: D-01 en 15_DESIGN.md).
+
+### Sin cambios en 15_DESIGN.md
+
+OQ-004 ya estaba marcada como "🔴 Diferido a v1.1 (D-01)". Actualizada para referenciar ADR-006.
 
 ---
 
@@ -95,4 +105,4 @@ _Ninguno aún_
 ---
 
 _Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Última actualización: 2026-04-11_

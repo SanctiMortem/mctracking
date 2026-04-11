@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** XS
 > **Story Points:** 1
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-05-PLATFORM](../epics/EPIC-05-PLATFORM.md)
 > **Skills:** `domains/ui`
 > **Agents:** `frontend-specialist`
@@ -62,7 +62,7 @@ Razón: Zero fricción. Los usuarios sin grupos ni lo ven. Los usuarios con grup
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Decisión documentada en esta ADR
+- [x] Decisión documentada en esta ADR
 - [ ] PLAT-010 (Home) incluye el context switcher si Opción A
 - [ ] PLAT-006 (SCR-017) es pantalla de gestión, no de selección
 
@@ -84,7 +84,18 @@ No aplica.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | **Opción A — Control embebido en Home header** | Zero fricción para usuarios sin grupos (el control es invisible). Para usuarios con grupos: 1 tap desde Home, sin interrumpir el flujo de inicio. SCR-017 ya estaba diseñado como pantalla de gestión (no selección) — confirmado en 15_DESIGN.md. ADR-004 estableció GroupContext como state global: un chip/dropdown en Home header es la interfaz natural. Opción B penaliza la mayoría de usuarios MVP que no tendrán grupos aún. Se elimina la necesidad de SCR-020 (group switcher screen). |
+
+### Implicaciones para issues dependientes
+
+- **PLAT-010 (Home screen)** — Incluir un context switcher chip en el header (visible solo si el usuario tiene ≥1 grupo). Opciones: "Personal" + nombre de cada grupo. Al cambiar, actualiza `GroupContext.activeGroupId`.
+- **PLAT-006 (SCR-017 Grupos)** — Pantalla de gestión únicamente: ver miembros, crear grupo, invitar. NO incluye lógica de "seleccionar grupo activo" — eso es competencia del chip en Home.
+- **SCR-020** — No se crea. La OQ-002 en 15_DESIGN.md queda resuelta sin pantalla adicional.
+- **GroupContext** — El context switcher de Home es el único punto de escritura de `activeGroupId`. Cuando el usuario no tiene grupos, `activeGroupId = null` (contexto personal) y el switcher no se renderiza.
+
+### OQ-002 Resuelta
+
+`15_DESIGN.md` OQ-002 actualizado a 🟢 Resuelta — Opción A. SCR-020 descartado.
 
 ---
 
@@ -95,4 +106,4 @@ _Ninguno aún_
 ---
 
 _Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Última actualización: 2026-04-11_

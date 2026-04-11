@@ -46,6 +46,7 @@
 | **Groups**     | `/groups/join`                        | POST   | 🔒        | FT-017, US-040 |
 | **Settings**   | `/settings`                           | GET    | 🔒        | FT-019       |
 | **Settings**   | `/settings`                           | PATCH  | 🔒        | FT-019, US-042/043 |
+| **Purchases**  | `/purchases/verify`                   | POST   | 🔒        | PLAT-012, BR-AUTH-04 |
 
 ---
 
@@ -757,7 +758,7 @@ if (!parsed.success) {
   debounce_threshold_ms?: number;    // 200–2000 (BR-TRACK-10)
   require_commander?: boolean;
   default_life_total?: integer;
-  premium?: boolean;                 // Solo actualizable via IAP receipt validation
+  // NOTE: `premium` is NOT accepted here — use POST /purchases/verify (ADR-007)
 }
 ```
 
@@ -766,20 +767,60 @@ if (!parsed.success) {
 | Code | Razón |
 |---|---|
 | `SETTINGS_DEBOUNCE_OUT_OF_RANGE` | debounce_threshold_ms fuera de 200–2000 (BR-TRACK-10) |
+| `SETTINGS_PREMIUM_FIELD_REJECTED` | El campo `premium` fue enviado en el body — usar `POST /purchases/verify` |
 
-**Nota:** El campo `premium` solo debe actualizarse a `true` tras validación de receipt IAP server-side. No se acepta `premium: true` directamente del cliente sin receipt. (BR-AUTH-04)
+**Nota:** El campo `premium` es read-only en este endpoint. Solo se actualiza a `true` tras validación server-side de receipt IAP en `POST /purchases/verify`. (BR-AUTH-04, ADR-007)
 
 **Refs:** US-042, US-043, BR-TRACK-08/10/12, BR-DECK-02, E-011
 
 ---
 
+### POST /purchases/verify
+
+> Valida un receipt IAP y activa el tier Premium si es válido. **ADR-007 ✅**
+
+**Auth:** 🔒 Clerk session requerida
+
+**Input:**
+```typescript
+{
+  receipt: string;           // Raw receipt data del cliente (StoreKit 2 / Google Play Billing)
+  product_id: 'premium_one_time';
+  platform: 'ios' | 'android';
+}
+```
+
+**Output:**
+```typescript
+{
+  success: true;
+  data: {
+    premium: boolean;        // true si receipt válido y activado
+  }
+}
+```
+
+**Side Effects:** Si receipt válido → `UserSettings.premium = true` (server-side only)
+
+**Errors:**
+
+| Code | Razón |
+|---|---|
+| `RECEIPT_INVALID` | Receipt rechazado por App Store / Google Play |
+| `RECEIPT_ALREADY_USED` | Receipt ya procesado para esta cuenta |
+| `PRODUCT_NOT_RECOGNIZED` | `product_id` desconocido |
+
+**Refs:** BR-AUTH-04, PLAT-012
+
+---
+
 ## Open Questions
 
-| #     | Pregunta                                                                              | Impacto     | Owner   |
-| ----- | ------------------------------------------------------------------------------------- | ----------- | ------- |
-| OQ-01 | ¿La validación de receipt IAP (Premium) se hace en `/settings PATCH` o en un endpoint `/purchases/verify` separado? | **Alto** | Dev |
-| OQ-02 | ¿Paginación en `/matches` (historial) es por cursor o por offset? El schema actual usa offset. | Med | Dev |
-| OQ-03 | ¿El endpoint de Undo devuelve el match completo actualizado o solo el evento undone + participation? | Low | Dev |
+| #     | Pregunta                                                                              | Impacto     | Owner   | Estado |
+| ----- | ------------------------------------------------------------------------------------- | ----------- | ------- | ------ |
+| OQ-01 | ¿La validación de receipt IAP (Premium) se hace en `/settings PATCH` o en un endpoint `/purchases/verify` separado? | **Alto** | Dev | 🟢 Resuelta — `POST /purchases/verify` separado (ADR-007) |
+| OQ-02 | ¿Paginación en `/matches` (historial) es por cursor o por offset? El schema actual usa offset. | Med | Dev | 🟢 Resuelta — Cursor (ADR-008) |
+| OQ-03 | ¿El endpoint de Undo devuelve el match completo actualizado o solo el evento undone + participation? | Low | Dev | 🔴 Abierta |
 
 ---
 

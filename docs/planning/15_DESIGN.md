@@ -329,7 +329,7 @@
 | **Implementa** | US-044, US-045 |
 | **Data** | E-005 (Match), E-009 (Player) |
 | **UI_Stitch** | ✅ `home_dashboard` |
-| **Scope Note** | Banner "Partida en curso" muestra solo el match del grupo/contexto activo (OQ-01 en 02_FEATURE_MAP abierta). Por ahora: contexto del usuario individual. |
+| **Scope Note** | Banner "Partida en curso" (CMP-015) muestra el match activo del **grupo/contexto activo seleccionado** (`GroupContext.activeGroupId`). Si `activeGroupId = null`, muestra matches personales. Decisión: ADR-004 ✅ (Opción B). |
 
 #### SCR-003 — Jugadores
 
@@ -525,7 +525,7 @@
 | **Valida** | BR-GROUP-01 a BR-GROUP-05 |
 | **Data** | E-003 (Group), E-004 (GroupMembership), E-010 (User) |
 | **UI_Stitch** | ✅ `friend_groups` |
-| **Scope Note** | La pantalla agrupa "ver mis grupos" + "crear grupo" + "administrar grupo activo". Selección de grupo activo (OQ-02 en 02_FEATURE_MAP) diferida a v1.1. |
+| **Scope Note** | La pantalla es exclusivamente de **gestión**: ver mis grupos, crear grupo, invitar miembros. La selección de grupo activo NO ocurre aquí — se hace via context switcher chip en el header de SCR-002 (Home). Decisión: ADR-005 ✅ (Opción A). SCR-020 descartado. |
 
 #### SCR-018 — Settings
 
@@ -1453,10 +1453,10 @@ El tracker NO sincroniza vida en tiempo real al servidor. El flujo es:
 
 | ID | Pregunta | Tipo | Impacto en Design | Fuente | Estado |
 |----|----------|------|-------------------|--------|--------|
-| OQ-001 | ¿El banner "Partida en curso" en Home muestra el match del grupo activo o del usuario individual? | `product` | CMP-015 scope — query diferente según respuesta | Brief OQ-01 / 02_FM | 🔴 Abierta |
-| OQ-002 | ¿Hay pantalla de selección de grupo activo antes de entrar al app (o al navegar)? | `product` | Puede requerir SCR-020 (group switcher). Impacta tab bar context. | 02_FM OQ-02 | 🔴 Abierta |
+| OQ-001 | ¿El banner "Partida en curso" en Home muestra el match del grupo activo o del usuario individual? | `product` | CMP-015 scopeado a `GroupContext.activeGroupId`. Query: `WHERE group_id = activeGroupId AND status = 'in_progress'`. `null` = personal. | ADR-004 ✅ | 🟢 Resuelta — Opción B (grupo activo) |
+| OQ-002 | ¿Hay pantalla de selección de grupo activo antes de entrar al app (o al navegar)? | `product` | No hay pantalla dedicada. Context switcher chip embebido en header de SCR-002 (Home). SCR-020 descartado. Visible solo si el usuario tiene ≥1 grupo. | ADR-005 ✅ | 🟢 Resuelta — Opción A (control embebido) |
 | OQ-003 | ¿El Guest Tracker muestra nombres de jugadores ad-hoc (input libre) o etiquetas fijas "Player 1–4"? | `product` | CMP-001 tiene nombre editable o label fijo. | 03_UP OQ-01 | 🟡 Asumido: etiquetas fijas MVP (A-04) |
-| OQ-004 | ¿Hay flujo de upgrade Guest→User mid-match sin perder el estado del tracker? | `architectural` | Requiere serialización de local state + POST match retroactivo. Complejidad alta. | 03_UP OQ-02 | 🔴 Diferido a v1.1 (D-01) |
+| OQ-004 | ¿Hay flujo de upgrade Guest→User mid-match sin perder el estado del tracker? | `architectural` | Out of Scope MVP. En SCR-019: banner "Inicia sesión para guardar historial" sin upgrade en caliente. Auth gate solo al inicio de la app. | ADR-006 ✅ | 🔴 Diferido a v1.1 (D-01) |
 | OQ-005 | ¿El CommanderDamagePanel muestra contadores de daño hacia TODOS los jugadores o solo los que ya causaron daño? | `product` | CMP-005 layout — N contadores fijos o dinámicos | Design-new | 🟡 Asumido: todos los jugadores del match (A-05) |
 | OQ-006 | ¿La rotación de secciones del tracker (BR-TRACK-13) es por gesture o por botón explícito? | `cosmetic` | CMP-001 — gesture vs tap en handle icon | Design-new | 🟡 Asumido: gesture + handle icon (A-06) |
 | OQ-007 | ¿iPhone SE (375×667 puntos) puede mostrar 4 secciones del tracker con vida legible a `display-sm` (48sp)? | `architectural` | Risk R3. Puede requerir tamaño de fuente dinámico o layout alternativo 4p. | Brief Risk R3 | 🔴 Abierta — requiere test en device |
