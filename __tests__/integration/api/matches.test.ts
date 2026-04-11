@@ -1,7 +1,7 @@
 /**
  * Integration tests — /api/matches
  * Requires: DATABASE_URL in .env.test pointing to a Neon test branch.
- * MATCH-009 (EPIC-02)
+ * MATCH-009 (EPIC-02) · HIST-001 (EPIC-04)
  */
 
 // ─── POST /api/matches ───────────────────────────────────────────────────────
@@ -62,4 +62,31 @@ describe.skip('GET /api/matches/:id', () => {
   it('returns 404 for a non-existent matchId', async () => {});
   it('returns 404 when the authenticated user does not own the match', async () => {});
   it('returns 401 when called without a Clerk session token', async () => {});
+});
+
+// ─── GET /api/matches (history) ──────────────────────────────────────────────
+
+describe.skip('GET /api/matches — no filters', () => {
+  it('returns completed + abandoned matches ordered by ended_at DESC', async () => {});
+  it('never returns in_progress matches (BR-MATCH-07)', async () => {});
+  it('returns 200 with empty matches array when user has no history', async () => {});
+  it('returns 401 when called without a Clerk session token', async () => {});
+});
+
+describe.skip('GET /api/matches — filters', () => {
+  it('filters by player_id: returns only matches where that player participated', async () => {});
+  it('filters by deck_id: returns only matches where that deck was used', async () => {});
+  it('filters by commander_id: matches where commander is primary or partner (BR-TRACK-03)', async () => {});
+  it('filters by result=win + player_id: returns matches where that player won', async () => {});
+  it('filters by result=abandoned: returns only abandoned matches', async () => {});
+  it('filters by win_condition: returns only matches with that win condition', async () => {});
+  it('filters by date_from + date_to: returns matches within the date range', async () => {});
+  it('combined filters (player_id + result + date range): returns intersection', async () => {});
+});
+
+describe.skip('GET /api/matches — pagination (ADR-008)', () => {
+  it('returns has_more=true when more matches exist beyond the current page', async () => {});
+  it('returns has_more=false on the last page', async () => {});
+  it('returns correct total count independent of limit/offset', async () => {});
+  it('offset=20 with limit=20 returns the second page', async () => {});
 });

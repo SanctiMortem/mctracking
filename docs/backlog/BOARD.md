@@ -14,11 +14,11 @@
 | EPIC-01 | Data Foundation | 11 | 49 | 11 | 0 | ✅ Done |
 | EPIC-02 | Match Lifecycle | 9 | 42 | 9 | 0 | ✅ Done |
 | EPIC-03 | Live Tracking | 11 | 44 | 11 | 0 | ✅ Done |
-| EPIC-04 | History & Stats | 13 | 52 | 1 | 12 | 🔄 In Progress |
+| EPIC-04 | History & Stats | 13 | 52 | 2 | 11 | 🔄 In Progress |
 | EPIC-05 | Platform | 18 | 68 | 0 | 18 | 📋 Planning |
 | **M1 Total** | — | **72** | **289** | **41** | **31** | — |
 
-**Progress:** 42/72 issues done (58%) · 170/289 SP completed (59%)
+**Progress:** 43/72 issues done (60%) · 175/289 SP completed (61%)
 
 ---
 
@@ -107,7 +107,7 @@
 | ID | Title | Priority | SP | Status |
 |----|-------|----------|----|--------|
 | ADR-008 | Match History Pagination — Cursor vs Offset | P2 | 1 | ✅ Done |
-| HIST-001 | API — Match History (GET /matches + filters) | P1 | 5 | 📋 Backlog |
+| HIST-001 | API — Match History (GET /matches + filters) | P1 | 5 | ✅ Done |
 | HIST-002 | UI — SCR-005 Match History + MatchCard | P1 | 5 | 📋 Backlog |
 | HIST-003 | UI — SCR-011 Match Detail FULL (EventLog post-match) | P1 | 5 | 📋 Backlog |
 | HIST-004 | API — Player Stats (GET /stats/players/:id) | P1 | 5 | 📋 Backlog |

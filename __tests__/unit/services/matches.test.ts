@@ -4,7 +4,7 @@
  * Pure helpers (formatMatchDuration, winConditionLabel) can run without DB
  * once the Jest + babel-preset-expo environment is wired up.
  *
- * MATCH-009 (EPIC-02)
+ * MATCH-009 (EPIC-02) · HIST-001 (EPIC-04)
  */
 
 // ─── createMatch ─────────────────────────────────────────────────────────────
@@ -58,6 +58,24 @@ describe('getMatchById (integration only)', () => {
   it.todo('embeds both commander and commander2 for partner decks');
   it.todo('returns result: null when match is in_progress or abandoned');
   it.todo('returns MatchResult when match is completed');
+});
+
+// ─── listMatches (integration only) ──────────────────────────────────────────
+
+describe('listMatches (integration only)', () => {
+  it.todo('returns completed + abandoned matches ordered by ended_at DESC (BR-MATCH-07)');
+  it.todo('never returns in_progress matches regardless of filters');
+  it.todo('filters by playerId: only matches where that player participated');
+  it.todo('filters by deckId: only matches where that deck was used');
+  it.todo('filters by commanderId: matches where commander is primary OR partner slot');
+  it.todo('filters by result=win + playerId: only matches where that player won');
+  it.todo('filters by result=abandoned: only matches with status=abandoned');
+  it.todo('filters by winCondition via matchResults join');
+  it.todo('filters by dateFrom/dateTo range on ended_at');
+  it.todo('returns has_more=true when remaining records exceed page boundary');
+  it.todo('returns has_more=false on the final page');
+  it.todo('returns total count consistent with un-paginated result set');
+  it.todo('returns empty matches array with total=0 when no matches qualify');
 });
 
 // ─── isDeckInActiveMatch ──────────────────────────────────────────────────────

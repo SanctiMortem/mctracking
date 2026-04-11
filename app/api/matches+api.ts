@@ -1,13 +1,49 @@
 /**
- * POST /api/matches — create a new match with 2-4 participants.
- *
- * MATCH-002 (EPIC-02)
+ * GET  /api/matches — paginated match history with filters (HIST-001, EPIC-04)
+ * POST /api/matches — create a new match with 2-4 participants (MATCH-002, EPIC-02)
  */
 // @ts-expect-error — @clerk/clerk-expo/server types not yet bundled; runtime works correctly
 import { getAuth } from '@clerk/clerk-expo/server';
 
-import { createMatch } from '@/services/matches';
-import type { ParticipantInput } from '@/services/matches';
+import { createMatch, listMatches } from '@/services/matches';
+import type { ListMatchesFilters, ParticipantInput } from '@/services/matches';
+
+const VALID_RESULTS = new Set(['win', 'lose', 'draw', 'abandoned']);
+
+export async function GET(req: Request) {
+  const { userId } = getAuth(req);
+  if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+
+  const limitRaw = parseInt(searchParams.get('limit') ?? '20', 10);
+  const offsetRaw = parseInt(searchParams.get('offset') ?? '0', 10);
+  const limit = isNaN(limitRaw) || limitRaw < 1 ? 20 : Math.min(limitRaw, 100);
+  const offset = isNaN(offsetRaw) || offsetRaw < 0 ? 0 : offsetRaw;
+
+  const filters: ListMatchesFilters = { limit, offset };
+
+  const playerId = searchParams.get('player_id');
+  const deckId = searchParams.get('deck_id');
+  const commanderId = searchParams.get('commander_id');
+  const result = searchParams.get('result');
+  const winCondition = searchParams.get('win_condition');
+  const dateFrom = searchParams.get('date_from');
+  const dateTo = searchParams.get('date_to');
+
+  if (playerId) filters.playerId = playerId;
+  if (deckId) filters.deckId = deckId;
+  if (commanderId) filters.commanderId = commanderId;
+  if (result && VALID_RESULTS.has(result)) {
+    filters.result = result as ListMatchesFilters['result'];
+  }
+  if (winCondition) filters.winCondition = winCondition;
+  if (dateFrom) filters.dateFrom = dateFrom;
+  if (dateTo) filters.dateTo = dateTo;
+
+  const response = await listMatches(userId, filters);
+  return Response.json({ success: true, data: response.data }, { status: 200 });
+}
 
 export async function POST(req: Request) {
   const { userId } = getAuth(req);

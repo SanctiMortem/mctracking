@@ -5,8 +5,9 @@
  * services/decks.ts and services/players.ts can replace their stubs.
  *
  * MATCH-002, MATCH-003, MATCH-004 (EPIC-02)
+ * HIST-001 (EPIC-04) — listMatches
  */
-import { and, eq, inArray, isNull, ne } from 'drizzle-orm';
+import { and, count, desc, eq, gte, inArray, isNull, lte, ne, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 
 import { db } from '@/services/db';
@@ -352,6 +353,233 @@ export async function getMatchById(userId: string, matchId: string): Promise<Get
       match,
       participations: participationDetails,
       result: matchResult ?? null,
+    },
+  };
+}
+
+// ─────────────────────────────────────────────
+// listMatches
+// HIST-001 (EPIC-04) · ADR-008 (offset pagination)
+// BR-MATCH-07 (exclude in_progress) · BR-STATS-08 (filters)
+// ─────────────────────────────────────────────
+
+export type ListMatchesFilters = {
+  playerId?: string;
+  deckId?: string;
+  commanderId?: string;
+  /** 'win' | 'lose' | 'draw' filter participation result; 'abandoned' filters match status */
+  result?: 'win' | 'lose' | 'draw' | 'abandoned';
+  winCondition?: string;
+  /** ISO date string — inclusive lower bound on matches.ended_at */
+  dateFrom?: string;
+  /** ISO date string — inclusive upper bound on matches.ended_at */
+  dateTo?: string;
+  /** Default 20, max 100 */
+  limit?: number;
+  /** Default 0 */
+  offset?: number;
+};
+
+export type MatchSummary = {
+  match: Match;
+  participations: ParticipationDetail[];
+  result: MatchResult | null;
+};
+
+export type ListMatchesResult = {
+  data: {
+    matches: MatchSummary[];
+    total: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+  };
+};
+
+/**
+ * Returns a paginated, filtered list of matches for a user (BR-MATCH-07: always excludes
+ * in_progress). Each entry includes full participations (player + deck + commander embedded)
+ * and the optional MatchResult.
+ *
+ * Filters that touch participations (player_id, deck_id, result, commander_id) resolve
+ * qualifying match IDs via a separate subquery, then apply them as an IN clause on matches.
+ * Pagination is offset-based (ADR-008).
+ *
+ * HIST-001 (EPIC-04)
+ */
+export async function listMatches(
+  userId: string,
+  filters: ListMatchesFilters = {},
+): Promise<ListMatchesResult> {
+  const {
+    playerId, deckId, commanderId, result, winCondition,
+    dateFrom, dateTo, limit = 20, offset = 0,
+  } = filters;
+
+  // ── Step 1: Base match conditions ──
+  // BR-MATCH-07: always exclude in_progress; MVP scope: personal matches only
+  const matchConditions = [
+    ne(matches.status, 'in_progress'),
+    eq(matches.createdBy, userId),
+    result === 'abandoned' ? eq(matches.status, 'abandoned') : undefined,
+    dateFrom ? gte(matches.endedAt, new Date(dateFrom)) : undefined,
+    dateTo ? lte(matches.endedAt, new Date(dateTo)) : undefined,
+  ];
+
+  // ── Step 2: Participation-based filters → qualifying match IDs ──
+  const needsPartFilter = !!(
+    playerId || deckId || commanderId || (result && result !== 'abandoned')
+  );
+
+  if (needsPartFilter) {
+    const partConditions = [
+      playerId ? eq(participations.playerId, playerId) : undefined,
+      deckId ? eq(participations.deckId, deckId) : undefined,
+      result && result !== 'abandoned'
+        ? eq(participations.result, result as 'win' | 'lose' | 'draw')
+        : undefined,
+    ];
+
+    let qualifyingRows: { matchId: string }[];
+
+    if (commanderId) {
+      // commander_id filter: match if either commander slot equals commanderId (BR-TRACK-03: partners)
+      const commanderCond = or(
+        eq(decks.commanderId, commanderId),
+        eq(decks.commanderId2, commanderId),
+      )!;
+      qualifyingRows = await db
+        .select({ matchId: participations.matchId })
+        .from(participations)
+        .innerJoin(decks, eq(participations.deckId, decks.id))
+        .where(and(...partConditions, commanderCond))
+        .groupBy(participations.matchId);
+    } else {
+      qualifyingRows = await db
+        .select({ matchId: participations.matchId })
+        .from(participations)
+        .where(and(...partConditions))
+        .groupBy(participations.matchId);
+    }
+
+    const qualifyingIds = qualifyingRows.map((r) => r.matchId);
+    if (qualifyingIds.length === 0) {
+      return { data: { matches: [], total: 0, limit, offset, has_more: false } };
+    }
+    matchConditions.push(inArray(matches.id, qualifyingIds));
+  }
+
+  // ── Step 3: win_condition filter via matchResults ──
+  if (winCondition) {
+    const mrRows = await db
+      .select({ matchId: matchResults.matchId })
+      .from(matchResults)
+      .where(eq(matchResults.winCondition, winCondition as MatchResult['winCondition']));
+    const mrIds = mrRows.map((r) => r.matchId);
+    if (mrIds.length === 0) {
+      return { data: { matches: [], total: 0, limit, offset, has_more: false } };
+    }
+    matchConditions.push(inArray(matches.id, mrIds));
+  }
+
+  const where = and(...matchConditions);
+
+  // ── Step 4: Count + paginate (ADR-008: offset-based) ──
+  const [countRow] = await db.select({ count: count() }).from(matches).where(where);
+  const total = Number(countRow?.count ?? 0);
+
+  const matchRows = await db
+    .select()
+    .from(matches)
+    .where(where)
+    .orderBy(desc(matches.endedAt))
+    .limit(limit)
+    .offset(offset);
+
+  if (matchRows.length === 0) {
+    return { data: { matches: [], total, limit, offset, has_more: false } };
+  }
+
+  const matchIds = matchRows.map((m) => m.id);
+
+  // ── Step 5: Load participations for the paginated match IDs ──
+  // Reuses same join pattern as getMatchById (partners via left join on commander2)
+  const c1 = alias(commanders, 'commander1');
+  const c2 = alias(commanders, 'commander2');
+
+  const partRows = await db
+    .select({
+      id: participations.id,
+      matchId: participations.matchId,
+      playerId: participations.playerId,
+      deckId: participations.deckId,
+      result: participations.result,
+      lifeTotal: participations.lifeTotal,
+      poisonCounters: participations.poisonCounters,
+      commanderDamage: participations.commanderDamage,
+      createdAt: participations.createdAt,
+      playerName: players.name,
+      deckName: decks.name,
+      c1Id: c1.id,
+      c1Name: c1.name,
+      c1Colors: c1.colors,
+      c1IsPartner: c1.isPartner,
+      c2Id: c2.id,
+      c2Name: c2.name,
+      c2Colors: c2.colors,
+      c2IsPartner: c2.isPartner,
+    })
+    .from(participations)
+    .innerJoin(players, eq(participations.playerId, players.id))
+    .innerJoin(decks, eq(participations.deckId, decks.id))
+    .innerJoin(c1, eq(decks.commanderId, c1.id))
+    .leftJoin(c2, eq(decks.commanderId2, c2.id))
+    .where(inArray(participations.matchId, matchIds));
+
+  const partsByMatchId = new Map<string, ParticipationDetail[]>();
+  for (const row of partRows) {
+    const detail: ParticipationDetail = {
+      id: row.id,
+      matchId: row.matchId,
+      playerId: row.playerId,
+      deckId: row.deckId,
+      result: row.result,
+      lifeTotal: row.lifeTotal,
+      poisonCounters: row.poisonCounters,
+      commanderDamage: row.commanderDamage,
+      createdAt: row.createdAt,
+      player: { id: row.playerId, name: row.playerName },
+      deck: { id: row.deckId, name: row.deckName },
+      commander: { id: row.c1Id, name: row.c1Name, colors: row.c1Colors, isPartner: row.c1IsPartner },
+      commander2: row.c2Id !== null
+        ? { id: row.c2Id, name: row.c2Name!, colors: row.c2Colors!, isPartner: row.c2IsPartner! }
+        : null,
+    };
+    if (!partsByMatchId.has(row.matchId)) partsByMatchId.set(row.matchId, []);
+    partsByMatchId.get(row.matchId)!.push(detail);
+  }
+
+  // ── Step 6: Load match results for all returned IDs ──
+  const resultRows = await db
+    .select()
+    .from(matchResults)
+    .where(inArray(matchResults.matchId, matchIds));
+  const resultsByMatchId = new Map(resultRows.map((r) => [r.matchId, r]));
+
+  // ── Step 7: Assemble response ──
+  const matchSummaries: MatchSummary[] = matchRows.map((match) => ({
+    match,
+    participations: partsByMatchId.get(match.id) ?? [],
+    result: resultsByMatchId.get(match.id) ?? null,
+  }));
+
+  return {
+    data: {
+      matches: matchSummaries,
+      total,
+      limit,
+      offset,
+      has_more: offset + limit < total,
     },
   };
 }
