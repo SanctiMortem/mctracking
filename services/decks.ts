@@ -4,12 +4,13 @@
  *
  * DATA-004 (EPIC-01)
  *
- * ⚠️ hasActiveMatch is a stub — full implementation in MATCH-001 (EPIC-02)
+ * hasActiveMatch implemented via isDeckInActiveMatch (MATCH-002).
  */
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 
 import { db } from '@/services/db';
+import { isDeckInActiveMatch } from '@/services/matches';
 import { commanders, decks } from '@/db/schema';
 import type { Commander, Deck } from '@/db/index';
 
@@ -110,14 +111,6 @@ async function getDeckRaw(id: string) {
     .where(and(eq(decks.id, id), isNull(decks.deletedAt)))
     .limit(1);
   return row ?? null;
-}
-
-/**
- * Stub: always returns false until participations table exists (MATCH-001).
- * TODO MATCH-001: check participations JOIN matches WHERE status = 'in_progress'
- */
-async function hasActiveMatch(_deckId: string): Promise<boolean> {
-  return false;
 }
 
 // ─────────────────────────────────────────────
@@ -251,7 +244,7 @@ export async function softDeleteDeck(
   if (!row) return { notFound: true };
   if (row.createdBy !== userId) return { forbidden: true };
 
-  if (await hasActiveMatch(id)) return { activeMatch: true };
+  if (await isDeckInActiveMatch(id)) return { activeMatch: true };
 
   await db.update(decks).set({ deletedAt: new Date() }).where(eq(decks.id, id));
   return { ok: true };

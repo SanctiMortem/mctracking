@@ -2,7 +2,7 @@
 
 > **Milestone:** M1
 > **Status:** 🔄 In Progress
-> **Issues:** 9 total (1 done)
+> **Issues:** 9 total (2 done)
 > **Branch:** `epic/match-lifecycle` (crear al empezar)
 
 ---
