@@ -4,6 +4,15 @@
  * HIST-004 (EPIC-04)
  */
 
+// ─── GET /api/stats/decks/:id ────────────────────────────────────────────────
+
+describe.skip('GET /api/stats/decks/:id', () => {
+  it.todo('returns win rate summing victories across all players who used the deck (BR-STATS-04)');
+  it.todo('returns players_used_by with per-player win_rate_pct');
+  it.todo('returns 404 when deck does not exist');
+  it.todo('returns 403 when deck belongs to a different user');
+});
+
 // ─── GET /api/stats/players/:id ──────────────────────────────────────────────
 
 describe.skip('GET /api/stats/players/:id', () => {

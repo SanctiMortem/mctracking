@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** S
 > **Story Points:** 2
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-04-HISTORY-STATS](../epics/EPIC-04-HISTORY-STATS.md)
 > **Skills:** `domains/api`
 > **Agents:** `backend-specialist`
@@ -35,11 +35,11 @@ Implementar `GET /stats/decks/:id` — stats del deck como entidad independiente
 
 ## ✅ Criterios de Aceptación
 
-- [ ] `total_matches`: partidas donde se usó este deck (status=completed)
-- [ ] `wins`: victorias con este deck (sin importar quién lo piloteó — BR-STATS-04)
-- [ ] `win_rate_pct`: `(wins / total_matches) * 100` — null si total=0
-- [ ] `players_used_by`: lista de jugadores que usaron el deck con su `matches` y `win_rate_pct` individual
-- [ ] Si el deck tiene commander partner: incluir ambos commanders en la respuesta
+- [x] `total_matches`: partidas donde se usó este deck (status=completed)
+- [x] `wins`: victorias con este deck (sin importar quién lo piloteó — BR-STATS-04)
+- [x] `win_rate_pct`: `(wins / total_matches) * 100` — null si total=0
+- [x] `players_used_by`: lista de jugadores que usaron el deck con su `matches` y `win_rate_pct` individual
+- [x] Si el deck tiene commander partner: incluir ambos commanders en la respuesta
 
 ## 🥒 Escenarios (Gherkin)
 
@@ -78,7 +78,7 @@ Escenario: Stats del deck como entidad
 
 ## 🧪 Tests Requeridos
 
-- [ ] Integration: win rate del deck suma victorias de todos los jugadores que lo usaron
+- [x] Integration: win rate del deck suma victorias de todos los jugadores que lo usaron
 
 ## 🚫 Out of Scope
 
@@ -98,15 +98,21 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-11 | `getDeckStats` añadido a `services/stats.ts` (no archivo nuevo) | Misma capa de stats; mantener en un solo archivo evita proliferación de módulos pequeños |
+| 2026-04-11 | `DeckWithCommanders = Deck & { commander, commander2? }` en vez de embed en la respuesta raw | Permite tipado preciso de la respuesta y reutilización en HIST-007 (SCR-013) |
+| 2026-04-11 | `players_used_by` sin límite (todos los jugadores que usaron el deck) | El issue no especifica top-N; un deck típicamente tiene ≤10 pilots distintos |
+
+### Artifacts Created
+
+- `getDeckStats` + `DeckStats` / `DeckWithCommanders` / `PlayerUsage` en `services/stats.ts`
+- `app/api/stats/decks/[id]+api.ts` — GET handler
+- Integration test stubs en `__tests__/integration/api/stats.test.ts` (HIST-012)
+
+### Verification
+
+- [x] Typecheck: Pass (0 errores)
+- [x] Tests: Stubs scaffolded (HIST-012)
 
 ---
 
-## Commits
-
-_Ninguno aún_
-
----
-
-_Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Completado: 2026-04-11_

@@ -1,12 +1,12 @@
 /**
- * Stats service — on-demand player stats (no pre-computation — BR-STATS-09).
+ * Stats service — on-demand player + deck stats (no pre-computation — BR-STATS-09).
  *
  * All queries filter matches.status = 'completed' (BR-STATS-01).
  * Abandoned matches are excluded entirely from the denominator (BR-STATS-03).
  * CALC-001: win_rate_pct = round((wins / total) * 100, 1) — null if total = 0.
  * BR-STATS-05: partner commanders (commander_id_2) counted independently.
  *
- * HIST-004 (EPIC-04)
+ * HIST-004, HIST-006 (EPIC-04)
  */
 import { and, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 
@@ -208,6 +208,128 @@ export async function getPlayerStats(
       win_rate_pct: calcWinRate(wins, total),
       favorite_decks: favoriteDecksList,
       favorite_commanders: favoriteCommandersList,
+    },
+  };
+}
+
+// ─── Deck Stats (HIST-006) ────────────────────────────────────────────────────
+
+export type DeckWithCommanders = Deck & {
+  commander: Commander;
+  commander2?: Commander;
+};
+
+export type PlayerUsage = {
+  player: Player;
+  matches: number;
+  win_rate_pct: number | null;
+};
+
+export type DeckStats = {
+  deck: DeckWithCommanders;
+  total_matches: number;
+  wins: number;
+  win_rate_pct: number | null;
+  players_used_by: PlayerUsage[];
+};
+
+export type GetDeckStatsResult =
+  | { data: DeckStats }
+  | { notFound: true }
+  | { forbidden: true };
+
+export async function getDeckStats(
+  userId: string,
+  deckId: string,
+): Promise<GetDeckStatsResult> {
+  // 1. Deck lookup — existence + ownership
+  const [deck] = await db
+    .select()
+    .from(decks)
+    .where(and(eq(decks.id, deckId), isNull(decks.deletedAt)))
+    .limit(1);
+
+  if (!deck) return { notFound: true };
+  if (deck.createdBy !== userId) return { forbidden: true };
+
+  // 2. Fetch commander(s) + aggregate stats in parallel
+  const commanderIds = [deck.commanderId, deck.commanderId2].filter(Boolean) as string[];
+
+  const [deckCommanderObjects, statsRows, perPlayerRows] = await Promise.all([
+    // Commander objects (1 or 2 for partner decks)
+    db.select().from(commanders).where(inArray(commanders.id, commanderIds)),
+
+    // Overall stats for this deck across all players
+    db
+      .select({
+        total: count(participations.id),
+        wins: sql<number>`sum(case when ${participations.result} = 'win' then 1 else 0 end)`,
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .where(and(eq(participations.deckId, deckId), eq(matches.status, 'completed'))),
+
+    // Per-player breakdown: group by player_id
+    db
+      .select({
+        playerId: participations.playerId,
+        matches: count(participations.id),
+        wins: sql<number>`sum(case when ${participations.result} = 'win' then 1 else 0 end)`,
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .where(and(eq(participations.deckId, deckId), eq(matches.status, 'completed')))
+      .groupBy(participations.playerId)
+      .orderBy(desc(count(participations.id))),
+  ]);
+
+  // 3. Build DeckWithCommanders
+  const cmdMap = new Map(deckCommanderObjects.map((c) => [c.id, c]));
+  const commander = cmdMap.get(deck.commanderId);
+  if (!commander) return { notFound: true }; // schema inconsistency guard
+
+  const deckWithCommanders: DeckWithCommanders = {
+    ...deck,
+    commander,
+    ...(deck.commanderId2 && cmdMap.has(deck.commanderId2)
+      ? { commander2: cmdMap.get(deck.commanderId2)! }
+      : {}),
+  };
+
+  // 4. Overall numbers
+  const statsRow = statsRows[0];
+  const total = Number(statsRow?.total ?? 0);
+  const wins = Number(statsRow?.wins ?? 0);
+
+  // 5. Resolve Player objects for per-player breakdown
+  let playersUsedBy: PlayerUsage[] = [];
+  if (perPlayerRows.length > 0) {
+    const playerIds = perPlayerRows.map((r) => r.playerId);
+    const playerObjects = await db
+      .select()
+      .from(players)
+      .where(inArray(players.id, playerIds));
+
+    const playerMap = new Map(playerObjects.map((p) => [p.id, p]));
+
+    playersUsedBy = perPlayerRows
+      .map((r) => {
+        const player = playerMap.get(r.playerId);
+        if (!player) return null;
+        const m = Number(r.matches ?? 0);
+        const w = Number(r.wins ?? 0);
+        return { player, matches: m, win_rate_pct: calcWinRate(w, m) };
+      })
+      .filter((x): x is PlayerUsage => x !== null);
+  }
+
+  return {
+    data: {
+      deck: deckWithCommanders,
+      total_matches: total,
+      wins,
+      win_rate_pct: calcWinRate(wins, total),
+      players_used_by: playersUsedBy,
     },
   };
 }
