@@ -1,16 +1,16 @@
 /**
- * Match service — createMatch transaction + active-match helpers.
+ * Match service — createMatch + closeMatch transactions + active-match helpers.
  *
  * isDeckInActiveMatch / isPlayerInActiveMatch are exported so that
  * services/decks.ts and services/players.ts can replace their stubs.
  *
- * MATCH-002 (EPIC-02)
+ * MATCH-002, MATCH-003 (EPIC-02)
  */
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, ne } from 'drizzle-orm';
 
 import { db } from '@/services/db';
-import { decks, matches, participations } from '@/db/schema';
-import type { Match, Participation } from '@/db/index';
+import { decks, matchResults, matches, participations } from '@/db/schema';
+import type { Match, MatchResult, Participation } from '@/db/index';
 
 // ─────────────────────────────────────────────
 // Active-match helpers (exported for use in other services)
@@ -123,4 +123,133 @@ export async function createMatch(
   });
 
   return { data: result };
+}
+
+// ─────────────────────────────────────────────
+// closeMatch
+// ─────────────────────────────────────────────
+
+export type CloseAction =
+  | { action: 'win'; winner_participation_id: string; win_condition: string }
+  | { action: 'draw' }
+  | { action: 'abandon' };
+
+export type CloseMatchResult =
+  | { data: { match: Match; result: MatchResult | null } }
+  | { notFound: true }
+  | { alreadyClosed: true }
+  | { forbidden: true }
+  | { invalidWinCondition: true }
+  | { participationNotFound: true }; // winner_participation_id not in this match
+
+const VALID_WIN_CONDITIONS = new Set([
+  'combat_damage', 'commander_damage', 'infect', 'combo', 'mill', 'scoop', 'concede', 'other',
+]);
+
+/**
+ * Closes a match in one of three ways:
+ *  - win:    sets completed, creates MatchResult, marks winner/losers
+ *  - draw:   sets completed, creates MatchResult (is_draw=true), marks all draw
+ *  - abandon: sets abandoned, no MatchResult, participation results stay null (BR-MATCH-06)
+ *
+ * All mutations run in a single transaction.
+ */
+export async function closeMatch(
+  userId: string,
+  matchId: string,
+  input: CloseAction,
+): Promise<CloseMatchResult> {
+  // 1. Fetch match
+  const [match] = await db
+    .select()
+    .from(matches)
+    .where(eq(matches.id, matchId))
+    .limit(1);
+
+  if (!match) return { notFound: true };
+  if (match.status !== 'in_progress') return { alreadyClosed: true };
+  if (match.createdBy !== userId) return { forbidden: true };
+
+  // 2. Validate win_condition enum
+  if (input.action === 'win' && !VALID_WIN_CONDITIONS.has(input.win_condition)) {
+    return { invalidWinCondition: true };
+  }
+
+  // 3. Fetch all participations for this match
+  const parts = await db
+    .select()
+    .from(participations)
+    .where(eq(participations.matchId, matchId));
+
+  // 4. Validate winner belongs to this match
+  if (input.action === 'win') {
+    const winner = parts.find((p) => p.id === input.winner_participation_id);
+    if (!winner) return { participationNotFound: true };
+  }
+
+  // 5. Transaction
+  const now = new Date();
+
+  const closed = await db.transaction(async (tx) => {
+    // Update match status + ended_at
+    const newStatus = input.action === 'abandon' ? 'abandoned' : 'completed';
+    const [updatedMatch] = await tx
+      .update(matches)
+      .set({ status: newStatus, endedAt: now })
+      .where(eq(matches.id, matchId))
+      .returning();
+
+    let matchResult: MatchResult | null = null;
+
+    if (input.action === 'win') {
+      // Mark winner
+      await tx
+        .update(participations)
+        .set({ result: 'win' })
+        .where(eq(participations.id, input.winner_participation_id));
+
+      // Mark losers
+      await tx
+        .update(participations)
+        .set({ result: 'lose' })
+        .where(and(eq(participations.matchId, matchId), ne(participations.id, input.winner_participation_id)));
+
+      // Create MatchResult
+      const [mr] = await tx
+        .insert(matchResults)
+        .values({
+          matchId,
+          winnerParticipationId: input.winner_participation_id,
+          winCondition: input.win_condition as MatchResult['winCondition'],
+          isDraw: false,
+        })
+        .returning();
+      matchResult = mr;
+
+    } else if (input.action === 'draw') {
+      // Mark all draw
+      await tx
+        .update(participations)
+        .set({ result: 'draw' })
+        .where(eq(participations.matchId, matchId));
+
+      // Create MatchResult (no winner, is_draw=true)
+      const [mr] = await tx
+        .insert(matchResults)
+        .values({
+          matchId,
+          winnerParticipationId: null,
+          winCondition: 'other',
+          isDraw: true,
+        })
+        .returning();
+      matchResult = mr;
+
+    }
+    // abandon: no participation updates, no MatchResult
+
+    return { match: updatedMatch, result: matchResult };
+  });
+
+  return { data: closed };
 }
