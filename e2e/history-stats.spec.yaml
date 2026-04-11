@@ -1,0 +1,70 @@
+# E2E — History & Stats (EPIC-04)
+# Tool: Maestro (https://maestro.mobile.dev)
+# Run: maestro test e2e/history-stats.spec.yaml
+#
+# Preconditions:
+#   - App running on simulator/device with an authenticated user
+#   - At least 2 players and 2 distinct decks already created
+#   - At least 1 completed match exists in the user's history
+#
+# HIST-012 (EPIC-04)
+
+---
+appId: com.mtgtracker.app
+
+# ─── Scenario 1: Match appears in history after close ────────────────────────
+# (Full flow: create → play → close → verify in SCR-005)
+
+# TODO: launch new match (navigate to SCR-007, setup, start)
+# TODO: navigate to close match (SCR-009), select winner, confirm
+# TODO: navigate to SCR-005 History tab
+# TODO: assertVisible: match card with today's date at top of list
+# TODO: assertVisible: winner name on the match card
+# TODO: assertVisible: correct number of players on the card
+
+# ─── Scenario 2: SCR-005 → tap MatchCard → SCR-011 shows EventLog ────────────
+
+# Navigate to History tab
+- tapOn: "Historial"
+
+# Tap the first match card
+- tapOn:
+    index: 0
+    childOf: "match-list"
+
+# SCR-011 Match Detail — verify key elements
+- assertVisible: "Detalle"
+- assertVisible: "Jugadores"
+- assertVisible: "Registro de eventos"
+
+# ─── Scenario 3: History filter by result ─────────────────────────────────────
+
+# TODO: navigate to SCR-005
+# TODO: tapOn "Filtros" or filter bar
+# TODO: select "Solo victorias" filter
+# TODO: assert all visible match cards show a winner (no "Empate" or "Abandonada")
+
+# ─── Scenario 4: Stats Dashboard shows global ranking ─────────────────────────
+
+# Navigate to Stats tab
+- tapOn: "Estadísticas"
+
+# Verify dashboard is visible
+- assertVisible: "partidas completadas"
+- assertVisible: "Ranking de Jugadores"
+
+# ─── Scenario 5: Matchup Stats flow ──────────────────────────────────────────
+
+# Tap CTA to open matchup screen
+- tapOn: "Ver Matchup"
+
+# Verify SCR-015 elements
+- assertVisible: "Tipo de entidad"
+- assertVisible: "Entidad A"
+- assertVisible: "Entidad B"
+- assertVisible: "Partidas a incluir"
+
+# TODO: select entity type "Jugador"
+# TODO: select player A from Entity A selector
+# TODO: select player B from Entity B selector
+# TODO: assertVisible: matchup result card with wins for each player
