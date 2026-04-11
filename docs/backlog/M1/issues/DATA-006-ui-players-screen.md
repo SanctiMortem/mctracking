@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-01-DATA-FOUNDATION](../epics/EPIC-01-DATA-FOUNDATION.md)
 > **Skills:** `domains/ui`
 > **Agents:** `frontend-specialist`, `mobile-developer`
@@ -109,13 +109,15 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-10 | `getItemLayout` con altura fija 64pt | Optimiza FlatList para listas largas sin necesidad de medir cada row |
+| 2026-04-10 | Avatar de iniciales en lugar de foto | MVP sin upload de imagen; las iniciales dan identidad visual suficiente |
+| 2026-04-10 | ACTIVE_MATCH error code mapeado en UI | El AC exige mensaje específico para este caso; el API ya retorna el code |
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+- `49fa80f` — feat(data): DATA-006 — SCR-003 Players List UI (tab screen)
 
 ---
 

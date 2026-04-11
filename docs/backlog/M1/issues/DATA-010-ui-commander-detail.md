@@ -4,7 +4,7 @@
 > **Priority:** P2
 > **Effort:** S
 > **Story Points:** 2
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-01-DATA-FOUNDATION](../epics/EPIC-01-DATA-FOUNDATION.md)
 > **Skills:** `domains/ui`
 > **Agents:** `frontend-specialist`, `mobile-developer`

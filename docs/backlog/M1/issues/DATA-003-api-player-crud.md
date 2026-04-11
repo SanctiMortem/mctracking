@@ -4,7 +4,7 @@
 > **Priority:** P0
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-01-DATA-FOUNDATION](../epics/EPIC-01-DATA-FOUNDATION.md)
 > **Skills:** `domains/api`, `domains/db`
 > **Agents:** `backend-specialist`
@@ -107,13 +107,14 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-10 | `hasActiveMatch()` implementado como stub (siempre false) | `participations` table no existe hasta MATCH-001 (EPIC-02); guard está wired y se activará al reemplazar el stub |
+| 2026-04-10 | Uniqueness scoped por usuario (created_by + lower(name)) | Dos usuarios distintos pueden tener un jugador con el mismo nombre — BR-ENTITY-01 |
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+- `e6d01f5` — feat(data): DATA-003 — Player CRUD API routes + service
 
 ---
 

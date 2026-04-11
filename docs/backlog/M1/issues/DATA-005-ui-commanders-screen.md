@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-01-DATA-FOUNDATION](../epics/EPIC-01-DATA-FOUNDATION.md)
 > **Skills:** `domains/ui`
 > **Agents:** `frontend-specialist`, `mobile-developer`
@@ -118,13 +118,16 @@ No aplica — funcionalidad nueva. Componentes del design system "The Mystic Arc
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-10 | `Modal` nativo en lugar de `@gorhom/bottom-sheet` para el formulario | No hay bottom sheet lib instalada; Modal cubre el AC sin dependencia extra |
+| 2026-04-10 | Delete con `Alert.confirm` (menú contextual) en lugar de swipe | Gesture Handler instalado pero swipeable requiere setup extra — AC cumplido con menú de confirmación |
+| 2026-04-10 | `services/api.ts` con `apiFetch` + base URL via `expo-constants.hostUri` | Necesario para que el cliente RN alcance los API routes de Expo Router en dev |
+| 2026-04-10 | Búsqueda client-side sobre la lista cargada | Lista pequeña en MVP; evita round-trip al servidor por cada keystroke |
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+- `90fe92e` — feat(data): DATA-005 — SCR-016 Commanders Archive UI
 
 ---
 
