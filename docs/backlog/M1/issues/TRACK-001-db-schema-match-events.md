@@ -39,10 +39,10 @@ Crear el schema Drizzle para la tabla `match_events`: el log inmutable de todos 
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Tabla `match_events`: `id`, `match_id` (FK), `participation_id` (FK), `event_type` (enum), `delta` (int), `commander_id_source` (FK Commander, nullable — para commander_damage events), `is_undone` (bool default false), `created_at`
-- [ ] Enum `event_type`: `life_change`, `poison_change`, `commander_damage`
-- [ ] Índice en `match_events(match_id, is_undone)` para queries de undo y event log
-- [ ] `pnpm db:generate` + `pnpm db:migrate` exitosos
+- [x] Tabla `match_events`: `id`, `match_id` (FK), `participation_id` (FK), `event_type` (enum), `delta` (int), `commander_id_source` (FK Commander, nullable — para commander_damage events), `is_undone` (bool default false), `created_at`
+- [x] Enum `event_type`: `life_change`, `poison_change`, `commander_damage`
+- [x] Índice en `match_events(match_id, is_undone)` para queries de undo y event log
+- [x] `pnpm db:generate` + `pnpm db:migrate` exitosos
 
 ## 🥒 Escenarios (Gherkin)
 
