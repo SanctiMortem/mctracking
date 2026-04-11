@@ -4,7 +4,7 @@
 > **Priority:** P0
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-01-DATA-FOUNDATION](../epics/EPIC-01-DATA-FOUNDATION.md)
 > **Skills:** `domains/db`
 > **Agents:** `database-architect`, `data-modeler-drizzle`
@@ -150,13 +150,14 @@ No aplica — funcionalidad nueva (no hay SK en este proyecto).
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-10 | `commanders.name` unique index como `lower()` conceptual — Drizzle no soporta functional index nativo, se aplica en migración manual o via API validation | Drizzle-kit no genera `CREATE UNIQUE INDEX ON lower(name)` automáticamente |
+| 2026-04-10 | `getDb()` factory en lugar de singleton — Neon serverless requiere instancia por request en edge runtime | Patrón documentado por Neon para Expo Router API routes |
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+- `cf5e0b7` — feat(data): DATA-001 — Drizzle schema for Commander, Player, Deck
 
 ---
 
