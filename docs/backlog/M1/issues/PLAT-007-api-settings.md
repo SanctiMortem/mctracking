@@ -124,7 +124,7 @@ No aplica — funcionalidad nueva.
 
 ### Commit
 
-_See below_
+`71c390f` feat(platform): implement PATCH /settings + updateSettings service (PLAT-007)
 
 ---
 

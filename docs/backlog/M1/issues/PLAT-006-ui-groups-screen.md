@@ -138,7 +138,7 @@ No aplica — funcionalidad nueva.
 
 ### Commit
 
-_See below_
+`0aa9a6f` feat(platform): implement SCR-017 Groups screen + useGroups hook (PLAT-006)
 
 ---
 
