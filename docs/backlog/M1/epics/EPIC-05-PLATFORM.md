@@ -54,7 +54,7 @@ Implementar la capa de plataforma que hace el producto completo: Auth multi-prov
 | [PLAT-011](../issues/PLAT-011-ads-integration.md) | Monetización: Ads (AdMob/Unity — free tier) | PLAT-003 | P2 | ✅ | M | 5 |
 | [PLAT-012](../issues/PLAT-012-iap-premium.md) | Monetización: IAP one-time premium | PLAT-007, ADR-007 | P2 | ✅ | L | 8 |
 | [PLAT-013](../issues/PLAT-013-eas-production.md) | Platform: EAS Build production (iOS + Android) | SETUP-008, Todos | P1 | ✅ | S | 2 |
-| [PLAT-014](../issues/PLAT-014-epic-tests.md) | 🧪 Epic Tests — Platform | Todos | P1 | 📋 | M | 5 |
+| [PLAT-014](../issues/PLAT-014-epic-tests.md) | 🧪 Epic Tests — Platform | Todos | P1 | ✅ | M | 5 |
 
 > **Total SP:** 65
 
