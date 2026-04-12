@@ -10,6 +10,8 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View }
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { EventLogItem } from '@/components/tracker/EventLogItem';
 import { ParticipantResultRow } from '@/components/match/ParticipantResultRow';
@@ -30,21 +32,21 @@ function formatDate(value: string | Date): string {
 
 type StatusConfig = { label: string; color: string; bg: string };
 
-function statusConfig(status: Match['status']): StatusConfig {
+function statusConfig(status: Match['status'], t: TFunction): StatusConfig {
   switch (status) {
-    case 'completed':   return { label: 'Completada', color: colors.status.success, bg: colors.status.success + '22' };
-    case 'in_progress': return { label: 'En curso',   color: AMBER,                bg: AMBER + '22' };
-    case 'abandoned':   return { label: 'Abandonada', color: colors.text.muted,    bg: colors.background.elevated };
+    case 'completed':   return { label: t('match.statusCompleted'), color: colors.status.success, bg: colors.status.success + '22' };
+    case 'in_progress': return { label: t('match.statusInProgress'), color: AMBER, bg: AMBER + '22' };
+    case 'abandoned':   return { label: t('match.statusAbandoned'), color: colors.text.muted, bg: colors.background.elevated };
   }
 }
 
 type OutcomeLabelConfig = { icon: string; label: string; color: string };
 
-function outcomeLabelConfig(outcome: MatchOutcome): OutcomeLabelConfig {
+function outcomeLabelConfig(outcome: MatchOutcome, t: TFunction): OutcomeLabelConfig {
   switch (outcome) {
-    case 'win':       return { icon: '✦', label: 'Victoria',  color: AMBER };
-    case 'draw':      return { icon: '◈', label: 'Empate',    color: colors.accent.primary };
-    case 'abandoned': return { icon: '✕', label: 'Abandonada', color: colors.text.muted };
+    case 'win':       return { icon: '✦', label: t('match.outcomeVictory'), color: AMBER };
+    case 'draw':      return { icon: '◈', label: t('match.outcomeDraw'),    color: colors.accent.primary };
+    case 'abandoned': return { icon: '✕', label: t('match.outcomeAbandoned'), color: colors.text.muted };
   }
 }
 
@@ -66,6 +68,7 @@ function SectionTitle({ label, count }: { label: string; count?: number }) {
 export default function MatchDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { data, loading, error } = useMatchDetail(id);
 
@@ -80,17 +83,17 @@ export default function MatchDetailScreen() {
   if (error || !data) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>{error ?? 'No se pudo cargar el detalle.'}</Text>
+        <Text style={styles.errorText}>{error ?? t('match.cannotLoadDetail')}</Text>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.linkText}>Volver</Text>
+          <Text style={styles.linkText}>{t('common.back')}</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   const { match, participations, result, formattedEvents, outcome, winner, winConditionDisplay, duration } = data;
-  const sc = statusConfig(match.status);
-  const oc = outcomeLabelConfig(outcome);
+  const sc = statusConfig(match.status, t);
+  const oc = outcomeLabelConfig(outcome, t);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -99,7 +102,7 @@ export default function MatchDetailScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} hitSlop={8}>
           <Text style={styles.backIcon}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Detalle del match</Text>
+        <Text style={styles.headerTitle}>{t('match.detail')}</Text>
         <View style={styles.backBtn} />
       </View>
 
@@ -118,25 +121,25 @@ export default function MatchDetailScreen() {
                 onPress={() => router.push(`/match/${id}/tracker`)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.inProgressText}>⚡ Partida en curso</Text>
-                <Text style={styles.inProgressCta}>Ir al tracker →</Text>
+                <Text style={styles.inProgressText}>{t('match.inProgressBanner')}</Text>
+                <Text style={styles.inProgressCta}>{t('match.goToTracker')}</Text>
               </TouchableOpacity>
             )}
 
             {/* ── Match meta ── */}
             <View style={styles.metaCard}>
               <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>Fecha</Text>
+                <Text style={styles.metaLabel}>{t('match.date')}</Text>
                 <Text style={styles.metaValue}>{formatDate(match.createdAt)}</Text>
               </View>
               <View style={styles.separator} />
               <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>Duración</Text>
+                <Text style={styles.metaLabel}>{t('match.duration')}</Text>
                 <Text style={styles.metaValue}>{duration}</Text>
               </View>
               <View style={styles.separator} />
               <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>Estado</Text>
+                <Text style={styles.metaLabel}>{t('match.status')}</Text>
                 <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
                   <Text style={[styles.statusText, { color: sc.color }]}>{sc.label}</Text>
                 </View>
@@ -145,7 +148,7 @@ export default function MatchDetailScreen() {
 
             {/* ── Resultado ── */}
             <View style={styles.section}>
-              <SectionTitle label="Resultado" />
+              <SectionTitle label={t('match.result')} />
               <View style={styles.outcomeCard}>
                 <View style={styles.outcomeRow}>
                   <Text style={[styles.outcomeIcon, { color: oc.color }]}>{oc.icon}</Text>
@@ -156,7 +159,7 @@ export default function MatchDetailScreen() {
                 </View>
                 {winConditionDisplay && (
                   <View style={styles.conditionRow}>
-                    <Text style={styles.conditionLabel}>Win condition</Text>
+                    <Text style={styles.conditionLabel}>{t('match.winConditionLabel')}</Text>
                     <View style={[styles.conditionBadge, { backgroundColor: AMBER + '22' }]}>
                       <Text style={[styles.conditionText, { color: AMBER }]}>{winConditionDisplay}</Text>
                     </View>
@@ -167,7 +170,7 @@ export default function MatchDetailScreen() {
 
             {/* ── Jugadores ── */}
             <View style={styles.section}>
-              <SectionTitle label="Jugadores" count={participations.length} />
+              <SectionTitle label={t('match.playersSection')} count={participations.length} />
               <View style={styles.participantList}>
                 {participations.map((p) => (
                   <ParticipantResultRow
@@ -196,7 +199,7 @@ export default function MatchDetailScreen() {
         // ── Empty log state ──
         ListEmptyComponent={
           <View style={styles.emptyLog}>
-            <Text style={styles.emptyLogText}>Sin eventos registrados</Text>
+            <Text style={styles.emptyLogText}>{t('match.noEvents')}</Text>
           </View>
         }
       />

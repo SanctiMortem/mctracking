@@ -15,10 +15,10 @@
 | EPIC-02 | Match Lifecycle | 9 | 42 | 9 | 0 | ✅ Done |
 | EPIC-03 | Live Tracking | 11 | 44 | 11 | 0 | ✅ Done |
 | EPIC-04 | History & Stats | 13 | 52 | 13 | 0 | ✅ Done |
-| EPIC-05 | Platform | 18 | 68 | 12 | 6 | 🔄 In Progress |
-| **M1 Total** | — | **72** | **289** | **66** | **6** | — |
+| EPIC-05 | Platform | 18 | 68 | 13 | 5 | 🔄 In Progress |
+| **M1 Total** | — | **72** | **289** | **67** | **5** | — |
 
-**Progress:** 66/72 issues done (92%) · 259/289 SP completed (90%)
+**Progress:** 67/72 issues done (93%) · 264/289 SP completed (91%)
 
 ---
 
@@ -141,7 +141,7 @@
 | PLAT-006 | UI — SCR-017 Groups Screen | P1 | 5 | ✅ Done |
 | PLAT-007 | API — Settings PATCH + UserSettings | P1 | 2 | ✅ Done |
 | PLAT-008 | UI — SCR-018 Settings Screen | P1 | 5 | ✅ Done |
-| PLAT-009 | i18n — Translation Strings Completas (EN + ES) | P1 | 5 | 📋 Backlog |
+| PLAT-009 | i18n — Translation Strings Completas (EN + ES) | P1 | 5 | ✅ Done |
 | PLAT-010 | UI — SCR-002 Home Screen FULL | P1 | 5 | 📋 Backlog |
 | PLAT-011 | Monetización — Ads Integration (AdMob/Unity — free tier) | P2 | 5 | 📋 Backlog |
 | PLAT-012 | Monetización — IAP One-Time Premium | P2 | 8 | 📋 Backlog |
@@ -152,19 +152,19 @@
 
 ## Kanban View
 
-### ✅ Done (66 issues · 259 SP)
+### ✅ Done (67 issues · 264 SP)
 
 `ADR-001` `SETUP-001` `SETUP-002` `SETUP-003` `SETUP-004` `SETUP-005` `SETUP-006` `SETUP-007` `SETUP-008` `SETUP-009`
 `DATA-001` `DATA-002` `DATA-003` `DATA-004` `DATA-005` `DATA-006` `DATA-007` `DATA-008` `DATA-009` `DATA-010` `DATA-011`
 `MATCH-001` `MATCH-002` `MATCH-003` `MATCH-004` `MATCH-005` `MATCH-006` `MATCH-007` `MATCH-008` `MATCH-009`
 `ADR-002` `ADR-003` `TRACK-001` `TRACK-002` `TRACK-003` `TRACK-004` `TRACK-005` `TRACK-006` `TRACK-007` `TRACK-008` `TRACK-009`
 `ADR-008` `HIST-001` `HIST-002` `HIST-003` `HIST-004` `HIST-005` `HIST-006` `HIST-007` `HIST-008` `HIST-009` `HIST-010` `HIST-011` `HIST-012`
-`ADR-004` `ADR-005` `ADR-006` `ADR-007` `PLAT-001` `PLAT-002` `PLAT-003` `PLAT-004` `PLAT-005` `PLAT-006` `PLAT-007` `PLAT-008`
+`ADR-004` `ADR-005` `ADR-006` `ADR-007` `PLAT-001` `PLAT-002` `PLAT-003` `PLAT-004` `PLAT-005` `PLAT-006` `PLAT-007` `PLAT-008` `PLAT-009`
 
-### 📋 Backlog (6 issues · 30 SP)
+### 📋 Backlog (5 issues · 25 SP)
 
 **EPIC-05 — After EPIC-04:**
-`PLAT-009` `PLAT-010` `PLAT-011` `PLAT-012` `PLAT-013` `PLAT-014`
+`PLAT-010` `PLAT-011` `PLAT-012` `PLAT-013` `PLAT-014`
 
 ---
 

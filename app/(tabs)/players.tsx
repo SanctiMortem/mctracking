@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import type { Player } from '@/db/index';
 import { PlayerForm } from '@/components/players/PlayerForm';
@@ -24,6 +25,7 @@ import { colors, radius, spacing, typography } from '@/styles/tokens';
 
 export default function PlayersScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { players, loading, error, refresh, create, update, remove } = usePlayers();
   const [formVisible, setFormVisible] = useState(false);
   const [editing, setEditing] = useState<Player | null>(null);
@@ -57,10 +59,10 @@ export default function PlayersScreen() {
     } catch (e: unknown) {
       const isActiveMatch = (e as { code?: string }).code === 'ACTIVE_MATCH';
       Alert.alert(
-        isActiveMatch ? 'Player in active match' : 'Error',
+        isActiveMatch ? t('player.playerInMatchTitle') : t('common.error'),
         isActiveMatch
-          ? 'You cannot remove a player who is currently in an active match.'
-          : (e instanceof Error ? e.message : 'Could not remove player'),
+          ? t('player.playerInMatchMessage')
+          : (e instanceof Error ? e.message : t('player.removeError')),
       );
     }
   }
@@ -69,9 +71,9 @@ export default function PlayersScreen() {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Players</Text>
-        <Pressable style={styles.fab} onPress={openCreate} accessibilityLabel="Add player">
-          <Text style={styles.fabLabel}>+ Add</Text>
+        <Text style={styles.title}>{t('player.players')}</Text>
+        <Pressable style={styles.fab} onPress={openCreate} accessibilityLabel={t('player.addPlayerLabel')}>
+          <Text style={styles.fabLabel}>{t('player.addPlayer')}</Text>
         </Pressable>
       </View>
 
@@ -84,7 +86,7 @@ export default function PlayersScreen() {
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
           <Pressable style={styles.retryBtn} onPress={refresh}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>{t('common.retry')}</Text>
           </Pressable>
         </View>
       ) : (

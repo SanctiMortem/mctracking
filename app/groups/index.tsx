@@ -22,6 +22,8 @@ import {
   View,
 } from 'react-native';
 
+import { useTranslation } from 'react-i18next';
+
 import type { GroupWithRole, InviteData } from '@/hooks/useGroups';
 import { useGroups } from '@/hooks/useGroups';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
@@ -40,6 +42,7 @@ type GroupSection = {
 // ─────────────────────────────────────────────
 
 export default function GroupsScreen() {
+  const { t } = useTranslation();
   const { ownedGroups, memberGroups, loading, error, refresh, createGroup, getInvite, joinGroup } =
     useGroups();
 
@@ -66,7 +69,7 @@ export default function GroupsScreen() {
 
   async function handleCreate() {
     if (!groupName.trim()) {
-      Alert.alert('Name required', 'Please enter a group name.');
+      Alert.alert(t('common.error'), t('groups.groupNameRequired'));
       return;
     }
     setCreating(true);
@@ -77,7 +80,7 @@ export default function GroupsScreen() {
       // Show invite link for the newly created group
       openInvite(entry.group.id, entry.group.name);
     } catch (e: unknown) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Could not create group');
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('groups.createError'));
     } finally {
       setCreating(false);
     }
@@ -93,7 +96,7 @@ export default function GroupsScreen() {
       setInviteData(data);
     } catch (e: unknown) {
       setInviteVisible(false);
-      Alert.alert('Error', e instanceof Error ? e.message : 'Could not get invite link');
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('groups.inviteGetError'));
     } finally {
       setInviteLoading(false);
     }
@@ -103,8 +106,8 @@ export default function GroupsScreen() {
     if (!inviteData) return;
     try {
       await Share.share({
-        message: `Join my group on MTG Tracker! Code: ${inviteData.invite_code}`,
-        title: `Join ${inviteGroupName}`,
+        message: t('groups.shareMessage', { code: inviteData.invite_code }),
+        title: t('groups.shareTitle', { name: inviteGroupName }),
       });
     } catch {
       // User cancelled share — no-op
@@ -113,7 +116,7 @@ export default function GroupsScreen() {
 
   async function handleJoin() {
     if (!joinCode.trim()) {
-      setJoinError('Please enter an invite code.');
+      setJoinError(t('groups.enterInviteCode'));
       return;
     }
     setJoining(true);
@@ -125,13 +128,13 @@ export default function GroupsScreen() {
     } catch (e: unknown) {
       const code = (e as { code?: string }).code;
       if (code === 'GROUP_INVITE_EXPIRED') {
-        setJoinError('This invite link has expired. Ask the group owner for a new one.');
+        setJoinError(t('groups.inviteExpired'));
       } else if (code === 'ALREADY_A_MEMBER') {
-        setJoinError('You are already a member of this group.');
+        setJoinError(t('groups.alreadyMember'));
       } else if (code === 'NOT_FOUND') {
-        setJoinError('Invite code not found. Check the code and try again.');
+        setJoinError(t('groups.inviteNotFound'));
       } else {
-        setJoinError(e instanceof Error ? e.message : 'Could not join group');
+        setJoinError(e instanceof Error ? e.message : t('groups.joinError'));
       }
     } finally {
       setJoining(false);
@@ -149,8 +152,8 @@ export default function GroupsScreen() {
   // ─────────────────────────────────────────────
 
   const sections: GroupSection[] = [
-    { title: 'My Groups', data: ownedGroups },
-    { title: 'Member of', data: memberGroups },
+    { title: t('groups.myGroups'), data: ownedGroups },
+    { title: t('groups.memberOf'), data: memberGroups },
   ];
 
   const isEmpty = ownedGroups.length === 0 && memberGroups.length === 0;
@@ -163,13 +166,13 @@ export default function GroupsScreen() {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Groups</Text>
+        <Text style={styles.title}>{t('groups.title')}</Text>
         <View style={styles.headerActions}>
-          <Pressable style={styles.btnSecondary} onPress={() => setJoinVisible(true)} accessibilityLabel="Join a group">
-            <Text style={styles.btnSecondaryText}>Join</Text>
+          <Pressable style={styles.btnSecondary} onPress={() => setJoinVisible(true)} accessibilityLabel={t('groups.joinGroupLabel')}>
+            <Text style={styles.btnSecondaryText}>{t('groups.join')}</Text>
           </Pressable>
-          <Pressable style={styles.btnPrimary} onPress={() => setCreateVisible(true)} accessibilityLabel="Create a group">
-            <Text style={styles.btnPrimaryText}>+ Create</Text>
+          <Pressable style={styles.btnPrimary} onPress={() => setCreateVisible(true)} accessibilityLabel={t('groups.createGroupLabel')}>
+            <Text style={styles.btnPrimaryText}>+ {t('groups.create')}</Text>
           </Pressable>
         </View>
       </View>
@@ -183,21 +186,19 @@ export default function GroupsScreen() {
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
           <Pressable style={styles.retryBtn} onPress={refresh}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>{t('common.retry')}</Text>
           </Pressable>
         </View>
       ) : isEmpty ? (
         <View style={styles.center}>
-          <Text style={styles.emptyTitle}>No groups yet</Text>
-          <Text style={styles.emptyBody}>
-            Create a group to share players, decks, and match history with friends — or join one with an invite code.
-          </Text>
+          <Text style={styles.emptyTitle}>{t('groups.noGroupsYet')}</Text>
+          <Text style={styles.emptyBody}>{t('groups.noGroupsBody')}</Text>
           <View style={styles.emptyActions}>
             <Pressable style={styles.btnPrimary} onPress={() => setCreateVisible(true)}>
-              <Text style={styles.btnPrimaryText}>Create Group</Text>
+              <Text style={styles.btnPrimaryText}>{t('groups.createGroup')}</Text>
             </Pressable>
             <Pressable style={styles.btnSecondary} onPress={() => setJoinVisible(true)}>
-              <Text style={styles.btnSecondaryText}>Join with Code</Text>
+              <Text style={styles.btnSecondaryText}>{t('groups.joinWithCode')}</Text>
             </Pressable>
           </View>
         </View>
@@ -230,8 +231,8 @@ export default function GroupsScreen() {
         <Pressable style={styles.backdrop} onPress={() => setCreateVisible(false)} />
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.sheet}>
           <View style={styles.handle} />
-          <Text style={styles.sheetTitle}>New Group</Text>
-          <Text style={styles.inputLabel}>Group name</Text>
+          <Text style={styles.sheetTitle}>{t('groups.newGroup')}</Text>
+          <Text style={styles.inputLabel}>{t('groups.groupName')}</Text>
           <TextInput
             style={styles.input}
             value={groupName}
@@ -245,7 +246,7 @@ export default function GroupsScreen() {
           />
           <View style={styles.sheetActions}>
             <Pressable style={styles.btnCancel} onPress={() => { setCreateVisible(false); setGroupName(''); }}>
-              <Text style={styles.btnCancelText}>Cancel</Text>
+              <Text style={styles.btnCancelText}>{t('common.cancel')}</Text>
             </Pressable>
             <Pressable
               style={[styles.btnPrimary, styles.btnFlex, creating && styles.btnDisabled]}
@@ -254,7 +255,7 @@ export default function GroupsScreen() {
             >
               {creating
                 ? <ActivityIndicator color={colors.text.primary} size="small" />
-                : <Text style={styles.btnPrimaryText}>Create</Text>
+                : <Text style={styles.btnPrimaryText}>{t('common.create')}</Text>
               }
             </Pressable>
           </View>
@@ -266,12 +267,12 @@ export default function GroupsScreen() {
         <Pressable style={styles.backdrop} onPress={closeJoin} />
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.sheet}>
           <View style={styles.handle} />
-          <Text style={styles.sheetTitle}>Join a Group</Text>
-          <Text style={styles.inputLabel}>Invite code</Text>
+          <Text style={styles.sheetTitle}>{t('groups.joinGroup')}</Text>
+          <Text style={styles.inputLabel}>{t('groups.inviteCode')}</Text>
           <TextInput
             style={[styles.input, joinError ? styles.inputError : undefined]}
             value={joinCode}
-            onChangeText={(t) => { setJoinCode(t); setJoinError(null); }}
+            onChangeText={(v) => { setJoinCode(v); setJoinError(null); }}
             placeholder="e.g. aB3xYz12"
             placeholderTextColor={colors.text.muted}
             autoCapitalize="none"
@@ -285,7 +286,7 @@ export default function GroupsScreen() {
           ) : null}
           <View style={styles.sheetActions}>
             <Pressable style={styles.btnCancel} onPress={closeJoin}>
-              <Text style={styles.btnCancelText}>Cancel</Text>
+              <Text style={styles.btnCancelText}>{t('common.cancel')}</Text>
             </Pressable>
             <Pressable
               style={[styles.btnPrimary, styles.btnFlex, joining && styles.btnDisabled]}
@@ -294,7 +295,7 @@ export default function GroupsScreen() {
             >
               {joining
                 ? <ActivityIndicator color={colors.text.primary} size="small" />
-                : <Text style={styles.btnPrimaryText}>Join</Text>
+                : <Text style={styles.btnPrimaryText}>{t('groups.join')}</Text>
               }
             </Pressable>
           </View>
@@ -306,27 +307,27 @@ export default function GroupsScreen() {
         <Pressable style={styles.backdrop} onPress={() => setInviteVisible(false)} />
         <View style={styles.sheet}>
           <View style={styles.handle} />
-          <Text style={styles.sheetTitle}>Invite to {inviteGroupName}</Text>
+          <Text style={styles.sheetTitle}>{t('groups.inviteTo', { name: inviteGroupName })}</Text>
           {inviteLoading ? (
             <View style={styles.inviteLoading}>
               <ActivityIndicator color={colors.accent.primary} size="large" />
             </View>
           ) : inviteData ? (
             <>
-              <Text style={styles.inputLabel}>Invite code</Text>
+              <Text style={styles.inputLabel}>{t('groups.inviteCode')}</Text>
               <View style={styles.inviteCodeBox}>
                 <Text style={styles.inviteCode} selectable>{inviteData.invite_code}</Text>
               </View>
               <Text style={styles.inviteExpiry}>
-                Expires {new Date(inviteData.invite_expires_at).toLocaleDateString()}
+                {t('groups.inviteExpires', { date: new Date(inviteData.invite_expires_at).toLocaleDateString() })}
               </Text>
               <Pressable style={[styles.btnPrimary, styles.btnFullWidth]} onPress={handleShare}>
-                <Text style={styles.btnPrimaryText}>Share Invite</Text>
+                <Text style={styles.btnPrimaryText}>{t('groups.shareInvite')}</Text>
               </Pressable>
             </>
           ) : null}
           <Pressable style={[styles.btnCancel, styles.btnFullWidth, { marginTop: spacing[2] }]} onPress={() => setInviteVisible(false)}>
-            <Text style={styles.btnCancelText}>Close</Text>
+            <Text style={styles.btnCancelText}>{t('common.close')}</Text>
           </Pressable>
         </View>
       </Modal>
@@ -344,22 +345,23 @@ interface GroupRowProps {
 }
 
 function GroupRow({ item, onInvite }: GroupRowProps) {
+  const { t } = useTranslation();
   const isOwner = item.role === 'owner';
   return (
     <View style={styles.row}>
       <View style={styles.rowInfo}>
         <Text style={styles.groupName} numberOfLines={1}>{item.group.name}</Text>
         <View style={[styles.roleBadge, isOwner ? styles.ownerBadge : styles.memberBadge]}>
-          <Text style={styles.roleBadgeText}>{isOwner ? 'Owner' : 'Member'}</Text>
+          <Text style={styles.roleBadgeText}>{isOwner ? t('groups.owner') : t('groups.member')}</Text>
         </View>
       </View>
       {isOwner && (
         <Pressable
           style={styles.inviteBtn}
           onPress={() => onInvite(item.group.id, item.group.name)}
-          accessibilityLabel={`Get invite link for ${item.group.name}`}
+          accessibilityLabel={t('groups.getInviteLinkFor', { name: item.group.name })}
         >
-          <Text style={styles.inviteBtnText}>Invite</Text>
+          <Text style={styles.inviteBtnText}>{t('groups.invite')}</Text>
         </Pressable>
       )}
     </View>

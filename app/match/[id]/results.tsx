@@ -9,6 +9,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { MatchResultCard } from '@/components/match/MatchResultCard';
 import { ParticipantResultRow } from '@/components/match/ParticipantResultRow';
@@ -18,6 +19,7 @@ import { colors, radius, spacing, typography } from '@/styles/tokens';
 export default function MatchResultsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { data, loading, error } = useMatchResults(id);
 
@@ -34,9 +36,9 @@ export default function MatchResultsScreen() {
   if (error || !data) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>{error ?? 'No se pudo cargar el resultado.'}</Text>
+        <Text style={styles.errorText}>{error ?? t('match.cannotLoadResult')}</Text>
         <TouchableOpacity style={styles.ctaOutline} onPress={() => router.replace('/(tabs)')}>
-          <Text style={styles.ctaOutlineText}>Ir al inicio</Text>
+          <Text style={styles.ctaOutlineText}>{t('match.goHome')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -60,7 +62,7 @@ export default function MatchResultsScreen() {
 
         {/* ── Participant list ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Jugadores</Text>
+          <Text style={styles.sectionTitle}>{t('match.playersSection')}</Text>
           <View style={styles.participantList}>
             {participations.map((p) => (
               <ParticipantResultRow
@@ -74,7 +76,7 @@ export default function MatchResultsScreen() {
 
         {/* ── Duration ── */}
         <View style={styles.durationRow}>
-          <Text style={styles.durationLabel}>Duración</Text>
+          <Text style={styles.durationLabel}>{t('match.duration')}</Text>
           <Text style={styles.durationValue}>{duration}</Text>
         </View>
 
@@ -87,7 +89,7 @@ export default function MatchResultsScreen() {
               onPress={() => router.push(`/match/${id}`)}
               activeOpacity={0.7}
             >
-              <Text style={styles.ctaOutlineText}>Ver detalle</Text>
+              <Text style={styles.ctaOutlineText}>{t('match.viewDetail')}</Text>
             </TouchableOpacity>
           )}
 
@@ -96,7 +98,7 @@ export default function MatchResultsScreen() {
             onPress={() => router.replace('/match/setup')}
             activeOpacity={0.7}
           >
-            <Text style={styles.ctaPrimaryText}>Nueva partida</Text>
+            <Text style={styles.ctaPrimaryText}>{t('match.newMatch')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -104,7 +106,7 @@ export default function MatchResultsScreen() {
             onPress={() => router.replace('/(tabs)')}
             activeOpacity={0.7}
           >
-            <Text style={styles.ctaGhostText}>Inicio</Text>
+            <Text style={styles.ctaGhostText}>{t('tabs.home')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

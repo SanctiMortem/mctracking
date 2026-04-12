@@ -21,6 +21,8 @@ import {
   View,
 } from 'react-native';
 
+import { useTranslation } from 'react-i18next';
+
 import { ColorChips } from '@/components/ui/ColorChips';
 import { useDecks } from '@/hooks/useDecks';
 import { usePlayers } from '@/hooks/usePlayers';
@@ -35,6 +37,7 @@ interface MatchSetupFormProps {
 }
 
 export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
+  const { t } = useTranslation();
   const { players, loading: loadingPlayers } = usePlayers();
   const { decks, loading: loadingDecks } = useDecks();
   const {
@@ -70,10 +73,8 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
   if (players.length === 0) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.edgeCaseTitle}>No players yet</Text>
-        <Text style={styles.edgeCaseBody}>
-          Add players in the Players tab before starting a match.
-        </Text>
+        <Text style={styles.edgeCaseTitle}>{t('match.noPlayersYet')}</Text>
+        <Text style={styles.edgeCaseBody}>{t('match.noPlayersEdgeBody')}</Text>
       </View>
     );
   }
@@ -81,10 +82,8 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
   if (decks.length === 0) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.edgeCaseTitle}>No decks yet</Text>
-        <Text style={styles.edgeCaseBody}>
-          Add decks in the Decks tab before starting a match.
-        </Text>
+        <Text style={styles.edgeCaseTitle}>{t('match.noDecksYet')}</Text>
+        <Text style={styles.edgeCaseBody}>{t('match.noDecksEdgeBody')}</Text>
       </View>
     );
   }
@@ -108,7 +107,7 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Section 1: Player selection ── */}
-        <Text style={styles.sectionLabel}>Select players (2–4)</Text>
+        <Text style={styles.sectionLabel}>{t('match.selectPlayersLabel')}</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -125,14 +124,14 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
         </ScrollView>
 
         {selectedPlayerIds.length > 0 && selectedPlayerIds.length < 2 && (
-          <Text style={styles.hintText}>Select at least one more player.</Text>
+          <Text style={styles.hintText}>{t('match.selectMorePlayers')}</Text>
         )}
 
         {/* ── Section 2: Deck assignment ── */}
         {selectedPlayers.length >= 1 && (
           <>
             <View style={styles.divider} />
-            <Text style={styles.sectionLabel}>Assign a deck to each player</Text>
+            <Text style={styles.sectionLabel}>{t('match.assignDecks')}</Text>
 
             {selectedPlayers.map((player) => {
               const assignedDeck = decks.find((d) => d.id === deckAssignments[player.id]);
@@ -158,7 +157,7 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
                   <Pressable
                     onPress={() => setDeckPickerFor(player.id)}
                     style={[styles.deckTrigger, isDuplicateDeck && styles.deckTriggerError]}
-                    accessibilityLabel={`Select deck for ${player.name}`}
+                    accessibilityLabel={`${t('match.selectDeck')} ${player.name}`}
                     accessibilityRole="button"
                   >
                     {assignedDeck ? (
@@ -169,7 +168,7 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
                         <ColorChips selected={assignedDeck.commander.colors} readonly />
                       </View>
                     ) : (
-                      <Text style={styles.deckTriggerPlaceholder}>Select deck...</Text>
+                      <Text style={styles.deckTriggerPlaceholder}>{t('match.selectDeck')}</Text>
                     )}
                     <Text style={styles.chevron}>›</Text>
                   </Pressable>
@@ -179,9 +178,7 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
 
             {/* Duplicate deck inline error */}
             {hasDuplicate && (
-              <Text style={styles.errorText}>
-                The same deck can't be used twice in a match.
-              </Text>
+              <Text style={styles.errorText}>{t('match.sameDeckError')}</Text>
             )}
           </>
         )}
@@ -206,7 +203,7 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
             <ActivityIndicator color={colors.text.inverse} size="small" />
           ) : (
             <Text style={[styles.submitBtnText, (!isValid || isSubmitting) && styles.submitBtnTextDisabled]}>
-              ✦  Start Match
+              {t('match.startMatch')}
             </Text>
           )}
         </Pressable>
@@ -221,11 +218,11 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select a deck</Text>
+            <Text style={styles.modalTitle}>{t('match.selectADeck')}</Text>
             <Pressable
               onPress={() => setDeckPickerFor(null)}
               style={styles.modalClose}
-              accessibilityLabel="Close deck selector"
+              accessibilityLabel={t('match.closeDeckSelector')}
             >
               <Text style={styles.modalCloseText}>✕</Text>
             </Pressable>

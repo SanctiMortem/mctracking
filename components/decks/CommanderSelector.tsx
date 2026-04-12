@@ -14,6 +14,8 @@ import {
   View,
 } from 'react-native';
 
+import { useTranslation } from 'react-i18next';
+
 import type { Commander } from '@/db/index';
 import { ColorChips } from '@/components/ui/ColorChips';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
@@ -24,7 +26,7 @@ interface CommanderSelectorProps {
   selected: Commander | null;
   onSelect: (commander: Commander) => void;
   onClose: () => void;
-  /** Label shown in the modal header */
+  /** Label shown in the modal header — if omitted, falls back to t('deck.selectCommander') */
   title?: string;
   /** Exclude a specific commander ID (e.g. the primary when picking partner) */
   excludeId?: string;
@@ -36,9 +38,10 @@ export function CommanderSelector({
   selected,
   onSelect,
   onClose,
-  title = 'Select Commander',
+  title,
   excludeId,
 }: CommanderSelectorProps) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
@@ -61,9 +64,9 @@ export function CommanderSelector({
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.title}>{title ?? t('deck.selectCommander')}</Text>
           <Pressable onPress={onClose} style={styles.closeBtn}>
-            <Text style={styles.closeText}>Cancel</Text>
+            <Text style={styles.closeText}>{t('common.cancel')}</Text>
           </Pressable>
         </View>
 
@@ -72,7 +75,7 @@ export function CommanderSelector({
           style={styles.search}
           value={query}
           onChangeText={setQuery}
-          placeholder="Search commanders…"
+          placeholder={t('commanders.searchPlaceholder')}
           placeholderTextColor={colors.text.muted}
           clearButtonMode="while-editing"
           autoFocus
@@ -81,10 +84,8 @@ export function CommanderSelector({
         {/* No commanders state */}
         {commanders.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>No commanders yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Go to the Commanders screen to add some first.
-            </Text>
+            <Text style={styles.emptyTitle}>{t('commanders.noCommandersYet')}</Text>
+            <Text style={styles.emptySubtitle}>{t('commanders.noCommandersGoTo')}</Text>
           </View>
         ) : (
           <FlatList
@@ -104,7 +105,7 @@ export function CommanderSelector({
                       </Text>
                       {item.isPartner && (
                         <View style={styles.badge}>
-                          <Text style={styles.badgeText}>Partner</Text>
+                          <Text style={styles.badgeText}>{t('commanders.partner')}</Text>
                         </View>
                       )}
                     </View>
@@ -117,7 +118,7 @@ export function CommanderSelector({
             ItemSeparatorComponent={() => <View style={styles.separator} />}
             ListEmptyComponent={
               <View style={styles.empty}>
-                <Text style={styles.emptyTitle}>No results for "{query}"</Text>
+                <Text style={styles.emptyTitle}>{t('commanders.noResultsFor', { query })}</Text>
               </View>
             }
             keyboardShouldPersistTaps="handled"

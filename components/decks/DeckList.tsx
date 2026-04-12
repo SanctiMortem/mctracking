@@ -12,6 +12,8 @@ import {
   View,
 } from 'react-native';
 
+import { useTranslation } from 'react-i18next';
+
 import type { Commander } from '@/db/index';
 import type { DeckWithCommanders } from '@/services/decks';
 import { ColorChips } from '@/components/ui/ColorChips';
@@ -36,6 +38,7 @@ function FilterChips({
   active: string | null;
   onChange: (id: string | null) => void;
 }) {
+  const { t } = useTranslation();
   if (commanders.length === 0) return null;
   return (
     <ScrollView
@@ -48,7 +51,7 @@ function FilterChips({
         onPress={() => onChange(null)}
       >
         <Text style={[styles.filterChipText, active === null && styles.filterChipTextActive]}>
-          All
+          {t('deck.filterAll')}
         </Text>
       </Pressable>
       {commanders.map((c) => (
@@ -77,13 +80,15 @@ function DeckRow({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
+
   function confirmDelete() {
     Alert.alert(
-      'Remove Deck',
-      `Remove "${deck.name}"? Match history will be preserved.`,
+      t('deck.removeDeckTitle'),
+      t('deck.removeDeckMessage', { name: deck.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: onDelete },
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.remove'), style: 'destructive', onPress: onDelete },
       ],
     );
   }
@@ -110,11 +115,11 @@ function DeckRow({
       </View>
 
       <View style={styles.rowActions}>
-        <Pressable onPress={onEdit} style={styles.actionBtn} accessibilityLabel={`Edit ${deck.name}`}>
-          <Text style={styles.actionEdit}>Edit</Text>
+        <Pressable onPress={onEdit} style={styles.actionBtn} accessibilityLabel={`${t('common.edit')} ${deck.name}`}>
+          <Text style={styles.actionEdit}>{t('common.edit')}</Text>
         </Pressable>
-        <Pressable onPress={confirmDelete} style={styles.actionBtn} accessibilityLabel={`Remove ${deck.name}`}>
-          <Text style={styles.actionDelete}>Remove</Text>
+        <Pressable onPress={confirmDelete} style={styles.actionBtn} accessibilityLabel={`${t('common.remove')} ${deck.name}`}>
+          <Text style={styles.actionDelete}>{t('common.remove')}</Text>
         </Pressable>
       </View>
     </Pressable>
@@ -122,15 +127,14 @@ function DeckRow({
 }
 
 function EmptyState({ hasFilter }: { hasFilter: boolean }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.empty}>
       <Text style={styles.emptyTitle}>
-        {hasFilter ? 'No decks with this commander' : 'No decks yet'}
+        {hasFilter ? t('deck.noDecksWithCommander') : t('deck.noDecksYet')}
       </Text>
       <Text style={styles.emptySubtitle}>
-        {hasFilter
-          ? 'Try removing the filter to see all decks.'
-          : 'Tap the button above to build your first deck.'}
+        {hasFilter ? t('deck.noDecksWithCommanderBody') : t('deck.noDecksBody')}
       </Text>
     </View>
   );

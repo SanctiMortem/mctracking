@@ -7,19 +7,11 @@
  */
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useTranslation } from 'react-i18next';
+
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
 const AMBER = '#F39C12';
-
-const WIN_CONDITIONS = [
-  { value: 'combat_damage',    label: 'Combat' },
-  { value: 'commander_damage', label: 'Cmd Damage' },
-  { value: 'infect',           label: 'Poison' },
-  { value: 'combo',            label: 'Combo' },
-  { value: 'mill',             label: 'Mill' },
-  { value: 'scoop',            label: 'Concede' }, // scoop/concede shown as one (edge case note in issue)
-  { value: 'other',            label: 'Other' },
-] as const;
 
 interface WinConditionPickerProps {
   selected: string | null;
@@ -27,6 +19,18 @@ interface WinConditionPickerProps {
 }
 
 export function WinConditionPicker({ selected, onSelect }: WinConditionPickerProps) {
+  const { t } = useTranslation();
+
+  const WIN_CONDITIONS = [
+    { value: 'combat_damage',    label: t('match.winCondition.combat_short') },
+    { value: 'commander_damage', label: t('match.winCondition.commander_damage_short') },
+    { value: 'infect',           label: t('match.winCondition.infect_short') },
+    { value: 'combo',            label: t('match.winCondition.combo_short') },
+    { value: 'mill',             label: t('match.winCondition.mill_short') },
+    { value: 'scoop',            label: t('match.winCondition.concede_short') }, // scoop/concede shown as one
+    { value: 'other',            label: t('match.winCondition.other_short') },
+  ];
+
   return (
     <View style={styles.grid}>
       {WIN_CONDITIONS.map((cond) => {

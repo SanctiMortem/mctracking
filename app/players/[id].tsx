@@ -19,6 +19,7 @@ import {
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { ColorChips } from '@/components/ui/ColorChips';
 import { DeckStatRow } from '@/components/match/DeckStatRow';
@@ -45,6 +46,7 @@ function SectionTitle({ label, count }: { label: string; count?: number }) {
 export default function PlayerProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { data, loading, error } = usePlayerStats(id);
 
@@ -62,9 +64,9 @@ export default function PlayerProfileScreen() {
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
         <View style={styles.center}>
-          <Text style={styles.errorText}>{error ?? 'Player not found.'}</Text>
+          <Text style={styles.errorText}>{error ?? t('player.playerNotFound')}</Text>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.linkText}>Volver</Text>
+            <Text style={styles.linkText}>{t('common.back')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -112,42 +114,42 @@ export default function PlayerProfileScreen() {
               <Text style={styles.winRateNumber}>
                 {win_rate_pct !== null ? `${win_rate_pct}%` : '—'}
               </Text>
-              <Text style={styles.winRateLabel}>Win Rate</Text>
+              <Text style={styles.winRateLabel}>{t('common.winRate')}</Text>
             </View>
           ) : (
-            <Text style={styles.noMatchesText}>Sin partidas registradas</Text>
+            <Text style={styles.noMatchesText}>{t('common.noMatchesYet')}</Text>
           )}
 
           {/* W / L / D breakdown */}
           <View style={styles.wldRow}>
             <View style={styles.wldItem}>
               <Text style={[styles.wldValue, styles.wldWin]}>{wins}</Text>
-              <Text style={styles.wldLabel}>Victorias</Text>
+              <Text style={styles.wldLabel}>{t('common.wins')}</Text>
             </View>
             <View style={styles.wldDivider} />
             <View style={styles.wldItem}>
               <Text style={styles.wldValue}>{losses}</Text>
-              <Text style={styles.wldLabel}>Derrotas</Text>
+              <Text style={styles.wldLabel}>{t('common.losses')}</Text>
             </View>
             <View style={styles.wldDivider} />
             <View style={styles.wldItem}>
               <Text style={styles.wldValue}>{draws}</Text>
-              <Text style={styles.wldLabel}>Empates</Text>
+              <Text style={styles.wldLabel}>{t('common.draws')}</Text>
             </View>
             <View style={styles.wldDivider} />
             <View style={styles.wldItem}>
               <Text style={styles.wldValue}>{total_matches}</Text>
-              <Text style={styles.wldLabel}>Total</Text>
+              <Text style={styles.wldLabel}>{t('common.total')}</Text>
             </View>
           </View>
         </View>
 
         {/* ── Decks más usados ── */}
         <View style={styles.section}>
-          <SectionTitle label="Decks más usados" count={favorite_decks.length} />
+          <SectionTitle label={t('player.decksUsed')} count={favorite_decks.length} />
           {favorite_decks.length === 0 ? (
             <View style={styles.emptySection}>
-              <Text style={styles.emptyText}>Sin datos de decks</Text>
+              <Text style={styles.emptyText}>{t('player.noDecksData')}</Text>
             </View>
           ) : (
             <View style={styles.list}>
@@ -167,10 +169,10 @@ export default function PlayerProfileScreen() {
 
         {/* ── Commanders más usados ── */}
         <View style={styles.section}>
-          <SectionTitle label="Commanders más usados" count={favorite_commanders.length} />
+          <SectionTitle label={t('stats.topCommanders')} count={favorite_commanders.length} />
           {favorite_commanders.length === 0 ? (
             <View style={styles.emptySection}>
-              <Text style={styles.emptyText}>Sin datos de commanders</Text>
+              <Text style={styles.emptyText}>{t('player.noDecksData')}</Text>
             </View>
           ) : (
             <View style={styles.list}>

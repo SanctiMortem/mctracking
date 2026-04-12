@@ -16,6 +16,8 @@ import {
   View,
 } from 'react-native';
 
+import { useTranslation } from 'react-i18next';
+
 import type { Player } from '@/db/index';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
@@ -27,6 +29,7 @@ interface PlayerFormProps {
 }
 
 export function PlayerForm({ visible, player, onSave, onClose }: PlayerFormProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -36,7 +39,7 @@ export function PlayerForm({ visible, player, onSave, onClose }: PlayerFormProps
 
   async function handleSave() {
     if (!name.trim()) {
-      Alert.alert('Name required', 'Please enter a player name.');
+      Alert.alert(t('player.nameRequired'), t('player.nameRequiredMessage'));
       return;
     }
     setSaving(true);
@@ -46,8 +49,8 @@ export function PlayerForm({ visible, player, onSave, onClose }: PlayerFormProps
     } catch (e: unknown) {
       const isConflict = (e as { code?: string }).code === 'CONFLICT';
       Alert.alert(
-        isConflict ? 'Name already exists' : 'Error',
-        e instanceof Error ? e.message : 'Something went wrong',
+        isConflict ? t('player.nameExists') : t('common.error'),
+        e instanceof Error ? e.message : t('common.error'),
       );
     } finally {
       setSaving(false);
@@ -60,14 +63,14 @@ export function PlayerForm({ visible, player, onSave, onClose }: PlayerFormProps
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.sheet}>
         <View style={styles.handle} />
 
-        <Text style={styles.title}>{player ? 'Edit Player' : 'New Player'}</Text>
+        <Text style={styles.title}>{player ? t('player.editPlayer') : t('player.newPlayer')}</Text>
 
-        <Text style={styles.label}>Name</Text>
+        <Text style={styles.label}>{t('player.nameLabel')}</Text>
         <TextInput
           style={styles.input}
           value={name}
           onChangeText={setName}
-          placeholder="e.g. Gabriel"
+          placeholder={t('player.namePlaceholder')}
           placeholderTextColor={colors.text.muted}
           autoFocus
           returnKeyType="done"
@@ -76,12 +79,12 @@ export function PlayerForm({ visible, player, onSave, onClose }: PlayerFormProps
 
         <View style={styles.actions}>
           <Pressable style={styles.btnCancel} onPress={onClose}>
-            <Text style={styles.btnCancelText}>Cancel</Text>
+            <Text style={styles.btnCancelText}>{t('common.cancel')}</Text>
           </Pressable>
           <Pressable style={[styles.btnSave, saving && styles.btnDisabled]} onPress={handleSave} disabled={saving}>
             {saving
               ? <ActivityIndicator color={colors.text.inverse} size="small" />
-              : <Text style={styles.btnSaveText}>{player ? 'Save' : 'Create'}</Text>
+              : <Text style={styles.btnSaveText}>{player ? t('common.save') : t('common.create')}</Text>
             }
           </Pressable>
         </View>

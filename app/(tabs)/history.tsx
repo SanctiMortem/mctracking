@@ -10,6 +10,7 @@
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { MatchCard, MatchCardSkeleton } from '@/components/match/MatchCard';
 import { MatchHistoryFilterBar } from '@/components/match/MatchHistoryFilterBar';
@@ -19,18 +20,19 @@ import { colors, spacing, typography } from '@/styles/tokens';
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 function EmptyState({ hasFilters }: { hasFilters: boolean }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.empty}>
       <Text style={styles.emptyIcon}>🃏</Text>
       {hasFilters ? (
         <>
-          <Text style={styles.emptyTitle}>No matches found</Text>
-          <Text style={styles.emptySubtitle}>Try adjusting your filters</Text>
+          <Text style={styles.emptyTitle}>{t('history.noMatchesFound')}</Text>
+          <Text style={styles.emptySubtitle}>{t('history.adjustFilters')}</Text>
         </>
       ) : (
         <>
-          <Text style={styles.emptyTitle}>Sin partidas registradas</Text>
-          <Text style={styles.emptySubtitle}>¡Inicia tu primera partida!</Text>
+          <Text style={styles.emptyTitle}>{t('history.noMatchesYet')}</Text>
+          <Text style={styles.emptySubtitle}>{t('history.startFirst')}</Text>
         </>
       )}
     </View>
@@ -52,10 +54,11 @@ function SkeletonList() {
 // ─── Footer spinner ───────────────────────────────────────────────────────────
 
 function LoadMoreFooter({ loading }: { loading: boolean }) {
+  const { t } = useTranslation();
   if (!loading) return null;
   return (
     <View style={styles.footer}>
-      <Text style={styles.footerText}>Loading…</Text>
+      <Text style={styles.footerText}>{t('history.loadingMore')}</Text>
     </View>
   );
 }

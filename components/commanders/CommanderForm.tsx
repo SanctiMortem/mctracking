@@ -17,6 +17,8 @@ import {
   View,
 } from 'react-native';
 
+import { useTranslation } from 'react-i18next';
+
 import type { Commander } from '@/db/index';
 import { ColorChips } from '@/components/ui/ColorChips';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
@@ -29,6 +31,7 @@ interface CommanderFormProps {
 }
 
 export function CommanderForm({ visible, commander, onSave, onClose }: CommanderFormProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [isPartner, setIsPartner] = useState(false);
@@ -49,7 +52,7 @@ export function CommanderForm({ visible, commander, onSave, onClose }: Commander
 
   async function handleSave() {
     if (!name.trim()) {
-      Alert.alert('Name required', 'Please enter a commander name.');
+      Alert.alert(t('commanders.nameRequired'), t('commanders.nameRequiredMessage'));
       return;
     }
     setSaving(true);
@@ -57,9 +60,9 @@ export function CommanderForm({ visible, commander, onSave, onClose }: Commander
       await onSave({ name: name.trim(), colors: selectedColors, isPartner });
       onClose();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Something went wrong';
+      const msg = e instanceof Error ? e.message : t('common.error');
       const isConflict = (e as { code?: string }).code === 'CONFLICT';
-      Alert.alert(isConflict ? 'Name already exists' : 'Error', msg);
+      Alert.alert(isConflict ? t('commanders.nameExists') : t('common.error'), msg);
     } finally {
       setSaving(false);
     }
@@ -81,29 +84,29 @@ export function CommanderForm({ visible, commander, onSave, onClose }: Commander
       >
         <View style={styles.handle} />
 
-        <Text style={styles.title}>{isEdit ? 'Edit Commander' : 'New Commander'}</Text>
+        <Text style={styles.title}>{isEdit ? t('commanders.editCommander') : t('commanders.newCommander')}</Text>
 
         {/* Name */}
-        <Text style={styles.label}>Name</Text>
+        <Text style={styles.label}>{t('commanders.name')}</Text>
         <TextInput
           style={styles.input}
           value={name}
           onChangeText={setName}
-          placeholder="e.g. Atraxa, Praetors' Voice"
+          placeholder={t('commanders.namePlaceholder')}
           placeholderTextColor={colors.text.muted}
           autoFocus={!isEdit}
           returnKeyType="done"
         />
 
         {/* Colors */}
-        <Text style={styles.label}>Colors</Text>
+        <Text style={styles.label}>{t('commanders.colors')}</Text>
         <ColorChips selected={selectedColors} onChange={setSelectedColors} />
 
         {/* Partner toggle */}
         <View style={styles.row}>
           <View style={styles.rowLabel}>
-            <Text style={styles.label}>Partner</Text>
-            <Text style={styles.hint}>Allows two commanders in a deck</Text>
+            <Text style={styles.label}>{t('commanders.partner')}</Text>
+            <Text style={styles.hint}>{t('commanders.allowsPartner')}</Text>
           </View>
           <Switch
             value={isPartner}
@@ -116,12 +119,12 @@ export function CommanderForm({ visible, commander, onSave, onClose }: Commander
         {/* Actions */}
         <View style={styles.actions}>
           <Pressable style={styles.btnCancel} onPress={onClose}>
-            <Text style={styles.btnCancelText}>Cancel</Text>
+            <Text style={styles.btnCancelText}>{t('common.cancel')}</Text>
           </Pressable>
           <Pressable style={[styles.btnSave, saving && styles.btnDisabled]} onPress={handleSave} disabled={saving}>
             {saving
               ? <ActivityIndicator color={colors.text.inverse} size="small" />
-              : <Text style={styles.btnSaveText}>{isEdit ? 'Save' : 'Create'}</Text>
+              : <Text style={styles.btnSaveText}>{isEdit ? t('common.save') : t('common.create')}</Text>
             }
           </Pressable>
         </View>

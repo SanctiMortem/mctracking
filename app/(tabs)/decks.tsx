@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import type { DeckWithCommanders } from '@/services/decks';
 import { DeckForm } from '@/components/decks/DeckForm';
@@ -25,6 +26,7 @@ import { colors, radius, spacing, typography } from '@/styles/tokens';
 
 export default function DecksScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { commanders } = useCommanders();
 
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
@@ -67,10 +69,10 @@ export default function DecksScreen() {
     } catch (e: unknown) {
       const isActiveMatch = (e as { code?: string }).code === 'ACTIVE_MATCH';
       Alert.alert(
-        isActiveMatch ? 'Deck in active match' : 'Error',
+        isActiveMatch ? t('deck.deckInMatchTitle') : t('common.error'),
         isActiveMatch
-          ? 'You cannot remove a deck that is currently in an active match.'
-          : (e instanceof Error ? e.message : 'Could not remove deck'),
+          ? t('deck.deckInMatchMessage')
+          : (e instanceof Error ? e.message : t('deck.removeError')),
       );
     }
   }
@@ -79,9 +81,9 @@ export default function DecksScreen() {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Decks</Text>
-        <Pressable style={styles.fab} onPress={openCreate} accessibilityLabel="New deck">
-          <Text style={styles.fabLabel}>+ New</Text>
+        <Text style={styles.title}>{t('deck.decks')}</Text>
+        <Pressable style={styles.fab} onPress={openCreate} accessibilityLabel={t('deck.addDeckLabel')}>
+          <Text style={styles.fabLabel}>{t('deck.addDeck')}</Text>
         </Pressable>
       </View>
 
@@ -94,7 +96,7 @@ export default function DecksScreen() {
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
           <Pressable style={styles.retryBtn} onPress={refresh}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>{t('common.retry')}</Text>
           </Pressable>
         </View>
       ) : (

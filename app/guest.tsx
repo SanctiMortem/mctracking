@@ -24,6 +24,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { CommanderDamagePanel } from '@/components/tracker/CommanderDamagePanel';
 import { LifeCounter } from '@/components/tracker/LifeCounter';
@@ -46,6 +47,7 @@ interface SetupProps {
 }
 
 function GuestSetup({ onStart, onCancel }: SetupProps) {
+  const { t } = useTranslation();
   const [count, setCount] = useState<PlayerCount>(4);
   const [names, setNames] = useState(['', '', '', '']);
 
@@ -65,16 +67,16 @@ function GuestSetup({ onStart, onCancel }: SetupProps) {
     <SafeAreaView style={styles.root}>
       {/* Header */}
       <View style={styles.setupHeader}>
-        <Pressable onPress={onCancel} style={styles.cancelBtn} accessibilityRole="button" accessibilityLabel="Cancel guest setup">
+        <Pressable onPress={onCancel} style={styles.cancelBtn} accessibilityRole="button" accessibilityLabel={t('guest.cancelSetupLabel')}>
           <Text style={styles.cancelText}>✕</Text>
         </Pressable>
-        <Text style={styles.setupTitle}>Guest Tracker</Text>
+        <Text style={styles.setupTitle}>{t('guest.title')}</Text>
         <View style={styles.cancelBtn} />
       </View>
 
       <ScrollView contentContainerStyle={styles.setupContent} keyboardShouldPersistTaps="handled">
         {/* Player count */}
-        <Text style={styles.sectionLabel}>Players</Text>
+        <Text style={styles.sectionLabel}>{t('guest.players')}</Text>
         <View style={styles.countRow}>
           {PLAYER_COUNT_OPTIONS.map((n) => (
             <Pressable
@@ -93,12 +95,12 @@ function GuestSetup({ onStart, onCancel }: SetupProps) {
         </View>
 
         {/* Optional name inputs */}
-        <Text style={styles.sectionLabel}>Names (optional)</Text>
+        <Text style={styles.sectionLabel}>{t('guest.namesOptional')}</Text>
         {Array.from({ length: count }, (_, i) => (
           <TextInput
             key={i}
             style={styles.nameInput}
-            placeholder={`Player ${i + 1}`}
+            placeholder={t('guest.playerN', { n: i + 1 })}
             placeholderTextColor={colors.text.muted}
             value={names[i]}
             onChangeText={(v) => handleNameChange(i, v)}
@@ -113,9 +115,9 @@ function GuestSetup({ onStart, onCancel }: SetupProps) {
           onPress={handleStart}
           style={styles.startBtn}
           accessibilityRole="button"
-          accessibilityLabel="Start guest tracker"
+          accessibilityLabel={t('guest.startTrackerLabel')}
         >
-          <Text style={styles.startBtnText}>Start Tracking</Text>
+          <Text style={styles.startBtnText}>{t('guest.startTracking')}</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
@@ -141,6 +143,7 @@ function GuestTrackerView({
   onExit,
   onCreateAccount,
 }: TrackerProps) {
+  const { t } = useTranslation();
   const sections = participations.map((p) => {
     // Enemy commanders in guest mode = other participants (by id + name)
     const enemyCommanders = participations
@@ -181,11 +184,11 @@ function GuestTrackerView({
           onPress={onExit}
           style={styles.exitBtn}
           accessibilityRole="button"
-          accessibilityLabel="Exit guest tracker"
+          accessibilityLabel={t('guest.exitLabel')}
         >
           <Text style={styles.exitText}>✕</Text>
         </Pressable>
-        <Text style={styles.trackerTitle}>Guest Tracker</Text>
+        <Text style={styles.trackerTitle}>{t('guest.title')}</Text>
         <Pressable
           onPress={undoLastEvent}
           style={styles.undoBtn}
@@ -210,7 +213,7 @@ function GuestTrackerView({
         accessibilityLabel="Create account to save match history"
       >
         <Text style={styles.guestBannerIcon}>💾</Text>
-        <Text style={styles.guestBannerText}>Create an account to save your history</Text>
+        <Text style={styles.guestBannerText}>{t('guest.createAccountBanner')}</Text>
         <Text style={styles.guestBannerChevron}>›</Text>
       </TouchableOpacity>
     </SafeAreaView>

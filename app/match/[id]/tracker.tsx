@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { CommanderDamagePanel } from '@/components/tracker/CommanderDamagePanel';
 import { EventLogPanel } from '@/components/tracker/EventLogPanel';
@@ -54,6 +55,7 @@ function useMatchTimer() {
 export default function MatchTrackerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const timer = useMatchTimer();
   const [logVisible, setLogVisible] = useState(false);
 
@@ -101,7 +103,7 @@ export default function MatchTrackerScreen() {
   if (error || !match) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>{error ?? 'Match not found.'}</Text>
+        <Text style={styles.errorText}>{error ?? t('match.matchNotFound')}</Text>
       </View>
     );
   }
@@ -154,9 +156,9 @@ export default function MatchTrackerScreen() {
           onPress={handleCloseMatch}
           style={styles.closeBtn}
           accessibilityRole="button"
-          accessibilityLabel="Close match"
+          accessibilityLabel={t('tracker.closeMatch')}
         >
-          <Text style={styles.closeBtnText}>Close Match</Text>
+          <Text style={styles.closeBtnText}>{t('tracker.closeBtn')}</Text>
         </Pressable>
       </View>
 
@@ -179,10 +181,10 @@ export default function MatchTrackerScreen() {
           disabled={!hasUndoableEvents}
           style={[styles.floatingBtn, !hasUndoableEvents && styles.floatingBtnDisabled]}
           accessibilityRole="button"
-          accessibilityLabel="Undo last action"
+          accessibilityLabel={t('tracker.undoLastAction')}
         >
           <Text style={[styles.floatingBtnText, !hasUndoableEvents && styles.floatingBtnTextDisabled]}>
-            ↩ Undo
+            {t('tracker.undoBtn')}
           </Text>
         </Pressable>
 
@@ -190,9 +192,9 @@ export default function MatchTrackerScreen() {
           onPress={() => setLogVisible((v) => !v)}
           style={styles.floatingBtn}
           accessibilityRole="button"
-          accessibilityLabel="Toggle event log"
+          accessibilityLabel={t('tracker.toggleEventLog')}
         >
-          <Text style={styles.floatingBtnText}>📋 Log</Text>
+          <Text style={styles.floatingBtnText}>{t('tracker.logBtn')}</Text>
         </Pressable>
       </View>
 

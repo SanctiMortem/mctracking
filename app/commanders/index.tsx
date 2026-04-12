@@ -13,6 +13,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import type { Commander } from '@/db/index';
 import { CommanderForm } from '@/components/commanders/CommanderForm';
@@ -21,6 +22,7 @@ import { useCommanders } from '@/hooks/useCommanders';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
 export default function CommandersScreen() {
+  const { t } = useTranslation();
   const { commanders, loading, error, refresh, create, update, remove } = useCommanders();
   const [formVisible, setFormVisible] = useState(false);
   const [editing, setEditing] = useState<Commander | null>(null);
@@ -52,7 +54,7 @@ export default function CommandersScreen() {
     try {
       await remove(commander.id);
     } catch (e) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Could not delete commander');
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('commanders.deleteError'));
     }
   }
 
@@ -60,9 +62,9 @@ export default function CommandersScreen() {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Commanders</Text>
-        <Pressable style={styles.fab} onPress={openCreate} accessibilityLabel="New commander">
-          <Text style={styles.fabLabel}>+ New</Text>
+        <Text style={styles.title}>{t('commanders.title')}</Text>
+        <Pressable style={styles.fab} onPress={openCreate} accessibilityLabel={t('commanders.addCommanderLabel')}>
+          <Text style={styles.fabLabel}>{t('commanders.addCommander')}</Text>
         </Pressable>
       </View>
 
@@ -75,7 +77,7 @@ export default function CommandersScreen() {
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
           <Pressable style={styles.retryBtn} onPress={refresh}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>{t('common.retry')}</Text>
           </Pressable>
         </View>
       ) : (

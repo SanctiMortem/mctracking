@@ -10,29 +10,10 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { useTranslation } from 'react-i18next';
+
 import type { HistoryFilters } from '@/hooks/useMatchHistory';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
-
-// ─── Config ───────────────────────────────────────────────────────────────────
-
-const RESULT_OPTIONS: Array<{ label: string; value: HistoryFilters['result'] }> = [
-  { label: 'All',       value: undefined },
-  { label: 'Win',       value: 'win' },
-  { label: 'Lose',      value: 'lose' },
-  { label: 'Draw',      value: 'draw' },
-  { label: 'Abandoned', value: 'abandoned' },
-];
-
-const WIN_CONDITION_OPTIONS: Array<{ label: string; value: string }> = [
-  { label: 'Any',              value: '' },
-  { label: 'Combat',           value: 'combat_damage' },
-  { label: 'Cmd Damage',       value: 'commander_damage' },
-  { label: 'Infect',           value: 'infect' },
-  { label: 'Combo',            value: 'combo' },
-  { label: 'Mill',             value: 'mill' },
-  { label: 'Concede',          value: 'scoop' },
-  { label: 'Other',            value: 'other' },
-];
 
 // ─── Chip ─────────────────────────────────────────────────────────────────────
 
@@ -65,7 +46,27 @@ interface MatchHistoryFilterBarProps {
 }
 
 export function MatchHistoryFilterBar({ filters, onChange }: MatchHistoryFilterBarProps) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
+
+  const RESULT_OPTIONS: Array<{ label: string; value: HistoryFilters['result'] }> = [
+    { label: t('history.all'),       value: undefined },
+    { label: t('history.win'),       value: 'win' },
+    { label: t('history.lose'),      value: 'lose' },
+    { label: t('history.draw'),      value: 'draw' },
+    { label: t('history.abandoned'), value: 'abandoned' },
+  ];
+
+  const WIN_CONDITION_OPTIONS: Array<{ label: string; value: string }> = [
+    { label: t('history.any'),                             value: '' },
+    { label: t('match.winCondition.combat_short'),         value: 'combat_damage' },
+    { label: t('match.winCondition.commander_damage_short'), value: 'commander_damage' },
+    { label: t('match.winCondition.infect_short'),         value: 'infect' },
+    { label: t('match.winCondition.combo_short'),          value: 'combo' },
+    { label: t('match.winCondition.mill_short'),           value: 'mill' },
+    { label: t('match.winCondition.concede_short'),        value: 'scoop' },
+    { label: t('match.winCondition.other_short'),          value: 'other' },
+  ];
 
   const activeCount = Object.values(filters).filter(Boolean).length;
 
@@ -76,10 +77,10 @@ export function MatchHistoryFilterBar({ filters, onChange }: MatchHistoryFilterB
         onPress={() => setExpanded((v) => !v)}
         style={styles.toggle}
         accessibilityRole="button"
-        accessibilityLabel={expanded ? 'Collapse filters' : 'Expand filters'}
+        accessibilityLabel={expanded ? t('history.filtersUp') : t('history.filtersDown')}
       >
         <Text style={styles.toggleLabel}>
-          {expanded ? 'Filters ▲' : 'Filters ▼'}
+          {expanded ? t('history.filtersUp') : t('history.filtersDown')}
           {activeCount > 0 && !expanded && (
             <Text style={styles.toggleBadge}>{` (${activeCount})`}</Text>
           )}
@@ -89,9 +90,9 @@ export function MatchHistoryFilterBar({ filters, onChange }: MatchHistoryFilterB
             onPress={() => onChange({})}
             style={styles.clearBtn}
             accessibilityRole="button"
-            accessibilityLabel="Clear all filters"
+            accessibilityLabel={t('history.clearFilters')}
           >
-            <Text style={styles.clearText}>Clear</Text>
+            <Text style={styles.clearText}>{t('history.clear')}</Text>
           </Pressable>
         )}
       </Pressable>
@@ -100,7 +101,7 @@ export function MatchHistoryFilterBar({ filters, onChange }: MatchHistoryFilterB
       {expanded && (
         <View style={styles.panel}>
           {/* Result filter */}
-          <SectionLabel label="Result" />
+          <SectionLabel label={t('history.result')} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
             {RESULT_OPTIONS.map((opt) => (
               <Chip
@@ -115,7 +116,7 @@ export function MatchHistoryFilterBar({ filters, onChange }: MatchHistoryFilterB
           {/* Win condition filter — only relevant when result is not abandoned */}
           {filters.result !== 'abandoned' && filters.result !== 'lose' && (
             <>
-              <SectionLabel label="Win Condition" />
+              <SectionLabel label={t('history.winCondition')} />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
                 {WIN_CONDITION_OPTIONS.map((opt) => (
                   <Chip
@@ -130,33 +131,31 @@ export function MatchHistoryFilterBar({ filters, onChange }: MatchHistoryFilterB
           )}
 
           {/* Date range */}
-          <SectionLabel label="Date Range" />
+          <SectionLabel label={t('history.dateRange')} />
           <View style={styles.dateRow}>
             <TextInput
               style={styles.dateInput}
-              placeholder="From (YYYY-MM-DD)"
+              placeholder={t('history.dateFrom')}
               placeholderTextColor={colors.text.muted}
               value={filters.date_from ?? ''}
-              onChangeText={(t) => onChange({ ...filters, date_from: t || undefined })}
+              onChangeText={(v) => onChange({ ...filters, date_from: v || undefined })}
               keyboardType="numbers-and-punctuation"
               maxLength={10}
             />
             <Text style={styles.dateSep}>→</Text>
             <TextInput
               style={styles.dateInput}
-              placeholder="To (YYYY-MM-DD)"
+              placeholder={t('history.dateTo')}
               placeholderTextColor={colors.text.muted}
               value={filters.date_to ?? ''}
-              onChangeText={(t) => onChange({ ...filters, date_to: t || undefined })}
+              onChangeText={(v) => onChange({ ...filters, date_to: v || undefined })}
               keyboardType="numbers-and-punctuation"
               maxLength={10}
             />
           </View>
 
           {/* Player / Deck / Commander — stubs for Fase 2 */}
-          <Text style={styles.stubNote}>
-            Player / Deck / Commander filters — coming in a future update
-          </Text>
+          <Text style={styles.stubNote}>{t('history.filtersStub')}</Text>
         </View>
       )}
     </View>

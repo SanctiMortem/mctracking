@@ -15,6 +15,7 @@
 import { useOAuth, useSignIn, useSignUp } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -58,6 +59,7 @@ async function bootstrapSession() {
 
 export default function AuthScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { enterGuestMode } = useGuest();
 
   const { signIn, setActive: setSignInActive, isLoaded: signInLoaded } = useSignIn();
@@ -130,7 +132,7 @@ export default function AuthScreen() {
   async function handleEmailSubmit() {
     if (!signInLoaded || !signUpLoaded) return;
     if (!email.trim() || !password.trim()) {
-      setError('Email and password are required.');
+      setError(t('auth.emailAndPasswordRequired'));
       return;
     }
     setLoading('email');
@@ -170,7 +172,7 @@ export default function AuthScreen() {
     if (!signInLoaded) return;
     if (!email.trim()) {
       setEmailMode('expanded');
-      setError('Enter your email above, then tap "Send magic link".');
+      setError(t('auth.enterEmailFirst'));
       return;
     }
     setLoading('magic');
@@ -211,8 +213,8 @@ export default function AuthScreen() {
       >
         {/* ── Header ── */}
         <View style={styles.header}>
-          <Text style={styles.appName}>Commander</Text>
-          <Text style={styles.appSubtitle}>Track your battles</Text>
+          <Text style={styles.appName}>{t('auth.appName')}</Text>
+          <Text style={styles.appSubtitle}>{t('auth.appSubtitle')}</Text>
         </View>
 
         {/* ── Auth card ── */}
@@ -229,14 +231,14 @@ export default function AuthScreen() {
           {magicSent && (
             <View style={styles.successBanner}>
               <Text style={styles.successText}>
-                Magic link sent! Check your email and tap the link to sign in.
+                {t('auth.magicLinkSent')}
               </Text>
             </View>
           )}
 
           {/* Google */}
           <AuthProviderButton
-            label="Continue with Google"
+            label={t('auth.continueWithGoogle')}
             onPress={handleGoogle}
             loading={loading === 'google'}
             anyLoading={anyLoading}
@@ -245,7 +247,7 @@ export default function AuthScreen() {
           {/* Apple — iOS only */}
           {Platform.OS === 'ios' && (
             <AuthProviderButton
-              label="Continue with Apple"
+              label={t('auth.continueWithApple')}
               onPress={handleApple}
               loading={loading === 'apple'}
               anyLoading={anyLoading}
@@ -255,7 +257,7 @@ export default function AuthScreen() {
           {/* Email / Password */}
           {emailMode === 'idle' ? (
             <AuthProviderButton
-              label="Continue with Email"
+              label={t('auth.continueWithEmail')}
               onPress={() => { setEmailMode('expanded'); clearError(); }}
               loading={false}
               anyLoading={anyLoading}
@@ -264,7 +266,7 @@ export default function AuthScreen() {
             <View style={styles.emailForm}>
               <TextInput
                 style={styles.input}
-                placeholder="Email"
+                placeholder={t('auth.emailLabel')}
                 placeholderTextColor={colors.text.muted}
                 value={email}
                 onChangeText={(v) => { setEmail(v); clearError(); }}
@@ -275,7 +277,7 @@ export default function AuthScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Password"
+                placeholder={t('auth.passwordPlaceholder')}
                 placeholderTextColor={colors.text.muted}
                 value={password}
                 onChangeText={(v) => { setPassword(v); clearError(); }}
@@ -284,7 +286,7 @@ export default function AuthScreen() {
                 editable={!anyLoading}
               />
               <AuthProviderButton
-                label="Sign in / Create account"
+                label={t('auth.signInOrCreate')}
                 onPress={handleEmailSubmit}
                 loading={loading === 'email'}
                 anyLoading={anyLoading}
@@ -299,13 +301,13 @@ export default function AuthScreen() {
             disabled={anyLoading}
             style={[styles.magicLinkRow, anyLoading && styles.dimmed]}
           >
-            <Text style={styles.magicLinkText}>Send magic link by email</Text>
+            <Text style={styles.magicLinkText}>{t('auth.sendMagicLink')}</Text>
           </TouchableOpacity>
 
           {/* Divider */}
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerLabel}>or</Text>
+            <Text style={styles.dividerLabel}>{t('common.or')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
@@ -316,15 +318,13 @@ export default function AuthScreen() {
             style={[styles.guestButton, anyLoading && styles.dimmed]}
             activeOpacity={0.7}
           >
-            <Text style={styles.guestLabel}>Continue without account</Text>
+            <Text style={styles.guestLabel}>{t('auth.continueWithoutAccount')}</Text>
           </TouchableOpacity>
 
         </View>
 
         {/* Footer note */}
-        <Text style={styles.footerNote}>
-          Guest mode: basic tracker only. No cloud save.
-        </Text>
+        <Text style={styles.footerNote}>{t('auth.guestNote')}</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );

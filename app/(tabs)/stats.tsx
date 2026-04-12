@@ -15,6 +15,7 @@
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { DeckStatRow } from '@/components/match/DeckStatRow';
 import { PlayerRankingRow } from '@/components/stats/PlayerRankingRow';
@@ -33,11 +34,12 @@ function SectionHeader({ title }: { title: string }) {
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 function EmptyState() {
+  const { t } = useTranslation();
   return (
     <View style={styles.empty}>
       <Text style={styles.emptyIcon}>📊</Text>
-      <Text style={styles.emptyTitle}>Sin estadísticas aún</Text>
-      <Text style={styles.emptySubtitle}>Completa tu primera partida para ver el dashboard</Text>
+      <Text style={styles.emptyTitle}>{t('stats.noStatsYet')}</Text>
+      <Text style={styles.emptySubtitle}>{t('stats.completeFirst')}</Text>
     </View>
   );
 }
@@ -46,6 +48,7 @@ function EmptyState() {
 
 export default function StatsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { data, loading, error } = useGlobalStats();
 
   if (loading) {
@@ -77,8 +80,8 @@ export default function StatsScreen() {
       {/* Hero — total matches */}
       <View style={styles.hero}>
         <Text style={styles.heroNumber}>{data.total_matches}</Text>
-        <Text style={styles.heroLabel}>partidas completadas</Text>
-        <Text style={styles.heroSub}>{data.total_players} jugador{data.total_players !== 1 ? 'es' : ''} activo{data.total_players !== 1 ? 's' : ''}</Text>
+        <Text style={styles.heroLabel}>{t('stats.completedMatches')}</Text>
+        <Text style={styles.heroSub}>{data.total_players} {data.total_players === 1 ? t('stats.activePlayer') : t('stats.activePlayers')}</Text>
       </View>
 
       {/* Matchup CTA */}
@@ -88,8 +91,8 @@ export default function StatsScreen() {
         activeOpacity={0.8}
       >
         <View>
-          <Text style={styles.matchupCtaTitle}>Ver Matchup</Text>
-          <Text style={styles.matchupCtaSub}>Head-to-head entre jugadores, decks o comandantes</Text>
+          <Text style={styles.matchupCtaTitle}>{t('stats.viewMatchup')}</Text>
+          <Text style={styles.matchupCtaSub}>{t('stats.headToHead')}</Text>
         </View>
         <Text style={styles.matchupCtaArrow}>›</Text>
       </TouchableOpacity>
@@ -97,7 +100,7 @@ export default function StatsScreen() {
       {/* Player Rankings */}
       {data.player_rankings.length > 0 && (
         <View style={styles.section}>
-          <SectionHeader title="Ranking de Jugadores" />
+          <SectionHeader title={t('stats.playerRanking')} />
           <View style={styles.list}>
             {data.player_rankings.map((ranking) => (
               <PlayerRankingRow key={ranking.player.id} ranking={ranking} />
@@ -109,7 +112,7 @@ export default function StatsScreen() {
       {/* Top Decks */}
       {data.top_decks.length > 0 && (
         <View style={styles.section}>
-          <SectionHeader title="Top Decks" />
+          <SectionHeader title={t('stats.topDecks')} />
           <View style={styles.list}>
             {data.top_decks.map((entry) => (
               <DeckStatRow
@@ -128,7 +131,7 @@ export default function StatsScreen() {
       {/* Top Commanders */}
       {data.top_commanders.length > 0 && (
         <View style={styles.section}>
-          <SectionHeader title="Top Comandantes" />
+          <SectionHeader title={t('stats.topCommanders')} />
           <View style={styles.list}>
             {data.top_commanders.map((entry) => {
               const winRateText = entry.win_rate_pct !== null ? `${entry.win_rate_pct}%` : '—';

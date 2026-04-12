@@ -19,6 +19,8 @@ import {
   View,
 } from 'react-native';
 
+import { useTranslation } from 'react-i18next';
+
 import type { CloseMode } from '@/hooks/useCloseMatch';
 import type { ParticipationDetail } from '@/services/matches';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
@@ -58,6 +60,8 @@ export function CloseMatchSheet({
   onConfirm,
   onCancel,
 }: CloseMatchSheetProps) {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.sheet}>
       {/* Drag handle */}
@@ -67,9 +71,9 @@ export function CloseMatchSheet({
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Match Result</Text>
+        <Text style={styles.title}>{t('match.result')}</Text>
         <Pressable onPress={onCancel} style={styles.cancelBtn} accessibilityRole="button">
-          <Text style={styles.cancelBtnText}>Cancel</Text>
+          <Text style={styles.cancelBtnText}>{t('common.cancel')}</Text>
         </Pressable>
       </View>
 
@@ -87,7 +91,7 @@ export function CloseMatchSheet({
             {/* ── Win mode ── */}
             {mode === 'win' && (
               <>
-                <Text style={styles.sectionLabel}>Who won?</Text>
+                <Text style={styles.sectionLabel}>{t('match.whoWon')}</Text>
                 {participations.map((p) => {
                   const isSelected = selectedWinnerId === p.id;
                   const initials = p.player.name
@@ -120,7 +124,7 @@ export function CloseMatchSheet({
                 {/* Win condition — revealed after winner is chosen */}
                 {selectedWinnerId !== null && (
                   <View style={styles.winConditionSection}>
-                    <Text style={styles.sectionLabel}>How did they win?</Text>
+                    <Text style={styles.sectionLabel}>{t('match.howWin')}</Text>
                     <WinConditionPicker
                       selected={selectedWinCondition}
                       onSelect={onSelectWinCondition}
@@ -134,10 +138,8 @@ export function CloseMatchSheet({
             {mode === 'draw' && (
               <View style={styles.modeCard}>
                 <Text style={styles.modeIcon}>🤝</Text>
-                <Text style={styles.modeTitle}>Draw</Text>
-                <Text style={styles.modeBody}>
-                  All players tie. This match will be recorded but won't affect win rates.
-                </Text>
+                <Text style={styles.modeTitle}>{t('match.draw')}</Text>
+                <Text style={styles.modeBody}>{t('match.drawDescription')}</Text>
               </View>
             )}
 
@@ -145,10 +147,8 @@ export function CloseMatchSheet({
             {mode === 'abandon' && (
               <View style={styles.modeCard}>
                 <Text style={styles.modeIcon}>⚠️</Text>
-                <Text style={styles.modeTitle}>Abandon Match</Text>
-                <Text style={styles.modeBody}>
-                  The match will appear in history but won't count toward any player's stats.
-                </Text>
+                <Text style={styles.modeTitle}>{t('match.abandon')}</Text>
+                <Text style={styles.modeBody}>{t('match.abandonDescription')}</Text>
               </View>
             )}
 
@@ -160,7 +160,7 @@ export function CloseMatchSheet({
                 accessibilityRole="button"
               >
                 <Text style={[styles.secondaryBtnText, mode === 'draw' && styles.secondaryBtnTextActive]}>
-                  Draw
+                  {t('match.draw')}
                 </Text>
               </Pressable>
               <Pressable
@@ -169,7 +169,7 @@ export function CloseMatchSheet({
                 accessibilityRole="button"
               >
                 <Text style={[styles.secondaryBtnText, mode === 'abandon' && styles.secondaryBtnTextActive]}>
-                  Abandon
+                  {t('match.abandon')}
                 </Text>
               </Pressable>
             </View>
@@ -195,7 +195,7 @@ export function CloseMatchSheet({
             <ActivityIndicator color="#fff" size="small" />
           ) : (
             <Text style={[styles.confirmBtnText, (!isValid || isSubmitting) && styles.confirmBtnTextDisabled]}>
-              ✦  Confirm
+              {t('match.confirmResult')}
             </Text>
           )}
         </Pressable>

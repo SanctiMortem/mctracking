@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { EntitySelector } from '@/components/stats/EntitySelector';
 import { MatchupCard } from '@/components/stats/MatchupCard';
@@ -26,17 +27,6 @@ import { colors, radius, spacing, typography } from '@/styles/tokens';
 
 type EntityType = 'player' | 'deck' | 'commander';
 type Scope = 'all' | '1v1';
-
-const ENTITY_TYPE_TABS: { key: EntityType; label: string }[] = [
-  { key: 'player', label: 'Jugador' },
-  { key: 'deck', label: 'Deck' },
-  { key: 'commander', label: 'Comandante' },
-];
-
-const SCOPE_TABS: { key: Scope; label: string }[] = [
-  { key: 'all', label: 'Todos' },
-  { key: '1v1', label: 'Solo 1v1' },
-];
 
 // ─── Segmented control ────────────────────────────────────────────────────────
 
@@ -98,6 +88,7 @@ const segStyles = StyleSheet.create({
 
 export default function MatchupStatsScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const [entityType, setEntityType] = useState<EntityType>('player');
   const [entityAId, setEntityAId] = useState<string | null>(null);
   const [entityBId, setEntityBId] = useState<string | null>(null);
@@ -106,6 +97,17 @@ export default function MatchupStatsScreen() {
   const { players } = usePlayers();
   const { decks } = useDecks();
   const { commanders } = useCommanders();
+
+  const ENTITY_TYPE_TABS: { key: EntityType; label: string }[] = [
+    { key: 'player', label: t('stats.entityPlayer') },
+    { key: 'deck', label: t('stats.entityDeck') },
+    { key: 'commander', label: t('stats.entityCommander') },
+  ];
+
+  const SCOPE_TABS: { key: Scope; label: string }[] = [
+    { key: 'all', label: t('stats.scopeAll') },
+    { key: '1v1', label: t('stats.scope1v1') },
+  ];
 
   // Reset selections when entity type changes
   function handleEntityTypeChange(type: EntityType) {
@@ -148,7 +150,7 @@ export default function MatchupStatsScreen() {
       >
         {/* Entity type selector */}
         <View style={styles.section}>
-          <Text style={styles.label}>Tipo de entidad</Text>
+          <Text style={styles.label}>{t('stats.entityType')}</Text>
           <SegmentedControl
             options={ENTITY_TYPE_TABS}
             value={entityType}
@@ -158,31 +160,31 @@ export default function MatchupStatsScreen() {
 
         {/* Entity A selector */}
         <View style={styles.section}>
-          <Text style={styles.label}>Entidad A</Text>
+          <Text style={styles.label}>{t('stats.entityA')}</Text>
           <EntitySelector
             entities={options}
             selected={entityAId}
             onSelect={setEntityAId}
-            placeholder="Sin opciones disponibles"
-            searchPlaceholder="Buscar entidad A…"
+            placeholder={t('stats.noOptions')}
+            searchPlaceholder={t('stats.searchPlaceholder')}
           />
         </View>
 
         {/* Entity B selector */}
         <View style={styles.section}>
-          <Text style={styles.label}>Entidad B</Text>
+          <Text style={styles.label}>{t('stats.entityB')}</Text>
           <EntitySelector
             entities={options.filter((o) => o.id !== entityAId)}
             selected={entityBId}
             onSelect={setEntityBId}
-            placeholder="Sin opciones disponibles"
-            searchPlaceholder="Buscar entidad B…"
+            placeholder={t('stats.noOptions')}
+            searchPlaceholder={t('stats.searchPlaceholder')}
           />
         </View>
 
         {/* Scope toggle */}
         <View style={styles.section}>
-          <Text style={styles.label}>Partidas a incluir</Text>
+          <Text style={styles.label}>{t('stats.matchesToInclude')}</Text>
           <SegmentedControl
             options={SCOPE_TABS}
             value={scope}

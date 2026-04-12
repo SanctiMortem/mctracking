@@ -7,11 +7,13 @@
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { MatchSetupForm } from '@/components/match/MatchSetupForm';
 import { colors, spacing, typography } from '@/styles/tokens';
 
 export default function MatchSetupScreen() {
+  const { t } = useTranslation();
   function handleSubmit(matchId: string) {
     // Navigate to tracker, replacing this modal in the stack.
     // SCR-008 stub is in place; full implementation in EPIC-03 (TRACK-003).
@@ -34,7 +36,7 @@ export default function MatchSetupScreen() {
         >
           <Text style={styles.closeBtnText}>✕</Text>
         </Pressable>
-        <Text style={styles.title}>Nueva Partida</Text>
+        <Text style={styles.title}>{t('match.newMatch')}</Text>
         {/* Spacer keeps title centered */}
         <View style={styles.headerEnd} />
       </View>

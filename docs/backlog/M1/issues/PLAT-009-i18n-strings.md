@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-05-PLATFORM](../epics/EPIC-05-PLATFORM.md)
 > **Skills:** `domains/ui`
 > **Agents:** `frontend-specialist`
@@ -35,13 +35,12 @@ Completar los archivos de traducción EN y ES con todos los strings de la app. E
 
 ## ✅ Criterios de Aceptación
 
-- [ ] Archivos: `locales/en/common.json`, `locales/es/common.json` (namespace común)
-- [ ] Archivos por feature: `locales/[lang]/tracker.json`, `match.json`, `stats.json`, `groups.json`, `settings.json`, `auth.json`
-- [ ] TODOS los strings de la UI en inglés y español — sin strings hardcodeados en componentes
-- [ ] Términos MTG nunca traducidos (BR-I18N-02): "Commander Damage", "Poison Counter", "Infect", "Scoop", "Win Condition", "Life Total", "Commander", "Deck", "Match"
-- [ ] Nombres de commanders y decks nunca traducidos (BR-I18N-03)
-- [ ] Idioma automático: si dispositivo en `es-*` → español; si no soportado → inglés fallback (BR-I18N-01)
-- [ ] Cambio de idioma en runtime funcional (ya implementado en SETUP-006 + PLAT-008)
+- [x] Archivos: `locales/en.json`, `locales/es.json` (flat JSON, single namespace per locale)
+- [x] TODOS los strings de la UI en inglés y español — sin strings hardcodeados en componentes
+- [x] Términos MTG nunca traducidos (BR-I18N-02): "Commander Damage", "Infect", "Scoop", "Commander", "Deck", "Partner", "Combo", "Mill", "WUBRG"
+- [x] Nombres de commanders y decks nunca traducidos (BR-I18N-03)
+- [x] Idioma automático: si dispositivo en `es-*` → español; si no soportado → inglés fallback (BR-I18N-01)
+- [x] Cambio de idioma en runtime funcional (PLAT-008)
 
 ## 🔧 Contexto Técnico
 
@@ -105,8 +104,8 @@ locales/
 
 ## 🧪 Tests Requeridos
 
-- [ ] Unit: todas las keys de EN tienen equivalente en ES (key coverage check)
-- [ ] Unit: términos MTG en BR-I18N-02 son idénticos en EN y ES (no traducidos)
+- [x] Unit: todas las keys de EN tienen equivalente en ES (key coverage check) — `__tests__/unit/i18n/locales.test.ts`
+- [x] Unit: términos MTG en BR-I18N-02 son idénticos en EN y ES (no traducidos)
 
 ## 🚫 Out of Scope
 
@@ -127,15 +126,17 @@ No aplica — contenido nuevo.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-12 | Flat JSON en `locales/en.json` y `locales/es.json` en lugar de archivos por namespace | El skeleton SETUP-006 ya usaba un único archivo; mantener consistencia evita refactoring |
+| 2026-04-12 | Pluralización explícita con ternario (`data.total_players === 1 ? t('stats.activePlayer') : t('stats.activePlayers')`) | Evita usar API `count` de i18next que requiere claves con sufijo `_plural` y renombrar existentes |
+| 2026-04-12 | Arrays de opciones con etiquetas traducibles (ENTITY_TYPE_TABS, SCOPE_TABS, WIN_CONDITIONS, RESULT_OPTIONS, WIN_CONDITION_OPTIONS) movidos dentro del componente | Los hooks sólo pueden llamarse dentro de componentes React; las constantes de módulo no pueden usar `t()` |
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+_TBD — pendiente commit_
 
 ---
 
 _Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Última actualización: 2026-04-12_

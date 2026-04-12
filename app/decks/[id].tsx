@@ -18,6 +18,7 @@ import {
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { ColorChips } from '@/components/ui/ColorChips';
 import { useDeckStats } from '@/hooks/useDeckStats';
@@ -59,6 +60,7 @@ function StatPill({ value, label, highlight }: { value: string; label: string; h
 export default function DeckDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { data, loading, error } = useDeckStats(id);
 
@@ -76,9 +78,9 @@ export default function DeckDetailScreen() {
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
         <View style={styles.center}>
-          <Text style={styles.errorText}>{error ?? 'Deck not found.'}</Text>
+          <Text style={styles.errorText}>{error ?? t('deck.nameRequired')}</Text>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.linkText}>Volver</Text>
+            <Text style={styles.linkText}>{t('common.back')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -107,7 +109,7 @@ export default function DeckDetailScreen() {
         {/* ── Commander(s) ── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {deck.commander2 ? 'Partner Commanders' : 'Commander'}
+            {deck.commander2 ? t('deck.partnerSection') : t('deck.commanderSection')}
           </Text>
           <CommanderCard
             name={deck.commander.name}
@@ -133,23 +135,23 @@ export default function DeckDetailScreen() {
         {/* ── Description ── */}
         {deck.description ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Descripción</Text>
+            <Text style={styles.sectionTitle}>{t('deck.descriptionSection')}</Text>
             <Text style={styles.description}>{deck.description}</Text>
           </View>
         ) : null}
 
         {/* ── Stats ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Stats</Text>
+          <Text style={styles.sectionTitle}>{t('commanders.stats')}</Text>
           {hasMatches ? (
             <View style={styles.statsRow}>
-              <StatPill value={winRateDisplay} label="Win Rate" highlight={win_rate_pct !== null} />
-              <StatPill value={String(total_matches)} label="Partidas" />
-              <StatPill value={String(wins)} label="Victorias" />
+              <StatPill value={winRateDisplay} label={t('common.winRate')} highlight={win_rate_pct !== null} />
+              <StatPill value={String(total_matches)} label={t('common.matches')} />
+              <StatPill value={String(wins)} label={t('common.wins')} />
             </View>
           ) : (
             <View style={styles.emptyStats}>
-              <Text style={styles.emptyStatsText}>Sin partidas con este deck</Text>
+              <Text style={styles.emptyStatsText}>{t('deck.noMatchesWithDeck')}</Text>
             </View>
           )}
         </View>
@@ -158,7 +160,7 @@ export default function DeckDetailScreen() {
         {players_used_by.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              Jugadores{' '}
+              {t('commanders.playersSection')}{' '}
               <Text style={styles.sectionCount}>{players_used_by.length}</Text>
             </Text>
             <View style={styles.playerList}>

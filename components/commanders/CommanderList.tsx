@@ -13,6 +13,8 @@ import {
   View,
 } from 'react-native';
 
+import { useTranslation } from 'react-i18next';
+
 import type { Commander } from '@/db/index';
 import { ColorChips } from '@/components/ui/ColorChips';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
@@ -32,13 +34,15 @@ function CommanderRow({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
+
   function confirmDelete() {
     Alert.alert(
-      'Delete Commander',
-      `Remove "${commander.name}"? Decks using this commander will keep it in their history.`,
+      t('commanders.deleteTitle'),
+      t('commanders.deleteMessage', { name: commander.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: onDelete },
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.delete'), style: 'destructive', onPress: onDelete },
       ],
     );
   }
@@ -50,18 +54,18 @@ function CommanderRow({
           <Text style={styles.name} numberOfLines={1}>{commander.name}</Text>
           {commander.isPartner && (
             <View style={styles.partnerBadge}>
-              <Text style={styles.partnerText}>Partner</Text>
+              <Text style={styles.partnerText}>{t('commanders.partner')}</Text>
             </View>
           )}
         </View>
         <ColorChips selected={commander.colors ?? []} readonly />
       </View>
       <View style={styles.rowActions}>
-        <Pressable onPress={onEdit} style={styles.actionBtn} accessibilityLabel="Edit commander">
-          <Text style={styles.actionEdit}>Edit</Text>
+        <Pressable onPress={onEdit} style={styles.actionBtn} accessibilityLabel={`${t('common.edit')} ${commander.name}`}>
+          <Text style={styles.actionEdit}>{t('common.edit')}</Text>
         </Pressable>
-        <Pressable onPress={confirmDelete} style={styles.actionBtn} accessibilityLabel="Delete commander">
-          <Text style={styles.actionDelete}>Delete</Text>
+        <Pressable onPress={confirmDelete} style={styles.actionBtn} accessibilityLabel={`${t('common.delete')} ${commander.name}`}>
+          <Text style={styles.actionDelete}>{t('common.delete')}</Text>
         </Pressable>
       </View>
     </View>
@@ -69,17 +73,17 @@ function CommanderRow({
 }
 
 function EmptyState() {
+  const { t } = useTranslation();
   return (
     <View style={styles.empty}>
-      <Text style={styles.emptyTitle}>No commanders yet</Text>
-      <Text style={styles.emptySubtitle}>
-        Tap the button above to add your first commander.
-      </Text>
+      <Text style={styles.emptyTitle}>{t('commanders.noCommandersYet')}</Text>
+      <Text style={styles.emptySubtitle}>{t('commanders.noCommandersBody')}</Text>
     </View>
   );
 }
 
 export function CommanderList({ commanders, onEdit, onDelete }: CommanderListProps) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
@@ -94,7 +98,7 @@ export function CommanderList({ commanders, onEdit, onDelete }: CommanderListPro
         style={styles.search}
         value={query}
         onChangeText={setQuery}
-        placeholder="Search commanders…"
+        placeholder={t('commanders.searchPlaceholder')}
         placeholderTextColor={colors.text.muted}
         clearButtonMode="while-editing"
         returnKeyType="search"

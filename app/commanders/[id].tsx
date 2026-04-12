@@ -18,6 +18,7 @@ import {
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { ColorChips } from '@/components/ui/ColorChips';
 import { useCommanderStats } from '@/hooks/useCommanderStats';
@@ -30,6 +31,7 @@ const AMBER = '#F39C12';
 export default function CommanderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { data, loading, error } = useCommanderStats(id);
 
@@ -47,9 +49,9 @@ export default function CommanderDetailScreen() {
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
         <View style={styles.center}>
-          <Text style={styles.errorText}>{error ?? 'Commander not found.'}</Text>
+          <Text style={styles.errorText}>{error ?? t('commanders.commanderNotFound')}</Text>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.linkText}>Volver</Text>
+            <Text style={styles.linkText}>{t('common.back')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -81,37 +83,37 @@ export default function CommanderDetailScreen() {
             <Text style={styles.commanderName} numberOfLines={2}>{commander.name}</Text>
             {commander.isPartner && (
               <View style={styles.partnerBadge}>
-                <Text style={styles.partnerBadgeText}>Partner</Text>
+                <Text style={styles.partnerBadgeText}>{t('commanders.partner')}</Text>
               </View>
             )}
           </View>
           <ColorChips selected={commander.colors} readonly />
           {commander.colors.length === 0 && (
-            <Text style={styles.colorlessNote}>Colorless commander</Text>
+            <Text style={styles.colorlessNote}>{t('commanders.colorlessCommander')}</Text>
           )}
         </View>
 
         {/* ── Stats bar ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Stats</Text>
+          <Text style={styles.sectionTitle}>{t('commanders.stats')}</Text>
           {hasMatches ? (
             <View style={styles.statsRow}>
               <View style={styles.statPill}>
                 <Text style={[styles.statValue, styles.statValueHighlight]}>{winRateDisplay}</Text>
-                <Text style={styles.statLabel}>Win Rate</Text>
+                <Text style={styles.statLabel}>{t('common.winRate')}</Text>
               </View>
               <View style={styles.statPill}>
                 <Text style={styles.statValue}>{total_matches}</Text>
-                <Text style={styles.statLabel}>Partidas</Text>
+                <Text style={styles.statLabel}>{t('common.matches')}</Text>
               </View>
               <View style={styles.statPill}>
                 <Text style={styles.statValue}>{wins}</Text>
-                <Text style={styles.statLabel}>Victorias</Text>
+                <Text style={styles.statLabel}>{t('common.wins')}</Text>
               </View>
             </View>
           ) : (
             <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>Sin partidas con este commander</Text>
+              <Text style={styles.emptyText}>{t('commanders.noMatchesWith')}</Text>
             </View>
           )}
         </View>
@@ -119,11 +121,11 @@ export default function CommanderDetailScreen() {
         {/* ── Decks using ── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            Decks{decks_using.length > 0 ? ` (${decks_using.length})` : ''}
+            {t('commanders.decksSection')}{decks_using.length > 0 ? ` (${decks_using.length})` : ''}
           </Text>
           {decks_using.length === 0 ? (
             <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>Sin decks que usen este commander</Text>
+              <Text style={styles.emptyText}>{t('commanders.noDecksWith')}</Text>
             </View>
           ) : (
             <View style={styles.list}>
@@ -145,7 +147,7 @@ export default function CommanderDetailScreen() {
         {/* ── Players using ── */}
         {players_using.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Jugadores ({players_using.length})</Text>
+            <Text style={styles.sectionTitle}>{t('commanders.playersSection')} ({players_using.length})</Text>
             <View style={styles.list}>
               {players_using.map((pu) => {
                 const initials = pu.player.name

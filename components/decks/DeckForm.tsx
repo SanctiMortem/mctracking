@@ -18,6 +18,8 @@ import {
   View,
 } from 'react-native';
 
+import { useTranslation } from 'react-i18next';
+
 import type { Commander } from '@/db/index';
 import type { DeckWithCommanders } from '@/services/decks';
 import { ColorChips } from '@/components/ui/ColorChips';
@@ -38,6 +40,7 @@ interface DeckFormProps {
 }
 
 export function DeckForm({ visible, deck, commanders, onSave, onClose }: DeckFormProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [commander, setCommander] = useState<Commander | null>(null);
@@ -69,15 +72,15 @@ export function DeckForm({ visible, deck, commanders, onSave, onClose }: DeckFor
 
   async function handleSave() {
     if (!name.trim()) {
-      Alert.alert('Name required', 'Please enter a deck name.');
+      Alert.alert(t('deck.nameRequired'), t('deck.nameRequiredMessage'));
       return;
     }
     if (!commander) {
-      Alert.alert('Commander required', 'Please select a commander.');
+      Alert.alert(t('deck.commanderRequired'), t('deck.commanderRequiredMessage'));
       return;
     }
     if (commander.isPartner && !commander2) {
-      Alert.alert('Partner required', 'This commander requires a second partner commander.');
+      Alert.alert(t('deck.partnerRequired'), t('deck.partnerRequiredMessage'));
       return;
     }
 
@@ -92,9 +95,9 @@ export function DeckForm({ visible, deck, commanders, onSave, onClose }: DeckFor
       onClose();
     } catch (e: unknown) {
       const code = (e as { code?: string }).code;
-      const msg = e instanceof Error ? e.message : 'Something went wrong';
+      const msg = e instanceof Error ? e.message : t('common.error');
       Alert.alert(
-        code === 'CONFLICT' ? 'Conflict' : 'Error',
+        code === 'CONFLICT' ? t('common.error') : t('common.error'),
         msg,
       );
     } finally {
@@ -111,22 +114,22 @@ export function DeckForm({ visible, deck, commanders, onSave, onClose }: DeckFor
           style={styles.sheet}
         >
           <View style={styles.handle} />
-          <Text style={styles.title}>{deck ? 'Edit Deck' : 'New Deck'}</Text>
+          <Text style={styles.title}>{deck ? t('deck.editDeck') : t('deck.newDeck')}</Text>
 
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             {/* Name */}
-            <Text style={styles.label}>Name</Text>
+            <Text style={styles.label}>{t('commanders.name')}</Text>
             <TextInput
               style={styles.input}
               value={name}
               onChangeText={setName}
-              placeholder="e.g. Superfriends"
+              placeholder={t('deck.namePlaceholder')}
               placeholderTextColor={colors.text.muted}
               returnKeyType="next"
             />
 
             {/* Primary Commander */}
-            <Text style={styles.label}>Commander</Text>
+            <Text style={styles.label}>{t('game.commander')}</Text>
             <Pressable
               style={[styles.selectorBtn, !commander && styles.selectorBtnEmpty]}
               onPress={() => setSelectorOpen('primary')}
@@ -139,19 +142,19 @@ export function DeckForm({ visible, deck, commanders, onSave, onClose }: DeckFor
                   </View>
                   {commander.isPartner && (
                     <View style={styles.badge}>
-                      <Text style={styles.badgeText}>Partner</Text>
+                      <Text style={styles.badgeText}>{t('commanders.partner')}</Text>
                     </View>
                   )}
                 </View>
               ) : (
-                <Text style={styles.selectorPlaceholder}>Select commander…</Text>
+                <Text style={styles.selectorPlaceholder}>{t('deck.selectCommander')}</Text>
               )}
             </Pressable>
 
             {/* Partner Commander (conditional) */}
             {commander?.isPartner && (
               <>
-                <Text style={styles.label}>Partner Commander</Text>
+                <Text style={styles.label}>{t('deck.partnerCommander')}</Text>
                 <Pressable
                   style={[styles.selectorBtn, !commander2 && styles.selectorBtnEmpty, styles.selectorBtnPartner]}
                   onPress={() => setSelectorOpen('partner')}
@@ -164,19 +167,19 @@ export function DeckForm({ visible, deck, commanders, onSave, onClose }: DeckFor
                       </View>
                     </View>
                   ) : (
-                    <Text style={styles.selectorPlaceholder}>Select partner commander…</Text>
+                    <Text style={styles.selectorPlaceholder}>{t('deck.selectPartner')}</Text>
                   )}
                 </Pressable>
               </>
             )}
 
             {/* Description */}
-            <Text style={styles.label}>Description (optional)</Text>
+            <Text style={styles.label}>{t('deck.descriptionOptional')}</Text>
             <TextInput
               style={[styles.input, styles.inputMultiline]}
               value={description}
               onChangeText={setDescription}
-              placeholder="Notes about strategy, combos…"
+              placeholder={t('deck.descriptionPlaceholder')}
               placeholderTextColor={colors.text.muted}
               multiline
               numberOfLines={3}
@@ -187,12 +190,12 @@ export function DeckForm({ visible, deck, commanders, onSave, onClose }: DeckFor
           {/* Actions */}
           <View style={styles.actions}>
             <Pressable style={styles.btnCancel} onPress={onClose}>
-              <Text style={styles.btnCancelText}>Cancel</Text>
+              <Text style={styles.btnCancelText}>{t('common.cancel')}</Text>
             </Pressable>
             <Pressable style={[styles.btnSave, saving && styles.btnDisabled]} onPress={handleSave} disabled={saving}>
               {saving
                 ? <ActivityIndicator color={colors.text.inverse} size="small" />
-                : <Text style={styles.btnSaveText}>{deck ? 'Save' : 'Create'}</Text>
+                : <Text style={styles.btnSaveText}>{deck ? t('common.save') : t('common.create')}</Text>
               }
             </Pressable>
           </View>
@@ -206,7 +209,7 @@ export function DeckForm({ visible, deck, commanders, onSave, onClose }: DeckFor
         selected={commander}
         onSelect={setCommander}
         onClose={() => setSelectorOpen(null)}
-        title="Select Commander"
+        title={t('deck.selectCommander')}
         excludeId={commander2?.id}
       />
       <CommanderSelector
@@ -215,7 +218,7 @@ export function DeckForm({ visible, deck, commanders, onSave, onClose }: DeckFor
         selected={commander2}
         onSelect={setCommander2}
         onClose={() => setSelectorOpen(null)}
-        title="Select Partner"
+        title={t('deck.selectPartner')}
         excludeId={commander?.id}
       />
     </>
