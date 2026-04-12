@@ -153,13 +153,13 @@ No aplica — funcionalidad nueva.
 
 ### Commit
 
-_Ver abajo_
+`5ec1be1` feat(platform): implement SCR-019 Guest Tracker — full in-memory tracker (PLAT-004)
 
 ---
 
 ## Commits
 
-_Ver abajo_
+`5ec1be1` feat(platform): implement SCR-019 Guest Tracker — full in-memory tracker (PLAT-004)
 
 ---
 
