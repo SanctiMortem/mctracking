@@ -19,7 +19,7 @@
     "test:e2e": "maestro test e2e/",
     "test:e2e:ios": "maestro test e2e/ --platform ios",
     "test:e2e:android": "maestro test e2e/ --platform android",
-    "build": "expo export",
+    "build": "tsc --noEmit",
     "build:local": "eas build --local --platform all --profile preview",
     "doctor": "npx expo-doctor"
   },

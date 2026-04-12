@@ -22,10 +22,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     package: 'com.aboutagency.mtgtracker',
     versionCode: 1,
   },
-  web: {
-    bundler: 'metro',
-    output: 'static',
-  },
   plugins: [
     'expo-router',
     'expo-localization',
