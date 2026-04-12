@@ -1,8 +1,8 @@
 # EPIC-05: Platform
 
 > **Milestone:** M1
-> **Status:** 📋 Planning
-> **Issues:** 18 total (0 done)
+> **Status:** ✅ Done
+> **Issues:** 18 total (18 done)
 > **Branch:** `epic/platform` (crear al empezar)
 
 ---
@@ -123,10 +123,10 @@ Implementar la capa de plataforma que hace el producto completo: Auth multi-prov
 
 ```
 Total:     ██████████████████ 100% (18 issues)
-Done:      █████████████░░░░░  72% (13 issues — ADR-004/005/006/007, PLAT-001/002/003/004/005/006/007/008/009)
+Done:      ██████████████████ 100% (18 issues — all done ✅)
 ```
 
 ---
 
 _Creado: 2026-04-10_
-_Última actualización: 2026-04-12_
+_Última actualización: 2026-04-12 — PLAT-014 Done — Epic completo ✅_

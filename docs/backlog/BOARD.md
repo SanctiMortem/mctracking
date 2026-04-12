@@ -15,10 +15,10 @@
 | EPIC-02 | Match Lifecycle | 9 | 42 | 9 | 0 | ✅ Done |
 | EPIC-03 | Live Tracking | 11 | 44 | 11 | 0 | ✅ Done |
 | EPIC-04 | History & Stats | 13 | 52 | 13 | 0 | ✅ Done |
-| EPIC-05 | Platform | 18 | 68 | 16 | 2 | 🔄 In Progress |
-| **M1 Total** | — | **72** | **289** | **70** | **2** | — |
+| EPIC-05 | Platform | 18 | 68 | 18 | 0 | ✅ Done |
+| **M1 Total** | — | **72** | **289** | **72** | **0** | — |
 
-**Progress:** 70/72 issues done (97%) · 276/289 SP completed (96%)
+**Progress:** 72/72 issues done (100%) · 289/289 SP completed (100%)
 
 ---
 
@@ -122,9 +122,9 @@
 
 ---
 
-## EPIC-05 — Platform 🔄 In Progress
+## EPIC-05 — Platform ✅ Done
 
-> 18 issues · 68 SP · 78% complete (14/18 done)
+> 18 issues · 68 SP · 100% complete (18/18 done)
 > **Dependency:** EPIC-SETUP ✅, EPIC-03 ✅, EPIC-04 ✅
 
 | ID | Title | Priority | SP | Status |
@@ -144,27 +144,26 @@
 | PLAT-009 | i18n — Translation Strings Completas (EN + ES) | P1 | 5 | ✅ Done |
 | PLAT-010 | UI — SCR-002 Home Screen FULL | P1 | 5 | ✅ Done |
 | PLAT-011 | Monetización — Ads Integration (AdMob/Unity — free tier) | P2 | 5 | ✅ Done |
-| PLAT-012 | Monetización — IAP One-Time Premium | P2 | 8 | 📋 Backlog |
+| PLAT-012 | Monetización — IAP One-Time Premium | P2 | 8 | ✅ Done |
 | PLAT-013 | Platform — EAS Build Production (iOS + Android) | P1 | 2 | ✅ Done |
-| PLAT-014 | 🧪 Epic Tests — Platform | P1 | 5 | 📋 Backlog |
+| PLAT-014 | 🧪 Epic Tests — Platform | P1 | 5 | ✅ Done |
 
 ---
 
 ## Kanban View
 
-### ✅ Done (70 issues · 276 SP)
+### ✅ Done (72 issues · 289 SP)
 
 `ADR-001` `SETUP-001` `SETUP-002` `SETUP-003` `SETUP-004` `SETUP-005` `SETUP-006` `SETUP-007` `SETUP-008` `SETUP-009`
 `DATA-001` `DATA-002` `DATA-003` `DATA-004` `DATA-005` `DATA-006` `DATA-007` `DATA-008` `DATA-009` `DATA-010` `DATA-011`
 `MATCH-001` `MATCH-002` `MATCH-003` `MATCH-004` `MATCH-005` `MATCH-006` `MATCH-007` `MATCH-008` `MATCH-009`
 `ADR-002` `ADR-003` `TRACK-001` `TRACK-002` `TRACK-003` `TRACK-004` `TRACK-005` `TRACK-006` `TRACK-007` `TRACK-008` `TRACK-009`
 `ADR-008` `HIST-001` `HIST-002` `HIST-003` `HIST-004` `HIST-005` `HIST-006` `HIST-007` `HIST-008` `HIST-009` `HIST-010` `HIST-011` `HIST-012`
-`ADR-004` `ADR-005` `ADR-006` `ADR-007` `PLAT-001` `PLAT-002` `PLAT-003` `PLAT-004` `PLAT-005` `PLAT-006` `PLAT-007` `PLAT-008` `PLAT-009` `PLAT-010` `PLAT-011` `PLAT-013`
+`ADR-004` `ADR-005` `ADR-006` `ADR-007` `PLAT-001` `PLAT-002` `PLAT-003` `PLAT-004` `PLAT-005` `PLAT-006` `PLAT-007` `PLAT-008` `PLAT-009` `PLAT-010` `PLAT-011` `PLAT-012` `PLAT-013` `PLAT-014`
 
-### 📋 Backlog (2 issues · 13 SP)
+### 📋 Backlog (0 issues · 0 SP)
 
-**EPIC-05 — After EPIC-04:**
-`PLAT-012` `PLAT-014`
+_M1 complete — all issues done._
 
 ---
 
