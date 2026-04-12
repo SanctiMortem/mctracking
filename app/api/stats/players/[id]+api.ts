@@ -9,14 +9,18 @@
  * BR-STATS-05: partner commanders counted independently.
  */
 import { getAuth } from '@/services/auth';
+import { getRouteParam } from '@/services/route-params';
 
 import { getPlayerStats } from '@/services/stats';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request) {
   const { userId } = getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const result = await getPlayerStats(userId, params.id);
+  const id = getRouteParam(req, 'id');
+  if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
+
+  const result = await getPlayerStats(userId, id);
 
   if ('notFound' in result) {
     return Response.json({ error: 'NOT_FOUND', message: 'Player not found' }, { status: 404 });

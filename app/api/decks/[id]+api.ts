@@ -6,29 +6,30 @@
  * DATA-004 (EPIC-01)
  */
 import { getAuth } from '@/services/auth';
+import { getRouteParam } from '@/services/route-params';
 
 import { getDeckById, softDeleteDeck, updateDeck } from '@/services/decks';
 
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(req: Request) {
   const { userId } = getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const deck = await getDeckById(params.id);
+  const id = getRouteParam(req, 'id');
+  if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
+
+  const deck = await getDeckById(id);
   if (!deck) return Response.json({ error: 'NOT_FOUND' }, { status: 404 });
   if (deck.createdBy !== userId) return Response.json({ error: 'Forbidden' }, { status: 403 });
 
   return Response.json(deck);
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function PATCH(req: Request) {
   const { userId } = getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const id = getRouteParam(req, 'id');
+  if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
 
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== 'object') {
@@ -61,7 +62,7 @@ export async function PATCH(
     update.description = typeof description === 'string' ? description : null;
   }
 
-  const result = await updateDeck(userId, params.id, update);
+  const result = await updateDeck(userId, id, update);
 
   if ('notFound' in result) return Response.json({ error: 'NOT_FOUND' }, { status: 404 });
   if ('forbidden' in result) return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -81,14 +82,14 @@ export async function PATCH(
   return Response.json(result.data);
 }
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(req: Request) {
   const { userId } = getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const result = await softDeleteDeck(userId, params.id);
+  const id = getRouteParam(req, 'id');
+  if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
+
+  const result = await softDeleteDeck(userId, id);
 
   if ('notFound' in result) return Response.json({ error: 'NOT_FOUND' }, { status: 404 });
   if ('forbidden' in result) return Response.json({ error: 'Forbidden' }, { status: 403 });

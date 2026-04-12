@@ -4,14 +4,18 @@
  * BR-GROUP-04: soft-archive, never hard-delete.
  */
 import { getAuth } from '@/services/auth';
+import { getRouteParam } from '@/services/route-params';
 
 import { archiveGroup } from '@/services/groups';
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request) {
   const { userId } = getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const result = await archiveGroup(userId, params.id);
+  const id = getRouteParam(req, 'id');
+  if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
+
+  const result = await archiveGroup(userId, id);
 
   if ('notFound' in result) {
     return Response.json({ error: 'NOT_FOUND', message: 'Group not found' }, { status: 404 });

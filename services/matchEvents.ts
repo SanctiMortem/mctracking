@@ -4,7 +4,7 @@
  * ADR-002 (Option A): participations.commander_damage is the source of truth.
  * ADR-003 (Option A): participations.life_total is the source of truth.
  *
- * Both are updated atomically in the same transaction as the MatchEvent insert.
+ * Both are updated sequentially (neon-http does not support transactions).
  * Undo marks the event as is_undone=true and reverts the participation snapshot.
  *
  * TRACK-002 (EPIC-03)
@@ -46,7 +46,7 @@ export type UndoResult =
 // ─────────────────────────────────────────────
 
 /**
- * Records a tracker state change in a single transaction:
+ * Records a tracker state change:
  *  1. Inserts a MatchEvent into match_events
  *  2. Updates the participation snapshot (life_total | poison_counters | commander_damage JSONB)
  *
@@ -79,50 +79,43 @@ export async function recordEvent(input: RecordEventInput): Promise<RecordEventR
 
   if (!part) return { forbidden: true };
 
-  // Transaction: insert event + update snapshot
-  const event = await db.transaction(async (tx) => {
-    // 1. Insert MatchEvent
-    const [inserted] = await tx
-      .insert(matchEvents)
-      .values({
-        matchId,
-        participationId,
-        eventType,
-        delta,
-        commanderIdSource: commanderIdSource ?? null,
-        isUndone: false,
+  // 1. Insert MatchEvent
+  const [inserted] = await db
+    .insert(matchEvents)
+    .values({
+      matchId,
+      participationId,
+      eventType,
+      delta,
+      commanderIdSource: commanderIdSource ?? null,
+      isUndone: false,
+    })
+    .returning();
+
+  // 2. Update participation snapshot
+  if (eventType === 'life_change') {
+    await db
+      .update(participations)
+      .set({ lifeTotal: sql`life_total + ${delta}` })
+      .where(eq(participations.id, participationId));
+  } else if (eventType === 'poison_change') {
+    await db
+      .update(participations)
+      .set({ poisonCounters: sql`poison_counters + ${delta}` })
+      .where(eq(participations.id, participationId));
+  } else if (eventType === 'commander_damage' && commanderIdSource) {
+    await db
+      .update(participations)
+      .set({
+        commanderDamage: sql`commander_damage || jsonb_build_object(
+          ${commanderIdSource}::text,
+          (COALESCE((commander_damage->>cast(${commanderIdSource} as text))::int, 0) + ${delta})
+        )`,
       })
-      .returning();
+      .where(eq(participations.id, participationId));
+  }
 
-    // 2. Update participation snapshot
-    if (eventType === 'life_change') {
-      await tx
-        .update(participations)
-        .set({ lifeTotal: sql`life_total + ${delta}` })
-        .where(eq(participations.id, participationId));
-    } else if (eventType === 'poison_change') {
-      await tx
-        .update(participations)
-        .set({ poisonCounters: sql`poison_counters + ${delta}` })
-        .where(eq(participations.id, participationId));
-    } else if (eventType === 'commander_damage' && commanderIdSource) {
-      // JSONB merge: { commander_id: current + delta }
-      // Uses jsonb || jsonb_build_object(key, coalesce(current, 0) + delta)
-      await tx
-        .update(participations)
-        .set({
-          commanderDamage: sql`commander_damage || jsonb_build_object(
-            ${commanderIdSource}::text,
-            (COALESCE((commander_damage->>cast(${commanderIdSource} as text))::int, 0) + ${delta})
-          )`,
-        })
-        .where(eq(participations.id, participationId));
-    }
-
-    return inserted;
-  });
-
-  return { data: event };
+  return { data: inserted };
 }
 
 // ─────────────────────────────────────────────
@@ -155,42 +148,37 @@ export async function undoLastEvent(matchId: string): Promise<UndoResult> {
 
   if (!lastEvent) return { noEvents: true };
 
-  // Transaction: mark undone + revert snapshot
-  const undone = await db.transaction(async (tx) => {
-    // Mark event as undone
-    const [updated] = await tx
-      .update(matchEvents)
-      .set({ isUndone: true })
-      .where(eq(matchEvents.id, lastEvent.id))
-      .returning();
+  // Mark event as undone
+  const [updated] = await db
+    .update(matchEvents)
+    .set({ isUndone: true })
+    .where(eq(matchEvents.id, lastEvent.id))
+    .returning();
 
-    // Revert participation snapshot (apply inverse delta)
-    const inverseDelta = -lastEvent.delta;
+  // Revert participation snapshot (apply inverse delta)
+  const inverseDelta = -lastEvent.delta;
 
-    if (lastEvent.eventType === 'life_change') {
-      await tx
-        .update(participations)
-        .set({ lifeTotal: sql`life_total + ${inverseDelta}` })
-        .where(eq(participations.id, lastEvent.participationId));
-    } else if (lastEvent.eventType === 'poison_change') {
-      await tx
-        .update(participations)
-        .set({ poisonCounters: sql`poison_counters + ${inverseDelta}` })
-        .where(eq(participations.id, lastEvent.participationId));
-    } else if (lastEvent.eventType === 'commander_damage' && lastEvent.commanderIdSource) {
-      await tx
-        .update(participations)
-        .set({
-          commanderDamage: sql`commander_damage || jsonb_build_object(
-            ${lastEvent.commanderIdSource}::text,
-            (COALESCE((commander_damage->>cast(${lastEvent.commanderIdSource} as text))::int, 0) + ${inverseDelta})
-          )`,
-        })
-        .where(eq(participations.id, lastEvent.participationId));
-    }
+  if (lastEvent.eventType === 'life_change') {
+    await db
+      .update(participations)
+      .set({ lifeTotal: sql`life_total + ${inverseDelta}` })
+      .where(eq(participations.id, lastEvent.participationId));
+  } else if (lastEvent.eventType === 'poison_change') {
+    await db
+      .update(participations)
+      .set({ poisonCounters: sql`poison_counters + ${inverseDelta}` })
+      .where(eq(participations.id, lastEvent.participationId));
+  } else if (lastEvent.eventType === 'commander_damage' && lastEvent.commanderIdSource) {
+    await db
+      .update(participations)
+      .set({
+        commanderDamage: sql`commander_damage || jsonb_build_object(
+          ${lastEvent.commanderIdSource}::text,
+          (COALESCE((commander_damage->>cast(${lastEvent.commanderIdSource} as text))::int, 0) + ${inverseDelta})
+        )`,
+      })
+      .where(eq(participations.id, lastEvent.participationId));
+  }
 
-    return updated;
-  });
-
-  return { data: undone };
+  return { data: updated };
 }

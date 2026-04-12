@@ -8,7 +8,7 @@
 /** Paths that are accessible without a Clerk session. */
 const PUBLIC_PATHS = new Set(['/api/health', '/api/auth/session']);
 
-export async function middleware(req: Request) {
+export default async function middleware(req: Request) {
   const { pathname } = new URL(req.url);
 
   if (PUBLIC_PATHS.has(pathname)) return;

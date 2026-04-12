@@ -8,14 +8,18 @@
  * BR-STATS-05: each partner commander's stats are independent.
  */
 import { getAuth } from '@/services/auth';
+import { getRouteParam } from '@/services/route-params';
 
 import { getCommanderStats } from '@/services/stats';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request) {
   const { userId } = getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const result = await getCommanderStats(userId, params.id);
+  const id = getRouteParam(req, 'id');
+  if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
+
+  const result = await getCommanderStats(userId, id);
 
   if ('notFound' in result) {
     return Response.json({ error: 'NOT_FOUND', message: 'Commander not found' }, { status: 404 });

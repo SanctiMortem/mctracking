@@ -55,20 +55,6 @@ export async function createCommander(
   userId: string,
   data: CreateInput,
 ): Promise<{ data: Commander } | { conflict: true }> {
-  // Case-insensitive uniqueness (edge case from DATA-001)
-  const [dupe] = await db
-    .select({ id: commanders.id })
-    .from(commanders)
-    .where(
-      and(
-        sql`lower(${commanders.name}) = lower(${data.name})`,
-        isNull(commanders.deletedAt),
-      ),
-    )
-    .limit(1);
-
-  if (dupe) return { conflict: true };
-
   const [created] = await db
     .insert(commanders)
     .values({ ...data, createdBy: userId })

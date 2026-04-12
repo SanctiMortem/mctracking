@@ -100,31 +100,27 @@ export async function createMatch(
     }
   }
 
-  // 5. Transaction: match + participations
-  const result = await db.transaction(async (tx) => {
-    const [match] = await tx
-      .insert(matches)
-      .values({ createdBy: userId })
-      .returning();
+  // 5. Insert match then participations (neon-http does not support transactions)
+  const [match] = await db
+    .insert(matches)
+    .values({ createdBy: userId })
+    .returning();
 
-    const inserted = await tx
-      .insert(participations)
-      .values(
-        participants.map((p) => ({
-          matchId: match.id,
-          playerId: p.player_id,
-          deckId: p.deck_id,
-          lifeTotal: 40,
-          poisonCounters: 0,
-          commanderDamage: {},
-        })),
-      )
-      .returning();
+  const inserted = await db
+    .insert(participations)
+    .values(
+      participants.map((p) => ({
+        matchId: match.id,
+        playerId: p.player_id,
+        deckId: p.deck_id,
+        lifeTotal: 40,
+        poisonCounters: 0,
+        commanderDamage: {},
+      })),
+    )
+    .returning();
 
-    return { match, participations: inserted };
-  });
-
-  return { data: result };
+  return { data: { match, participations: inserted } };
 }
 
 // ─────────────────────────────────────────────
@@ -189,71 +185,65 @@ export async function closeMatch(
     if (!winner) return { participationNotFound: true };
   }
 
-  // 5. Transaction
+  // 5. Sequential updates (neon-http does not support transactions)
   const now = new Date();
+  const newStatus = input.action === 'abandon' ? 'abandoned' : 'completed';
 
-  const closed = await db.transaction(async (tx) => {
-    // Update match status + ended_at
-    const newStatus = input.action === 'abandon' ? 'abandoned' : 'completed';
-    const [updatedMatch] = await tx
-      .update(matches)
-      .set({ status: newStatus, endedAt: now })
-      .where(eq(matches.id, matchId))
+  const [updatedMatch] = await db
+    .update(matches)
+    .set({ status: newStatus, endedAt: now })
+    .where(eq(matches.id, matchId))
+    .returning();
+
+  let matchResult: MatchResult | null = null;
+
+  if (input.action === 'win') {
+    // Mark winner
+    await db
+      .update(participations)
+      .set({ result: 'win' })
+      .where(eq(participations.id, input.winner_participation_id));
+
+    // Mark losers
+    await db
+      .update(participations)
+      .set({ result: 'lose' })
+      .where(and(eq(participations.matchId, matchId), ne(participations.id, input.winner_participation_id)));
+
+    // Create MatchResult
+    const [mr] = await db
+      .insert(matchResults)
+      .values({
+        matchId,
+        winnerParticipationId: input.winner_participation_id,
+        winCondition: input.win_condition as MatchResult['winCondition'],
+        isDraw: false,
+      })
       .returning();
+    matchResult = mr;
 
-    let matchResult: MatchResult | null = null;
+  } else if (input.action === 'draw') {
+    // Mark all draw
+    await db
+      .update(participations)
+      .set({ result: 'draw' })
+      .where(eq(participations.matchId, matchId));
 
-    if (input.action === 'win') {
-      // Mark winner
-      await tx
-        .update(participations)
-        .set({ result: 'win' })
-        .where(eq(participations.id, input.winner_participation_id));
+    // Create MatchResult (no winner, is_draw=true)
+    const [mr] = await db
+      .insert(matchResults)
+      .values({
+        matchId,
+        winnerParticipationId: null,
+        winCondition: 'other',
+        isDraw: true,
+      })
+      .returning();
+    matchResult = mr;
+  }
+  // abandon: no participation updates, no MatchResult
 
-      // Mark losers
-      await tx
-        .update(participations)
-        .set({ result: 'lose' })
-        .where(and(eq(participations.matchId, matchId), ne(participations.id, input.winner_participation_id)));
-
-      // Create MatchResult
-      const [mr] = await tx
-        .insert(matchResults)
-        .values({
-          matchId,
-          winnerParticipationId: input.winner_participation_id,
-          winCondition: input.win_condition as MatchResult['winCondition'],
-          isDraw: false,
-        })
-        .returning();
-      matchResult = mr;
-
-    } else if (input.action === 'draw') {
-      // Mark all draw
-      await tx
-        .update(participations)
-        .set({ result: 'draw' })
-        .where(eq(participations.matchId, matchId));
-
-      // Create MatchResult (no winner, is_draw=true)
-      const [mr] = await tx
-        .insert(matchResults)
-        .values({
-          matchId,
-          winnerParticipationId: null,
-          winCondition: 'other',
-          isDraw: true,
-        })
-        .returning();
-      matchResult = mr;
-
-    }
-    // abandon: no participation updates, no MatchResult
-
-    return { match: updatedMatch, result: matchResult };
-  });
-
-  return { data: closed };
+  return { data: { match: updatedMatch, result: matchResult } };
 }
 
 // ─────────────────────────────────────────────

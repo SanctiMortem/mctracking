@@ -5,15 +5,19 @@
  * MATCH-003, MATCH-004 (EPIC-02)
  */
 import { getAuth } from '@/services/auth';
+import { getRouteParam } from '@/services/route-params';
 
 import { closeMatch, getMatchById } from '@/services/matches';
 import type { CloseAction } from '@/services/matches';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request) {
   const { userId } = getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const result = await getMatchById(userId, params.id);
+  const id = getRouteParam(req, 'id');
+  if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
+
+  const result = await getMatchById(userId, id);
 
   if ('notFound' in result) {
     return Response.json({ error: 'NOT_FOUND', message: 'Match not found' }, { status: 404 });
@@ -22,9 +26,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   return Response.json({ success: true, data: result.data }, { status: 200 });
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request) {
   const { userId } = getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const id = getRouteParam(req, 'id');
+  if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
 
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== 'object') {
@@ -55,7 +62,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     input = { action } as CloseAction;
   }
 
-  const result = await closeMatch(userId, params.id, input);
+  const result = await closeMatch(userId, id, input);
 
   if ('notFound' in result) {
     return Response.json({ error: 'NOT_FOUND', message: 'Match not found' }, { status: 404 });

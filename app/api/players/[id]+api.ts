@@ -6,31 +6,31 @@
  * DATA-003 / DATA-008 (EPIC-01)
  */
 import { getAuth } from '@/services/auth';
+import { getRouteParam } from '@/services/route-params';
 
 import { getPlayerById, softDeletePlayer, updatePlayer } from '@/services/players';
 
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(req: Request) {
   const { userId } = getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const player = await getPlayerById(params.id);
+  const id = getRouteParam(req, 'id');
+  if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
+
+  const player = await getPlayerById(id);
   if (!player) return Response.json({ error: 'NOT_FOUND' }, { status: 404 });
   if (player.createdBy !== userId) return Response.json({ error: 'Forbidden' }, { status: 403 });
 
   return Response.json(player);
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function PATCH(req: Request) {
   const { userId } = getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { id } = params;
+  const id = getRouteParam(req, 'id');
+  if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
+
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== 'object') {
     return Response.json({ error: 'VALIDATION_ERROR', message: 'Invalid JSON body' }, { status: 400 });
@@ -59,14 +59,13 @@ export async function PATCH(
   return Response.json(result.data);
 }
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(req: Request) {
   const { userId } = getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { id } = params;
+  const id = getRouteParam(req, 'id');
+  if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
+
   const result = await softDeletePlayer(userId, id);
 
   if ('notFound' in result) return Response.json({ error: 'NOT_FOUND' }, { status: 404 });

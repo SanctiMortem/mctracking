@@ -1,6 +1,6 @@
 /**
  * SCR-004 — Decks Library (tab screen)
- * Deck CRUD with commander filter and partner support.
+ * Deck CRUD — simple list, no filters.
  * Tap → SCR-013 Deck Detail.
  * DATA-007 (EPIC-01)
  */
@@ -27,10 +27,8 @@ import { colors, radius, spacing, typography } from '@/styles/tokens';
 export default function DecksScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { commanders } = useCommanders();
-
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const { decks, loading, error, refresh, create, update, remove } = useDecks(activeFilter ?? undefined);
+  const { create: createCommander } = useCommanders();
+  const { decks, loading, error, refresh, create, update, remove } = useDecks();
 
   const [formVisible, setFormVisible] = useState(false);
   const [editing, setEditing] = useState<DeckWithCommanders | null>(null);
@@ -102,9 +100,6 @@ export default function DecksScreen() {
       ) : (
         <DeckList
           decks={decks}
-          commanders={commanders}
-          activeFilter={activeFilter}
-          onFilterChange={setActiveFilter}
           onTap={(deck) => router.push(`/decks/${deck.id}`)}
           onEdit={openEdit}
           onDelete={handleDelete}
@@ -115,9 +110,9 @@ export default function DecksScreen() {
       <DeckForm
         visible={formVisible}
         deck={editing}
-        commanders={commanders}
         onSave={handleSave}
         onClose={closeForm}
+        onCreateCommander={createCommander}
       />
     </SafeAreaView>
   );

@@ -6,6 +6,7 @@
  * DATA-002 / DATA-010 (EPIC-01)
  */
 import { getAuth } from '@/services/auth';
+import { getRouteParam } from '@/services/route-params';
 
 import {
   getCommanderById,
@@ -14,28 +15,27 @@ import {
   validateColors,
 } from '@/services/commanders';
 
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(req: Request) {
   const { userId } = getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const commander = await getCommanderById(params.id);
+  const id = getRouteParam(req, 'id');
+  if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
+
+  const commander = await getCommanderById(id);
   if (!commander) return Response.json({ error: 'NOT_FOUND' }, { status: 404 });
   if (commander.createdBy !== userId) return Response.json({ error: 'Forbidden' }, { status: 403 });
 
   return Response.json(commander);
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function PATCH(req: Request) {
   const { userId } = getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { id } = params;
+  const id = getRouteParam(req, 'id');
+  if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
+
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== 'object') {
     return Response.json({ error: 'VALIDATION_ERROR', message: 'Invalid JSON body' }, { status: 400 });
@@ -82,14 +82,13 @@ export async function PATCH(
   return Response.json(result.data);
 }
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(req: Request) {
   const { userId } = getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { id } = params;
+  const id = getRouteParam(req, 'id');
+  if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
+
   const result = await softDeleteCommander(userId, id);
 
   if ('notFound' in result) return Response.json({ error: 'NOT_FOUND' }, { status: 404 });

@@ -1,12 +1,11 @@
 /**
- * DeckList — FlatList of decks with commander filter chips and tap-to-detail.
+ * DeckList — Simple FlatList of decks with commander + color identity display.
  * DATA-007 (EPIC-01)
  */
 import {
   Alert,
   FlatList,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -14,59 +13,15 @@ import {
 
 import { useTranslation } from 'react-i18next';
 
-import type { Commander } from '@/db/index';
 import type { DeckWithCommanders } from '@/services/decks';
 import { ColorChips } from '@/components/ui/ColorChips';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
 interface DeckListProps {
   decks: DeckWithCommanders[];
-  commanders: Commander[];          // For filter chips
-  activeFilter: string | null;      // commander id or null = all
-  onFilterChange: (id: string | null) => void;
   onTap: (deck: DeckWithCommanders) => void;
   onEdit: (deck: DeckWithCommanders) => void;
   onDelete: (deck: DeckWithCommanders) => void;
-}
-
-function FilterChips({
-  commanders,
-  active,
-  onChange,
-}: {
-  commanders: Commander[];
-  active: string | null;
-  onChange: (id: string | null) => void;
-}) {
-  const { t } = useTranslation();
-  if (commanders.length === 0) return null;
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.filterRow}
-    >
-      <Pressable
-        style={[styles.filterChip, active === null && styles.filterChipActive]}
-        onPress={() => onChange(null)}
-      >
-        <Text style={[styles.filterChipText, active === null && styles.filterChipTextActive]}>
-          {t('deck.filterAll')}
-        </Text>
-      </Pressable>
-      {commanders.map((c) => (
-        <Pressable
-          key={c.id}
-          style={[styles.filterChip, active === c.id && styles.filterChipActive]}
-          onPress={() => onChange(active === c.id ? null : c.id)}
-        >
-          <Text style={[styles.filterChipText, active === c.id && styles.filterChipTextActive]} numberOfLines={1}>
-            {c.name}
-          </Text>
-        </Pressable>
-      ))}
-    </ScrollView>
-  );
 }
 
 function DeckRow({
@@ -126,78 +81,38 @@ function DeckRow({
   );
 }
 
-function EmptyState({ hasFilter }: { hasFilter: boolean }) {
+function EmptyState() {
   const { t } = useTranslation();
   return (
     <View style={styles.empty}>
-      <Text style={styles.emptyTitle}>
-        {hasFilter ? t('deck.noDecksWithCommander') : t('deck.noDecksYet')}
-      </Text>
-      <Text style={styles.emptySubtitle}>
-        {hasFilter ? t('deck.noDecksWithCommanderBody') : t('deck.noDecksBody')}
-      </Text>
+      <Text style={styles.emptyTitle}>{t('deck.noDecksYet')}</Text>
+      <Text style={styles.emptySubtitle}>{t('deck.noDecksBody')}</Text>
     </View>
   );
 }
 
-export function DeckList({
-  decks,
-  commanders,
-  activeFilter,
-  onFilterChange,
-  onTap,
-  onEdit,
-  onDelete,
-}: DeckListProps) {
+export function DeckList({ decks, onTap, onEdit, onDelete }: DeckListProps) {
   return (
-    <View style={styles.container}>
-      <FilterChips commanders={commanders} active={activeFilter} onChange={onFilterChange} />
-      <FlatList
-        data={decks}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <DeckRow
-            deck={item}
-            onTap={() => onTap(item)}
-            onEdit={() => onEdit(item)}
-            onDelete={() => onDelete(item)}
-          />
-        )}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListEmptyComponent={<EmptyState hasFilter={activeFilter !== null} />}
-        contentContainerStyle={decks.length === 0 ? styles.emptyContainer : undefined}
-        keyboardShouldPersistTaps="handled"
-      />
-    </View>
+    <FlatList
+      data={decks}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => (
+        <DeckRow
+          deck={item}
+          onTap={() => onTap(item)}
+          onEdit={() => onEdit(item)}
+          onDelete={() => onDelete(item)}
+        />
+      )}
+      ItemSeparatorComponent={() => <View style={styles.separator} />}
+      ListEmptyComponent={<EmptyState />}
+      contentContainerStyle={decks.length === 0 ? styles.emptyContainer : undefined}
+      keyboardShouldPersistTaps="handled"
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  filterRow: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    gap: spacing[2],
-  },
-  filterChip: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    borderRadius: radius.round,
-    backgroundColor: colors.background.surface,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    maxWidth: 160,
-  },
-  filterChipActive: {
-    backgroundColor: colors.accent.primary,
-    borderColor: colors.accent.primary,
-  },
-  filterChipText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
-  },
-  filterChipTextActive: { color: colors.text.primary },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

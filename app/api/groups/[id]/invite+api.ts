@@ -7,17 +7,21 @@
  * Optional body: { force?: boolean } — set force=true to regenerate even if current code is valid.
  */
 import { getAuth } from '@/services/auth';
+import { getRouteParam } from '@/services/route-params';
 
 import { getOrRegenerateInvite } from '@/services/groups';
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request) {
   const { userId } = getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const id = getRouteParam(req, 'id');
+  if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
 
   const body = await req.json().catch(() => ({}));
   const force = typeof body === 'object' && body !== null && (body as Record<string, unknown>).force === true;
 
-  const result = await getOrRegenerateInvite(userId, params.id, force);
+  const result = await getOrRegenerateInvite(userId, id, force);
 
   if ('notFound' in result) {
     return Response.json({ error: 'NOT_FOUND', message: 'Group not found' }, { status: 404 });
