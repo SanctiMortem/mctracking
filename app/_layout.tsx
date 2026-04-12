@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 
 // i18n init (SETUP-006)
 import '../constants/i18n';
+import { GuestProvider, useGuest } from '@/contexts/GuestContext';
 
 // SecureStore token cache for Clerk — persists session across app restarts.
 const tokenCache = {
@@ -19,15 +20,16 @@ const tokenCache = {
   },
 };
 
-// Auth gate — wrapped inside ClerkProvider so useAuth() is available.
+// Auth gate — wrapped inside ClerkProvider + GuestProvider so hooks are available.
 function AuthGate() {
   const { isLoaded, isSignedIn } = useAuth();
+  const { isGuest } = useGuest();
 
   // While Clerk initializes, render nothing (avoids flash).
   if (!isLoaded) return null;
 
-  // Signed-out users go to auth screen, unless they're already on /auth or /guest.
-  if (!isSignedIn) {
+  // Unauthenticated and not in guest mode → go to auth screen.
+  if (!isSignedIn && !isGuest) {
     return <Redirect href="/auth" />;
   }
 
@@ -70,8 +72,10 @@ export default function RootLayout() {
 
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <StatusBar style="light" />
-      <AuthGate />
+      <GuestProvider>
+        <StatusBar style="light" />
+        <AuthGate />
+      </GuestProvider>
     </ClerkProvider>
   );
 }

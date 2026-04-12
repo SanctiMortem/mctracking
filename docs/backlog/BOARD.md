@@ -15,10 +15,10 @@
 | EPIC-02 | Match Lifecycle | 9 | 42 | 9 | 0 | ✅ Done |
 | EPIC-03 | Live Tracking | 11 | 44 | 11 | 0 | ✅ Done |
 | EPIC-04 | History & Stats | 13 | 52 | 13 | 0 | ✅ Done |
-| EPIC-05 | Platform | 18 | 68 | 6 | 12 | 🔄 In Progress |
-| **M1 Total** | — | **72** | **289** | **60** | **12** | — |
+| EPIC-05 | Platform | 18 | 68 | 7 | 11 | 🔄 In Progress |
+| **M1 Total** | — | **72** | **289** | **61** | **11** | — |
 
-**Progress:** 60/72 issues done (83%) · 229/289 SP completed (79%)
+**Progress:** 61/72 issues done (85%) · 237/289 SP completed (82%)
 
 ---
 
@@ -135,7 +135,7 @@
 | ADR-007 | IAP Receipt Validation — Endpoint Separado o en PATCH /settings? | P1 | 1 | ✅ Done |
 | PLAT-001 | DB Schema — groups, group_members, user_settings | P0 | 2 | ✅ Done |
 | PLAT-002 | API — Auth Session + Settings Bootstrap | P0 | 2 | ✅ Done |
-| PLAT-003 | UI — SCR-001 Auth Screen (todos los providers) | P0 | 8 | 📋 Backlog |
+| PLAT-003 | UI — SCR-001 Auth Screen (todos los providers) | P0 | 8 | ✅ Done |
 | PLAT-004 | UI — SCR-019 Guest Tracker (full) | P0 | 5 | 📋 Backlog |
 | PLAT-005 | API — Groups CRUD (create, invite, join) | P1 | 5 | 📋 Backlog |
 | PLAT-006 | UI — SCR-017 Groups Screen | P1 | 5 | 📋 Backlog |
@@ -159,12 +159,12 @@
 `MATCH-001` `MATCH-002` `MATCH-003` `MATCH-004` `MATCH-005` `MATCH-006` `MATCH-007` `MATCH-008` `MATCH-009`
 `ADR-002` `ADR-003` `TRACK-001` `TRACK-002` `TRACK-003` `TRACK-004` `TRACK-005` `TRACK-006` `TRACK-007` `TRACK-008` `TRACK-009`
 `ADR-008` `HIST-001` `HIST-002` `HIST-003` `HIST-004` `HIST-005` `HIST-006` `HIST-007` `HIST-008` `HIST-009` `HIST-010` `HIST-011` `HIST-012`
-`ADR-004` `ADR-005` `ADR-006` `ADR-007` `PLAT-001` `PLAT-002`
+`ADR-004` `ADR-005` `ADR-006` `ADR-007` `PLAT-001` `PLAT-002` `PLAT-003`
 
-### 📋 Backlog (12 issues · 60 SP)
+### 📋 Backlog (11 issues · 52 SP)
 
 **EPIC-05 — After EPIC-04:**
-`PLAT-003` `PLAT-004` `PLAT-005` `PLAT-006` `PLAT-007` `PLAT-008` `PLAT-009` `PLAT-010` `PLAT-011` `PLAT-012` `PLAT-013` `PLAT-014`
+`PLAT-004` `PLAT-005` `PLAT-006` `PLAT-007` `PLAT-008` `PLAT-009` `PLAT-010` `PLAT-011` `PLAT-012` `PLAT-013` `PLAT-014`
 
 ---
 
