@@ -44,7 +44,7 @@ Implementar la capa de plataforma que hace el producto completo: Auth multi-prov
 | [PLAT-001](../issues/PLAT-001-db-schema-platform.md) | DB schema: groups, group_members, user_settings | — | P0 | ✅ | S | 2 |
 | [PLAT-002](../issues/PLAT-002-api-auth-settings.md) | API: Auth session + Settings CRUD | PLAT-001 | P0 | ✅ | S | 2 |
 | [PLAT-003](../issues/PLAT-003-ui-auth-screen.md) | UI: SCR-001 Auth screen (todos los providers) | PLAT-002, SETUP-007 | P0 | ✅ | L | 8 |
-| [PLAT-004](../issues/PLAT-004-ui-guest-tracker.md) | UI: SCR-019 Guest Tracker (full) | TRACK-003, TRACK-004 | P0 | 📋 | M | 5 |
+| [PLAT-004](../issues/PLAT-004-ui-guest-tracker.md) | UI: SCR-019 Guest Tracker (full) | TRACK-003, TRACK-004 | P0 | ✅ | M | 5 |
 | [PLAT-005](../issues/PLAT-005-api-groups.md) | API: Groups CRUD (create, invite, join) | PLAT-001 | P1 | 📋 | M | 5 |
 | [PLAT-006](../issues/PLAT-006-ui-groups-screen.md) | UI: SCR-017 Groups screen | PLAT-005 | P1 | 📋 | M | 5 |
 | [PLAT-007](../issues/PLAT-007-api-settings.md) | API: Settings PATCH + UserSettings | PLAT-001, ADR-007 | P1 | 📋 | S | 2 |
