@@ -42,6 +42,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         userTrackingUsageDescription: 'This identifier will be used to personalize ads.',
       },
     ],
+    'expo-iap',
   ],
   experiments: {
     typedRoutes: true,
