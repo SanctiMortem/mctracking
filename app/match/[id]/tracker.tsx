@@ -78,12 +78,15 @@ export default function MatchTrackerScreen() {
     return () => clearTimeout(t);
   }, [toastError, clearToastError]);
 
-  // Redirect if match is not in_progress
+  // Redirect if match is not in_progress (guard against repeated navigation)
+  const hasNavigatedRef = useRef(false);
   useEffect(() => {
-    if (!match) return;
+    if (!match || hasNavigatedRef.current) return;
     if (match.status === 'completed') {
+      hasNavigatedRef.current = true;
       router.replace(`/match/${id}/results`);
     } else if (match.status === 'abandoned') {
+      hasNavigatedRef.current = true;
       router.back();
     }
   }, [match, id, router]);
