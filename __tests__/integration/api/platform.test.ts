@@ -1,7 +1,7 @@
 /**
- * Integration tests — platform schema + auth/session + settings endpoints
+ * Integration tests — platform schema + auth/session + settings + groups endpoints
  * Requires: DATABASE_URL in .env.test pointing to a Neon test branch.
- * PLAT-001, PLAT-002 (EPIC-05)
+ * PLAT-001, PLAT-002, PLAT-005 (EPIC-05)
  */
 
 describe.skip('group_members UNIQUE constraint', () => {
@@ -67,5 +67,115 @@ describe.skip('GET /api/settings', () => {
   it('returns 401 without Clerk token', async () => {
     // Call GET /settings without Authorization header
     // Expect { success: false, code: 'UNAUTHORIZED' }
+  });
+});
+
+// ─────────────────────────────────────────────
+// PLAT-005: Groups CRUD
+// ─────────────────────────────────────────────
+
+describe.skip('GET /api/groups', () => {
+  it('returns groups where user is owner', async () => {
+    // Seed a group owned by test user + owner membership
+    // Call GET /groups with valid Clerk token
+    // Expect { success: true, data: [{ group, role: 'owner' }] }
+  });
+
+  it('returns groups where user is member', async () => {
+    // Seed a group owned by another user, add test user as member
+    // Call GET /groups
+    // Expect data to include { group, role: 'member' }
+  });
+
+  it('excludes archived groups', async () => {
+    // Seed an archived group (archived_at IS NOT NULL) with test user as owner
+    // Call GET /groups
+    // Expect archived group NOT in response
+  });
+});
+
+describe.skip('POST /api/groups', () => {
+  it('creates group with owner membership and invite code', async () => {
+    // Call POST /groups with { name: 'Los Comandantes' }
+    // Expect group created with owner_id = userId
+    // Expect GroupMembership(role='owner') created
+    // Expect invite_code and invite_expires_at present in response
+  });
+
+  it('allows same name for different owners (BR-GROUP-01)', async () => {
+    // Create group 'Test Group' by user A
+    // Create group 'Test Group' by user B
+    // Expect both to succeed (no uniqueness on name globally)
+  });
+
+  it('returns 400 for missing name', async () => {
+    // Call POST /groups with empty body
+    // Expect 400 VALIDATION_ERROR
+  });
+});
+
+describe.skip('PATCH /api/groups/:id', () => {
+  it('archives group when called by owner', async () => {
+    // Seed a group owned by test user
+    // Call PATCH /groups/:id
+    // Expect archived_at to be set in response
+    // Expect group excluded from subsequent GET /groups
+  });
+
+  it('returns 403 when called by a member (BR-GROUP-04)', async () => {
+    // Seed a group owned by another user; add test user as member
+    // Call PATCH /groups/:id as member
+    // Expect 403 FORBIDDEN
+  });
+
+  it('returns 404 for unknown group id', async () => {
+    // Call PATCH /groups/<random-uuid>
+    // Expect 404 NOT_FOUND
+  });
+});
+
+describe.skip('POST /api/groups/:id/invite', () => {
+  it('returns existing invite code if not expired', async () => {
+    // Seed group with valid invite_expires_at (future)
+    // Call POST /groups/:id/invite as owner
+    // Expect same invite_code returned unchanged
+  });
+
+  it('regenerates invite code when expired', async () => {
+    // Seed group with invite_expires_at in the past
+    // Call POST /groups/:id/invite
+    // Expect new invite_code and new invite_expires_at in response
+  });
+
+  it('returns 403 when called by a member (BR-GROUP-04)', async () => {
+    // Seed group; add test user as member (not owner)
+    // Call POST /groups/:id/invite
+    // Expect 403 FORBIDDEN
+  });
+});
+
+describe.skip('POST /api/groups/join', () => {
+  it('creates membership with role=member for valid invite code', async () => {
+    // Seed group with valid invite_code and non-expired invite_expires_at
+    // Call POST /groups/join with { invite_code }
+    // Expect GroupMembership(role='member') created
+    // Expect response: { group, membership }
+  });
+
+  it('returns 409 GROUP_INVITE_EXPIRED for expired code (BR-GROUP-05)', async () => {
+    // Seed group with invite_expires_at in the past
+    // Call POST /groups/join with that code
+    // Expect 409 GROUP_INVITE_EXPIRED
+  });
+
+  it('returns 409 ALREADY_A_MEMBER on duplicate join', async () => {
+    // Seed group with valid code; add test user as member
+    // Call POST /groups/join again with same code
+    // Expect 409 ALREADY_A_MEMBER
+  });
+
+  it('returns 404 for non-existent invite code', async () => {
+    // Call POST /groups/join with { invite_code: 'notexist' }
+    // Expect 404 NOT_FOUND
   });
 });
