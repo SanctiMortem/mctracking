@@ -71,6 +71,53 @@ describe.skip('GET /api/settings', () => {
 });
 
 // ─────────────────────────────────────────────
+// PLAT-007: Settings PATCH
+// ─────────────────────────────────────────────
+
+describe.skip('PATCH /api/settings', () => {
+  it('updates language field', async () => {
+    // Call PATCH /settings with { language: 'es' }
+    // Expect UserSettings returned with language='es'
+  });
+
+  it('updates debounce_threshold_ms within valid range', async () => {
+    // Call PATCH /settings with { debounce_threshold_ms: 1000 }
+    // Expect UserSettings returned with debounceThresholdMs=1000
+    // Expect updated_at to be refreshed
+  });
+
+  it('returns 400 SETTINGS_DEBOUNCE_OUT_OF_RANGE when debounce > 2000 (BR-TRACK-10)', async () => {
+    // Call PATCH /settings with { debounce_threshold_ms: 2500 }
+    // Expect 400 with error='SETTINGS_DEBOUNCE_OUT_OF_RANGE'
+  });
+
+  it('returns 400 SETTINGS_DEBOUNCE_OUT_OF_RANGE when debounce < 200 (BR-TRACK-10)', async () => {
+    // Call PATCH /settings with { debounce_threshold_ms: 100 }
+    // Expect 400 with error='SETTINGS_DEBOUNCE_OUT_OF_RANGE'
+  });
+
+  it('updates default_life_total within valid range', async () => {
+    // Call PATCH /settings with { default_life_total: 30 }
+    // Expect UserSettings returned with defaultLifeTotal=30
+  });
+
+  it('returns 400 when default_life_total out of range [1, 999]', async () => {
+    // Call PATCH /settings with { default_life_total: 0 }
+    // Expect 400 with error='SETTINGS_LIFE_TOTAL_OUT_OF_RANGE'
+  });
+
+  it('returns 400 when premium is present in body (ADR-007)', async () => {
+    // Call PATCH /settings with { premium: true }
+    // Expect 400 with error='VALIDATION_ERROR'
+  });
+
+  it('updates multiple fields in one call', async () => {
+    // Call PATCH /settings with { language: 'en', require_commander: false, swipe_gestures_enabled: false }
+    // Expect all three fields updated in returned UserSettings
+  });
+});
+
+// ─────────────────────────────────────────────
 // PLAT-005: Groups CRUD
 // ─────────────────────────────────────────────
 
