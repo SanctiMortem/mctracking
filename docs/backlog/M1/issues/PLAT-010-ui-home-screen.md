@@ -165,6 +165,8 @@ No aplica — funcionalidad nueva.
 
 ## Commits
 
+- `d442885` feat(platform): implement PLAT-010 — SCR-002 Home Screen FULL (EPIC-05)
+
 ---
 
 _Creado: 2026-04-10_
