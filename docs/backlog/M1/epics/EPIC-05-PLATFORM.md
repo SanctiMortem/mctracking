@@ -46,7 +46,7 @@ Implementar la capa de plataforma que hace el producto completo: Auth multi-prov
 | [PLAT-003](../issues/PLAT-003-ui-auth-screen.md) | UI: SCR-001 Auth screen (todos los providers) | PLAT-002, SETUP-007 | P0 | ✅ | L | 8 |
 | [PLAT-004](../issues/PLAT-004-ui-guest-tracker.md) | UI: SCR-019 Guest Tracker (full) | TRACK-003, TRACK-004 | P0 | ✅ | M | 5 |
 | [PLAT-005](../issues/PLAT-005-api-groups.md) | API: Groups CRUD (create, invite, join) | PLAT-001 | P1 | ✅ | M | 5 |
-| [PLAT-006](../issues/PLAT-006-ui-groups-screen.md) | UI: SCR-017 Groups screen | PLAT-005 | P1 | 📋 | M | 5 |
+| [PLAT-006](../issues/PLAT-006-ui-groups-screen.md) | UI: SCR-017 Groups screen | PLAT-005 | P1 | ✅ | M | 5 |
 | [PLAT-007](../issues/PLAT-007-api-settings.md) | API: Settings PATCH + UserSettings | PLAT-001, ADR-007 | P1 | 📋 | S | 2 |
 | [PLAT-008](../issues/PLAT-008-ui-settings-screen.md) | UI: SCR-018 Settings screen | PLAT-007 | P1 | 📋 | M | 5 |
 | [PLAT-009](../issues/PLAT-009-i18n-strings.md) | i18n: Translations completas (EN + ES) | SETUP-006 | P1 | 📋 | M | 5 |

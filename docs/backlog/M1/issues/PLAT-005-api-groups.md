@@ -187,7 +187,7 @@ No aplica — funcionalidad nueva.
 
 ### Commit
 
-_See below_
+`c0db119` feat(platform): implement Groups CRUD API — list, create, invite, join, archive (PLAT-005)
 
 ---
 

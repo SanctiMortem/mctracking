@@ -1,0 +1,589 @@
+/**
+ * SCR-017 — Groups
+ * Manage groups: view owned groups + memberships, create, invite, join.
+ * Access: Settings screen or Home header context switcher.
+ *
+ * PLAT-006 (EPIC-05)
+ */
+import { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  SectionList,
+  Share,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+
+import type { GroupWithRole, InviteData } from '@/hooks/useGroups';
+import { useGroups } from '@/hooks/useGroups';
+import { colors, radius, spacing, typography } from '@/styles/tokens';
+
+// ─────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────
+
+type GroupSection = {
+  title: string;
+  data: GroupWithRole[];
+};
+
+// ─────────────────────────────────────────────
+// Main screen
+// ─────────────────────────────────────────────
+
+export default function GroupsScreen() {
+  const { ownedGroups, memberGroups, loading, error, refresh, createGroup, getInvite, joinGroup } =
+    useGroups();
+
+  // ── Create modal ──────────────────────────────────────────
+  const [createVisible, setCreateVisible] = useState(false);
+  const [groupName, setGroupName] = useState('');
+  const [creating, setCreating] = useState(false);
+
+  // ── Join modal ────────────────────────────────────────────
+  const [joinVisible, setJoinVisible] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
+
+  // ── Invite modal ──────────────────────────────────────────
+  const [inviteVisible, setInviteVisible] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteData, setInviteData] = useState<InviteData | null>(null);
+  const [inviteGroupName, setInviteGroupName] = useState('');
+
+  // ─────────────────────────────────────────────
+  // Handlers
+  // ─────────────────────────────────────────────
+
+  async function handleCreate() {
+    if (!groupName.trim()) {
+      Alert.alert('Name required', 'Please enter a group name.');
+      return;
+    }
+    setCreating(true);
+    try {
+      const entry = await createGroup(groupName.trim());
+      setCreateVisible(false);
+      setGroupName('');
+      // Show invite link for the newly created group
+      openInvite(entry.group.id, entry.group.name);
+    } catch (e: unknown) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Could not create group');
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function openInvite(groupId: string, groupName: string) {
+    setInviteGroupName(groupName);
+    setInviteData(null);
+    setInviteVisible(true);
+    setInviteLoading(true);
+    try {
+      const data = await getInvite(groupId);
+      setInviteData(data);
+    } catch (e: unknown) {
+      setInviteVisible(false);
+      Alert.alert('Error', e instanceof Error ? e.message : 'Could not get invite link');
+    } finally {
+      setInviteLoading(false);
+    }
+  }
+
+  async function handleShare() {
+    if (!inviteData) return;
+    try {
+      await Share.share({
+        message: `Join my group on MTG Tracker! Code: ${inviteData.invite_code}`,
+        title: `Join ${inviteGroupName}`,
+      });
+    } catch {
+      // User cancelled share — no-op
+    }
+  }
+
+  async function handleJoin() {
+    if (!joinCode.trim()) {
+      setJoinError('Please enter an invite code.');
+      return;
+    }
+    setJoining(true);
+    setJoinError(null);
+    try {
+      await joinGroup(joinCode.trim());
+      setJoinVisible(false);
+      setJoinCode('');
+    } catch (e: unknown) {
+      const code = (e as { code?: string }).code;
+      if (code === 'GROUP_INVITE_EXPIRED') {
+        setJoinError('This invite link has expired. Ask the group owner for a new one.');
+      } else if (code === 'ALREADY_A_MEMBER') {
+        setJoinError('You are already a member of this group.');
+      } else if (code === 'NOT_FOUND') {
+        setJoinError('Invite code not found. Check the code and try again.');
+      } else {
+        setJoinError(e instanceof Error ? e.message : 'Could not join group');
+      }
+    } finally {
+      setJoining(false);
+    }
+  }
+
+  function closeJoin() {
+    setJoinVisible(false);
+    setJoinCode('');
+    setJoinError(null);
+  }
+
+  // ─────────────────────────────────────────────
+  // Section data
+  // ─────────────────────────────────────────────
+
+  const sections: GroupSection[] = [
+    { title: 'My Groups', data: ownedGroups },
+    { title: 'Member of', data: memberGroups },
+  ];
+
+  const isEmpty = ownedGroups.length === 0 && memberGroups.length === 0;
+
+  // ─────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Groups</Text>
+        <View style={styles.headerActions}>
+          <Pressable style={styles.btnSecondary} onPress={() => setJoinVisible(true)} accessibilityLabel="Join a group">
+            <Text style={styles.btnSecondaryText}>Join</Text>
+          </Pressable>
+          <Pressable style={styles.btnPrimary} onPress={() => setCreateVisible(true)} accessibilityLabel="Create a group">
+            <Text style={styles.btnPrimaryText}>+ Create</Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {/* Body */}
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.accent.primary} size="large" />
+        </View>
+      ) : error ? (
+        <View style={styles.center}>
+          <Text style={styles.errorText}>{error}</Text>
+          <Pressable style={styles.retryBtn} onPress={refresh}>
+            <Text style={styles.retryText}>Retry</Text>
+          </Pressable>
+        </View>
+      ) : isEmpty ? (
+        <View style={styles.center}>
+          <Text style={styles.emptyTitle}>No groups yet</Text>
+          <Text style={styles.emptyBody}>
+            Create a group to share players, decks, and match history with friends — or join one with an invite code.
+          </Text>
+          <View style={styles.emptyActions}>
+            <Pressable style={styles.btnPrimary} onPress={() => setCreateVisible(true)}>
+              <Text style={styles.btnPrimaryText}>Create Group</Text>
+            </Pressable>
+            <Pressable style={styles.btnSecondary} onPress={() => setJoinVisible(true)}>
+              <Text style={styles.btnSecondaryText}>Join with Code</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <SectionList<GroupWithRole, GroupSection>
+          sections={sections}
+          keyExtractor={(item) => item.group.id}
+          contentContainerStyle={styles.listContent}
+          stickySectionHeadersEnabled={false}
+          renderSectionHeader={({ section }) =>
+            section.data.length > 0 ? (
+              <Text style={styles.sectionHeader}>{section.title}</Text>
+            ) : null
+          }
+          renderItem={({ item }) => (
+            <GroupRow
+              item={item}
+              onInvite={(id, name) => openInvite(id, name)}
+            />
+          )}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          SectionSeparatorComponent={() => <View style={styles.sectionSeparator} />}
+          onRefresh={refresh}
+          refreshing={loading}
+        />
+      )}
+
+      {/* Create group modal */}
+      <Modal visible={createVisible} transparent animationType="slide" onRequestClose={() => setCreateVisible(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setCreateVisible(false)} />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.sheet}>
+          <View style={styles.handle} />
+          <Text style={styles.sheetTitle}>New Group</Text>
+          <Text style={styles.inputLabel}>Group name</Text>
+          <TextInput
+            style={styles.input}
+            value={groupName}
+            onChangeText={setGroupName}
+            placeholder="e.g. MTG Martes"
+            placeholderTextColor={colors.text.muted}
+            autoFocus
+            maxLength={100}
+            returnKeyType="done"
+            onSubmitEditing={handleCreate}
+          />
+          <View style={styles.sheetActions}>
+            <Pressable style={styles.btnCancel} onPress={() => { setCreateVisible(false); setGroupName(''); }}>
+              <Text style={styles.btnCancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.btnPrimary, styles.btnFlex, creating && styles.btnDisabled]}
+              onPress={handleCreate}
+              disabled={creating}
+            >
+              {creating
+                ? <ActivityIndicator color={colors.text.primary} size="small" />
+                : <Text style={styles.btnPrimaryText}>Create</Text>
+              }
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Join group modal */}
+      <Modal visible={joinVisible} transparent animationType="slide" onRequestClose={closeJoin}>
+        <Pressable style={styles.backdrop} onPress={closeJoin} />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.sheet}>
+          <View style={styles.handle} />
+          <Text style={styles.sheetTitle}>Join a Group</Text>
+          <Text style={styles.inputLabel}>Invite code</Text>
+          <TextInput
+            style={[styles.input, joinError ? styles.inputError : undefined]}
+            value={joinCode}
+            onChangeText={(t) => { setJoinCode(t); setJoinError(null); }}
+            placeholder="e.g. aB3xYz12"
+            placeholderTextColor={colors.text.muted}
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoFocus
+            returnKeyType="done"
+            onSubmitEditing={handleJoin}
+          />
+          {joinError ? (
+            <Text style={styles.joinErrorText}>{joinError}</Text>
+          ) : null}
+          <View style={styles.sheetActions}>
+            <Pressable style={styles.btnCancel} onPress={closeJoin}>
+              <Text style={styles.btnCancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.btnPrimary, styles.btnFlex, joining && styles.btnDisabled]}
+              onPress={handleJoin}
+              disabled={joining}
+            >
+              {joining
+                ? <ActivityIndicator color={colors.text.primary} size="small" />
+                : <Text style={styles.btnPrimaryText}>Join</Text>
+              }
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Invite link modal */}
+      <Modal visible={inviteVisible} transparent animationType="slide" onRequestClose={() => setInviteVisible(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setInviteVisible(false)} />
+        <View style={styles.sheet}>
+          <View style={styles.handle} />
+          <Text style={styles.sheetTitle}>Invite to {inviteGroupName}</Text>
+          {inviteLoading ? (
+            <View style={styles.inviteLoading}>
+              <ActivityIndicator color={colors.accent.primary} size="large" />
+            </View>
+          ) : inviteData ? (
+            <>
+              <Text style={styles.inputLabel}>Invite code</Text>
+              <View style={styles.inviteCodeBox}>
+                <Text style={styles.inviteCode} selectable>{inviteData.invite_code}</Text>
+              </View>
+              <Text style={styles.inviteExpiry}>
+                Expires {new Date(inviteData.invite_expires_at).toLocaleDateString()}
+              </Text>
+              <Pressable style={[styles.btnPrimary, styles.btnFullWidth]} onPress={handleShare}>
+                <Text style={styles.btnPrimaryText}>Share Invite</Text>
+              </Pressable>
+            </>
+          ) : null}
+          <Pressable style={[styles.btnCancel, styles.btnFullWidth, { marginTop: spacing[2] }]} onPress={() => setInviteVisible(false)}>
+            <Text style={styles.btnCancelText}>Close</Text>
+          </Pressable>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Group row component
+// ─────────────────────────────────────────────
+
+interface GroupRowProps {
+  item: GroupWithRole;
+  onInvite: (groupId: string, groupName: string) => void;
+}
+
+function GroupRow({ item, onInvite }: GroupRowProps) {
+  const isOwner = item.role === 'owner';
+  return (
+    <View style={styles.row}>
+      <View style={styles.rowInfo}>
+        <Text style={styles.groupName} numberOfLines={1}>{item.group.name}</Text>
+        <View style={[styles.roleBadge, isOwner ? styles.ownerBadge : styles.memberBadge]}>
+          <Text style={styles.roleBadgeText}>{isOwner ? 'Owner' : 'Member'}</Text>
+        </View>
+      </View>
+      {isOwner && (
+        <Pressable
+          style={styles.inviteBtn}
+          onPress={() => onInvite(item.group.id, item.group.name)}
+          accessibilityLabel={`Get invite link for ${item.group.name}`}
+        >
+          <Text style={styles.inviteBtnText}>Invite</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background.primary },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[4],
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.subtle,
+  },
+  title: {
+    color: colors.text.primary,
+    fontSize: typography.size['heading-lg'],
+    fontWeight: typography.weight.bold,
+  },
+  headerActions: { flexDirection: 'row', gap: spacing[2] },
+
+  // Buttons
+  btnPrimary: {
+    backgroundColor: colors.accent.primary,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    alignItems: 'center',
+  },
+  btnPrimaryText: {
+    color: colors.text.primary,
+    fontSize: typography.size['body-sm'],
+    fontWeight: typography.weight.semibold,
+  },
+  btnSecondary: {
+    borderRadius: radius.md,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    alignItems: 'center',
+  },
+  btnSecondaryText: {
+    color: colors.text.secondary,
+    fontSize: typography.size['body-sm'],
+    fontWeight: typography.weight.medium,
+  },
+  btnCancel: {
+    flex: 1,
+    paddingVertical: spacing[3],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    alignItems: 'center',
+  },
+  btnCancelText: {
+    color: colors.text.secondary,
+    fontSize: typography.size['body-lg'],
+    fontWeight: typography.weight.medium,
+  },
+  btnFlex: { flex: 2 },
+  btnFullWidth: { width: '100%' },
+  btnDisabled: { opacity: 0.6 },
+
+  // States
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing[4], paddingHorizontal: spacing[6] },
+  errorText: { color: colors.status.error, fontSize: typography.size['body-lg'], textAlign: 'center' },
+  retryBtn: {
+    paddingHorizontal: spacing[6],
+    paddingVertical: spacing[3],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  retryText: { color: colors.text.secondary, fontSize: typography.size['body-lg'] },
+
+  // Empty state
+  emptyTitle: {
+    color: colors.text.primary,
+    fontSize: typography.size['heading-md'],
+    fontWeight: typography.weight.semibold,
+    textAlign: 'center',
+  },
+  emptyBody: {
+    color: colors.text.secondary,
+    fontSize: typography.size['body-lg'],
+    textAlign: 'center',
+    lineHeight: typography.size['body-lg'] * typography.lineHeight.normal,
+  },
+  emptyActions: { gap: spacing[3], width: '100%' },
+
+  // List
+  listContent: { paddingBottom: spacing[8] },
+  sectionHeader: {
+    color: colors.text.muted,
+    fontSize: typography.size['body-sm'],
+    fontWeight: typography.weight.semibold,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[6],
+    paddingBottom: spacing[2],
+  },
+  separator: { height: 1, backgroundColor: colors.border.subtle, marginHorizontal: spacing[4] },
+  sectionSeparator: { height: spacing[2] },
+
+  // Group row
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[4],
+    backgroundColor: colors.background.primary,
+  },
+  rowInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing[3], minWidth: 0 },
+  groupName: {
+    color: colors.text.primary,
+    fontSize: typography.size['body-lg'],
+    fontWeight: typography.weight.medium,
+    flexShrink: 1,
+  },
+  roleBadge: {
+    paddingHorizontal: spacing[2],
+    paddingVertical: 3,
+    borderRadius: radius.sm,
+  },
+  ownerBadge: { backgroundColor: colors.accent.primary + '33' }, // 20% opacity
+  memberBadge: { backgroundColor: colors.background.elevated },
+  roleBadgeText: {
+    color: colors.text.secondary,
+    fontSize: typography.size.caption,
+    fontWeight: typography.weight.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  inviteBtn: {
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.accent.primary,
+  },
+  inviteBtnText: {
+    color: colors.accent.primary,
+    fontSize: typography.size['body-sm'],
+    fontWeight: typography.weight.medium,
+  },
+
+  // Sheet (bottom modal)
+  backdrop: { flex: 1, backgroundColor: colors.background.overlay },
+  sheet: {
+    backgroundColor: colors.background.elevated,
+    borderTopLeftRadius: radius.xxl,
+    borderTopRightRadius: radius.xxl,
+    padding: spacing[6],
+    paddingBottom: spacing[8],
+    gap: spacing[4],
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: radius.round,
+    backgroundColor: colors.border.strong,
+    alignSelf: 'center',
+    marginBottom: spacing[2],
+  },
+  sheetTitle: {
+    color: colors.text.primary,
+    fontSize: typography.size['heading-md'],
+    fontWeight: typography.weight.semibold,
+  },
+  sheetActions: { flexDirection: 'row', gap: spacing[3], marginTop: spacing[2] },
+  inputLabel: {
+    color: colors.text.secondary,
+    fontSize: typography.size['body-sm'],
+    fontWeight: typography.weight.medium,
+    marginBottom: -spacing[2],
+  },
+  input: {
+    backgroundColor: colors.background.surface,
+    color: colors.text.primary,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    fontSize: typography.size['body-lg'],
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  inputError: { borderColor: colors.status.error },
+  joinErrorText: {
+    color: colors.status.error,
+    fontSize: typography.size['body-sm'],
+    marginTop: -spacing[2],
+  },
+
+  // Invite modal content
+  inviteLoading: { paddingVertical: spacing[8], alignItems: 'center' },
+  inviteCodeBox: {
+    backgroundColor: colors.background.surface,
+    borderRadius: radius.md,
+    padding: spacing[4],
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    alignItems: 'center',
+  },
+  inviteCode: {
+    color: colors.text.primary,
+    fontSize: typography.size['heading-md'],
+    fontWeight: typography.weight.bold,
+    letterSpacing: 2,
+  },
+  inviteExpiry: {
+    color: colors.text.muted,
+    fontSize: typography.size['body-sm'],
+    textAlign: 'center',
+    marginTop: -spacing[2],
+  },
+});
