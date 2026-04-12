@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** M
 > **Story Points:** 5
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-05-PLATFORM](../epics/EPIC-05-PLATFORM.md)
 > **Skills:** `domains/ui`
 > **Agents:** `frontend-specialist`, `mobile-developer`
@@ -121,15 +121,31 @@ No aplica — funcionalidad nueva.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-12 | `@react-native-community/slider` no instalado → slider custom con PanResponder (RN core) | No agregar dependencia no declarada en plan; funcionalidad equivalente |
+| 2026-04-12 | `app/(tabs)/settings.tsx` re-exporta desde `app/settings.tsx` | Evitar duplicación — la ruta `/settings` (push) y el tab comparten implementación |
+| 2026-04-12 | `default_life_total` como SegmentedPicker (20/30/40) en lugar de TextInput libre | Diseño spec indica "picker: 20/30/40"; cubre casos de uso Commander standard (20, 30, 40) |
+
+### AC Evidence
+
+| AC | Descripción | Archivo | Línea |
+|----|-------------|---------|-------|
+| 1 | Slider debounce 200–2000ms con valor y labels | `app/settings.tsx` | `DebounceSlider` component |
+| 2 | Stepper/picker `default_life_total` | `app/settings.tsx` | `case 'life_total'` |
+| 3 | Toggle `require_commander` | `app/settings.tsx` | `case 'require_commander'` |
+| 4 | Picker de idioma (Auto/English/Español) | `app/settings.tsx` | `case 'language'` |
+| 5 | Toggle `swipe_gestures_enabled` | `app/settings.tsx` | `case 'swipe'` |
+| 6 | Link → SCR-017 (Grupos) | `app/settings.tsx` | `case 'groups'` |
+| 7 | Premium CTA / "Premium activo ✓" condicional | `app/settings.tsx` | `case 'premium'` |
+| 8 | Cerrar sesión via Clerk `signOut()` | `app/settings.tsx` | `handleSignOut` |
+| 9 | Auto-save PATCH con debounce 300ms | `hooks/useSettings.ts` | `patchSetting` |
 
 ---
 
 ## Commits
 
-_Ninguno aún_
+_Ver git log_
 
 ---
 
 _Creado: 2026-04-10_
-_Última actualización: 2026-04-10_
+_Última actualización: 2026-04-12_

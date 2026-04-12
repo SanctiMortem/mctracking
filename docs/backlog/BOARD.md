@@ -1,6 +1,6 @@
 # BOARD.md — MTG Commander Tracker · M1
 
-> **Generated:** 2026-04-11
+> **Generated:** 2026-04-12
 > **Source:** `docs/backlog/M1/issues/` (72 issue files, authoritative SP from each file)
 > **Branch:** develop
 
@@ -15,10 +15,10 @@
 | EPIC-02 | Match Lifecycle | 9 | 42 | 9 | 0 | ✅ Done |
 | EPIC-03 | Live Tracking | 11 | 44 | 11 | 0 | ✅ Done |
 | EPIC-04 | History & Stats | 13 | 52 | 13 | 0 | ✅ Done |
-| EPIC-05 | Platform | 18 | 68 | 7 | 11 | 🔄 In Progress |
-| **M1 Total** | — | **72** | **289** | **61** | **11** | — |
+| EPIC-05 | Platform | 18 | 68 | 12 | 6 | 🔄 In Progress |
+| **M1 Total** | — | **72** | **289** | **66** | **6** | — |
 
-**Progress:** 61/72 issues done (85%) · 237/289 SP completed (82%)
+**Progress:** 66/72 issues done (92%) · 259/289 SP completed (90%)
 
 ---
 
@@ -124,7 +124,7 @@
 
 ## EPIC-05 — Platform 🔄 In Progress
 
-> 18 issues · 68 SP · 28% complete (5/18 done)
+> 18 issues · 68 SP · 67% complete (12/18 done)
 > **Dependency:** EPIC-SETUP ✅, EPIC-03 ✅, EPIC-04 ✅
 
 | ID | Title | Priority | SP | Status |
@@ -136,11 +136,11 @@
 | PLAT-001 | DB Schema — groups, group_members, user_settings | P0 | 2 | ✅ Done |
 | PLAT-002 | API — Auth Session + Settings Bootstrap | P0 | 2 | ✅ Done |
 | PLAT-003 | UI — SCR-001 Auth Screen (todos los providers) | P0 | 8 | ✅ Done |
-| PLAT-004 | UI — SCR-019 Guest Tracker (full) | P0 | 5 | 📋 Backlog |
-| PLAT-005 | API — Groups CRUD (create, invite, join) | P1 | 5 | 📋 Backlog |
-| PLAT-006 | UI — SCR-017 Groups Screen | P1 | 5 | 📋 Backlog |
-| PLAT-007 | API — Settings PATCH + UserSettings | P1 | 2 | 📋 Backlog |
-| PLAT-008 | UI — SCR-018 Settings Screen | P1 | 5 | 📋 Backlog |
+| PLAT-004 | UI — SCR-019 Guest Tracker (full) | P0 | 5 | ✅ Done |
+| PLAT-005 | API — Groups CRUD (create, invite, join) | P1 | 5 | ✅ Done |
+| PLAT-006 | UI — SCR-017 Groups Screen | P1 | 5 | ✅ Done |
+| PLAT-007 | API — Settings PATCH + UserSettings | P1 | 2 | ✅ Done |
+| PLAT-008 | UI — SCR-018 Settings Screen | P1 | 5 | ✅ Done |
 | PLAT-009 | i18n — Translation Strings Completas (EN + ES) | P1 | 5 | 📋 Backlog |
 | PLAT-010 | UI — SCR-002 Home Screen FULL | P1 | 5 | 📋 Backlog |
 | PLAT-011 | Monetización — Ads Integration (AdMob/Unity — free tier) | P2 | 5 | 📋 Backlog |
@@ -152,19 +152,19 @@
 
 ## Kanban View
 
-### ✅ Done (59 issues · 227 SP)
+### ✅ Done (66 issues · 259 SP)
 
 `ADR-001` `SETUP-001` `SETUP-002` `SETUP-003` `SETUP-004` `SETUP-005` `SETUP-006` `SETUP-007` `SETUP-008` `SETUP-009`
 `DATA-001` `DATA-002` `DATA-003` `DATA-004` `DATA-005` `DATA-006` `DATA-007` `DATA-008` `DATA-009` `DATA-010` `DATA-011`
 `MATCH-001` `MATCH-002` `MATCH-003` `MATCH-004` `MATCH-005` `MATCH-006` `MATCH-007` `MATCH-008` `MATCH-009`
 `ADR-002` `ADR-003` `TRACK-001` `TRACK-002` `TRACK-003` `TRACK-004` `TRACK-005` `TRACK-006` `TRACK-007` `TRACK-008` `TRACK-009`
 `ADR-008` `HIST-001` `HIST-002` `HIST-003` `HIST-004` `HIST-005` `HIST-006` `HIST-007` `HIST-008` `HIST-009` `HIST-010` `HIST-011` `HIST-012`
-`ADR-004` `ADR-005` `ADR-006` `ADR-007` `PLAT-001` `PLAT-002` `PLAT-003`
+`ADR-004` `ADR-005` `ADR-006` `ADR-007` `PLAT-001` `PLAT-002` `PLAT-003` `PLAT-004` `PLAT-005` `PLAT-006` `PLAT-007` `PLAT-008`
 
-### 📋 Backlog (11 issues · 52 SP)
+### 📋 Backlog (6 issues · 30 SP)
 
 **EPIC-05 — After EPIC-04:**
-`PLAT-004` `PLAT-005` `PLAT-006` `PLAT-007` `PLAT-008` `PLAT-009` `PLAT-010` `PLAT-011` `PLAT-012` `PLAT-013` `PLAT-014`
+`PLAT-009` `PLAT-010` `PLAT-011` `PLAT-012` `PLAT-013` `PLAT-014`
 
 ---
 
