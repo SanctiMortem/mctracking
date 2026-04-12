@@ -134,7 +134,7 @@ No aplica — contenido nuevo.
 
 ## Commits
 
-_TBD — pendiente commit_
+- `062a7c4` feat(platform): implement PLAT-009 — i18n EN+ES strings complete (EPIC-05)
 
 ---
 
