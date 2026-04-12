@@ -35,6 +35,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         faceIDPermission: 'Allow MTG Commander Tracker to use Face ID.',
       },
     ],
+    [
+      'react-native-google-mobile-ads',
+      {
+        androidAppId: process.env.ADMOB_ANDROID_APP_ID ?? 'ca-app-pub-PLACEHOLDER~PLACEHOLDER',
+        iosAppId: process.env.ADMOB_IOS_APP_ID ?? 'ca-app-pub-PLACEHOLDER~PLACEHOLDER',
+        userTrackingUsageDescription: 'This identifier will be used to personalize ads.',
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,

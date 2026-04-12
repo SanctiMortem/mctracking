@@ -33,6 +33,14 @@
         {
           "faceIDPermission": "Allow MTG Commander Tracker to use Face ID."
         }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-PLACEHOLDER~PLACEHOLDER",
+          "iosAppId": "ca-app-pub-PLACEHOLDER~PLACEHOLDER",
+          "userTrackingUsageDescription": "This identifier will be used to personalize ads."
+        }
       ]
     ],
     "experiments": {

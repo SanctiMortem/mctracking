@@ -21,6 +21,7 @@ import { DeckStatRow } from '@/components/match/DeckStatRow';
 import { PlayerRankingRow } from '@/components/stats/PlayerRankingRow';
 import { ColorChips } from '@/components/ui/ColorChips';
 import { useGlobalStats } from '@/hooks/useGlobalStats';
+import { BannerAdWrapper } from '@/components/ads/BannerAdWrapper';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
 const AMBER = '#F39C12';
@@ -160,6 +161,9 @@ export default function StatsScreen() {
           </View>
         </View>
       )}
+
+      {/* Banner ad — hidden for premium users (BR-AUTH-04) */}
+      <BannerAdWrapper />
     </ScrollView>
   );
 }

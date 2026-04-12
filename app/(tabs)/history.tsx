@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { MatchCard, MatchCardSkeleton } from '@/components/match/MatchCard';
 import { MatchHistoryFilterBar } from '@/components/match/MatchHistoryFilterBar';
 import { useMatchHistory } from '@/hooks/useMatchHistory';
+import { BannerAdWrapper } from '@/components/ads/BannerAdWrapper';
 import { colors, spacing, typography } from '@/styles/tokens';
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
@@ -113,6 +114,9 @@ export default function HistoryScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {/* Banner ad — hidden for premium users (BR-AUTH-04) */}
+      <BannerAdWrapper />
     </View>
   );
 }
