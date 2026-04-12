@@ -143,7 +143,7 @@ No aplica — funcionalidad nueva.
 
 ## Commits
 
-_Ver git log_
+`984dbb8` feat(platform): implement SCR-018 Settings screen + useSettings hook (PLAT-008)
 
 ---
 
