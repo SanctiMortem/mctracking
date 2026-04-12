@@ -14,7 +14,7 @@ import {
   cleanupTestData,
   TEST_USER_ID,
   TEST_USER_ID_2,
-} from '../helpers/seed';
+} from '../../helpers/seed';
 
 type Seed = Awaited<ReturnType<typeof seedTestData>>;
 let seed: Seed;
