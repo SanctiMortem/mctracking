@@ -13,6 +13,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: false,
     bundleIdentifier: 'com.aboutagency.mtgtracker',
     buildNumber: '1',
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
   android: {
     adaptiveIcon: {
@@ -45,7 +48,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   extra: {
     eas: {
-      projectId: process.env.EAS_PROJECT_ID ?? 'PLACEHOLDER',
+      projectId: process.env.EAS_PROJECT_ID ?? '3825a377-c05c-45a2-afff-2a4bd1eccc11',
     },
   },
 });
