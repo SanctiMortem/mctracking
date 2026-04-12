@@ -166,6 +166,8 @@ eas build --platform ios --profile development
 
 ## Commits
 
+`edc50fa` feat(platform): implement PLAT-011 — Ads Integration (AdMob free tier)
+
 ---
 
 _Creado: 2026-04-10_
