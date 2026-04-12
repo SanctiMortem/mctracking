@@ -46,7 +46,7 @@ export async function POST(req: Request) {
   }
 
   // Validate receipt with the appropriate store
-  let valid = false;
+  let valid: boolean | { serverError: true } = false;
   try {
     if (platform === 'ios') {
       valid = await validateAppleReceipt(receipt);
@@ -57,6 +57,14 @@ export async function POST(req: Request) {
     return Response.json(
       { error: 'PURCHASE_VALIDATION_ERROR', message: 'Receipt validation failed' },
       { status: 502 },
+    );
+  }
+
+  // Server misconfiguration (e.g. missing APPLE_SHARED_SECRET) → 503
+  if (typeof valid === 'object' && 'serverError' in valid) {
+    return Response.json(
+      { error: 'SERVICE_UNAVAILABLE', message: 'Receipt validation service is unavailable' },
+      { status: 503 },
     );
   }
 

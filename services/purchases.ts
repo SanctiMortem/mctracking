@@ -25,7 +25,8 @@ const APPLE_VERIFY_URL_SANDBOX = 'https://sandbox.itunes.apple.com/verifyReceipt
 export type VerifyResult =
   | { data: Pick<UserSettings, 'premium'>; alreadyPremium: boolean }
   | { invalidReceipt: true }
-  | { notFound: true };
+  | { notFound: true }
+  | { serverError: true };
 
 // ─────────────────────────────────────────────
 // DB update
@@ -67,8 +68,12 @@ type AppleVerifyResponse = {
  *
  * Requires env var: APPLE_SHARED_SECRET
  */
-export async function validateAppleReceipt(receipt: string): Promise<boolean> {
-  const sharedSecret = process.env.APPLE_SHARED_SECRET ?? '';
+export async function validateAppleReceipt(receipt: string): Promise<boolean | { serverError: true }> {
+  const sharedSecret = process.env.APPLE_SHARED_SECRET;
+  if (!sharedSecret) {
+    console.error('[purchases] APPLE_SHARED_SECRET env var is not set');
+    return { serverError: true };
+  }
   const payload = JSON.stringify({
     'receipt-data': receipt,
     password: sharedSecret,
@@ -91,6 +96,7 @@ async function postAppleVerify(url: string, payload: string): Promise<AppleVerif
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: payload,
+    signal: AbortSignal.timeout(8000),
   });
   return res.json() as Promise<AppleVerifyResponse>;
 }
@@ -124,6 +130,7 @@ export async function validateGoogleReceipt(purchaseToken: string): Promise<bool
 
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(8000),
   });
   if (!res.ok) return false;
 
@@ -172,7 +179,8 @@ async function getGoogleAccessToken(serviceAccountKeyB64: string): Promise<strin
 
     const tokenData = (await tokenRes.json()) as { access_token?: string };
     return tokenData.access_token ?? null;
-  } catch {
+  } catch (err) {
+    console.error('[purchases] getGoogleAccessToken failed:', err);
     return null;
   }
 }

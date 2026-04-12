@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import '../constants/i18n';
 import { GuestProvider, useGuest } from '@/contexts/GuestContext';
 import { GroupProvider } from '@/contexts/GroupContext';
+import { colors } from '@/styles/tokens';
 
 // SecureStore token cache for Clerk — persists session across app restarts.
 const tokenCache = {
@@ -39,7 +40,7 @@ function AuthGate() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#0D0D0F' },
+        contentStyle: { backgroundColor: colors.background.primary },
         animation: 'slide_from_right',
       }}
     >

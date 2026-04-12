@@ -1,0 +1,107 @@
+# E2E-003 — Full 4-Player Match
+# Tool: Maestro (https://maestro.mobile.dev)
+# Run: maestro test e2e/full-match.spec.yaml
+#
+# Preconditions:
+#   - App running with authenticated user
+#   - At least 4 players and 4 distinct decks created
+#   - No deck is in an in_progress match
+#
+# US-010..018, US-024..028, US-030, US-031
+# BR-MATCH-01..08, BR-TRACK-01..07
+
+---
+appId: com.aboutagency.mtgtracker
+
+# ── Scenario 3.1: Setup and start match ───────────────────────────────────
+
+- launchApp:
+    clearState: false
+
+# Navigate to Match Setup (SCR-007)
+- tapOn: "Nueva Partida"
+- assertVisible: "Configurar Partida"
+
+# Add 4 players
+- tapOn: "Agregar Jugador"
+- tapOn: "Jugador 1"
+- tapOn: "Agregar Jugador"
+- tapOn: "Jugador 2"
+- tapOn: "Agregar Jugador"
+- tapOn: "Jugador 3"
+- tapOn: "Agregar Jugador"
+- tapOn: "Jugador 4"
+
+# Start match
+- tapOn: "Iniciar Partida"
+
+# Verify tracker screen with 4 players at 40 life
+- assertVisible: "40"
+
+# ── Scenario 3.2: Life tracking with debounce ─────────────────────────────
+
+# 3 rapid taps on player 1's life decrement
+- tapOn:
+    id: "life-decrement-player-1"
+- tapOn:
+    id: "life-decrement-player-1"
+- tapOn:
+    id: "life-decrement-player-1"
+- assertVisible: "37"
+
+# ── Scenario 3.3: Commander damage ────────────────────────────────────────
+
+# Open commander damage UI for player 2
+- tapOn:
+    id: "commander-damage-player-2"
+# Select source commander (player 1's commander)
+- tapOn:
+    id: "commander-source-player-1"
+# Add 7 damage
+- tapOn:
+    id: "damage-increment"
+    repeat: 7
+- tapOn: "Aplicar"
+
+# ── Scenario 3.4: Poison counters ─────────────────────────────────────────
+
+- tapOn:
+    id: "poison-increment-player-3"
+    repeat: 3
+- assertVisible: "3"
+
+# ── Scenario 3.5: Close match with winner ─────────────────────────────────
+
+- tapOn: "Terminar Partida"
+- assertVisible: "Declarar ganador"
+
+- tapOn: "Declarar ganador"
+- tapOn: "Jugador 1"
+- tapOn: "Commander Damage"
+- tapOn: "Confirmar"
+
+# Verify results screen
+- assertVisible: "Partida completada"
+- assertVisible: "Jugador 1"
+- assertVisible: "Commander Damage"
+
+# ── Scenario 3.6: New match closed as draw ────────────────────────────────
+
+# Go back to home and start another match
+- tapOn: "Inicio"
+- tapOn: "Nueva Partida"
+
+# Quick 2-player setup
+- tapOn: "Agregar Jugador"
+- tapOn: "Jugador 1"
+- tapOn: "Agregar Jugador"
+- tapOn: "Jugador 2"
+- tapOn: "Iniciar Partida"
+
+# Close as draw
+- tapOn: "Terminar Partida"
+- tapOn: "Empate"
+- tapOn: "Confirmar"
+
+# Verify draw result
+- assertVisible: "Empate"

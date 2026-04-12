@@ -1,0 +1,88 @@
+# E2E-004 — Tracking with Undo
+# Tool: Maestro (https://maestro.mobile.dev)
+# Run: maestro test e2e/undo-tracking.spec.yaml
+#
+# Preconditions:
+#   - App running with authenticated user
+#   - Match in progress with 2 players, life 40
+#   OR will create a new match for testing
+#
+# US-033, US-034 | BR-TRACK-11
+
+---
+appId: com.aboutagency.mtgtracker
+
+# ── Setup: Create a 2-player match ────────────────────────────────────────
+
+- launchApp:
+    clearState: false
+
+- tapOn: "Nueva Partida"
+
+# Add 2 players
+- tapOn: "Agregar Jugador"
+- tapOn: "Jugador 1"
+- tapOn: "Agregar Jugador"
+- tapOn: "Jugador 2"
+- tapOn: "Iniciar Partida"
+
+# Verify starting state
+- assertVisible: "40"
+
+# ── Scenario 4.1: Undo last event (Happy Path) ───────────────────────────
+
+# Reduce player 1 life by 5
+- tapOn:
+    id: "life-decrement-player-1"
+    repeat: 5
+- assertVisible: "35"
+
+# Reduce player 1 life by 3 more
+- tapOn:
+    id: "life-decrement-player-1"
+    repeat: 3
+- assertVisible: "32"
+
+# Undo — should restore to 35
+- tapOn:
+    id: "btn-undo"
+- assertVisible: "35"
+- assertVisible: "Último cambio deshecho"
+
+# ── Scenario 4.2: Multiple sequential undos ───────────────────────────────
+
+# Undo again — should restore to 40
+- tapOn:
+    id: "btn-undo"
+- assertVisible: "40"
+
+# ── Scenario 4.3: Undo when no more events ───────────────────────────────
+
+# Undo when there are no more events
+- tapOn:
+    id: "btn-undo"
+- assertVisible: "No hay nada que deshacer"
+- assertVisible: "40"
+
+# ── Scenario 4.4: Undo commander damage ───────────────────────────────────
+
+# Add commander damage to player 2
+- tapOn:
+    id: "commander-damage-player-2"
+- tapOn:
+    id: "commander-source-player-1"
+- tapOn:
+    id: "damage-increment"
+    repeat: 7
+- tapOn: "Aplicar"
+
+# Undo commander damage
+- tapOn:
+    id: "btn-undo"
+# Commander damage should be reverted
+
+# ── Cleanup: Close the match ─────────────────────────────────────────────
+
+- tapOn: "Terminar Partida"
+- tapOn: "Abandonar"
+- tapOn: "Confirmar"

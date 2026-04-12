@@ -4,7 +4,8 @@
  */
 
 jest.mock('react-native-google-mobile-ads', () => ({
-  BannerAd: () => null,
+  // Return a real View so toJSON() is non-null when the ad renders
+  BannerAd: () => require('react').createElement('View', { testID: 'banner-ad' }),
   BannerAdSize: { ANCHORED_ADAPTIVE_BANNER: 'ANCHORED_ADAPTIVE_BANNER' },
   TestIds: { ADAPTIVE_BANNER: 'ca-app-pub-test/banner' },
 }));

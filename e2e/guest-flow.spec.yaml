@@ -1,0 +1,58 @@
+# E2E-007 — Guest Flow (no account)
+# Tool: Maestro (https://maestro.mobile.dev)
+# Run: maestro test e2e/guest-flow.spec.yaml
+#
+# Preconditions:
+#   - App in clean state (no active session)
+#
+# US-037, US-038, US-039 | BR-AUTH-01
+
+---
+appId: com.aboutagency.mtgtracker
+
+# ── Scenario 7.1: Access as guest ─────────────────────────────────────────
+
+- clearState
+- launchApp
+
+# Onboarding screen
+- assertVisible: "Bienvenido"
+- assertVisible: "Continuar como invitado"
+
+# Enter guest mode
+- tapOn: "Continuar como invitado"
+
+# Guest tracker is accessible
+- assertVisible: "Tracker"
+
+# ── Scenario 7.2: Guest limitations ───────────────────────────────────────
+
+# History not accessible in guest mode
+- tapOn: "Historial"
+- assertVisible: "Crea una cuenta para ver tu historial"
+- assertVisible: "Registrarse"
+
+# Stats not accessible in guest mode
+- tapOn: "Estadísticas"
+- assertVisible: "Crea una cuenta"
+
+# Groups not accessible
+- tapOn: "Grupos"
+- assertVisible: "Crea una cuenta"
+
+# ── Scenario 7.3: Guest can start local match ─────────────────────────────
+
+# Navigate back to tracker
+- tapOn: "Tracker"
+- tapOn: "Nueva Partida"
+
+# Guest match setup — simplified with inline player names
+- assertVisible: "Tracker"
+
+# ── Scenario 7.4: Upgrade from guest to account ──────────────────────────
+
+# Tap register CTA from any restricted screen
+- tapOn: "Registrarse"
+
+# Should show registration flow (same as E2E-001)
+- assertVisible: "Crear cuenta"

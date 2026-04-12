@@ -1,0 +1,77 @@
+# E2E-001 — Onboarding + Account Creation
+# Tool: Maestro (https://maestro.mobile.dev)
+# Run: maestro test e2e/onboarding.spec.yaml
+#
+# Preconditions:
+#   - App installed in clean state (first launch)
+#   - Test email available: e2e-test-001@mtgtracker.test
+#   - No Clerk account exists for that email
+#
+# US-001, US-040, US-041 | BR-AUTH-01, BR-AUTH-02, BR-AUTH-03
+
+---
+appId: com.aboutagency.mtgtracker
+
+# ── Scenario 1.1: Registration with Email (Happy Path) ────────────────────
+
+- clearState
+- launchApp
+
+# Onboarding screen visible
+- assertVisible: "Bienvenido"
+- assertVisible: "Crear cuenta"
+- assertVisible: "Continuar como invitado"
+
+# Tap create account
+- tapOn: "Crear cuenta"
+- assertVisible: "Crear cuenta"
+
+# Fill registration form
+- tapOn:
+    id: "input-email"
+- typeText: "e2e-test-001@mtgtracker.test"
+- tapOn:
+    id: "input-password"
+- typeText: "TestPassword123!"
+- tapOn: "Registrarse"
+
+# Email verification screen
+- assertVisible: "Verifica tu email"
+# Note: Email verification requires test inbox integration.
+# In CI, use Clerk test tokens or magic link.
+
+# ── Scenario 1.2: Login with existing account ─────────────────────────────
+
+- clearState
+- launchApp
+
+- assertVisible: "Bienvenido"
+- tapOn: "Ya tengo cuenta"
+
+- tapOn:
+    id: "input-email"
+- typeText: "e2e-test-001@mtgtracker.test"
+- tapOn:
+    id: "input-password"
+- typeText: "TestPassword123!"
+- tapOn: "Iniciar sesión"
+
+# Should navigate to Home
+- assertNotVisible: "Bienvenido"
+
+# ── Scenario 1.3: Incorrect credentials ───────────────────────────────────
+
+- clearState
+- launchApp
+
+- tapOn: "Ya tengo cuenta"
+- tapOn:
+    id: "input-email"
+- typeText: "e2e-test-001@mtgtracker.test"
+- tapOn:
+    id: "input-password"
+- typeText: "WrongPassword!"
+- tapOn: "Iniciar sesión"
+
+# Should show error and stay on login
+- assertVisible: "Credenciales incorrectas"

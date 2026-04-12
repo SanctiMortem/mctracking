@@ -35,6 +35,7 @@ function buildDeckSelect() {
       name: decks.name,
       commanderId: decks.commanderId,
       commanderId2: decks.commanderId2,
+      groupId: decks.groupId,
       description: decks.description,
       createdBy: decks.createdBy,
       deletedAt: decks.deletedAt,
