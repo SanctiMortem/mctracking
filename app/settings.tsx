@@ -22,6 +22,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 
 import { useSettings } from '@/hooks/useSettings';
+import { useIAP } from '@/hooks/useIAP';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 import i18n from '@/services/i18n';
 
@@ -200,6 +201,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
   const { settings, loading, error, saving, refresh, patchSetting } = useSettings();
+  const { purchase, restore, isPurchasing, isRestoring } = useIAP(refresh);
 
   const [signingOut, setSigningOut] = useState(false);
 
@@ -362,13 +364,27 @@ export default function SettingsScreen() {
               <Text style={styles.premiumActive}>Active ✓</Text>
             </View>
           ) : (
-            <LinkRow
-              label="Remove ads (Premium)"
-              onPress={() => {
-                // PLAT-012 — IAP integration placeholder
-                Alert.alert('Premium', 'One-time purchase coming soon (PLAT-012).');
-              }}
-            />
+            <>
+              <Pressable
+                style={styles.row}
+                onPress={isPurchasing || isRestoring ? undefined : purchase}
+                accessibilityRole="button"
+              >
+                <Text style={styles.rowLabel}>
+                  {isPurchasing ? 'Processing…' : 'Remove ads (Premium)'}
+                </Text>
+                {!isPurchasing && <Text style={styles.chevron}>›</Text>}
+              </Pressable>
+              <Pressable
+                style={styles.row}
+                onPress={isPurchasing || isRestoring ? undefined : restore}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.rowLabel, styles.restoreText]}>
+                  {isRestoring ? 'Restoring…' : 'Restore purchases'}
+                </Text>
+              </Pressable>
+            </>
           );
 
         case 'signout':
@@ -394,6 +410,10 @@ export default function SettingsScreen() {
       handleSignOut,
       signingOut,
       router,
+      purchase,
+      restore,
+      isPurchasing,
+      isRestoring,
     ],
   );
 
@@ -542,6 +562,10 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   dangerText: { color: colors.status.error },
+  restoreText: {
+    color: colors.text.muted,
+    fontSize: typography.size['body-sm'],
+  },
   premiumActive: {
     color: colors.status.success,
     fontSize: typography.size['body-sm'],
