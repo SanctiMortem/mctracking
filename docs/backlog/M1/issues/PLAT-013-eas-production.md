@@ -160,6 +160,8 @@ eas submit --platform ios --profile production
 
 ## Commits
 
+`c5856ac` feat(platform): implement PLAT-013 — EAS Build Production (iOS + Android)
+
 ---
 
 _Creado: 2026-04-10_
