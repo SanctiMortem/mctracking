@@ -375,5 +375,20 @@
     "commanderDamageThreshold": "⚔️ ¡21 Commander Damage!",
     "poisonThreshold": "☠️ ¡10 Poison Counters!",
     "lowLife": "❤️ Vida baja"
+  },
+  "home": {
+    "activeMatchTitle": "Partida en curso",
+    "activeMatchResume": "Toca para retomar",
+    "activeMatchBannerA11y": "Partida activa — toca para retomar",
+    "contextPersonal": "Personal",
+    "contextSwitcherTitle": "Contexto activo",
+    "contextSwitcherA11y": "Cambiar contexto de grupo activo",
+    "recentMatchesTitle": "Últimas partidas",
+    "seeAll": "Ver todas ({{count}})",
+    "statMatchesPlayed": "partidas jugadas",
+    "statWinRate": "win rate",
+    "statNoMatches": "Sin partidas aún",
+    "emptyTitle": "Sin partidas aún",
+    "emptyCtaButton": "Inicia tu primera partida"
   }
 }

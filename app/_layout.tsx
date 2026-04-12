@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 // i18n init (SETUP-006)
 import '../constants/i18n';
 import { GuestProvider, useGuest } from '@/contexts/GuestContext';
+import { GroupProvider } from '@/contexts/GroupContext';
 
 // SecureStore token cache for Clerk — persists session across app restarts.
 const tokenCache = {
@@ -34,6 +35,7 @@ function AuthGate() {
   }
 
   return (
+    <GroupProvider>
     <Stack
       screenOptions={{
         headerShown: false,
@@ -64,6 +66,7 @@ function AuthGate() {
       <Stack.Screen name="groups" />
       <Stack.Screen name="settings" />
     </Stack>
+    </GroupProvider>
   );
 }
 
