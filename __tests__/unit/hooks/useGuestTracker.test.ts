@@ -34,6 +34,12 @@ describe('useGuestTracker — isDirty', () => {
   it.todo('is false after all events are undone via undoLastEvent');
 });
 
+describe('useGuestTracker — isolation (no API calls)', () => {
+  it.todo('recordEvent does not call fetch or any /api/* endpoint');
+  it.todo('undoLastEvent does not call fetch or any /api/* endpoint');
+  it.todo('all state mutations are in-memory only (no side effects outside the hook)');
+});
+
 describe('GuestScreen — confirm dialog', () => {
   it.todo('does not show confirm dialog when isDirty=false (no changes made)');
   it.todo('shows confirm dialog with "Discard" option when isDirty=true and exit is pressed');

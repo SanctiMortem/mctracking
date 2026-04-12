@@ -226,3 +226,54 @@ describe.skip('POST /api/groups/join', () => {
     // Expect 404 NOT_FOUND
   });
 });
+
+// ─────────────────────────────────────────────
+// PLAT-012: POST /purchases/verify
+// ─────────────────────────────────────────────
+
+describe.skip('POST /api/purchases/verify', () => {
+  it('returns 200 with premium=true when iOS receipt is valid (BR-AUTH-04)', async () => {
+    // Seed user_settings with premium=false
+    // Call POST /purchases/verify with { receipt: '<valid-base64>', platform: 'ios' }
+    // Mock validateAppleReceipt to return true
+    // Expect 200 { success: true, data: { premium: true } }
+    // Expect user_settings.premium = true in DB
+  });
+
+  it('returns 200 with premium=true when Android receipt is valid (BR-AUTH-04)', async () => {
+    // Seed user_settings with premium=false
+    // Call POST /purchases/verify with { receipt: '<valid-token>', platform: 'android' }
+    // Mock validateGoogleReceipt to return true
+    // Expect 200 { success: true, data: { premium: true } }
+    // Expect user_settings.premium = true in DB
+  });
+
+  it('returns 400 PURCHASE_RECEIPT_INVALID for an invalid receipt', async () => {
+    // Call POST /purchases/verify with { receipt: 'bad-receipt', platform: 'ios' }
+    // Mock validateAppleReceipt to return false
+    // Expect 400 { error: 'PURCHASE_RECEIPT_INVALID' }
+    // Expect user_settings.premium unchanged (still false)
+  });
+
+  it('is idempotent — returns 200 without error when user is already premium', async () => {
+    // Seed user_settings with premium=true
+    // Call POST /purchases/verify with a valid receipt
+    // Expect 200 { success: true, data: { premium: true } }
+    // Expect only one user_settings row (no duplicates)
+  });
+
+  it('returns 401 without Clerk token', async () => {
+    // Call POST /purchases/verify without Authorization header
+    // Expect 401 { error: 'Unauthorized', code: 'UNAUTHORIZED' }
+  });
+
+  it('returns 400 VALIDATION_ERROR when receipt is missing', async () => {
+    // Call POST /purchases/verify with { platform: 'ios' } (no receipt)
+    // Expect 400 { error: 'VALIDATION_ERROR' }
+  });
+
+  it('returns 400 VALIDATION_ERROR when platform is not ios or android', async () => {
+    // Call POST /purchases/verify with { receipt: 'abc', platform: 'web' }
+    // Expect 400 { error: 'VALIDATION_ERROR' }
+  });
+});
