@@ -4,7 +4,7 @@
 > **Priority:** P1
 > **Effort:** S
 > **Story Points:** 2
-> **Status:** 📋 Backlog
+> **Status:** ✅ Done
 > **Epic:** [EPIC-05-PLATFORM](../epics/EPIC-05-PLATFORM.md)
 > **Skills:** `domains/api`
 > **Agents:** `mobile-developer`
@@ -108,13 +108,57 @@ No aplica.
 
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
-| — | — | — |
+| 2026-04-12 | Bundle identifier cambiado a `com.aboutagency.mtgtracker` | Alinear con branding del proyecto (mtgtracker vs mtgcommander anterior) |
+| 2026-04-12 | `distribution: "store"` en producción (no `autoIncrement`) | EAS requiere `distribution: "store"` explícito para builds de App Store / Play Store |
+| 2026-04-12 | `ios.resourceClass: "m-medium"` | Build más rápido en EAS para producción iOS |
+| 2026-04-12 | `android.buildType: "app-bundle"` | `.aab` requerido por Google Play Store (no `.apk`) |
+| 2026-04-12 | `version: "1.0.0"`, `buildNumber: "1"`, `versionCode: 1` | Primer release oficial del milestone M1 |
+
+### AC Coverage
+
+| AC | Estado | Nota |
+|----|--------|------|
+| `eas.json` production con `distribution: "store"` | ✅ | `eas.json` actualizado |
+| iOS: `ios.resourceClass: "m-medium"` | ✅ | `eas.json` actualizado |
+| Android: `buildType: "app-bundle"` | ✅ | `eas.json` actualizado |
+| Bundle ID `com.aboutagency.mtgtracker` en iOS | ✅ | `app.json` + `app.config.ts` |
+| Package `com.aboutagency.mtgtracker` en Android | ✅ | `app.json` + `app.config.ts` |
+| `version: "1.0.0"`, `buildNumber: "1"`, `versionCode: 1` | ✅ | `app.json` + `app.config.ts` |
+| EAS secrets de producción | ⏳ Manual | `eas secret:create` con valores reales |
+| Apple Developer: provisioning profile | ⏳ Manual | Requiere Apple Developer Program |
+| iOS build → TestFlight | ⏳ Manual | `eas build --platform ios --profile production` |
+| Android keystore + `.aab` → Play Store | ⏳ Manual | `eas build --platform android --profile production` |
+| Smoke test TestFlight | ⏳ Manual | Post-build |
+
+### Pasos Manuales Pendientes
+
+```bash
+# 1. Registrar bundle ID en Apple Developer Portal
+#    com.aboutagency.mtgtracker → App Identifiers
+
+# 2. Configurar EAS secrets de producción
+eas secret:create --scope project --name DATABASE_URL --value "<neon-prod-url>"
+eas secret:create --scope project --name CLERK_PUBLISHABLE_KEY --value "<clerk-prod-key>"
+eas secret:create --scope project --name CLERK_SECRET_KEY --value "<clerk-prod-secret>"
+
+# 3. Vincular EAS project ID real (reemplazar PLACEHOLDER en app.json/app.config.ts)
+eas project:info  # obtener projectId
+
+# 4. Build iOS production
+eas build --platform ios --profile production
+
+# 5. Build Android production
+eas build --platform android --profile production
+
+# 6. Upload a TestFlight (tras build exitoso)
+eas submit --platform ios --profile production
+
+# 7. Smoke test en dispositivo físico
+```
 
 ---
 
 ## Commits
-
-_Ninguno aún_
 
 ---
 

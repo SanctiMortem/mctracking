@@ -17,7 +17,13 @@
       }
     },
     "production": {
-      "autoIncrement": true,
+      "distribution": "store",
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      },
       "env": {
         "APP_ENV": "production"
       }

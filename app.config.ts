@@ -4,21 +4,23 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'MTG Commander Tracker',
   slug: 'mtg-commander-tracker',
-  version: '0.1.0',
+  version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'mtgtracker',
   userInterfaceStyle: 'dark',
   ios: {
     supportsTablet: false,
-    bundleIdentifier: 'com.aboutagency.mtgcommander',
+    bundleIdentifier: 'com.aboutagency.mtgtracker',
+    buildNumber: '1',
   },
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/images/adaptive-icon.png',
       backgroundColor: '#0D0D0F',
     },
-    package: 'com.aboutagency.mtgcommander',
+    package: 'com.aboutagency.mtgtracker',
+    versionCode: 1,
   },
   web: {
     bundler: 'metro',
