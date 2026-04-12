@@ -43,6 +43,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     'expo-iap',
+    'expo-web-browser',
   ],
   experiments: {
     typedRoutes: true,

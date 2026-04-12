@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "mtgtracker",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.aboutagency.mtgtracker",
@@ -51,7 +50,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "PLACEHOLDER"
+        "projectId": "3825a377-c05c-45a2-afff-2a4bd1eccc11"
       }
     }
   }
