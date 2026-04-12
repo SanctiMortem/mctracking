@@ -34,14 +34,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         faceIDPermission: 'Allow MTG Commander Tracker to use Face ID.',
       },
     ],
-    [
-      'react-native-google-mobile-ads',
-      {
-        androidAppId: process.env.ADMOB_ANDROID_APP_ID ?? 'ca-app-pub-PLACEHOLDER~PLACEHOLDER',
-        iosAppId: process.env.ADMOB_IOS_APP_ID ?? 'ca-app-pub-PLACEHOLDER~PLACEHOLDER',
-        userTrackingUsageDescription: 'This identifier will be used to personalize ads.',
-      },
-    ],
+    // react-native-google-mobile-ads disabled until real AdMob IDs are configured.
+    // The SDK crashes on launch with placeholder IDs (GADInvalidInitializationException).
     'expo-iap',
     'expo-web-browser',
   ],
