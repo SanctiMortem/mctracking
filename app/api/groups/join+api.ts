@@ -4,8 +4,7 @@
  * BR-GROUP-02: membership created; history preserved.
  * BR-GROUP-05: invite code expiration validated.
  */
-// @ts-expect-error — @clerk/clerk-expo/server types not yet bundled; runtime works correctly
-import { getAuth } from '@clerk/clerk-expo/server';
+import { getAuth } from '@/services/auth';
 
 import { joinGroup } from '@/services/groups';
 

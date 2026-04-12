@@ -20,16 +20,13 @@ import {
 
 import { useTranslation } from 'react-i18next';
 
-import type { Commander } from '@/db/index';
 import type { DeckWithCommanders } from '@/services/decks';
-import { ColorChips } from '@/components/ui/ColorChips';
-import { CommanderSelector } from '@/components/decks/CommanderSelector';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
 interface DeckFormProps {
   visible: boolean;
   deck?: DeckWithCommanders | null;
-  commanders: Commander[];
+  commanders?: unknown[];
   onSave: (data: {
     name: string;
     commander_id: string;
@@ -39,13 +36,11 @@ interface DeckFormProps {
   onClose: () => void;
 }
 
-export function DeckForm({ visible, deck, commanders, onSave, onClose }: DeckFormProps) {
+export function DeckForm({ visible, deck, onSave, onClose }: DeckFormProps) {
   const { t } = useTranslation();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [commander, setCommander] = useState<Commander | null>(null);
-  const [commander2, setCommander2] = useState<Commander | null>(null);
-  const [selectorOpen, setSelectorOpen] = useState<'primary' | 'partner' | null>(null);
+  const [commanderName, setCommanderName] = useState('');
   const [saving, setSaving] = useState(false);
 
   // Populate when editing
@@ -53,34 +48,17 @@ export function DeckForm({ visible, deck, commanders, onSave, onClose }: DeckFor
     if (deck) {
       setName(deck.name);
       setDescription(deck.description ?? '');
-      setCommander(deck.commander as Commander);
-      setCommander2((deck.commander2 as Commander | null) ?? null);
+      setCommanderName((deck as { commander?: { name?: string } }).commander?.name ?? '');
     } else {
       setName('');
       setDescription('');
-      setCommander(null);
-      setCommander2(null);
+      setCommanderName('');
     }
   }, [deck, visible]);
-
-  // Reset partner if primary commander changed to non-partner
-  useEffect(() => {
-    if (commander && !commander.isPartner) {
-      setCommander2(null);
-    }
-  }, [commander]);
 
   async function handleSave() {
     if (!name.trim()) {
       Alert.alert(t('deck.nameRequired'), t('deck.nameRequiredMessage'));
-      return;
-    }
-    if (!commander) {
-      Alert.alert(t('deck.commanderRequired'), t('deck.commanderRequiredMessage'));
-      return;
-    }
-    if (commander.isPartner && !commander2) {
-      Alert.alert(t('deck.partnerRequired'), t('deck.partnerRequiredMessage'));
       return;
     }
 
@@ -88,18 +66,14 @@ export function DeckForm({ visible, deck, commanders, onSave, onClose }: DeckFor
     try {
       await onSave({
         name: name.trim(),
-        commander_id: commander.id,
-        commander_id_2: commander2?.id ?? null,
+        commander_id: commanderName.trim() || 'placeholder',
+        commander_id_2: null,
         description: description.trim() || null,
       });
       onClose();
     } catch (e: unknown) {
-      const code = (e as { code?: string }).code;
       const msg = e instanceof Error ? e.message : t('common.error');
-      Alert.alert(
-        code === 'CONFLICT' ? t('common.error') : t('common.error'),
-        msg,
-      );
+      Alert.alert(t('common.error'), msg);
     } finally {
       setSaving(false);
     }
@@ -128,50 +102,16 @@ export function DeckForm({ visible, deck, commanders, onSave, onClose }: DeckFor
               returnKeyType="next"
             />
 
-            {/* Primary Commander */}
+            {/* Commander (plain text for now) */}
             <Text style={styles.label}>{t('game.commander')}</Text>
-            <Pressable
-              style={[styles.selectorBtn, !commander && styles.selectorBtnEmpty]}
-              onPress={() => setSelectorOpen('primary')}
-            >
-              {commander ? (
-                <View style={styles.selectorContent}>
-                  <View style={styles.selectorInfo}>
-                    <Text style={styles.selectorName} numberOfLines={1}>{commander.name}</Text>
-                    <ColorChips selected={commander.colors ?? []} readonly />
-                  </View>
-                  {commander.isPartner && (
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>{t('commanders.partner')}</Text>
-                    </View>
-                  )}
-                </View>
-              ) : (
-                <Text style={styles.selectorPlaceholder}>{t('deck.selectCommander')}</Text>
-              )}
-            </Pressable>
-
-            {/* Partner Commander (conditional) */}
-            {commander?.isPartner && (
-              <>
-                <Text style={styles.label}>{t('deck.partnerCommander')}</Text>
-                <Pressable
-                  style={[styles.selectorBtn, !commander2 && styles.selectorBtnEmpty, styles.selectorBtnPartner]}
-                  onPress={() => setSelectorOpen('partner')}
-                >
-                  {commander2 ? (
-                    <View style={styles.selectorContent}>
-                      <View style={styles.selectorInfo}>
-                        <Text style={styles.selectorName} numberOfLines={1}>{commander2.name}</Text>
-                        <ColorChips selected={commander2.colors ?? []} readonly />
-                      </View>
-                    </View>
-                  ) : (
-                    <Text style={styles.selectorPlaceholder}>{t('deck.selectPartner')}</Text>
-                  )}
-                </Pressable>
-              </>
-            )}
+            <TextInput
+              style={styles.input}
+              value={commanderName}
+              onChangeText={setCommanderName}
+              placeholder="Commander name (optional)"
+              placeholderTextColor={colors.text.muted}
+              returnKeyType="next"
+            />
 
             {/* Description */}
             <Text style={styles.label}>{t('deck.descriptionOptional')}</Text>
@@ -202,25 +142,6 @@ export function DeckForm({ visible, deck, commanders, onSave, onClose }: DeckFor
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Commander pickers (full-screen modals) */}
-      <CommanderSelector
-        visible={selectorOpen === 'primary'}
-        commanders={commanders}
-        selected={commander}
-        onSelect={setCommander}
-        onClose={() => setSelectorOpen(null)}
-        title={t('deck.selectCommander')}
-        excludeId={commander2?.id}
-      />
-      <CommanderSelector
-        visible={selectorOpen === 'partner'}
-        commanders={commanders}
-        selected={commander2}
-        onSelect={setCommander2}
-        onClose={() => setSelectorOpen(null)}
-        title={t('deck.selectPartner')}
-        excludeId={commander?.id}
-      />
     </>
   );
 }
@@ -268,39 +189,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing[2],
   },
   inputMultiline: { minHeight: 80 },
-  selectorBtn: {
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    marginBottom: spacing[2],
-  },
-  selectorBtnEmpty: { borderStyle: 'dashed' },
-  selectorBtnPartner: { borderColor: colors.accent.primary + '66' },
-  selectorContent: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
-  selectorInfo: { flex: 1, gap: spacing[1] },
-  selectorName: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
-  },
-  selectorPlaceholder: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-lg'],
-  },
-  badge: {
-    backgroundColor: colors.accent.primary + '33',
-    borderRadius: radius.xs,
-    paddingHorizontal: spacing[2],
-    paddingVertical: 2,
-  },
-  badgeText: {
-    color: colors.accent.primary,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
-  },
   actions: { flexDirection: 'row', gap: spacing[3], marginTop: spacing[2] },
   btnCancel: {
     flex: 1,

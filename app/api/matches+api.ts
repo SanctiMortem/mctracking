@@ -2,8 +2,7 @@
  * GET  /api/matches — paginated match history with filters (HIST-001, EPIC-04)
  * POST /api/matches — create a new match with 2-4 participants (MATCH-002, EPIC-02)
  */
-// @ts-expect-error — @clerk/clerk-expo/server types not yet bundled; runtime works correctly
-import { getAuth } from '@clerk/clerk-expo/server';
+import { getAuth } from '@/services/auth';
 
 import { createMatch, listMatches } from '@/services/matches';
 import type { ListMatchesFilters, ParticipantInput } from '@/services/matches';

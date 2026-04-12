@@ -8,8 +8,7 @@
  * BR-STATS-03: abandoned excluded from denominator.
  * BR-STATS-04: deck win rate is independent of which player piloted it.
  */
-// @ts-expect-error — @clerk/clerk-expo/server types not yet bundled; runtime works correctly
-import { getAuth } from '@clerk/clerk-expo/server';
+import { getAuth } from '@/services/auth';
 
 import { getDeckStats } from '@/services/stats';
 

@@ -10,8 +10,7 @@
  * BR-STATS-01: only completed matches counted.
  * BR-STATS-06: scope=1v1 restricts to matches with exactly 2 participants.
  */
-// @ts-expect-error — @clerk/clerk-expo/server types not yet bundled; runtime works correctly
-import { getAuth } from '@clerk/clerk-expo/server';
+import { getAuth } from '@/services/auth';
 
 import { getMatchupStats } from '@/services/stats';
 

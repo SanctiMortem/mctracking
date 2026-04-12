@@ -79,13 +79,19 @@ export function useMatchHistory(): UseMatchHistoryReturn {
   // Prevent concurrent loadMore calls
   const loadingMoreRef = useRef(false);
 
+  // Stable ref for getToken to avoid re-creating callbacks
+  const getTokenRef = useRef(getToken);
+  getTokenRef.current = getToken;
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
+
   const fetchPage = useCallback(async (
     currentFilters: HistoryFilters,
     offset: number,
     append: boolean,
   ) => {
     try {
-      const token = await getToken();
+      const token = await getTokenRef.current();
       const qs = buildQs(currentFilters, PAGE_SIZE, offset);
       const res = await apiFetch<ApiResponse>(`/api/matches${qs}`, 'GET', undefined, token ?? undefined);
       const page = res.data;
@@ -98,7 +104,7 @@ export function useMatchHistory(): UseMatchHistoryReturn {
     } catch (e) {
       setError((e as Error).message ?? 'Failed to load history.');
     }
-  }, [getToken]);
+  }, []); // stable — no deps, uses refs
 
   // Initial load + filter change
   useEffect(() => {
@@ -106,24 +112,25 @@ export function useMatchHistory(): UseMatchHistoryReturn {
     setLoading(true);
     setMatches([]);
     fetchPage(filters, 0, false).finally(() => setLoading(false));
-  }, [filters, fetchPage]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
 
   const refresh = useCallback(() => {
     offsetRef.current = 0;
     setLoading(true);
     setMatches([]);
-    fetchPage(filters, 0, false).finally(() => setLoading(false));
-  }, [filters, fetchPage]);
+    fetchPage(filtersRef.current, 0, false).finally(() => setLoading(false));
+  }, [fetchPage]);
 
   const loadMore = useCallback(() => {
     if (!hasMore || loadingMoreRef.current) return;
     loadingMoreRef.current = true;
     setLoadingMore(true);
-    fetchPage(filters, offsetRef.current, true).finally(() => {
+    fetchPage(filtersRef.current, offsetRef.current, true).finally(() => {
       setLoadingMore(false);
       loadingMoreRef.current = false;
     });
-  }, [hasMore, filters, fetchPage]);
+  }, [hasMore, fetchPage]);
 
   const setFilters = useCallback((f: HistoryFilters) => {
     setFiltersState(f);

@@ -6,8 +6,7 @@
  *
  * Optional body: { force?: boolean } — set force=true to regenerate even if current code is valid.
  */
-// @ts-expect-error — @clerk/clerk-expo/server types not yet bundled; runtime works correctly
-import { getAuth } from '@clerk/clerk-expo/server';
+import { getAuth } from '@/services/auth';
 
 import { getOrRegenerateInvite } from '@/services/groups';
 

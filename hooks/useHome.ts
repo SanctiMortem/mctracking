@@ -12,7 +12,7 @@
  *
  * PLAT-010 (EPIC-05)
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@clerk/clerk-expo';
 
@@ -82,12 +82,18 @@ export function useHome(activeContext: 'personal' | string): UseHomeReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Stable refs to avoid re-creating the callback
+  const getTokenRef = useRef(getToken);
+  getTokenRef.current = getToken;
+  const activeContextRef = useRef(activeContext);
+  activeContextRef.current = activeContext;
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const token = await getToken();
+      const token = await getTokenRef.current();
       const authHeader = token ?? undefined;
 
       const [sessionRes, historyRes, statsRes] = await Promise.all([
@@ -97,12 +103,13 @@ export function useHome(activeContext: 'personal' | string): UseHomeReturn {
       ]);
 
       // Active match — filter by active context (ADR-004)
+      const ctx = activeContextRef.current;
       const rawMatch = sessionRes.data.active_match ?? null;
       if (rawMatch) {
         const matchInContext =
-          activeContext === 'personal'
+          ctx === 'personal'
             ? rawMatch.group_id === null
-            : rawMatch.group_id === activeContext;
+            : rawMatch.group_id === ctx;
         setActiveMatch(matchInContext ? rawMatch : null);
       } else {
         setActiveMatch(null);
@@ -116,11 +123,11 @@ export function useHome(activeContext: 'personal' | string): UseHomeReturn {
     } finally {
       setLoading(false);
     }
-  }, [getToken, activeContext]);
+  }, []); // stable
 
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, activeContext]);
 
   return {
     activeMatch,

@@ -26,11 +26,15 @@ export function useSettings() {
   const [saving, setSaving] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Stable ref for getToken
+  const getTokenRef = useRef(getToken);
+  getTokenRef.current = getToken;
+
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const token = await getToken();
+      const token = await getTokenRef.current();
       const res = await apiFetch<SettingsResponse>('/api/settings', 'GET', undefined, token ?? undefined);
       setSettings(res.data);
     } catch (e) {
@@ -38,7 +42,7 @@ export function useSettings() {
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, []); // stable
 
   useEffect(() => {
     refresh();
@@ -63,7 +67,7 @@ export function useSettings() {
       debounceRef.current = setTimeout(async () => {
         setSaving(true);
         try {
-          const token = await getToken();
+          const token = await getTokenRef.current();
           const res = await apiFetch<SettingsResponse>(
             '/api/settings',
             'PATCH',
@@ -78,7 +82,7 @@ export function useSettings() {
         }
       }, 300);
     },
-    [getToken],
+    [],
   );
 
   useEffect(() => {

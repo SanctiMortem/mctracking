@@ -39,6 +39,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-iap',
     'expo-web-browser',
   ],
+  web: {
+    output: 'server',
+    bundler: 'metro',
+  },
   experiments: {
     typedRoutes: true,
   },

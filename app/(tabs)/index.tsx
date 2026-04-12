@@ -31,7 +31,7 @@ import { useGroupContext } from '@/contexts/GroupContext';
 import { useGroups } from '@/hooks/useGroups';
 import { useHome } from '@/hooks/useHome';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 // ─── Context Switcher ─────────────────────────────────────────────────────────
 
@@ -197,11 +197,12 @@ export default function HomeScreen() {
   const [contextModalVisible, setContextModalVisible] = useState(false);
 
   // Sync groups into context so switcher modal has fresh data
-  // (GroupProvider stores groups; we update after fetch)
   const { setUserGroups } = useGroupContext();
-  if (!loadingGroups && groups.length !== userGroups.length) {
-    setUserGroups(groups);
-  }
+  useEffect(() => {
+    if (!loadingGroups && groups.length !== userGroups.length) {
+      setUserGroups(groups);
+    }
+  }, [loadingGroups, groups, userGroups.length, setUserGroups]);
 
   const hasGroups = userGroups.length > 0 || groups.length > 0;
 

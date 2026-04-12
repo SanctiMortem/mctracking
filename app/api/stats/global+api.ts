@@ -10,8 +10,7 @@
  *
  * Note: group_id filter is reserved for EPIC-05 (groups feature).
  */
-// @ts-expect-error — @clerk/clerk-expo/server types not yet bundled; runtime works correctly
-import { getAuth } from '@clerk/clerk-expo/server';
+import { getAuth } from '@/services/auth';
 
 import { getGlobalStats } from '@/services/stats';
 

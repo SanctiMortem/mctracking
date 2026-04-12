@@ -8,8 +8,7 @@
  *
  * TRACK-002 (EPIC-03)
  */
-// @ts-expect-error — @clerk/clerk-expo/server types not yet bundled; runtime works correctly
-import { getAuth } from '@clerk/clerk-expo/server';
+import { getAuth } from '@/services/auth';
 
 import { undoLastEvent } from '@/services/matchEvents';
 

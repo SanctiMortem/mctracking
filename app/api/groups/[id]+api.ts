@@ -3,8 +3,7 @@
  *
  * BR-GROUP-04: soft-archive, never hard-delete.
  */
-// @ts-expect-error — @clerk/clerk-expo/server types not yet bundled; runtime works correctly
-import { getAuth } from '@clerk/clerk-expo/server';
+import { getAuth } from '@/services/auth';
 
 import { archiveGroup } from '@/services/groups';
 

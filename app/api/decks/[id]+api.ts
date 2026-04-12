@@ -5,8 +5,7 @@
  *
  * DATA-004 (EPIC-01)
  */
-// @ts-expect-error — @clerk/clerk-expo/server types not yet bundled; runtime works correctly
-import { getAuth } from '@clerk/clerk-expo/server';
+import { getAuth } from '@/services/auth';
 
 import { getDeckById, softDeleteDeck, updateDeck } from '@/services/decks';
 

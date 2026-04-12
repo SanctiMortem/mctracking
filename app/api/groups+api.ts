@@ -2,8 +2,7 @@
  * GET  /api/groups — list groups for authenticated user (PLAT-005, EPIC-05)
  * POST /api/groups — create a new group (PLAT-005, EPIC-05)
  */
-// @ts-expect-error — @clerk/clerk-expo/server types not yet bundled; runtime works correctly
-import { getAuth } from '@clerk/clerk-expo/server';
+import { getAuth } from '@/services/auth';
 
 import { createGroup, listGroups } from '@/services/groups';
 

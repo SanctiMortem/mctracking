@@ -6,7 +6,7 @@
  *
  * HIST-011 (EPIC-04)
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@clerk/clerk-expo';
 
@@ -27,6 +27,8 @@ type ApiResponse = {
 
 export function useGlobalStats(): UseGlobalStatsReturn {
   const { getToken } = useAuth();
+  const getTokenRef = useRef(getToken);
+  getTokenRef.current = getToken;
   const [data, setData] = useState<GlobalStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +39,7 @@ export function useGlobalStats(): UseGlobalStatsReturn {
     setError(null);
 
     try {
-      const token = await getToken();
+      const token = await getTokenRef.current();
       const res = await apiFetch<ApiResponse>('/api/stats/global', 'GET', undefined, token ?? undefined);
       if (!cancelled) {
         setData(res.data);
@@ -50,7 +52,7 @@ export function useGlobalStats(): UseGlobalStatsReturn {
     }
 
     return () => { cancelled = true; };
-  }, [getToken]);
+  }, []);
 
   useEffect(() => {
     load();

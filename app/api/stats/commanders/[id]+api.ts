@@ -7,8 +7,7 @@
  * BR-STATS-01: only completed matches.
  * BR-STATS-05: each partner commander's stats are independent.
  */
-// @ts-expect-error — @clerk/clerk-expo/server types not yet bundled; runtime works correctly
-import { getAuth } from '@clerk/clerk-expo/server';
+import { getAuth } from '@/services/auth';
 
 import { getCommanderStats } from '@/services/stats';
 
