@@ -40,6 +40,7 @@ function AuthGate() {
   const { isGuest } = useGuest();
   const router = useRouter();
   const segments = useSegments();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -57,8 +58,6 @@ function AuthGate() {
 
   // While Clerk initializes, render nothing (avoids flash).
   if (!isLoaded) return null;
-
-  const { t } = useTranslation();
 
   return (
     <GroupProvider>
