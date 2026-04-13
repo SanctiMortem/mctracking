@@ -27,8 +27,6 @@ import { colors, radius, spacing, typography } from '@/styles/tokens';
 
 import { WinConditionPicker } from './WinConditionPicker';
 
-const AMBER = '#F39C12';
-
 interface CloseMatchSheetProps {
   participations: ParticipationDetail[];
   loading: boolean;
@@ -238,7 +236,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
     borderBottomWidth: 1,
-    borderBottomColor: colors.border?.subtle ?? '#252542',
+    borderBottomColor: colors.border.subtle,
   },
   title: {
     color: colors.text.primary,
@@ -284,8 +282,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   playerRowSelected: {
-    backgroundColor: AMBER + '14',
-    borderColor: AMBER,
+    backgroundColor: colors.accent.primary + '14',
+    borderColor: colors.accent.primary,
   },
   avatar: {
     width: 36,
@@ -295,13 +293,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarSelected: { backgroundColor: AMBER + '33' },
+  avatarSelected: { backgroundColor: colors.accent.primary + '33' },
   avatarText: {
     color: colors.text.secondary,
     fontSize: typography.size.caption,
     fontWeight: typography.weight.bold,
   },
-  avatarTextSelected: { color: AMBER },
+  avatarTextSelected: { color: colors.accent.primary },
   playerName: {
     flex: 1,
     color: colors.text.primary,
@@ -310,7 +308,7 @@ const styles = StyleSheet.create({
   },
   playerNameSelected: { fontWeight: typography.weight.semibold },
   check: {
-    color: AMBER,
+    color: colors.accent.primary,
     fontSize: typography.size['body-lg'],
     fontWeight: typography.weight.bold,
   },
@@ -379,7 +377,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing[3],
     paddingBottom: spacing[8],
     borderTopWidth: 1,
-    borderTopColor: colors.border?.subtle ?? '#252542',
+    borderTopColor: colors.border.subtle,
   },
   confirmBtn: {
     backgroundColor: colors.accent.primary,

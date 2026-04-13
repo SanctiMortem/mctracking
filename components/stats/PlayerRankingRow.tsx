@@ -11,8 +11,6 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { PlayerRanking } from '@/services/stats';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
-const AMBER = '#F39C12';
-
 interface PlayerRankingRowProps {
   ranking: PlayerRanking;
 }
@@ -80,13 +78,13 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     flexShrink: 0,
   },
-  rankBadgeTop: { backgroundColor: AMBER + '33' },
+  rankBadgeTop: { backgroundColor: colors.accent.primary + '33' },
   rankText: {
     color: colors.text.muted,
     fontSize: typography.size.label,
     fontWeight: typography.weight.bold,
   },
-  rankTextTop: { color: AMBER },
+  rankTextTop: { color: colors.accent.primary },
 
   avatar: {
     width: 32,
@@ -123,11 +121,11 @@ const styles = StyleSheet.create({
     minWidth: 44,
     alignItems: 'center',
   },
-  wrBadgeActive: { backgroundColor: AMBER + '22' },
+  wrBadgeActive: { backgroundColor: colors.accent.primary + '22' },
   wrText: {
     color: colors.text.muted,
     fontSize: typography.size.label,
     fontWeight: typography.weight.semibold,
   },
-  wrTextActive: { color: AMBER },
+  wrTextActive: { color: colors.accent.primary },
 });

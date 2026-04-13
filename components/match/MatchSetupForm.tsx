@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: colors.border?.subtle ?? '#252542',
+    backgroundColor: colors.border.subtle,
     marginVertical: spacing[6],
   },
   hintText: {
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing[3],
     backgroundColor: colors.background.primary,
     borderTopWidth: 1,
-    borderTopColor: colors.border?.subtle ?? '#252542',
+    borderTopColor: colors.border.subtle,
   },
   submitBtn: {
     backgroundColor: colors.accent.primary,
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[4],
     borderBottomWidth: 1,
-    borderBottomColor: colors.border?.subtle ?? '#252542',
+    borderBottomColor: colors.border.subtle,
   },
   modalTitle: {
     color: colors.text.primary,
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    backgroundColor: colors.border?.subtle ?? '#252542',
+    backgroundColor: colors.border.subtle,
     marginHorizontal: spacing[4],
   },
   deckOption: {

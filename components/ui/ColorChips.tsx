@@ -12,12 +12,12 @@ import type { MtgColor } from '@/types/index';
 import { colors as tokens, radius, spacing, typography } from '@/styles/tokens';
 
 const COLOR_DEFS: { code: MtgColor; label: string; bg: string; fg: string }[] = [
-  { code: 'W', label: 'W', bg: '#D8D4C8', fg: '#0D0D0F' },
-  { code: 'U', label: 'U', bg: '#0E68AB', fg: '#F0F0F5' },
-  { code: 'B', label: 'B', bg: '#3A2A1E', fg: '#F0F0F5' },
-  { code: 'R', label: 'R', bg: '#D3202A', fg: '#F0F0F5' },
-  { code: 'G', label: 'G', bg: '#00733E', fg: '#F0F0F5' },
-  { code: 'C', label: 'C', bg: '#BEB9B2', fg: '#0D0D0F' },
+  { code: 'W', label: 'W', bg: '#f5f0d0', fg: '#1c1102' },
+  { code: 'U', label: 'U', bg: '#3a7bd5', fg: '#ede0d4' },
+  { code: 'B', label: 'B', bg: '#6b6b7e', fg: '#ede0d4' },
+  { code: 'R', label: 'R', bg: '#d4380d', fg: '#ede0d4' },
+  { code: 'G', label: 'G', bg: '#2d7d2d', fg: '#ede0d4' },
+  { code: 'C', label: 'C', bg: '#9ca3af', fg: '#1c1102' },
 ];
 
 interface ColorChipsProps {

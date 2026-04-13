@@ -10,8 +10,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Player } from '@/db/index';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
-// Amber color for selected state (per 15_DESIGN.md CMP-019).
-const AMBER = '#F39C12';
 const AVATAR_SIZE = 44; // 44pt minimum touch target (mobile-design)
 
 interface PlayerSelectorChipProps {
@@ -35,7 +33,7 @@ export function PlayerSelectorChip({ player, isSelected, onPress }: PlayerSelect
       accessibilityRole="checkbox"
       accessibilityState={{ checked: isSelected }}
       accessibilityLabel={`${isSelected ? 'Deselect' : 'Select'} ${player.name}`}
-      android_ripple={{ color: AMBER + '22', borderless: true }}
+      android_ripple={{ color: colors.accent.primary + '22', borderless: true }}
     >
       <View style={[styles.avatar, isSelected && styles.avatarSelected]}>
         <Text style={[styles.initials, isSelected && styles.initialsSelected]}>{initials}</Text>
@@ -59,8 +57,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   chipSelected: {
-    borderColor: AMBER,
-    backgroundColor: AMBER + '14', // 8% opacity
+    borderColor: colors.accent.primary,
+    backgroundColor: colors.accent.primary + '14', // 8% opacity
   },
   avatar: {
     width: AVATAR_SIZE,

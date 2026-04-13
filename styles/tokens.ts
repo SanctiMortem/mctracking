@@ -1,75 +1,90 @@
 /**
  * Design Tokens — "The Mystic Archive"
- * MTG 5-color (WUBRG) dark theme. Dark-only in MVP.
+ * Source: docs/planning/15_DESIGN.md + UI_Stitch/aether_archway/DESIGN.md
+ *
+ * Warm amber/brown/gold palette. Dark-only MVP.
+ * "The Relic Narrative" — digital grimoire, not a spreadsheet.
  *
  * ADR-001: StyleSheet nativo — tokens imported as TS constants.
- * Source: 15_DESIGN.md §0.3 Colors, §0.4 Typography, §0.5 Components, §0.6 Motion
  */
 
 // ─── MTG WUBRG Palette ──────────────────────────────────────────────────────
 export const mtgColors = {
-  white: '#F9FAF4',
-  blue: '#0E68AB',
-  black: '#150B00',
-  red: '#D3202A',
-  green: '#00733E',
-  colorless: '#BEB9B2',
+  white: '#f5f0d0',
+  blue: '#3a7bd5',
+  black: '#6b6b7e',
+  red: '#d4380d',
+  green: '#2d7d2d',
+  colorless: '#9ca3af',
+  gold: '#eebf73',         // Multicolor (3+ colors)
 } as const;
 
-// ─── Surface / Background ────────────────────────────────────────────────────
+// ─── Surface / Background (Layering Principle) ──────────────────────────────
+// Base → Level 1 → Level 2 → Elevated
+// "No pure black #000000" — deepest is surface #1c1102
 export const colors = {
   background: {
-    primary: '#0D0D0F',
-    secondary: '#1A1A2E',
-    surface: '#1E1E3A',
-    elevated: '#252542',
-    overlay: 'rgba(0,0,0,0.72)',
+    primary: '#1c1102',         // surface — base
+    secondary: '#221a08',       // surface-container-low — player zones, sections
+    surface: '#2a2010',         // surface-container — cards (70% opacity in glass mode)
+    elevated: '#342814',        // surface-container-highest — list items, secondary buttons
+    overlay: 'rgba(28,17,2,0.85)',
   },
 
   // ─── Text ─────────────────────────────────────────────────────────────────
   text: {
-    primary: '#F0F0F5',
-    secondary: '#9090A8',
-    muted: '#505068',
-    inverse: '#0D0D0F',
-    link: '#7B6FD4',
+    primary: '#ede0d4',         // on-surface — main text
+    secondary: '#a08c7c',       // on-surface-variant — labels, metadata
+    muted: '#6b5c4c',           // dimmed metadata
+    inverse: '#1c1102',         // text on primary buttons
+    link: '#eebf73',            // links use primary amber
   },
 
-  // ─── Accent / MTG colors ──────────────────────────────────────────────────
+  // ─── Accent — Amber/Gold Legendary ────────────────────────────────────────
+  // "Regla de Rareza: Solo 1 acción primary por pantalla"
   accent: {
-    primary: '#9B59B6',     // App purple accent
+    primary: '#eebf73',         // Primary amber — CTA, highlights, glow
+    primaryAlt: '#c99e55',      // Gradient end for primary buttons (135°)
+    primaryContainer: '#7a5a20', // Pressed/hover state
+    onPrimary: '#1c0f00',       // Text on primary buttons (dark brown)
     blue: mtgColors.blue,
     red: mtgColors.red,
     green: mtgColors.green,
-    white: '#D8D4C8',       // Softened white for dark bg
-    black: '#3A2A1E',       // Lightened black for dark bg
+    white: mtgColors.white,
+    black: mtgColors.black,
     colorless: mtgColors.colorless,
   },
 
   // ─── Life Total — ranges ──────────────────────────────────────────────────
   lifeTotal: {
-    high: '#2ECC71',        // > 20 (safe)
-    medium: '#F39C12',      // 10–20 (caution)
-    low: '#E67E22',         // 5–9 (danger)
-    critical: '#E74C3C',    // 1–4 (critical)
-    zero: '#922B21',        // 0 (dead)
+    high: '#5a9e5a',            // > 20 (safe)
+    medium: '#eebf73',          // 10–20 (caution) — uses primary amber
+    low: '#e0a030',             // 5–9 (danger)
+    critical: '#cf6679',        // 1–4 (critical)
+    zero: '#922B21',            // 0 (dead)
   },
 
-  // ─── Status ───────────────────────────────────────────────────────────────
+  // ─── Status / Feedback ────────────────────────────────────────────────────
   status: {
-    success: '#2ECC71',
-    warning: '#F39C12',
-    error: '#E74C3C',
-    info: '#3498DB',
+    success: '#5a9e5a',
+    warning: '#e0a030',
+    error: '#cf6679',
+    info: '#5a8abf',
   },
 
-  // ─── Border ───────────────────────────────────────────────────────────────
+  // ─── Border — "Ghost Border" only ─────────────────────────────────────────
+  // "No-Line Rule": Traditional 1px borders are prohibited for sectioning.
+  // Ghost border at 15% opacity for a11y fallback only.
   border: {
-    subtle: '#1E1E34',
-    default: '#2A2A44',
-    strong: '#4A4A70',
-    focus: '#7B6FD4',
+    subtle: '#3a302020',        // near-invisible
+    default: '#52443c26',       // outline-variant at 15% opacity
+    strong: '#52443c',          // outline-variant full
+    focus: '#eebf73',           // amber focus ring
   },
+
+  // ─── Surface Variant (chips, tags) ────────────────────────────────────────
+  surfaceVariant: '#3a3020',
+  onSurfaceVariant: '#a08c7c',
 } as const;
 
 // ─── Spacing (4px base grid) ─────────────────────────────────────────────────
@@ -85,18 +100,26 @@ export const spacing = {
 } as const;
 
 // ─── Typography ──────────────────────────────────────────────────────────────
-// Source: 15_DESIGN.md §0.4
+// Display-First: Space Grotesk (headlines) + Manrope (body)
 export const typography = {
+  fontFamily: {
+    display: 'SpaceGrotesk_700Bold',
+    headline: 'SpaceGrotesk_600SemiBold',
+    body: 'Manrope_400Regular',
+    bodyMedium: 'Manrope_500Medium',
+  },
   size: {
-    'display-lg': 72,   // Life total principal (SCR-008)
-    'display-sm': 48,   // Vida compacta
-    'heading-xl': 32,
-    'heading-lg': 24,
-    'heading-md': 20,
-    'body-lg': 16,
-    'body-sm': 14,
+    'display-lg': 80,    // Life total 2-player
+    'display-md': 64,    // Life total 3-player
+    'display-sm': 48,    // Life total 4-player
+    'heading-xl': 32,    // Home header
+    'heading-lg': 24,    // Screen title
+    'heading-md': 20,    // Section header
+    'body-lg': 17,       // Sub-header
+    'body-md': 15,       // Body, lists
+    'body-sm': 13,       // Metadata, secondary
     caption: 12,
-    label: 10,
+    label: 11,           // Chips/mana CAPS
   },
   weight: {
     regular: '400' as const,
@@ -122,47 +145,56 @@ export const typography = {
 export const radius = {
   xs: 2,
   sm: 4,
-  md: 8,
+  md: 6,              // Buttons (design spec: 6dp)
   lg: 12,
   xl: 16,
   xxl: 24,
   round: 999,
 } as const;
 
-// ─── Elevation / Shadows ─────────────────────────────────────────────────────
+// ─── Elevation / Shadows — Ambient Glow ──────────────────────────────────────
+// "No Material Design shadows. Only Ambient Glow amber."
 export const shadows = {
   sm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.20,
-    shadowRadius: 3,
+    shadowColor: '#eebf73',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 2,
   },
   md: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 8,
+    shadowColor: '#eebf73',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.10,
+    shadowRadius: 12,
     elevation: 6,
   },
   lg: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.36,
-    shadowRadius: 16,
+    shadowColor: '#eebf73',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
     elevation: 12,
   },
   glow: {
-    shadowColor: '#9B59B6',
+    shadowColor: '#eebf73',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  /** Alert glow — 21 cmd damage, 10 poison */
+  glowAlert: {
+    shadowColor: '#e0a030',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.30,
     shadowRadius: 12,
     elevation: 8,
   },
 } as const;
 
 // ─── Motion Profile ──────────────────────────────────────────────────────────
-// Source: 15_DESIGN.md §0.6 — used with react-native-reanimated
+// Crisp + Premium (MTG Arena feel)
 export const motion = {
   duration: {
     instant: 0,
@@ -172,10 +204,9 @@ export const motion = {
     glacial: 600,
   },
   easing: {
-    // Easing curve names for Reanimated (Easing.bezier(...))
-    standard: 'cubic-bezier(0.4, 0, 0.2, 1)',   // Material standard
-    enter: 'cubic-bezier(0, 0, 0.2, 1)',          // Decelerate
-    exit: 'cubic-bezier(0.4, 0, 1, 1)',           // Accelerate
-    bounce: 'cubic-bezier(0.34, 1.56, 0.64, 1)', // Spring overshoot
+    standard: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    enter: 'cubic-bezier(0, 0, 0.2, 1)',
+    exit: 'cubic-bezier(0.4, 0, 1, 1)',
+    bounce: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
   },
 } as const;

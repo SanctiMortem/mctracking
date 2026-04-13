@@ -20,8 +20,6 @@ import type { Match } from '@/db/index';
 import type { MatchOutcome } from '@/hooks/useMatchResults';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
-const AMBER = '#F39C12';
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDate(value: string | Date): string {
@@ -35,7 +33,7 @@ type StatusConfig = { label: string; color: string; bg: string };
 function statusConfig(status: Match['status'], t: TFunction): StatusConfig {
   switch (status) {
     case 'completed':   return { label: t('match.statusCompleted'), color: colors.status.success, bg: colors.status.success + '22' };
-    case 'in_progress': return { label: t('match.statusInProgress'), color: AMBER, bg: AMBER + '22' };
+    case 'in_progress': return { label: t('match.statusInProgress'), color: colors.accent.primary, bg: colors.accent.primary + '22' };
     case 'abandoned':   return { label: t('match.statusAbandoned'), color: colors.text.muted, bg: colors.background.elevated };
   }
 }
@@ -44,7 +42,7 @@ type OutcomeLabelConfig = { icon: string; label: string; color: string };
 
 function outcomeLabelConfig(outcome: MatchOutcome, t: TFunction): OutcomeLabelConfig {
   switch (outcome) {
-    case 'win':       return { icon: '✦', label: t('match.outcomeVictory'), color: AMBER };
+    case 'win':       return { icon: '✦', label: t('match.outcomeVictory'), color: colors.accent.primary };
     case 'draw':      return { icon: '◈', label: t('match.outcomeDraw'),    color: colors.accent.primary };
     case 'abandoned': return { icon: '✕', label: t('match.outcomeAbandoned'), color: colors.text.muted };
   }
@@ -160,8 +158,8 @@ export default function MatchDetailScreen() {
                 {winConditionDisplay && (
                   <View style={styles.conditionRow}>
                     <Text style={styles.conditionLabel}>{t('match.winConditionLabel')}</Text>
-                    <View style={[styles.conditionBadge, { backgroundColor: AMBER + '22' }]}>
-                      <Text style={[styles.conditionText, { color: AMBER }]}>{winConditionDisplay}</Text>
+                    <View style={[styles.conditionBadge, { backgroundColor: colors.accent.primary + '22' }]}>
+                      <Text style={[styles.conditionText, { color: colors.accent.primary }]}>{winConditionDisplay}</Text>
                     </View>
                   </View>
                 )}
@@ -268,20 +266,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: AMBER + '22',
+    backgroundColor: colors.accent.primary + '22',
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: AMBER + '44',
+    borderColor: colors.accent.primary + '44',
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
   },
   inProgressText: {
-    color: AMBER,
+    color: colors.accent.primary,
     fontSize: typography.size['body-sm'],
     fontWeight: typography.weight.semibold,
   },
   inProgressCta: {
-    color: AMBER,
+    color: colors.accent.primary,
     fontSize: typography.size['body-sm'],
   },
 

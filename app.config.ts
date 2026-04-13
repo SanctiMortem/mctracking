@@ -20,7 +20,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/images/adaptive-icon.png',
-      backgroundColor: '#0D0D0F',
+      backgroundColor: '#1c1102',
     },
     package: 'com.aboutagency.mtgtracker',
     versionCode: 1,

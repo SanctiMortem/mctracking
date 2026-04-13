@@ -43,18 +43,15 @@ export function ActiveMatchBanner({ matchId: _matchId, onPress }: ActiveMatchBan
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const AMBER = '#F39C12';
-const AMBER_BG = '#F39C1218';
-const AMBER_BORDER = '#F39C1244';
 
 const styles = StyleSheet.create({
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: AMBER_BG,
+    backgroundColor: colors.accent.primary + '18',
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: AMBER_BORDER,
+    borderColor: colors.accent.primary + '44',
     padding: spacing[4],
     gap: spacing[3],
   },
@@ -66,7 +63,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: radius.round,
-    backgroundColor: AMBER,
+    backgroundColor: colors.accent.primary,
     flexShrink: 0,
   },
 
@@ -75,7 +72,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   title: {
-    color: AMBER,
+    color: colors.accent.primary,
     fontSize: typography.size['body-lg'],
     fontWeight: typography.weight.semibold,
   },
@@ -85,7 +82,7 @@ const styles = StyleSheet.create({
   },
 
   chevron: {
-    color: AMBER,
+    color: colors.accent.primary,
     fontSize: 22,
     fontWeight: typography.weight.bold,
     flexShrink: 0,

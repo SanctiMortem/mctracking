@@ -494,6 +494,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text.primary,
     fontSize: typography.size['heading-lg'],
+    fontFamily: typography.fontFamily.headline,
     fontWeight: typography.weight.bold,
   },
 

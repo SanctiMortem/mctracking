@@ -12,8 +12,6 @@ import type { MatchOutcome } from '@/hooks/useMatchResults';
 import type { ParticipationDetail } from '@/services/matches';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
-const AMBER = '#F39C12';
-
 interface MatchResultCardProps {
   outcome: MatchOutcome;
   winner: ParticipationDetail | null;
@@ -35,7 +33,7 @@ function outcomeConfig(outcome: MatchOutcome, winnerName: string | null): Outcom
       return {
         icon: '✦',
         label: 'VICTORIA',
-        accent: AMBER,
+        accent: colors.accent.primary,
         subtext: winnerName ? `${winnerName} ha ganado` : null,
       };
     case 'draw':
@@ -78,7 +76,7 @@ export function MatchResultCard({ outcome, winner, winConditionDisplay }: MatchR
 
           {/* Winner avatar + name */}
           <View style={styles.winnerRow}>
-            <View style={[styles.avatar, { backgroundColor: AMBER + '33' }]}>
+            <View style={[styles.avatar, { backgroundColor: colors.accent.primary + '33' }]}>
               <Text style={styles.avatarText}>
                 {winner.player.name
                   .split(' ')
@@ -168,7 +166,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   avatarText: {
-    color: AMBER,
+    color: colors.accent.primary,
     fontSize: typography.size['body-lg'],
     fontWeight: typography.weight.bold,
   },
@@ -206,13 +204,13 @@ const styles = StyleSheet.create({
     fontSize: typography.size['body-sm'],
   },
   conditionBadge: {
-    backgroundColor: AMBER + '22',
+    backgroundColor: colors.accent.primary + '22',
     borderRadius: radius.sm,
     paddingHorizontal: spacing[2],
     paddingVertical: 3,
   },
   conditionText: {
-    color: AMBER,
+    color: colors.accent.primary,
     fontSize: typography.size['body-sm'],
     fontWeight: typography.weight.semibold,
   },

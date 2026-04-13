@@ -25,9 +25,9 @@ function deriveOutcome(summary: MatchSummary): Outcome {
 type OutcomeStyle = { label: string; bg: string; fg: string };
 
 const OUTCOME_STYLES: Record<Outcome, OutcomeStyle> = {
-  win:       { label: 'Win',       bg: '#F39C1222', fg: '#F39C12' },
-  draw:      { label: 'Draw',      bg: '#9B59B622', fg: '#9B59B6' },
-  abandoned: { label: 'Abandoned', bg: '#50506822', fg: '#9090A8' },
+  win:       { label: 'Win',       bg: '#eebf7322', fg: '#eebf73' },
+  draw:      { label: 'Draw',      bg: '#5a8abf22', fg: '#5a8abf' },
+  abandoned: { label: 'Abandoned', bg: '#6b5c4c22', fg: '#a08c7c' },
 };
 
 // ─── Participant line helpers ─────────────────────────────────────────────────
@@ -144,10 +144,8 @@ export function MatchCardSkeleton() {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.background.surface,
+    backgroundColor: colors.background.elevated,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border.default,
     padding: spacing[4],
     gap: spacing[2],
   },
@@ -208,7 +206,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   winner: {
-    color: '#F39C12',
+    color: '#eebf73',
     fontSize: typography.size.caption,
     fontWeight: typography.weight.medium,
     flexShrink: 1,

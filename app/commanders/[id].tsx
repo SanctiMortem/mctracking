@@ -24,8 +24,6 @@ import { ColorChips } from '@/components/ui/ColorChips';
 import { useCommanderStats } from '@/hooks/useCommanderStats';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
-const AMBER = '#F39C12';
-
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function CommanderDetailScreen() {
@@ -287,7 +285,7 @@ const styles = StyleSheet.create({
     fontSize: typography.size['heading-md'],
     fontWeight: typography.weight.bold,
   },
-  statValueHighlight: { color: AMBER },
+  statValueHighlight: { color: colors.accent.primary },
   statLabel: { color: colors.text.muted, fontSize: typography.size.caption },
   emptyCard: {
     backgroundColor: colors.background.surface,

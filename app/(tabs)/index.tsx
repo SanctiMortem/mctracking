@@ -320,8 +320,6 @@ export default function HomeScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const AMBER = '#F39C12';
-
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -348,6 +346,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: colors.text.primary,
     fontSize: typography.size['heading-md'],
+    fontFamily: typography.fontFamily.headline,
     fontWeight: typography.weight.bold,
     flexShrink: 0,
   },
@@ -427,11 +426,11 @@ const styles = StyleSheet.create({
     fontSize: typography.size['body-sm'],
   },
   modalOptionTextActive: {
-    color: AMBER,
+    color: colors.accent.primary,
     fontWeight: typography.weight.semibold,
   },
   modalOptionCheck: {
-    color: AMBER,
+    color: colors.accent.primary,
     fontSize: typography.size['body-sm'],
     fontWeight: typography.weight.bold,
   },
@@ -457,14 +456,15 @@ const styles = StyleSheet.create({
 
   // New Match CTA
   newMatchButton: {
-    backgroundColor: AMBER,
+    backgroundColor: colors.accent.primary,
     borderRadius: radius.lg,
     padding: spacing[4],
     alignItems: 'center',
   },
   newMatchText: {
-    color: colors.text.inverse,
+    color: colors.accent.onPrimary,
     fontSize: typography.size['body-lg'],
+    fontFamily: typography.fontFamily.headline,
     fontWeight: typography.weight.bold,
     letterSpacing: 0.3,
   },
@@ -488,6 +488,7 @@ const styles = StyleSheet.create({
   statValue: {
     color: colors.text.primary,
     fontSize: typography.size['heading-lg'],
+    fontFamily: typography.fontFamily.display,
     fontWeight: typography.weight.bold,
   },
   statWinRate: {

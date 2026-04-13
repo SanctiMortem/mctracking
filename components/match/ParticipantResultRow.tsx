@@ -10,8 +10,6 @@ import { ColorChips } from '@/components/ui/ColorChips';
 import type { ParticipationDetail } from '@/services/matches';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
-const AMBER = '#F39C12';
-
 interface ParticipantResultRowProps {
   participation: ParticipationDetail;
   isWinner: boolean;
@@ -63,7 +61,7 @@ export function ParticipantResultRow({ participation, isWinner }: ParticipantRes
 type BadgeStyle = { label: string; bg: string; fg: string };
 
 function resolveBadge(result: ParticipationDetail['result'], isWinner: boolean): BadgeStyle {
-  if (isWinner || result === 'win') return { label: 'WIN',  bg: AMBER + '33',                        fg: AMBER };
+  if (isWinner || result === 'win') return { label: 'WIN',  bg: colors.accent.primary + '33',                        fg: colors.accent.primary };
   if (result === 'draw')           return { label: 'DRAW', bg: colors.accent.primary + '33',         fg: colors.accent.primary };
   if (result === 'lose')           return { label: 'LOSS', bg: colors.background.surface,            fg: colors.text.muted };
   // null = abandoned
@@ -85,8 +83,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   rowWinner: {
-    backgroundColor: AMBER + '0F',
-    borderColor: AMBER + '44',
+    backgroundColor: colors.accent.primary + '0F',
+    borderColor: colors.accent.primary + '44',
   },
 
   avatar: {
@@ -98,13 +96,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
-  avatarWinner: { backgroundColor: AMBER + '33' },
+  avatarWinner: { backgroundColor: colors.accent.primary + '33' },
   avatarText: {
     color: colors.text.secondary,
     fontSize: typography.size['body-sm'],
     fontWeight: typography.weight.bold,
   },
-  avatarTextWinner: { color: AMBER },
+  avatarTextWinner: { color: colors.accent.primary },
 
   info: { flex: 1, gap: 2 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[1] },

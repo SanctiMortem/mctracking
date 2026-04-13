@@ -11,8 +11,6 @@ import { ColorChips } from '@/components/ui/ColorChips';
 import type { Commander, Deck } from '@/db/index';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
-const AMBER = '#F39C12';
-
 interface DeckStatRowProps {
   deck: Deck;
   commanders: Commander[];
@@ -106,11 +104,11 @@ const styles = StyleSheet.create({
     minWidth: 44,
     alignItems: 'center',
   },
-  wrBadgeActive: { backgroundColor: AMBER + '22' },
+  wrBadgeActive: { backgroundColor: colors.accent.primary + '22' },
   wrText: {
     color: colors.text.muted,
     fontSize: typography.size.label,
     fontWeight: typography.weight.semibold,
   },
-  wrTextActive: { color: AMBER },
+  wrTextActive: { color: colors.accent.primary },
 });

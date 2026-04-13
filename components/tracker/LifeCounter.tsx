@@ -184,6 +184,7 @@ const styles = StyleSheet.create({
   },
   lifeTotal: {
     fontSize: typography.size['display-lg'],
+    fontFamily: typography.fontFamily.display,
     fontWeight: typography.weight.black,
     letterSpacing: typography.letterSpacing.tight,
     textAlign: 'center',

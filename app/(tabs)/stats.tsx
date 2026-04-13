@@ -24,8 +24,6 @@ import { useGlobalStats } from '@/hooks/useGlobalStats';
 import { BannerAdWrapper } from '@/components/ads/BannerAdWrapper';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
-const AMBER = '#F39C12';
-
 // ─── Section header ───────────────────────────────────────────────────────────
 
 function SectionHeader({ title }: { title: string }) {
@@ -192,7 +190,7 @@ const styles = StyleSheet.create({
     gap: spacing[1],
   },
   heroNumber: {
-    color: AMBER,
+    color: colors.accent.primary,
     fontSize: typography.size['heading-xl'],
     fontWeight: typography.weight.black,
   },
@@ -271,13 +269,13 @@ const styles = StyleSheet.create({
     minWidth: 44,
     alignItems: 'center',
   },
-  wrBadgeActive: { backgroundColor: AMBER + '22' },
+  wrBadgeActive: { backgroundColor: colors.accent.primary + '22' },
   wrText: {
     color: colors.text.muted,
     fontSize: typography.size.label,
     fontWeight: typography.weight.semibold,
   },
-  wrTextActive: { color: AMBER },
+  wrTextActive: { color: colors.accent.primary },
 
   empty: {
     alignItems: 'center',

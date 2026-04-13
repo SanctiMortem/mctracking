@@ -1,15 +1,25 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import * as SecureStore from 'expo-secure-store';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
+
+// Fonts — "The Mystic Archive" design system
+import { SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
+import { Manrope_400Regular, Manrope_500Medium } from '@expo-google-fonts/manrope';
 
 // i18n init (SETUP-006)
 import '../constants/i18n';
 import { GuestProvider, useGuest } from '@/contexts/GuestContext';
 import { GroupProvider } from '@/contexts/GroupContext';
 import { colors } from '@/styles/tokens';
+
+// Keep splash visible while fonts load
+SplashScreen.preventAutoHideAsync();
 
 // SecureStore token cache for Clerk — persists session across app restarts.
 const tokenCache = {
@@ -57,7 +67,7 @@ function AuthGate() {
         headerShown: true,
         headerStyle: { backgroundColor: colors.background.primary },
         headerTintColor: colors.text.primary,
-        headerTitleStyle: { color: colors.text.primary },
+        headerTitleStyle: { color: colors.text.primary, fontFamily: 'SpaceGrotesk_600SemiBold' },
         headerBackTitleVisible: false,
         contentStyle: { backgroundColor: colors.background.primary },
         animation: 'slide_from_right',
@@ -95,12 +105,35 @@ function AuthGate() {
 export default function RootLayout() {
   const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
 
+  const [fontsLoaded, fontError] = useFonts({
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+    Manrope_400Regular,
+    Manrope_500Medium,
+  });
+
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded || fontError) {
+      await SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background.primary, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={colors.accent.primary} size="large" />
+      </View>
+    );
+  }
+
   return (
-    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <GuestProvider>
-        <StatusBar style="light" />
-        <AuthGate />
-      </GuestProvider>
-    </ClerkProvider>
+    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+        <GuestProvider>
+          <StatusBar style="light" />
+          <AuthGate />
+        </GuestProvider>
+      </ClerkProvider>
+    </View>
   );
 }

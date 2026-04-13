@@ -24,8 +24,6 @@ import { ColorChips } from '@/components/ui/ColorChips';
 import { useDeckStats } from '@/hooks/useDeckStats';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
-const AMBER = '#F39C12';
-
 // ─── Commander card (partner-aware) ──────────────────────────────────────────
 
 function CommanderCard({ name, cardColors, isPartner }: { name: string; cardColors: string[]; isPartner: boolean }) {
@@ -339,7 +337,7 @@ const styles = StyleSheet.create({
     fontSize: typography.size['heading-md'],
     fontWeight: typography.weight.bold,
   },
-  statValueHighlight: { color: AMBER },
+  statValueHighlight: { color: colors.accent.primary },
   statLabel: {
     color: colors.text.muted,
     fontSize: typography.size.caption,
@@ -401,11 +399,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexShrink: 0,
   },
-  wrBadgeActive: { backgroundColor: AMBER + '22' },
+  wrBadgeActive: { backgroundColor: colors.accent.primary + '22' },
   wrText: {
     color: colors.text.muted,
     fontSize: typography.size.label,
     fontWeight: typography.weight.semibold,
   },
-  wrTextActive: { color: AMBER },
+  wrTextActive: { color: colors.accent.primary },
 });

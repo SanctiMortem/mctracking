@@ -14,8 +14,6 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import type { MatchupResult } from '@/services/stats';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
-const AMBER = '#F39C12';
-
 interface MatchupCardProps {
   entityAName: string | null;
   entityBName: string | null;
@@ -170,7 +168,7 @@ const styles = StyleSheet.create({
   },
   entityNameRight: { textAlign: 'right' },
   winsCount: {
-    color: AMBER,
+    color: colors.accent.primary,
     fontSize: typography.size['heading-xl'],
     fontWeight: typography.weight.black,
     lineHeight: typography.size['heading-xl'] * 1.1,
@@ -212,6 +210,6 @@ const styles = StyleSheet.create({
   barSegment: {
     borderRadius: 2,
   },
-  barSegmentA: { backgroundColor: AMBER },
+  barSegmentA: { backgroundColor: colors.accent.primary },
   barSegmentB: { backgroundColor: colors.accent.primary },
 });

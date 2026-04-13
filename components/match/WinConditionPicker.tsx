@@ -11,8 +11,6 @@ import { useTranslation } from 'react-i18next';
 
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
-const AMBER = '#F39C12';
-
 interface WinConditionPickerProps {
   selected: string | null;
   onSelect: (value: string) => void;
@@ -72,8 +70,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipActive: {
-    borderColor: AMBER,
-    backgroundColor: AMBER + '1A',
+    borderColor: colors.accent.primary,
+    backgroundColor: colors.accent.primary + '1A',
   },
   label: {
     color: colors.text.secondary,
@@ -81,7 +79,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.weight.medium,
   },
   labelActive: {
-    color: AMBER,
+    color: colors.accent.primary,
     fontWeight: typography.weight.semibold,
   },
 });

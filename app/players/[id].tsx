@@ -26,8 +26,6 @@ import { DeckStatRow } from '@/components/match/DeckStatRow';
 import { usePlayerStats } from '@/hooks/usePlayerStats';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
-const AMBER = '#F39C12';
-
 // ─── Section title ────────────────────────────────────────────────────────────
 
 function SectionTitle({ label, count }: { label: string; count?: number }) {
@@ -293,7 +291,7 @@ const styles = StyleSheet.create({
   },
   winRateContent: { alignItems: 'center', gap: spacing[1] },
   winRateNumber: {
-    color: AMBER,
+    color: colors.accent.primary,
     fontSize: 48,
     fontWeight: typography.weight.bold,
     lineHeight: 56,
@@ -322,7 +320,7 @@ const styles = StyleSheet.create({
     fontSize: typography.size['heading-md'],
     fontWeight: typography.weight.bold,
   },
-  wldWin: { color: AMBER },
+  wldWin: { color: colors.accent.primary },
   wldLabel: {
     color: colors.text.muted,
     fontSize: typography.size.caption,
@@ -396,11 +394,11 @@ const styles = StyleSheet.create({
     minWidth: 44,
     alignItems: 'center',
   },
-  wrBadgeActive: { backgroundColor: AMBER + '22' },
+  wrBadgeActive: { backgroundColor: colors.accent.primary + '22' },
   wrText: {
     color: colors.text.muted,
     fontSize: typography.size.label,
     fontWeight: typography.weight.semibold,
   },
-  wrTextActive: { color: AMBER },
+  wrTextActive: { color: colors.accent.primary },
 });
