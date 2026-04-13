@@ -583,3 +583,34 @@ export async function listMatches(
     },
   };
 }
+
+// ─────────────────────────────────────────────
+// deleteMatch
+// ─────────────────────────────────────────────
+
+/**
+ * Hard-deletes a match and all its related data (participations, events, results).
+ * Only completed or abandoned matches can be deleted.
+ */
+export async function deleteMatch(
+  userId: string,
+  matchId: string,
+): Promise<{ ok: true } | { notFound: true } | { forbidden: true } | { activeMatch: true }> {
+  const [match] = await db
+    .select()
+    .from(matches)
+    .where(eq(matches.id, matchId))
+    .limit(1);
+
+  if (!match) return { notFound: true };
+  if (match.createdBy !== userId) return { forbidden: true };
+  if (match.status === 'in_progress') return { activeMatch: true };
+
+  // Delete in order: results → events → participations → match
+  await db.delete(matchResults).where(eq(matchResults.matchId, matchId));
+  await db.delete(matchEvents).where(eq(matchEvents.matchId, matchId));
+  await db.delete(participations).where(eq(participations.matchId, matchId));
+  await db.delete(matches).where(eq(matches.id, matchId));
+
+  return { ok: true };
+}

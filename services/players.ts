@@ -18,7 +18,7 @@ import type { Player } from '@/db/index';
 // ─────────────────────────────────────────────
 
 export async function listPlayers(userId: string): Promise<Player[]> {
-  return db
+  return await db
     .select()
     .from(players)
     .where(and(eq(players.createdBy, userId), isNull(players.deletedAt)))

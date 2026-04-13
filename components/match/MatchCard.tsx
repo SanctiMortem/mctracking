@@ -67,9 +67,10 @@ function formatDate(dateStr: string | Date | null): string {
 interface MatchCardProps {
   summary: MatchSummary;
   onPress: () => void;
+  onDelete?: () => void;
 }
 
-export function MatchCard({ summary, onPress }: MatchCardProps) {
+export function MatchCard({ summary, onPress, onDelete }: MatchCardProps) {
   const outcome = deriveOutcome(summary);
   const style = OUTCOME_STYLES[outcome];
   const duration = formatMatchDuration(summary.match.createdAt, summary.match.endedAt);
@@ -83,6 +84,8 @@ export function MatchCard({ summary, onPress }: MatchCardProps) {
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onDelete}
+      delayLongPress={600}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       accessibilityRole="button"
       accessibilityLabel={`Match ${date} — ${style.label}`}

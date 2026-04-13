@@ -1,9 +1,12 @@
 import { Tabs } from 'expo-router';
 import { StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { colors } from '@/styles/tokens';
 
 export default function TabsLayout() {
+  const { t } = useTranslation();
+
   return (
     <Tabs
       screenOptions={{
@@ -14,11 +17,11 @@ export default function TabsLayout() {
         tabBarLabelStyle: styles.tabLabel,
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Home' }} />
-      <Tabs.Screen name="players" options={{ title: 'Players' }} />
-      <Tabs.Screen name="decks" options={{ title: 'Decks' }} />
-      <Tabs.Screen name="history" options={{ title: 'History' }} />
-      <Tabs.Screen name="stats" options={{ title: 'Stats' }} />
+      <Tabs.Screen name="index" options={{ title: t('tabs.home') }} />
+      <Tabs.Screen name="players" options={{ title: t('tabs.players') }} />
+      <Tabs.Screen name="decks" options={{ title: t('tabs.decks') }} />
+      <Tabs.Screen name="history" options={{ title: t('tabs.history') }} />
+      <Tabs.Screen name="stats" options={{ title: t('tabs.stats') }} />
     </Tabs>
   );
 }

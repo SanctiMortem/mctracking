@@ -7,14 +7,16 @@
  *
  * HIST-002 (EPIC-04)
  */
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
+import { useAuth } from '@clerk/clerk-expo';
 import { useTranslation } from 'react-i18next';
 
 import { MatchCard, MatchCardSkeleton } from '@/components/match/MatchCard';
 import { MatchHistoryFilterBar } from '@/components/match/MatchHistoryFilterBar';
 import { useMatchHistory } from '@/hooks/useMatchHistory';
+import { apiFetch } from '@/services/api';
 import { BannerAdWrapper } from '@/components/ads/BannerAdWrapper';
 import { colors, spacing, typography } from '@/styles/tokens';
 
@@ -68,12 +70,37 @@ function LoadMoreFooter({ loading }: { loading: boolean }) {
 
 export default function HistoryScreen() {
   const router = useRouter();
+  const { getToken } = useAuth();
+  const { t } = useTranslation();
   const {
     matches, hasMore, loading, loadingMore, error,
     filters, setFilters, refresh, loadMore,
   } = useMatchHistory();
 
   const hasFilters = Object.values(filters).some(Boolean);
+
+  const handleDeleteMatch = (matchId: string) => {
+    Alert.alert(
+      t('common.delete'),
+      t('common.confirm') + '?',
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const token = await getToken();
+              await apiFetch(`/api/matches/${matchId}`, 'DELETE', undefined, token ?? undefined);
+              refresh();
+            } catch {
+              Alert.alert(t('common.error'));
+            }
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <View style={styles.screen}>
@@ -102,6 +129,7 @@ export default function HistoryScreen() {
             <MatchCard
               summary={item}
               onPress={() => router.push(`/match/${item.match.id}`)}
+              onDelete={() => handleDeleteMatch(item.match.id)}
             />
           )}
           ItemSeparatorComponent={() => <View style={styles.separator} />}

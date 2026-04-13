@@ -7,7 +7,7 @@
 import { getAuth } from '@/services/auth';
 import { getRouteParam } from '@/services/route-params';
 
-import { closeMatch, getMatchById } from '@/services/matches';
+import { closeMatch, deleteMatch, getMatchById } from '@/services/matches';
 import type { CloseAction } from '@/services/matches';
 
 export async function GET(req: Request) {
@@ -94,4 +94,26 @@ export async function PATCH(req: Request) {
   }
 
   return Response.json({ success: true, data: result.data }, { status: 200 });
+}
+
+export async function DELETE(req: Request) {
+  const { userId } = getAuth(req);
+  if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const id = getRouteParam(req, 'id');
+  if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
+
+  const result = await deleteMatch(userId, id);
+
+  if ('notFound' in result) {
+    return Response.json({ error: 'NOT_FOUND', message: 'Match not found' }, { status: 404 });
+  }
+  if ('forbidden' in result) {
+    return Response.json({ error: 'FORBIDDEN', message: 'You did not create this match' }, { status: 403 });
+  }
+  if ('activeMatch' in result) {
+    return Response.json({ error: 'MATCH_IN_PROGRESS', message: 'Cannot delete an in-progress match. Abandon it first.' }, { status: 400 });
+  }
+
+  return Response.json({ success: true }, { status: 200 });
 }

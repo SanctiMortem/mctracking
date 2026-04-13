@@ -114,6 +114,10 @@ export function useTracker(matchId: string): UseTrackerReturn {
   }, [matchId, getToken]);
 
   // ── recordEvent ────────────────────────────
+  // Called by counter components AFTER their local debounce fires.
+  // The counter already shows the change via pendingDelta, so we commit
+  // the delta to the canonical lifeTotal/poisonCounters/commanderDamage
+  // (which the counter reads) and POST to the API. On failure we revert.
   const recordEvent = useCallback(async (input: {
     participationId: string;
     eventType: EventType;
@@ -125,7 +129,8 @@ export function useTracker(matchId: string): UseTrackerReturn {
     // Snapshot pre-update state for rollback
     const prev = participationsRef.current.map((p) => ({ ...p, commanderDamage: { ...p.commanderDamage } }));
 
-    // Optimistic update
+    // Commit the delta to canonical state so the counter components
+    // can reset their pendingDelta to 0 without visual flicker.
     setParticipations((parts) =>
       parts.map((p) => {
         if (p.id !== participationId) return p;
@@ -161,7 +166,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
         token ?? undefined,
       );
 
-      // Append to local event log
+      // Append to local event log (don't re-update participations — already committed)
       setEvents((prev) => [
         ...prev,
         {

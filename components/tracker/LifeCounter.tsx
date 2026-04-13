@@ -25,7 +25,7 @@ import { colors, radius, spacing, typography } from '@/styles/tokens';
 import type { EventType } from '@/services/matchEvents';
 
 const HOLD_REPEAT_MS = 150;
-const DEBOUNCE_MS = 500; // Default; EPIC-05 will make this configurable
+const DEBOUNCE_MS = 200; // Snappy response; EPIC-05 will make this configurable
 
 interface LifeCounterProps {
   lifeTotal: number;

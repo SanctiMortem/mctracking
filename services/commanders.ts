@@ -26,7 +26,7 @@ export function validateColors(colors: unknown): colors is string[] {
 // ─────────────────────────────────────────────
 
 export async function listCommanders(userId: string): Promise<Commander[]> {
-  return db
+  return await db
     .select()
     .from(commanders)
     .where(and(eq(commanders.createdBy, userId), isNull(commanders.deletedAt)))

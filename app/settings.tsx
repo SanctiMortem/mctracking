@@ -20,11 +20,12 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
+import { useTranslation } from 'react-i18next';
 
 import { useSettings } from '@/hooks/useSettings';
 import { useIAP } from '@/hooks/useIAP';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
-import i18n from '@/services/i18n';
+import i18n from '@/constants/i18n';
 
 // ─────────────────────────────────────────────
 // DebounceSlider (CMP-017) — PanResponder, no external deps
@@ -61,6 +62,8 @@ function DebounceSlider({ value, onChange }: DebounceSliderProps) {
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponderCapture: () => true,
+        onPanResponderTerminationRequest: () => false,
         onPanResponderGrant: (evt) => {
           if (trackWidth <= 0) return;
           const x = evt.nativeEvent.locationX;
@@ -200,6 +203,7 @@ const LIFE_TOTAL_OPTIONS: { label: string; value: number }[] = [
 export default function SettingsScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
+  const { t } = useTranslation();
   const { settings, loading, error, saving, refresh, patchSetting } = useSettings();
   const { purchase, restore, isPurchasing, isRestoring } = useIAP(refresh);
 
@@ -238,10 +242,10 @@ export default function SettingsScreen() {
   );
 
   const handleSignOut = useCallback(() => {
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('settings.signOutTitle'), t('settings.signOutConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Sign out',
+        text: t('settings.signOut'),
         style: 'destructive',
         onPress: async () => {
           setSigningOut(true);
@@ -272,19 +276,19 @@ export default function SettingsScreen() {
 
   const sections: Section[] = [
     {
-      title: 'Tracker',
+      title: t('settings.tracker'),
       data: [{ key: 'swipe' }, { key: 'debounce' }],
     },
     {
-      title: 'Match Setup',
+      title: t('settings.matchSetup'),
       data: [{ key: 'require_commander' }, { key: 'life_total' }],
     },
     {
-      title: 'Language',
+      title: t('settings.language'),
       data: [{ key: 'language' }],
     },
     {
-      title: 'Account',
+      title: t('settings.account'),
       data: [{ key: 'groups' }, { key: 'premium' }, { key: 'signout' }],
     },
   ];
@@ -296,7 +300,7 @@ export default function SettingsScreen() {
       switch (item.key) {
         case 'swipe':
           return (
-            <SettingRow label="Swipe gestures">
+            <SettingRow label={t('settings.swipeGestures')}>
               <Switch
                 value={settings.swipeGesturesEnabled}
                 onValueChange={handleSwipeGestures}
@@ -309,14 +313,14 @@ export default function SettingsScreen() {
 
         case 'debounce':
           return (
-            <SettingRowStack label="Debounce threshold">
+            <SettingRowStack label={t('settings.debounceThreshold')}>
               <DebounceSlider value={settings.debounceThresholdMs} onChange={handleDebounce} />
             </SettingRowStack>
           );
 
         case 'require_commander':
           return (
-            <SettingRow label="Commander required">
+            <SettingRow label={t('settings.commanderRequired')}>
               <Switch
                 value={settings.requireCommander}
                 onValueChange={handleRequireCommander}
@@ -329,7 +333,7 @@ export default function SettingsScreen() {
 
         case 'life_total':
           return (
-            <SettingRowStack label="Starting life total">
+            <SettingRowStack label={t('settings.startingLifeTotal')}>
               <SegmentedPicker
                 options={LIFE_TOTAL_OPTIONS}
                 selected={settings.defaultLifeTotal}
@@ -340,7 +344,7 @@ export default function SettingsScreen() {
 
         case 'language':
           return (
-            <SettingRowStack label="App language">
+            <SettingRowStack label={t('settings.appLanguage')}>
               <SegmentedPicker
                 options={LANGUAGE_OPTIONS}
                 selected={settings.language}
@@ -352,7 +356,7 @@ export default function SettingsScreen() {
         case 'groups':
           return (
             <LinkRow
-              label="My groups"
+              label={t('settings.myGroups')}
               onPress={() => router.push('/groups')}
             />
           );
@@ -360,8 +364,8 @@ export default function SettingsScreen() {
         case 'premium':
           return settings.premium ? (
             <View style={styles.row}>
-              <Text style={styles.rowLabel}>Premium</Text>
-              <Text style={styles.premiumActive}>Active ✓</Text>
+              <Text style={styles.rowLabel}>{t('settings.premium')}</Text>
+              <Text style={styles.premiumActive}>{t('settings.premiumActive')}</Text>
             </View>
           ) : (
             <>
@@ -371,7 +375,7 @@ export default function SettingsScreen() {
                 accessibilityRole="button"
               >
                 <Text style={styles.rowLabel}>
-                  {isPurchasing ? 'Processing…' : 'Remove ads (Premium)'}
+                  {isPurchasing ? `${t('common.loading')}` : t('settings.premiumCta')}
                 </Text>
                 {!isPurchasing && <Text style={styles.chevron}>›</Text>}
               </Pressable>
@@ -381,7 +385,7 @@ export default function SettingsScreen() {
                 accessibilityRole="button"
               >
                 <Text style={[styles.rowLabel, styles.restoreText]}>
-                  {isRestoring ? 'Restoring…' : 'Restore purchases'}
+                  {isRestoring ? `${t('common.loading')}` : t('settings.retry')}
                 </Text>
               </Pressable>
             </>
@@ -390,7 +394,7 @@ export default function SettingsScreen() {
         case 'signout':
           return (
             <LinkRow
-              label={signingOut ? 'Signing out…' : 'Sign out'}
+              label={signingOut ? t('settings.signingOut') : t('settings.signOut')}
               onPress={handleSignOut}
               danger
             />
@@ -423,7 +427,7 @@ export default function SettingsScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.header}>
-          <Text style={styles.title}>Settings</Text>
+          <Text style={styles.title}>{t('settings.title')}</Text>
         </View>
         <View style={styles.center}>
           <ActivityIndicator color={colors.accent.primary} size="large" />
@@ -436,7 +440,7 @@ export default function SettingsScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.header}>
-          <Text style={styles.title}>Settings</Text>
+          <Text style={styles.title}>{t('settings.title')}</Text>
         </View>
         <View style={styles.center}>
           <Text style={styles.errorText}>{error ?? 'Could not load settings'}</Text>
@@ -451,7 +455,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.title}>{t('settings.title')}</Text>
         {saving && <ActivityIndicator color={colors.accent.primary} size="small" />}
       </View>
 

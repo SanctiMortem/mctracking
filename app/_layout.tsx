@@ -3,6 +3,7 @@ import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import * as SecureStore from 'expo-secure-store';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useTranslation } from 'react-i18next';
 
 // i18n init (SETUP-006)
 import '../constants/i18n';
@@ -47,6 +48,8 @@ function AuthGate() {
   // While Clerk initializes, render nothing (avoids flash).
   if (!isLoaded) return null;
 
+  const { t } = useTranslation();
+
   return (
     <GroupProvider>
     <Stack
@@ -55,14 +58,16 @@ function AuthGate() {
         headerStyle: { backgroundColor: colors.background.primary },
         headerTintColor: colors.text.primary,
         headerTitleStyle: { color: colors.text.primary },
+        headerBackTitleVisible: false,
         contentStyle: { backgroundColor: colors.background.primary },
         animation: 'slide_from_right',
+        gestureResponseDistance: 30,
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="auth" options={{ headerShown: false, animation: 'none' }} />
       <Stack.Screen name="guest" options={{ headerShown: false, presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
-      <Stack.Screen name="match/setup" options={{ title: 'Match Setup', presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="match/setup" options={{ title: t('match.setup'), presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="match/[id]/tracker" options={{ headerShown: false, presentation: 'fullScreenModal', animation: 'fade' }} />
       <Stack.Screen
         name="match/[id]/close"
@@ -73,15 +78,15 @@ function AuthGate() {
           contentStyle: { backgroundColor: 'transparent' },
         }}
       />
-      <Stack.Screen name="match/[id]/results" options={{ title: 'Results' }} />
-      <Stack.Screen name="match/[id]/index" options={{ title: 'Match' }} />
-      <Stack.Screen name="players/[id]" options={{ title: 'Player' }} />
-      <Stack.Screen name="decks/[id]" options={{ title: 'Deck' }} />
-      <Stack.Screen name="commanders/index" options={{ title: 'Commanders' }} />
-      <Stack.Screen name="commanders/[id]" options={{ title: 'Commander' }} />
-      <Stack.Screen name="stats/matchup" options={{ title: 'Matchup' }} />
-      <Stack.Screen name="groups/index" options={{ title: 'Groups' }} />
-      <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+      <Stack.Screen name="match/[id]/results" options={{ title: t('match.results') }} />
+      <Stack.Screen name="match/[id]/index" options={{ title: t('match.detail') }} />
+      <Stack.Screen name="players/[id]" options={{ title: t('player.players') }} />
+      <Stack.Screen name="decks/[id]" options={{ title: t('deck.decks') }} />
+      <Stack.Screen name="commanders/index" options={{ title: t('commanders.title') }} />
+      <Stack.Screen name="commanders/[id]" options={{ title: t('game.commander') }} />
+      <Stack.Screen name="stats/matchup" options={{ title: t('stats.viewMatchup') }} />
+      <Stack.Screen name="groups/index" options={{ title: t('groups.title') }} />
+      <Stack.Screen name="settings" options={{ title: t('settings.title') }} />
     </Stack>
     </GroupProvider>
   );

@@ -14,7 +14,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 import type { EventType } from '@/services/matchEvents';
 
-const DEBOUNCE_MS = 500;
+const DEBOUNCE_MS = 200;
 const POISON_LIMIT = 10;
 
 interface PoisonCounterProps {
