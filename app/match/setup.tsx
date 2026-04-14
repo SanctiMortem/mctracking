@@ -14,10 +14,11 @@ import { colors, spacing, typography } from '@/styles/tokens';
 
 export default function MatchSetupScreen() {
   const { t } = useTranslation();
-  function handleSubmit(matchId: string) {
-    // Navigate to tracker, replacing this modal in the stack.
-    // SCR-008 stub is in place; full implementation in EPIC-03 (TRACK-003).
-    router.replace(`/match/${matchId}/tracker` as never);
+  function handleSubmit(matchId: string, rotations: Record<string, number>, playerOrder: string[]) {
+    // Encode rotations + player order as JSON in query string for the tracker.
+    const rotParam = encodeURIComponent(JSON.stringify(rotations));
+    const orderParam = encodeURIComponent(JSON.stringify(playerOrder));
+    router.replace(`/match/${matchId}/tracker?rotations=${rotParam}&playerOrder=${orderParam}` as never);
   }
 
   function handleCancel() {

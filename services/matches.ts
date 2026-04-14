@@ -312,7 +312,8 @@ export async function getMatchById(userId: string, matchId: string): Promise<Get
     .innerJoin(decks, eq(participations.deckId, decks.id))
     .innerJoin(c1, eq(decks.commanderId, c1.id))
     .leftJoin(c2, eq(decks.commanderId2, c2.id))
-    .where(eq(participations.matchId, matchId));
+    .where(eq(participations.matchId, matchId))
+    .orderBy(asc(participations.createdAt), asc(participations.id));
 
   const participationDetails: ParticipationDetail[] = rows.map((row) => ({
     id: row.id,

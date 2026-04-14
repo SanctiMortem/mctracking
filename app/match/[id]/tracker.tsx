@@ -1,9 +1,13 @@
 /**
  * SCR-008: Match Tracker — live tracking screen.
  *
- * Full-screen modal (tab bar hidden). Renders a TrackerLayout with 2/3/4 PlayerSections.
- * Each section contains LifeCounter, PoisonCounter, and CommanderDamagePanel.
- * EventLogPanel + Undo button are accessible via a floating button.
+ * 3-Level Architecture:
+ *   Level 1 — TrackerLayout (Grid): divides screen into 2/3/4 slots
+ *   Level 2 — PlayerSection (Frame): immovable anchor, handles rotation
+ *   Level 3 — PlayerDashboard (Object): scalable content with all widgets
+ *
+ * Per-player turn timers: tap a player's name to start their timer.
+ * Tapping again stops it; tapping another player starts theirs.
  *
  * TRACK-003 (EPIC-03)
  */
@@ -22,12 +26,13 @@ import { useTranslation } from 'react-i18next';
 import { CommanderDamagePanel } from '@/components/tracker/CommanderDamagePanel';
 import { EventLogPanel } from '@/components/tracker/EventLogPanel';
 import { LifeCounter } from '@/components/tracker/LifeCounter';
+import { PlayerDashboard } from '@/components/tracker/PlayerDashboard';
 import { PoisonCounter } from '@/components/tracker/PoisonCounter';
 import { TrackerLayout } from '@/components/match/TrackerLayout';
 import { useTracker } from '@/hooks/useTracker';
 import { colors, spacing, typography } from '@/styles/tokens';
 
-// ─── Timer ───────────────────────────────────
+// ─── Match Timer ────────────────────────────────
 
 function useMatchTimer() {
   const [elapsed, setElapsed] = useState(0);
@@ -50,14 +55,60 @@ function useMatchTimer() {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-// ─── Screen ──────────────────────────────────
+// ─── Per-Player Turn Timers ─────────────────────
+
+function useTurnTimers(participationIds: string[]) {
+  // Elapsed seconds per player (persists across start/stop)
+  const [elapsed, setElapsed] = useState<Record<string, number>>({});
+  // Which player's timer is currently running (null = none)
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Tick the active player's timer every second
+  useEffect(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (!activeId) return;
+
+    intervalRef.current = setInterval(() => {
+      setElapsed((prev) => ({ ...prev, [activeId]: (prev[activeId] ?? 0) + 1 }));
+    }, 1000);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [activeId]);
+
+  const toggle = useCallback((id: string) => {
+    setActiveId((prev) => (prev === id ? null : id));
+  }, []);
+
+  return { elapsed, activeId, toggle };
+}
+
+// ─── Screen ─────────────────────────────────────
 
 export default function MatchTrackerScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, rotations: rotationsParam, playerOrder: playerOrderParam } = useLocalSearchParams<{ id: string; rotations?: string; playerOrder?: string }>();
   const router = useRouter();
   const { t } = useTranslation();
   const timer = useMatchTimer();
   const [logVisible, setLogVisible] = useState(false);
+
+  // Parse rotation map from setup screen (playerId → degrees)
+  const rotationMap: Record<string, number> = (() => {
+    if (!rotationsParam) return {};
+    try { return JSON.parse(decodeURIComponent(rotationsParam)); }
+    catch { return {}; }
+  })();
+
+  // Parse player order from setup screen — used to sort participations into
+  // the exact seat arrangement the user configured, since all participations
+  // share the same createdAt and DB order is non-deterministic.
+  const playerOrder: string[] = (() => {
+    if (!playerOrderParam) return [];
+    try { return JSON.parse(decodeURIComponent(playerOrderParam)); }
+    catch { return []; }
+  })();
 
   const {
     match,
@@ -71,6 +122,9 @@ export default function MatchTrackerScreen() {
     undoLastEvent,
   } = useTracker(id);
 
+  // Turn timers — initialized once participations load
+  const turnTimers = useTurnTimers(participations.map((p) => p.id));
+
   // Clear toast after 3s
   useEffect(() => {
     if (!toastError) return;
@@ -78,7 +132,7 @@ export default function MatchTrackerScreen() {
     return () => clearTimeout(t);
   }, [toastError, clearToastError]);
 
-  // Redirect if match is not in_progress (guard against repeated navigation)
+  // Redirect if match is not in_progress
   const hasNavigatedRef = useRef(false);
   useEffect(() => {
     if (!match || hasNavigatedRef.current) return;
@@ -111,10 +165,19 @@ export default function MatchTrackerScreen() {
     );
   }
 
-  // Build sections for TrackerLayout
-  const sections = participations.map((p) => {
-    // Enemy commanders: commanders from all other participations
-    const enemyCommanders = participations
+  // Sort participations into the seat order from setup (if available).
+  // Without this, all participations share the same createdAt and DB order is random.
+  const sortedParticipations = playerOrder.length > 0
+    ? [...participations].sort((a, b) => {
+        const idxA = playerOrder.indexOf(a.playerId);
+        const idxB = playerOrder.indexOf(b.playerId);
+        return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+      })
+    : participations;
+
+  // Build sections: Level 1 (Grid) gets Level 2 (Frame) wrapping Level 3 (Dashboard)
+  const sections = sortedParticipations.map((p) => {
+    const enemyCommanders = sortedParticipations
       .filter((other) => other.id !== p.id)
       .flatMap((other) => {
         const cmds = [{ id: other.commander.id, name: other.commander.name }];
@@ -124,9 +187,14 @@ export default function MatchTrackerScreen() {
 
     return {
       id: p.id,
-      playerName: p.player.name,
+      rotation: rotationMap[p.playerId] ?? 0,
       content: (
-        <View style={styles.sectionContent}>
+        <PlayerDashboard
+          playerName={p.player.name}
+          timerSeconds={turnTimers.elapsed[p.id] ?? 0}
+          timerActive={turnTimers.activeId === p.id}
+          onToggleTimer={() => turnTimers.toggle(p.id)}
+        >
           <LifeCounter
             lifeTotal={p.lifeTotal}
             participationId={p.id}
@@ -143,7 +211,7 @@ export default function MatchTrackerScreen() {
             participationId={p.id}
             onEvent={recordEvent}
           />
-        </View>
+        </PlayerDashboard>
       ),
     };
   });
@@ -152,7 +220,7 @@ export default function MatchTrackerScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      {/* ── Header ── */}
+      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.timer}>{timer}</Text>
         <Pressable
@@ -165,19 +233,19 @@ export default function MatchTrackerScreen() {
         </Pressable>
       </View>
 
-      {/* ── Tracker layout ── */}
+      {/* Tracker layout (Level 1 → Level 2 → Level 3) */}
       <View style={styles.layoutContainer}>
         <TrackerLayout sections={sections} />
       </View>
 
-      {/* ── Toast error ── */}
+      {/* Toast error */}
       {toastError && (
         <View style={styles.toast}>
           <Text style={styles.toastText}>{toastError}</Text>
         </View>
       )}
 
-      {/* ── Floating controls: Undo + Event Log toggle ── */}
+      {/* Floating controls */}
       <View style={styles.floatingRow}>
         <Pressable
           onPress={undoLastEvent}
@@ -201,7 +269,7 @@ export default function MatchTrackerScreen() {
         </Pressable>
       </View>
 
-      {/* ── Event log panel ── */}
+      {/* Event log panel */}
       {logVisible && (
         <EventLogPanel
           events={events}
@@ -230,7 +298,6 @@ const styles = StyleSheet.create({
     fontSize: typography.size['body-lg'],
   },
 
-  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -260,18 +327,10 @@ const styles = StyleSheet.create({
     fontWeight: typography.weight.semibold,
   },
 
-  // Layout
   layoutContainer: {
     flex: 1,
   },
-  sectionContent: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    gap: spacing[2],
-  },
 
-  // Toast
   toast: {
     position: 'absolute',
     bottom: 80,
@@ -288,7 +347,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Floating row
   floatingRow: {
     flexDirection: 'row',
     justifyContent: 'center',

@@ -19,14 +19,22 @@ export async function GET(req: Request) {
   const id = getRouteParam(req, 'id');
   if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
 
-  const result = await getCommanderStats(userId, id);
+  try {
+    const result = await getCommanderStats(userId, id);
 
-  if ('notFound' in result) {
-    return Response.json({ error: 'NOT_FOUND', message: 'Commander not found' }, { status: 404 });
-  }
-  if ('forbidden' in result) {
-    return Response.json({ error: 'FORBIDDEN', message: 'Access denied' }, { status: 403 });
-  }
+    if ('notFound' in result) {
+      return Response.json({ error: 'NOT_FOUND', message: 'Commander not found' }, { status: 404 });
+    }
+    if ('forbidden' in result) {
+      return Response.json({ error: 'FORBIDDEN', message: 'Access denied' }, { status: 403 });
+    }
 
-  return Response.json({ success: true, data: result.data }, { status: 200 });
+    return Response.json({ success: true, data: result.data }, { status: 200 });
+  } catch (e) {
+    console.error('[GET /api/stats/commanders/:id]', e);
+    return Response.json(
+      { error: 'INTERNAL', message: (e as Error).message ?? 'Internal server error' },
+      { status: 500 },
+    );
+  }
 }

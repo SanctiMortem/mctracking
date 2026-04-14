@@ -9,9 +9,10 @@
  *
  * MATCH-005 (EPIC-02)
  */
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Modal,
   Pressable,
@@ -30,10 +31,11 @@ import { useMatchSetup } from '@/hooks/useMatchSetup';
 import type { DeckWithCommanders } from '@/services/decks';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
+import { LayoutPreview } from './LayoutPreview';
 import { PlayerSelectorChip } from './PlayerSelectorChip';
 
 interface MatchSetupFormProps {
-  onSubmit: (matchId: string) => void;
+  onSubmit: (matchId: string, rotations: Record<string, number>, playerOrder: string[]) => void;
 }
 
 export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
@@ -43,8 +45,11 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
   const {
     selectedPlayerIds,
     deckAssignments,
+    rotations,
     togglePlayer,
     setDeck,
+    reorderPlayers,
+    setRotation,
     duplicateDeckIds,
     isValid,
     isSubmitting,
@@ -54,10 +59,26 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
 
   // deckPickerFor: playerId currently opening the deck picker, or null.
   const [deckPickerFor, setDeckPickerFor] = useState<string | null>(null);
+  // Random starter: the playerId who goes first (null = not randomized yet)
+  const [startingPlayerId, setStartingPlayerId] = useState<string | null>(null);
+
+  /** Fisher-Yates shuffle + pick random starting player */
+  const handleRandomize = useCallback(() => {
+    if (selectedPlayerIds.length < 2) return;
+    const shuffled = [...selectedPlayerIds];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    reorderPlayers(shuffled);
+    setStartingPlayerId(shuffled[0]);
+    const starterName = players.find((p) => p.id === shuffled[0])?.name ?? '?';
+    Alert.alert('🎲', t('match.randomStarterResult', { name: starterName }));
+  }, [selectedPlayerIds, reorderPlayers, players, t]);
 
   async function handleSubmit() {
     const matchId = await submit();
-    if (matchId) onSubmit(matchId);
+    if (matchId) onSubmit(matchId, rotations, selectedPlayerIds);
   }
 
   // ─── Edge cases ───────────────────────────────────────────────────────────
@@ -183,6 +204,35 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
           </>
         )}
 
+        {/* ── Section 3: Position arrangement + random starter ── */}
+        {selectedPlayers.length >= 2 && !hasDuplicate && selectedPlayers.every((p) => deckAssignments[p.id]) && (
+          <>
+            <View style={styles.divider} />
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionLabel}>{t('match.arrangePositions')}</Text>
+              <Pressable onPress={handleRandomize} style={styles.randomizeBtn}>
+                <Text style={styles.randomizeBtnText}>🎲 {t('match.randomize')}</Text>
+              </Pressable>
+            </View>
+
+            {/* Show who goes first */}
+            {startingPlayerId && (
+              <View style={styles.starterBanner}>
+                <Text style={styles.starterText}>
+                  ⭐ {players.find((p) => p.id === startingPlayerId)?.name} {t('match.goesFirst')}
+                </Text>
+              </View>
+            )}
+
+            <LayoutPreview
+              players={selectedPlayers.map((p) => ({ id: p.id, name: p.name }))}
+              rotations={rotations}
+              onReorder={(reordered) => reorderPlayers(reordered.map((p) => p.id))}
+              onRotate={setRotation}
+            />
+          </>
+        )}
+
         {/* API error */}
         {apiError && <Text style={styles.errorText}>{apiError}</Text>}
 
@@ -305,6 +355,12 @@ const styles = StyleSheet.create({
   },
 
   // ─── Sections ─────────────────────────────────────────────────────────────
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing[3],
+  },
   sectionLabel: {
     color: colors.text.secondary,
     fontSize: typography.size['body-sm'],
@@ -312,6 +368,31 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     marginBottom: spacing[3],
+  },
+  randomizeBtn: {
+    backgroundColor: colors.accent.primary + '22',
+    borderRadius: radius.md,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    marginBottom: spacing[3],
+  },
+  randomizeBtnText: {
+    color: colors.accent.primary,
+    fontSize: typography.size['body-sm'],
+    fontWeight: typography.weight.semibold,
+  },
+  starterBanner: {
+    backgroundColor: colors.accent.primary + '1A',
+    borderRadius: radius.md,
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[3],
+    marginBottom: spacing[3],
+    alignItems: 'center',
+  },
+  starterText: {
+    color: colors.accent.primary,
+    fontSize: typography.size['body-sm'],
+    fontWeight: typography.weight.semibold,
   },
   chipsRow: {
     gap: spacing[2],

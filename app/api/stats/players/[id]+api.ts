@@ -20,14 +20,22 @@ export async function GET(req: Request) {
   const id = getRouteParam(req, 'id');
   if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
 
-  const result = await getPlayerStats(userId, id);
+  try {
+    const result = await getPlayerStats(userId, id);
 
-  if ('notFound' in result) {
-    return Response.json({ error: 'NOT_FOUND', message: 'Player not found' }, { status: 404 });
-  }
-  if ('forbidden' in result) {
-    return Response.json({ error: 'FORBIDDEN', message: 'Access denied' }, { status: 403 });
-  }
+    if ('notFound' in result) {
+      return Response.json({ error: 'NOT_FOUND', message: 'Player not found' }, { status: 404 });
+    }
+    if ('forbidden' in result) {
+      return Response.json({ error: 'FORBIDDEN', message: 'Access denied' }, { status: 403 });
+    }
 
-  return Response.json({ success: true, data: result.data }, { status: 200 });
+    return Response.json({ success: true, data: result.data }, { status: 200 });
+  } catch (e) {
+    console.error('[GET /api/stats/players/:id]', e);
+    return Response.json(
+      { error: 'INTERNAL', message: (e as Error).message ?? 'Internal server error' },
+      { status: 500 },
+    );
+  }
 }
