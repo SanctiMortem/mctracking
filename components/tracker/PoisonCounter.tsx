@@ -117,12 +117,8 @@ const styles = StyleSheet.create({
   btn: {
     width: 32,
     height: 32,
-    borderRadius: radius.round,
-    backgroundColor: colors.background.elevated,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border.default,
   },
   btnDisabled: {
     opacity: 0.3,

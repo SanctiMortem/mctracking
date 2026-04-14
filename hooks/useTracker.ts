@@ -131,6 +131,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
 
     // Commit the delta to canonical state so the counter components
     // can reset their pendingDelta to 0 without visual flicker.
+    // Commander damage also reduces the target player's life total.
     setParticipations((parts) =>
       parts.map((p) => {
         if (p.id !== participationId) return p;
@@ -144,6 +145,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
           const current = p.commanderDamage[commanderIdSource] ?? 0;
           return {
             ...p,
+            lifeTotal: p.lifeTotal - delta, // commander damage reduces HP
             commanderDamage: { ...p.commanderDamage, [commanderIdSource]: current + delta },
           };
         }
@@ -209,6 +211,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
           const current = p.commanderDamage[lastEvent.commanderIdSource] ?? 0;
           return {
             ...p,
+            lifeTotal: p.lifeTotal + lastEvent.delta, // restore HP that was lost
             commanderDamage: {
               ...p.commanderDamage,
               [lastEvent.commanderIdSource]: Math.max(0, current - lastEvent.delta),

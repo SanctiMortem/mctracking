@@ -104,9 +104,11 @@ export async function recordEvent(input: RecordEventInput): Promise<RecordEventR
       .set({ poisonCounters: sql`poison_counters + ${delta}` })
       .where(eq(participations.id, participationId));
   } else if (eventType === 'commander_damage' && commanderIdSource) {
+    // Commander damage updates the JSONB tracker AND reduces life_total
     await db
       .update(participations)
       .set({
+        lifeTotal: sql`life_total - ${delta}`,
         commanderDamage: sql`commander_damage || jsonb_build_object(
           ${commanderIdSource}::text,
           (COALESCE((commander_damage->>cast(${commanderIdSource} as text))::int, 0) + ${delta})
@@ -169,9 +171,11 @@ export async function undoLastEvent(matchId: string): Promise<UndoResult> {
       .set({ poisonCounters: sql`poison_counters + ${inverseDelta}` })
       .where(eq(participations.id, lastEvent.participationId));
   } else if (lastEvent.eventType === 'commander_damage' && lastEvent.commanderIdSource) {
+    // Undo commander damage: revert JSONB tracker AND restore life_total
     await db
       .update(participations)
       .set({
+        lifeTotal: sql`life_total - ${inverseDelta}`,
         commanderDamage: sql`commander_damage || jsonb_build_object(
           ${lastEvent.commanderIdSource}::text,
           (COALESCE((commander_damage->>cast(${lastEvent.commanderIdSource} as text))::int, 0) + ${inverseDelta})

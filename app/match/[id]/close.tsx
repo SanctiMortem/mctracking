@@ -12,7 +12,8 @@ import { CloseMatchSheet } from '@/components/match/CloseMatchSheet';
 import { useCloseMatch } from '@/hooks/useCloseMatch';
 
 export default function MatchCloseScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, edit } = useLocalSearchParams<{ id: string; edit?: string }>();
+  const isEditMode = edit === 'true';
 
   const {
     participations,
@@ -27,12 +28,26 @@ export default function MatchCloseScreen() {
     isSubmitting,
     error,
     submit,
+    submitEdit,
   } = useCloseMatch(id);
 
   async function handleConfirm() {
+    if (isEditMode) {
+      const ok = await submitEdit();
+      if (ok) {
+        router.back();
+      }
+      return;
+    }
     const ok = await submit();
     if (ok) {
-      router.replace(`/match/${id}/results` as never);
+      // Dismiss all modals (tracker + close sheet) before navigating
+      router.dismissAll();
+      if (mode === 'abandon') {
+        router.replace('/(tabs)/' as never);
+      } else {
+        router.replace(`/match/${id}/results` as never);
+      }
     }
   }
 
@@ -56,6 +71,7 @@ export default function MatchCloseScreen() {
         error={error}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
+        hideAbandon={isEditMode}
       />
     </View>
   );

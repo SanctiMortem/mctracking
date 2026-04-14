@@ -16,8 +16,13 @@ import type { Match, Participation } from '@/db/index';
 export type UseMatchSetupReturn = {
   selectedPlayerIds: string[];
   deckAssignments: Record<string, string>; // playerId → deckId
+  rotations: Record<string, number>; // playerId → degrees (0, 90, 180, 270)
   togglePlayer: (playerId: string) => void;
   setDeck: (playerId: string, deckId: string) => void;
+  /** Replace selectedPlayerIds with a new order (same IDs, different positions). */
+  reorderPlayers: (orderedIds: string[]) => void;
+  /** Set text rotation for a player's frame. */
+  setRotation: (playerId: string, degrees: number) => void;
   duplicateDeckIds: Set<string>;
   isValid: boolean;
   isSubmitting: boolean;
@@ -31,6 +36,7 @@ export function useMatchSetup(): UseMatchSetupReturn {
 
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [deckAssignments, setDeckAssignments] = useState<Record<string, string>>({});
+  const [rotations, setRotations] = useState<Record<string, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
@@ -38,9 +44,14 @@ export function useMatchSetup(): UseMatchSetupReturn {
     setApiError(null);
     setSelectedPlayerIds((prev) => {
       if (prev.includes(playerId)) {
-        // Deselect: also clear this player's deck assignment.
+        // Deselect: also clear this player's deck assignment and rotation.
         setDeckAssignments((da) => {
           const next = { ...da };
+          delete next[playerId];
+          return next;
+        });
+        setRotations((r) => {
+          const next = { ...r };
           delete next[playerId];
           return next;
         });
@@ -54,6 +65,14 @@ export function useMatchSetup(): UseMatchSetupReturn {
   const setDeck = useCallback((playerId: string, deckId: string) => {
     setDeckAssignments((prev) => ({ ...prev, [playerId]: deckId }));
     setApiError(null);
+  }, []);
+
+  const reorderPlayers = useCallback((orderedIds: string[]) => {
+    setSelectedPlayerIds(orderedIds);
+  }, []);
+
+  const setRotation = useCallback((playerId: string, degrees: number) => {
+    setRotations((prev) => ({ ...prev, [playerId]: degrees }));
   }, []);
 
   // Set of deckIds that appear more than once across assignments (BR-MATCH-02).
@@ -109,8 +128,11 @@ export function useMatchSetup(): UseMatchSetupReturn {
   return {
     selectedPlayerIds,
     deckAssignments,
+    rotations,
     togglePlayer,
     setDeck,
+    reorderPlayers,
+    setRotation,
     duplicateDeckIds,
     isValid,
     isSubmitting,

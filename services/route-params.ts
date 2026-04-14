@@ -16,11 +16,25 @@ export function getRouteParam(req: Request, paramName: string): string | null {
   // the param is always the segment after the resource name.
   const segments = pathname.split('/').filter(Boolean);
 
-  // For routes like /api/groups/[id]/invite → segments: ['api', 'groups', '<value>', 'invite']
-  // For routes like /api/players/[id]       → segments: ['api', 'players', '<value>']
-  // The param 'id' is always at index 2 (third segment after 'api' + resource)
-  if (paramName === 'id' && segments.length >= 3) {
-    return segments[2];
+  // Match the file-system route pattern against the URL to find the param value.
+  // The route file path encodes param positions with brackets, e.g.:
+  //   /api/players/[id]+api.ts        → URL: /api/players/<value>
+  //   /api/stats/decks/[id]+api.ts    → URL: /api/stats/decks/<value>
+  //   /api/groups/[id]/invite+api.ts  → URL: /api/groups/<value>/invite
+  //
+  // Strategy: find the last UUID-shaped segment, or for simple 'id' params,
+  // scan right-to-left for a non-static segment (not a known resource name).
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  if (paramName === 'id') {
+    // Prefer UUID match (most reliable)
+    for (let i = segments.length - 1; i >= 1; i--) {
+      if (UUID_RE.test(segments[i])) return segments[i];
+    }
+    // Fallback: last segment that isn't a static route part
+    // For /api/stats/decks/<id> → return <id> (last segment)
+    const last = segments[segments.length - 1];
+    if (last && last !== 'api') return last;
   }
 
   return null;

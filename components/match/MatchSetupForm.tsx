@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.surface,
   },
   submitBtnText: {
-    color: '#fff',
+    color: colors.accent.onPrimary,
     fontSize: typography.size['body-lg'],
     fontWeight: typography.weight.semibold,
     letterSpacing: 0.5,

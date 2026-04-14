@@ -41,6 +41,8 @@ interface CloseMatchSheetProps {
   error: string | null;
   onConfirm: () => void;
   onCancel: () => void;
+  /** Hide the abandon option (e.g. in edit mode) */
+  hideAbandon?: boolean;
 }
 
 export function CloseMatchSheet({
@@ -57,6 +59,7 @@ export function CloseMatchSheet({
   error,
   onConfirm,
   onCancel,
+  hideAbandon = false,
 }: CloseMatchSheetProps) {
   const { t } = useTranslation();
 
@@ -161,15 +164,17 @@ export function CloseMatchSheet({
                   {t('match.draw')}
                 </Text>
               </Pressable>
-              <Pressable
-                onPress={() => onModeChange(mode === 'abandon' ? 'win' : 'abandon')}
-                style={[styles.secondaryBtn, mode === 'abandon' && styles.secondaryBtnActive]}
-                accessibilityRole="button"
-              >
-                <Text style={[styles.secondaryBtnText, mode === 'abandon' && styles.secondaryBtnTextActive]}>
-                  {t('match.abandon')}
-                </Text>
-              </Pressable>
+              {!hideAbandon && (
+                <Pressable
+                  onPress={() => onModeChange(mode === 'abandon' ? 'win' : 'abandon')}
+                  style={[styles.secondaryBtn, mode === 'abandon' && styles.secondaryBtnActive]}
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.secondaryBtnText, mode === 'abandon' && styles.secondaryBtnTextActive]}>
+                    {t('match.abandon')}
+                  </Text>
+                </Pressable>
+              )}
             </View>
 
             {error && <Text style={styles.errorText}>{error}</Text>}

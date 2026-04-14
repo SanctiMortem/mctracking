@@ -40,13 +40,13 @@ export function PlayerDashboard({
   children,
 }: PlayerDashboardProps) {
   const { scale, isTablet } = useResponsive();
-  const nameSize = isTablet ? scale(typography.size.caption) : typography.size.caption;
+  const nameSize = isTablet ? scale(typography.size['body-md']) : typography.size['body-md'];
   const timerSize = isTablet ? scale(typography.size.caption) : typography.size.caption;
 
   return (
     <View style={styles.dashboard}>
-      {/* Player name + turn timer — tappable */}
-      <Pressable onPress={onToggleTimer} style={[styles.nameRow, isTablet && { gap: scale(spacing[2]), paddingVertical: scale(spacing[1]) }]}>
+      {/* Player name + turn timer — tappable (large hit area) */}
+      <Pressable onPress={onToggleTimer} style={[styles.nameRow, isTablet && { gap: scale(spacing[2]), paddingVertical: scale(spacing[2]) }]}>
         <Text
           style={[styles.playerName, isTablet && { fontSize: nameSize }]}
           numberOfLines={1}
@@ -84,15 +84,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing[2],
-    paddingVertical: spacing[1],
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[3],
     flexShrink: 0,
     width: '100%',
+    minHeight: 44,
   },
   playerName: {
-    color: colors.text.secondary,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
-    letterSpacing: typography.letterSpacing.wider,
+    color: colors.text.primary,
+    fontSize: typography.size['body-md'],
+    fontWeight: typography.weight.bold,
+    letterSpacing: typography.letterSpacing.wide,
     textTransform: 'uppercase',
     flexShrink: 1,
   },

@@ -1,11 +1,12 @@
 /**
  * MatchResultCard — hero card for SCR-010 Match Results.
- * Shows outcome banner (VICTORIA / EMPATE / ABANDONADA) + winner details
+ * Shows outcome banner (VICTORY / DRAW / ABANDONED) + winner details
  * or draw/abandoned contextual message.
  *
  * MATCH-007 (EPIC-02)
  */
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { ColorChips } from '@/components/ui/ColorChips';
 import type { MatchOutcome } from '@/hooks/useMatchResults';
@@ -18,45 +19,36 @@ interface MatchResultCardProps {
   winConditionDisplay: string | null;
 }
 
-// ─── Outcome config ───────────────────────────────────────────────────────────
-
-type OutcomeConfig = {
-  icon: string;
-  label: string;
-  accent: string;
-  subtext: string | null;
-};
-
-function outcomeConfig(outcome: MatchOutcome, winnerName: string | null): OutcomeConfig {
-  switch (outcome) {
-    case 'win':
-      return {
-        icon: '✦',
-        label: 'VICTORIA',
-        accent: colors.accent.primary,
-        subtext: winnerName ? `${winnerName} ha ganado` : null,
-      };
-    case 'draw':
-      return {
-        icon: '◈',
-        label: 'EMPATE',
-        accent: colors.accent.primary,
-        subtext: 'Todos los jugadores empataron',
-      };
-    case 'abandoned':
-      return {
-        icon: '✕',
-        label: 'ABANDONADA',
-        accent: colors.text.muted,
-        subtext: 'Esta partida no cuenta en las estadísticas',
-      };
-  }
-}
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export function MatchResultCard({ outcome, winner, winConditionDisplay }: MatchResultCardProps) {
-  const cfg = outcomeConfig(outcome, winner?.player.name ?? null);
+  const { t } = useTranslation();
+
+  const winnerName = winner?.player.name ?? null;
+
+  const cfg = (() => {
+    switch (outcome) {
+      case 'win':
+        return {
+          icon: '✦',
+          label: t('match.outcomeVictory').toUpperCase(),
+          accent: colors.accent.primary,
+          subtext: winnerName ? t('match.outcomeWinSubtext', { name: winnerName }) : null,
+        };
+      case 'draw':
+        return {
+          icon: '◈',
+          label: t('match.outcomeDraw').toUpperCase(),
+          accent: colors.accent.primary,
+          subtext: t('match.outcomeDrawSubtext'),
+        };
+      case 'abandoned':
+        return {
+          icon: '✕',
+          label: t('match.outcomeAbandoned').toUpperCase(),
+          accent: colors.text.muted,
+          subtext: t('match.outcomeAbandonedSubtext'),
+        };
+    }
+  })();
 
   return (
     <View style={[styles.card, { borderColor: cfg.accent + '44' }]}>
@@ -99,7 +91,7 @@ export function MatchResultCard({ outcome, winner, winConditionDisplay }: MatchR
           {/* Win condition */}
           {winConditionDisplay && (
             <View style={styles.conditionRow}>
-              <Text style={styles.conditionLabel}>Victoria por</Text>
+              <Text style={styles.conditionLabel}>{t('match.winByLabel')}</Text>
               <View style={styles.conditionBadge}>
                 <Text style={styles.conditionText}>{winConditionDisplay}</Text>
               </View>

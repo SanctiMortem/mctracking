@@ -46,7 +46,11 @@ export default function MatchResultsScreen() {
     );
   }
 
-  const { outcome, winner, winConditionDisplay, participations, duration } = data;
+  const { match, outcome, winner, winConditionDisplay, participations, duration } = data;
+
+  // 15-min edit window
+  const canEdit = outcome !== 'abandoned' && match.endedAt &&
+    (Date.now() - new Date(match.endedAt).getTime()) < 15 * 60 * 1000;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -84,6 +88,17 @@ export default function MatchResultsScreen() {
 
         {/* ── CTAs ── */}
         <View style={styles.ctaStack}>
+          {/* Edit result — only within 15 min of match end */}
+          {canEdit && (
+            <TouchableOpacity
+              style={styles.ctaOutline}
+              onPress={() => router.push(`/match/${id}/close?edit=true` as never)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.ctaOutlineText}>{t('match.editResult')}</Text>
+            </TouchableOpacity>
+          )}
+
           {/* "Ver detalle" — only if not abandoned */}
           {outcome !== 'abandoned' && (
             <TouchableOpacity

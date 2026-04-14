@@ -247,6 +247,112 @@ export async function closeMatch(
 }
 
 // ─────────────────────────────────────────────
+// updateMatchResult (15-min edit window)
+// ─────────────────────────────────────────────
+
+const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+export type UpdateResultAction =
+  | { action: 'update_result'; winner_participation_id: string; win_condition: string }
+  | { action: 'update_result_draw' };
+
+export type UpdateResultResult =
+  | { data: { match: Match; result: MatchResult | null } }
+  | { notFound: true }
+  | { forbidden: true }
+  | { editWindowExpired: true }
+  | { notCompleted: true }
+  | { invalidWinCondition: true }
+  | { participationNotFound: true };
+
+/**
+ * Allows editing the winner and win condition of a completed match
+ * within 15 minutes of endedAt.
+ */
+export async function updateMatchResult(
+  userId: string,
+  matchId: string,
+  input: UpdateResultAction,
+): Promise<UpdateResultResult> {
+  const [match] = await db
+    .select()
+    .from(matches)
+    .where(eq(matches.id, matchId))
+    .limit(1);
+
+  if (!match) return { notFound: true };
+  if (match.createdBy !== userId) return { forbidden: true };
+  if (match.status !== 'completed') return { notCompleted: true };
+
+  // Check 15-min edit window
+  if (!match.endedAt || Date.now() - new Date(match.endedAt).getTime() > EDIT_WINDOW_MS) {
+    return { editWindowExpired: true };
+  }
+
+  if (input.action === 'update_result') {
+    if (!VALID_WIN_CONDITIONS.has(input.win_condition)) {
+      return { invalidWinCondition: true };
+    }
+
+    const parts = await db
+      .select()
+      .from(participations)
+      .where(eq(participations.matchId, matchId));
+
+    const winner = parts.find((p) => p.id === input.winner_participation_id);
+    if (!winner) return { participationNotFound: true };
+
+    // Delete old result
+    await db.delete(matchResults).where(eq(matchResults.matchId, matchId));
+
+    // Reset all participation results
+    await db
+      .update(participations)
+      .set({ result: 'lose' })
+      .where(eq(participations.matchId, matchId));
+
+    // Mark winner
+    await db
+      .update(participations)
+      .set({ result: 'win' })
+      .where(eq(participations.id, input.winner_participation_id));
+
+    // Create new result
+    const [mr] = await db
+      .insert(matchResults)
+      .values({
+        matchId,
+        winnerParticipationId: input.winner_participation_id,
+        winCondition: input.win_condition as MatchResult['winCondition'],
+        isDraw: false,
+      })
+      .returning();
+
+    return { data: { match, result: mr } };
+  }
+
+  // update_result_draw
+  await db.delete(matchResults).where(eq(matchResults.matchId, matchId));
+
+  await db
+    .update(participations)
+    .set({ result: 'draw' })
+    .where(eq(participations.matchId, matchId));
+
+  const [mr] = await db
+    .insert(matchResults)
+    .values({
+      matchId,
+      winnerParticipationId: null,
+      winCondition: 'other',
+      isDraw: true,
+    })
+    .returning();
+
+  return { data: { match, result: mr } };
+}
+
+// ─────────────────────────────────────────────
 // getMatchById
 // ─────────────────────────────────────────────
 

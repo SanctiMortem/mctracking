@@ -14,14 +14,31 @@ import { PlayerSection } from './PlayerSection';
 
 export type LayoutType = '2p' | '3p' | '4p';
 
-interface SectionData {
+export interface SectionData {
   id: string;
-  playerName: string;
+  /** Text rotation in degrees (0, 90, 180, 270). Set during match setup. */
+  rotation?: number;
+  /** Whether this player's turn timer is active. */
+  isActive?: boolean;
   content: React.ReactNode;
 }
 
 interface TrackerLayoutProps {
   sections: SectionData[];
+}
+
+function Section({ s, style }: { s: SectionData; style?: object }) {
+  return (
+    <PlayerSection
+      key={s.id}
+      rotation={s.rotation}
+      isActive={s.isActive}
+      flex={1}
+      style={style}
+    >
+      {s.content}
+    </PlayerSection>
+  );
 }
 
 export function TrackerLayout({ sections }: TrackerLayoutProps) {
@@ -31,9 +48,7 @@ export function TrackerLayout({ sections }: TrackerLayoutProps) {
     return (
       <View style={styles.container}>
         {sections.map((s) => (
-          <PlayerSection key={s.id} playerName={s.playerName} flex={1} style={styles.fullWidth}>
-            {s.content}
-          </PlayerSection>
+          <Section key={s.id} s={s} style={styles.fullWidth} />
         ))}
       </View>
     );
@@ -43,16 +58,10 @@ export function TrackerLayout({ sections }: TrackerLayoutProps) {
     const [top, ...bottom] = sections;
     return (
       <View style={styles.container}>
-        {/* Top: single full-width section */}
-        <PlayerSection key={top.id} playerName={top.playerName} flex={1} style={styles.fullWidth}>
-          {top.content}
-        </PlayerSection>
-        {/* Bottom: two equal sections side by side */}
+        <Section s={top} style={styles.fullWidth} />
         <View style={styles.row}>
           {bottom.map((s) => (
-            <PlayerSection key={s.id} playerName={s.playerName} flex={1}>
-              {s.content}
-            </PlayerSection>
+            <Section key={s.id} s={s} />
           ))}
         </View>
       </View>
@@ -64,12 +73,12 @@ export function TrackerLayout({ sections }: TrackerLayoutProps) {
     return (
       <View style={styles.container}>
         <View style={styles.row}>
-          <PlayerSection key={a.id} playerName={a.playerName} flex={1}>{a.content}</PlayerSection>
-          <PlayerSection key={b.id} playerName={b.playerName} flex={1}>{b.content}</PlayerSection>
+          <Section s={a} />
+          <Section s={b} />
         </View>
         <View style={styles.row}>
-          <PlayerSection key={c.id} playerName={c.playerName} flex={1}>{c.content}</PlayerSection>
-          <PlayerSection key={d.id} playerName={d.playerName} flex={1}>{d.content}</PlayerSection>
+          <Section s={c} />
+          <Section s={d} />
         </View>
       </View>
     );

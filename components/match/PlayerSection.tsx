@@ -1,111 +1,85 @@
 /**
- * PlayerSection — one player's quadrant in the Match Tracker (SCR-008).
+ * PlayerSection — Level 2: The immovable frame (anchor).
  *
- * Rotatable 180° via long-press (BR-TRACK-13): each section tracks its own
- * rotation state independently.
+ * This component is a pure container. It:
+ *   1. Participates in flex layout via `flex` (TrackerLayout decides size)
+ *   2. Creates an absolute-filled inner frame so NO child content change
+ *      can ever move, resize, or shift this component on screen
+ *   3. Applies CSS rotation to the content layer (0/90/180/270)
+ *   4. Renders children (the PlayerDashboard) centered inside
+ *
+ * It has zero awareness of what's inside it — no player name, no scroll,
+ * no tracker logic. That all lives in PlayerDashboard (Level 3).
  *
  * TRACK-003 (EPIC-03)
  */
-import { useCallback, useState } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import { StyleSheet, View } from 'react-native';
 
-import { colors, motion, radius, spacing, typography } from '@/styles/tokens';
+import { colors, spacing } from '@/styles/tokens';
 
 interface PlayerSectionProps {
-  playerName: string;
   children: React.ReactNode;
-  /** Flex basis for this section (e.g. 0.5 for half the container). */
   flex?: number;
-  /** Additional style for the outer wrapper. */
+  /** Content rotation in degrees (0, 90, 180, 270). Defaults to 0. */
+  rotation?: number;
+  /** Whether this player's turn timer is active — highlights the whole frame. */
+  isActive?: boolean;
   style?: object;
 }
 
-export function PlayerSection({ playerName, children, flex = 1, style }: PlayerSectionProps) {
-  const [rotated, setRotated] = useState(false);
-  const rotation = useSharedValue(0);
-
-  const handleLongPress = useCallback(() => {
-    const next = rotated ? 0 : 180;
-    rotation.value = withTiming(next, { duration: motion.duration.normal });
-    setRotated(!rotated);
-  }, [rotated, rotation]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotation.value}deg` }],
-  }));
+export function PlayerSection({ children, flex = 1, rotation = 0, isActive = false, style }: PlayerSectionProps) {
+  const isSideways = rotation === 90 || rotation === 270;
 
   return (
-    <View style={[styles.wrapper, { flex }, style]}>
-      <Animated.View style={[styles.inner, animatedStyle]}>
-        {/* Rotation handle indicator */}
-        <Pressable
-          onLongPress={handleLongPress}
-          delayLongPress={600}
-          style={styles.rotateHandle}
-          accessibilityLabel={`Long press to rotate ${playerName}'s section`}
-          accessibilityRole="button"
+    <View style={[styles.wrapper, isActive && styles.wrapperActive, { flex }, style]}>
+      {/* Absolute fill — wrapper keeps its flex-assigned size no matter what */}
+      <View style={[styles.frame, isActive && styles.frameActive]}>
+        <View
+          style={[
+            styles.content,
+            isSideways && styles.contentSideways,
+            rotation !== 0 && { transform: [{ rotate: `${rotation}deg` }] },
+          ]}
         >
-          <View style={styles.handleBar} />
-        </Pressable>
-
-        {/* Player name header */}
-        <Text style={styles.playerName} numberOfLines={1}>
-          {playerName}
-        </Text>
-
-        {/* Tracker content (LifeCounter, PoisonCounter, etc.) */}
-        <View style={styles.content}>{children}</View>
-      </Animated.View>
+          {children}
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(238, 191, 115, 0.15)',
   },
-  inner: {
-    flex: 1,
+  wrapperActive: {
+    borderColor: colors.accent.primary,
+    borderWidth: 1.5,
+  },
+  frame: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: colors.background.secondary,
     alignItems: 'center',
-    paddingHorizontal: spacing[2],
-    paddingBottom: spacing[2],
+    justifyContent: 'center',
+    overflow: 'hidden',
+    padding: spacing[1],
   },
-  rotateHandle: {
-    alignSelf: 'center',
-    paddingVertical: spacing[2],
-    paddingHorizontal: spacing[6],
-  },
-  handleBar: {
-    width: 32,
-    height: 3,
-    borderRadius: radius.round,
-    backgroundColor: colors.border.strong,
-  },
-  playerName: {
-    color: colors.text.secondary,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
-    letterSpacing: typography.letterSpacing.wider,
-    textTransform: 'uppercase',
-    marginBottom: spacing[1],
+  frameActive: {
+    backgroundColor: colors.background.secondary + 'ee',
   },
   content: {
     flex: 1,
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // For 90/270°: swap perceived width/height by setting both axes to fill
+  contentSideways: {
+    aspectRatio: undefined,
   },
 });

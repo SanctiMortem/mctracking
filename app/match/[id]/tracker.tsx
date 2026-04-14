@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -149,6 +150,8 @@ export default function MatchTrackerScreen() {
     router.push(`/match/${id}/close`);
   }, [id, router]);
 
+  const [hasRolled, setHasRolled] = useState(false);
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -175,6 +178,22 @@ export default function MatchTrackerScreen() {
       })
     : participations;
 
+  // ── Random starting player (dice roll) ────────
+  const handleRandomStart = () => {
+    if (sortedParticipations.length < 2) return;
+    const idx = Math.floor(Math.random() * sortedParticipations.length);
+    const chosen = sortedParticipations[idx];
+    // If someone is already active, stop them first
+    if (turnTimers.activeId && turnTimers.activeId !== chosen.id) {
+      turnTimers.toggle(turnTimers.activeId);
+    }
+    if (turnTimers.activeId !== chosen.id) {
+      turnTimers.toggle(chosen.id);
+    }
+    setHasRolled(true);
+    Alert.alert('🎲', t('match.randomStarterResult', { name: chosen.player.name }));
+  };
+
   // Build sections: Level 1 (Grid) gets Level 2 (Frame) wrapping Level 3 (Dashboard)
   const sections = sortedParticipations.map((p) => {
     const enemyCommanders = sortedParticipations
@@ -188,6 +207,7 @@ export default function MatchTrackerScreen() {
     return {
       id: p.id,
       rotation: rotationMap[p.playerId] ?? 0,
+      isActive: turnTimers.activeId === p.id,
       content: (
         <PlayerDashboard
           playerName={p.player.name}
@@ -222,15 +242,38 @@ export default function MatchTrackerScreen() {
     <SafeAreaView style={styles.screen}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.timer}>{timer}</Text>
         <Pressable
-          onPress={handleCloseMatch}
-          style={styles.closeBtn}
+          onPress={() => {
+            // Go back to home — match stays in_progress and can be resumed from detail
+            router.dismissAll();
+          }}
+          style={styles.backBtn}
           accessibilityRole="button"
-          accessibilityLabel={t('tracker.closeMatch')}
+          accessibilityLabel={t('common.back')}
         >
-          <Text style={styles.closeBtnText}>{t('tracker.closeBtn')}</Text>
+          <Text style={styles.backBtnText}>✕</Text>
         </Pressable>
+        <Text style={styles.timer}>{timer}</Text>
+        <View style={styles.headerActions}>
+          {!hasRolled && (
+            <Pressable
+              onPress={handleRandomStart}
+              style={styles.diceBtn}
+              accessibilityRole="button"
+              accessibilityLabel={t('match.randomize')}
+            >
+              <Text style={styles.diceBtnText}>🎲</Text>
+            </Pressable>
+          )}
+          <Pressable
+            onPress={handleCloseMatch}
+            style={styles.closeBtn}
+            accessibilityRole="button"
+            accessibilityLabel={t('tracker.closeMatch')}
+          >
+            <Text style={styles.closeBtnText}>{t('tracker.closeBtn')}</Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* Tracker layout (Level 1 → Level 2 → Level 3) */}
@@ -302,16 +345,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing[4],
+    paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
+  },
+  backBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.background.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backBtnText: {
+    color: colors.text.secondary,
+    fontSize: typography.size['body-md'],
   },
   timer: {
     color: colors.text.secondary,
     fontSize: typography.size['body-sm'],
     fontWeight: typography.weight.medium,
     fontVariant: ['tabular-nums'],
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  diceBtn: {
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[3],
+    backgroundColor: colors.accent.primary + '22',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.accent.primary + '44',
+  },
+  diceBtnText: {
+    fontSize: typography.size['body-lg'],
   },
   closeBtn: {
     paddingVertical: spacing[2],

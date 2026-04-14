@@ -70,7 +70,7 @@ function AuthGate() {
         headerBackTitleVisible: false,
         contentStyle: { backgroundColor: colors.background.primary },
         animation: 'slide_from_right',
-        gestureResponseDistance: 30,
+        gestureResponseDistance: { start: 30 } as any,
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -87,7 +87,7 @@ function AuthGate() {
           contentStyle: { backgroundColor: 'transparent' },
         }}
       />
-      <Stack.Screen name="match/[id]/results" options={{ title: t('match.results') }} />
+      <Stack.Screen name="match/[id]/results" options={{ title: t('match.results'), gestureEnabled: false }} />
       <Stack.Screen name="match/[id]/index" options={{ title: t('match.detail') }} />
       <Stack.Screen name="players/[id]" options={{ title: t('player.players') }} />
       <Stack.Screen name="decks/[id]" options={{ title: t('deck.decks') }} />

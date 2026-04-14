@@ -3,13 +3,14 @@
  *
  * States:
  *   - initial: prompt to select both entities
- *   - loading: spinner text
- *   - zero matches: "Sin partidas en común"
+ *   - loading: spinner
+ *   - zero matches: no shared matches message
  *   - result: A wins vs B wins + draws + total count
  *
  * HIST-011 (EPIC-04)
  */
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import type { MatchupResult } from '@/services/stats';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
@@ -22,12 +23,13 @@ interface MatchupCardProps {
 }
 
 export function MatchupCard({ entityAName, entityBName, data, loading }: MatchupCardProps) {
+  const { t } = useTranslation();
   const bothSelected = entityAName !== null && entityBName !== null;
 
   if (!bothSelected) {
     return (
       <View style={[styles.card, styles.center]}>
-        <Text style={styles.prompt}>Selecciona dos entidades para ver el head-to-head</Text>
+        <Text style={styles.prompt}>{t('match.selectTwoEntities')}</Text>
       </View>
     );
   }
@@ -43,18 +45,22 @@ export function MatchupCard({ entityAName, entityBName, data, loading }: Matchup
   if (!data || data.total_matches === 0) {
     return (
       <View style={[styles.card, styles.center]}>
-        <Text style={styles.emptyTitle}>Sin partidas en común</Text>
+        <Text style={styles.emptyTitle}>{t('match.noSharedMatches')}</Text>
         <Text style={styles.emptySubtitle}>
-          {entityAName} y {entityBName} no coincidieron en ninguna partida
+          {t('match.noSharedMatchesSubtext', { a: entityAName, b: entityBName })}
         </Text>
       </View>
     );
   }
 
+  const drawLabel = data.draws === 1
+    ? t('match.drawCount', { count: data.draws })
+    : t('match.drawsCount', { count: data.draws });
+
   return (
     <View style={styles.card}>
       {/* Header */}
-      <Text style={styles.totalLabel}>{data.total_matches} partidas en común</Text>
+      <Text style={styles.totalLabel}>{t('match.sharedMatches', { count: data.total_matches })}</Text>
 
       {/* Head-to-head bar */}
       <View style={styles.vsRow}>
@@ -62,7 +68,7 @@ export function MatchupCard({ entityAName, entityBName, data, loading }: Matchup
         <View style={styles.entitySide}>
           <Text style={styles.entityName} numberOfLines={1}>{entityAName}</Text>
           <Text style={styles.winsCount}>{data.entity_a_wins}</Text>
-          <Text style={styles.winsLabel}>victorias</Text>
+          <Text style={styles.winsLabel}>{t('match.wins')}</Text>
         </View>
 
         {/* Divider */}
@@ -70,7 +76,7 @@ export function MatchupCard({ entityAName, entityBName, data, loading }: Matchup
           <Text style={styles.vsText}>VS</Text>
           {data.draws > 0 && (
             <View style={styles.drawsBadge}>
-              <Text style={styles.drawsText}>{data.draws} empate{data.draws !== 1 ? 's' : ''}</Text>
+              <Text style={styles.drawsText}>{drawLabel}</Text>
             </View>
           )}
         </View>
@@ -79,7 +85,7 @@ export function MatchupCard({ entityAName, entityBName, data, loading }: Matchup
         <View style={[styles.entitySide, styles.entitySideRight]}>
           <Text style={[styles.entityName, styles.entityNameRight]} numberOfLines={1}>{entityBName}</Text>
           <Text style={styles.winsCount}>{data.entity_b_wins}</Text>
-          <Text style={styles.winsLabel}>victorias</Text>
+          <Text style={styles.winsLabel}>{t('match.wins')}</Text>
         </View>
       </View>
 
@@ -90,18 +96,14 @@ export function MatchupCard({ entityAName, entityBName, data, loading }: Matchup
             style={[
               styles.barSegment,
               styles.barSegmentA,
-              {
-                flex: data.entity_a_wins,
-              },
+              { flex: data.entity_a_wins },
             ]}
           />
           <View
             style={[
               styles.barSegment,
               styles.barSegmentB,
-              {
-                flex: data.entity_b_wins,
-              },
+              { flex: data.entity_b_wins },
             ]}
           />
         </View>

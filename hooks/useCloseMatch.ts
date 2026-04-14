@@ -32,6 +32,8 @@ export type UseCloseMatchReturn = {
   error: string | null;
   /** Returns true on success, false on error. */
   submit: () => Promise<boolean>;
+  /** Edit an existing result (15-min window). Returns true on success. */
+  submitEdit: () => Promise<boolean>;
 };
 
 export function useCloseMatch(matchId: string): UseCloseMatchReturn {
@@ -109,6 +111,35 @@ export function useCloseMatch(matchId: string): UseCloseMatchReturn {
     }
   }, [isValid, isSubmitting, mode, selectedWinnerId, selectedWinCondition, matchId, getToken]);
 
+  const submitEdit = useCallback(async (): Promise<boolean> => {
+    if (!isValid || isSubmitting) return false;
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const token = await getToken();
+      const body =
+        mode === 'win'
+          ? {
+              action: 'update_result',
+              winner_participation_id: selectedWinnerId,
+              win_condition: selectedWinCondition,
+            }
+          : { action: 'update_result_draw' };
+      await apiFetch(`/api/matches/${matchId}`, 'PATCH', body, token ?? undefined);
+      return true;
+    } catch (e) {
+      const err = e as Error & { code?: string };
+      if (err.code === 'EDIT_WINDOW_EXPIRED') {
+        setError('The 15-minute edit window has expired.');
+      } else {
+        setError(err.message ?? 'Failed to update result. Please try again.');
+      }
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [isValid, isSubmitting, mode, selectedWinnerId, selectedWinCondition, matchId, getToken]);
+
   return {
     participations,
     loadingMatch,
@@ -122,5 +153,6 @@ export function useCloseMatch(matchId: string): UseCloseMatchReturn {
     isSubmitting,
     error,
     submit,
+    submitEdit,
   };
 }
