@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useSettings } from '@/hooks/useSettings';
 import { useIAP } from '@/hooks/useIAP';
+import { useResponsive } from '@/hooks/useResponsive';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 import i18n from '@/constants/i18n';
 
@@ -204,6 +205,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
   const { t } = useTranslation();
+  const { contentMaxWidth, contentPadding } = useResponsive();
   const { settings, loading, error, saving, refresh, patchSetting } = useSettings();
   const { purchase, restore, isPurchasing, isRestoring } = useIAP(refresh);
 
@@ -469,7 +471,7 @@ export default function SettingsScreen() {
         )}
         SectionSeparatorComponent={() => <View style={styles.sectionSeparator} />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]}
       />
     </SafeAreaView>
   );

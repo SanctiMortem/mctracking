@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { DeckWithCommanders } from '@/services/decks';
 import { ColorChips } from '@/components/ui/ColorChips';
+import { useResponsive } from '@/hooks/useResponsive';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
 interface DeckListProps {
@@ -92,6 +93,8 @@ function EmptyState() {
 }
 
 export function DeckList({ decks, onTap, onEdit, onDelete }: DeckListProps) {
+  const { contentMaxWidth } = useResponsive();
+
   return (
     <FlatList
       data={decks}
@@ -106,7 +109,10 @@ export function DeckList({ decks, onTap, onEdit, onDelete }: DeckListProps) {
       )}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       ListEmptyComponent={<EmptyState />}
-      contentContainerStyle={decks.length === 0 ? styles.emptyContainer : undefined}
+      contentContainerStyle={[
+        decks.length === 0 ? styles.emptyContainer : undefined,
+        contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined,
+      ]}
       keyboardShouldPersistTaps="handled"
     />
   );

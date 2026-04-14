@@ -14,6 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import type { Player } from '@/db/index';
+import { useResponsive } from '@/hooks/useResponsive';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
 // Fixed row height enables getItemLayout optimisation for large lists
@@ -92,6 +93,8 @@ function EmptyState() {
 }
 
 export function PlayerList({ players, onTap, onEdit, onDelete }: PlayerListProps) {
+  const { contentMaxWidth, contentPadding } = useResponsive();
+
   return (
     <FlatList
       data={players}
@@ -111,7 +114,10 @@ export function PlayerList({ players, onTap, onEdit, onDelete }: PlayerListProps
       })}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       ListEmptyComponent={<EmptyState />}
-      contentContainerStyle={players.length === 0 ? styles.emptyContainer : undefined}
+      contentContainerStyle={[
+        players.length === 0 ? styles.emptyContainer : undefined,
+        contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined,
+      ]}
       keyboardShouldPersistTaps="handled"
     />
   );

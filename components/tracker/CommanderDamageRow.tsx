@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useDebounce } from '@/hooks/useDebounce';
+import { useResponsive } from '@/hooks/useResponsive';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 import type { EventType } from '@/services/matchEvents';
 
@@ -36,6 +37,7 @@ export function CommanderDamageRow({
   participationId,
   onEvent,
 }: CommanderDamageRowProps) {
+  const { scale, isTablet } = useResponsive();
   const [pendingDelta, setPendingDelta] = useState(0);
   const displayDamage = currentDamage + pendingDelta;
   const isAtLimit = displayDamage >= COMMANDER_DAMAGE_LIMIT;
@@ -62,37 +64,40 @@ export function CommanderDamageRow({
 
   useEffect(() => () => { flush(); }, [flush]);
 
+  const btnSize = isTablet ? scale(28) : 28;
+  const fontSize = isTablet ? scale(typography.size['body-lg']) : typography.size['body-lg'];
+  const nameSize = isTablet ? scale(typography.size.caption) : typography.size.caption;
+
   return (
-    <View style={[styles.row, isAtLimit && styles.rowAlert]}>
-      <Text style={[styles.name, isAtLimit && styles.nameAlert]} numberOfLines={1}>
+    <View style={[styles.row, isAtLimit && styles.rowAlert, isTablet && { gap: scale(spacing[2]), paddingVertical: scale(spacing[1]) }]}>
+      <Text style={[styles.name, isAtLimit && styles.nameAlert, isTablet && { fontSize: nameSize }]} numberOfLines={1}>
         {commanderName}
       </Text>
 
       <Pressable
         onPress={() => applyDelta(-1)}
         disabled={displayDamage <= 0}
-        style={[styles.btn, displayDamage <= 0 && styles.btnDisabled]}
+        style={[styles.btn, displayDamage <= 0 && styles.btnDisabled, isTablet && { width: btnSize, height: btnSize }]}
         accessibilityRole="button"
         accessibilityLabel={`Decrease damage from ${commanderName}`}
       >
-        <Text style={styles.btnText}>−</Text>
+        <Text style={[styles.btnText, isTablet && { fontSize, lineHeight: fontSize * 1.1 }]}>−</Text>
       </Pressable>
 
-      <Text style={[styles.damage, isAtLimit && styles.damageAlert]}>
+      <Text style={[styles.damage, isAtLimit && styles.damageAlert, isTablet && { fontSize, minWidth: scale(28) }]}>
         {displayDamage}
       </Text>
 
-      {isAtLimit && (
-        <Text style={styles.limitBadge}>21!</Text>
-      )}
+      {/* Always rendered to avoid layout shift */}
+      <Text style={[styles.limitBadge, !isAtLimit && { opacity: 0 }]}>21!</Text>
 
       <Pressable
         onPress={() => applyDelta(1)}
-        style={styles.btn}
+        style={[styles.btn, isTablet && { width: btnSize, height: btnSize }]}
         accessibilityRole="button"
         accessibilityLabel={`Increase damage from ${commanderName}`}
       >
-        <Text style={styles.btnText}>+</Text>
+        <Text style={[styles.btnText, isTablet && { fontSize, lineHeight: fontSize * 1.1 }]}>+</Text>
       </Pressable>
     </View>
   );

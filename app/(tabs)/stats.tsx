@@ -22,6 +22,7 @@ import { PlayerRankingRow } from '@/components/stats/PlayerRankingRow';
 import { ColorChips } from '@/components/ui/ColorChips';
 import { useGlobalStats } from '@/hooks/useGlobalStats';
 import { BannerAdWrapper } from '@/components/ads/BannerAdWrapper';
+import { useResponsive } from '@/hooks/useResponsive';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
 // ─── Section header ───────────────────────────────────────────────────────────
@@ -48,6 +49,7 @@ function EmptyState() {
 export default function StatsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { contentMaxWidth, contentPadding } = useResponsive();
   const { data, loading, error } = useGlobalStats();
 
   if (loading) {
@@ -75,7 +77,7 @@ export default function StatsScreen() {
   }
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.screen} contentContainerStyle={[styles.content, { paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]} showsVerticalScrollIndicator={false}>
       {/* Hero — total matches */}
       <View style={styles.hero}>
         <Text style={styles.heroNumber}>{data.total_matches}</Text>

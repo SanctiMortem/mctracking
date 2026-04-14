@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useDebounce } from '@/hooks/useDebounce';
+import { useResponsive } from '@/hooks/useResponsive';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 import type { EventType } from '@/services/matchEvents';
 
@@ -29,6 +30,7 @@ interface PoisonCounterProps {
 }
 
 export function PoisonCounter({ poisonCounters, participationId, onEvent }: PoisonCounterProps) {
+  const { scale, isTablet } = useResponsive();
   const [pendingDelta, setPendingDelta] = useState(0);
 
   const displayValue = Math.max(0, poisonCounters + pendingDelta);
@@ -53,35 +55,38 @@ export function PoisonCounter({ poisonCounters, participationId, onEvent }: Pois
 
   useEffect(() => () => { flush(); }, [flush]);
 
+  const btnSize = isTablet ? scale(32) : 32;
+  const fontSize = isTablet ? scale(typography.size['heading-md']) : typography.size['heading-md'];
+  const iconSize = isTablet ? scale(typography.size['body-sm']) : typography.size['body-sm'];
+
   return (
     <View style={[styles.container, isAtLimit && styles.containerAlert]}>
-      <Text style={styles.icon}>☠️</Text>
+      <Text style={[styles.icon, isTablet && { fontSize: iconSize }]}>☠️</Text>
 
       <Pressable
         onPress={() => applyDelta(-1)}
         disabled={!canDecrement}
-        style={[styles.btn, !canDecrement && styles.btnDisabled]}
+        style={[styles.btn, !canDecrement && styles.btnDisabled, isTablet && { width: btnSize, height: btnSize }]}
         accessibilityRole="button"
         accessibilityLabel="Remove poison counter"
       >
-        <Text style={styles.btnText}>−</Text>
+        <Text style={[styles.btnText, isTablet && { fontSize, lineHeight: fontSize * 1.1 }]}>−</Text>
       </Pressable>
 
-      <Text style={[styles.count, isAtLimit && styles.countAlert]}>
+      <Text style={[styles.count, isAtLimit && styles.countAlert, isTablet && { fontSize, minWidth: scale(28) }]}>
         {displayValue}
       </Text>
 
-      {isAtLimit && (
-        <Text style={styles.limitLabel}>☠</Text>
-      )}
+      {/* Always rendered to avoid layout shift */}
+      <Text style={[styles.limitLabel, !isAtLimit && { opacity: 0 }]}>☠</Text>
 
       <Pressable
         onPress={() => applyDelta(1)}
-        style={styles.btn}
+        style={[styles.btn, isTablet && { width: btnSize, height: btnSize }]}
         accessibilityRole="button"
         accessibilityLabel="Add poison counter"
       >
-        <Text style={styles.btnText}>+</Text>
+        <Text style={[styles.btnText, isTablet && { fontSize, lineHeight: fontSize * 1.1 }]}>+</Text>
       </Pressable>
     </View>
   );
@@ -91,15 +96,16 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[2],
+    gap: spacing[1],
     paddingVertical: spacing[1],
-    paddingHorizontal: spacing[3],
+    paddingHorizontal: spacing[2],
     backgroundColor: colors.background.surface,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: 'transparent',
     width: '100%',
     justifyContent: 'center',
+    flexShrink: 1,
   },
   containerAlert: {
     borderColor: colors.accent.green + '66',

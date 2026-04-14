@@ -30,6 +30,7 @@ import { MatchCard, MatchCardSkeleton } from '@/components/match/MatchCard';
 import { useGroupContext } from '@/contexts/GroupContext';
 import { useGroups } from '@/hooks/useGroups';
 import { useHome } from '@/hooks/useHome';
+import { useResponsive } from '@/hooks/useResponsive';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 import { useEffect, useState } from 'react';
 
@@ -194,6 +195,7 @@ export default function HomeScreen() {
     refresh,
   } = useHome(activeContext);
 
+  const { isTablet, contentMaxWidth, contentPadding, scale } = useResponsive();
   const [contextModalVisible, setContextModalVisible] = useState(false);
 
   // Sync groups into context so switcher modal has fresh data
@@ -209,7 +211,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       {/* ── Header ── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: contentPadding }]}>
         <View style={styles.headerLeft}>
           <Text style={styles.headerTitle}>{t('tabs.home')}</Text>
           {hasGroups && (
@@ -238,7 +240,11 @@ export default function HomeScreen() {
       />
 
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingHorizontal: contentPadding },
+          contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined,
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -302,7 +308,7 @@ export default function HomeScreen() {
           ) : recentMatches.length === 0 ? (
             <EmptyMatchState onNewMatch={() => router.push('/match/setup')} />
           ) : (
-            <View style={styles.matchList}>
+            <View style={[styles.matchList, isTablet && styles.matchListGrid]}>
               {recentMatches.map((summary) => (
                 <MatchCard
                   key={summary.match.id}
@@ -529,6 +535,10 @@ const styles = StyleSheet.create({
   },
   matchList: {
     gap: spacing[3],
+  },
+  matchListGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
 
   // Empty state

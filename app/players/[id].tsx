@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { ColorChips } from '@/components/ui/ColorChips';
 import { DeckStatRow } from '@/components/match/DeckStatRow';
 import { usePlayerStats } from '@/hooks/usePlayerStats';
+import { useResponsive } from '@/hooks/useResponsive';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
 // ─── Section title ────────────────────────────────────────────────────────────
@@ -46,6 +47,7 @@ export default function PlayerProfileScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { contentMaxWidth, contentPadding } = useResponsive();
   const { data, loading, error } = usePlayerStats(id);
 
   if (loading) {
@@ -95,7 +97,7 @@ export default function PlayerProfileScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing[8] }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing[8], paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]}
       >
         {/* ── Hero: avatar + name ── */}
         <View style={styles.hero}>

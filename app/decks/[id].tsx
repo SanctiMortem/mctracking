@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ColorChips } from '@/components/ui/ColorChips';
 import { useDeckStats } from '@/hooks/useDeckStats';
+import { useResponsive } from '@/hooks/useResponsive';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
 // ─── Commander card (partner-aware) ──────────────────────────────────────────
@@ -60,6 +61,7 @@ export default function DeckDetailScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { contentMaxWidth, contentPadding } = useResponsive();
   const { data, loading, error } = useDeckStats(id);
 
   if (loading) {
@@ -102,7 +104,7 @@ export default function DeckDetailScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing[8] }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing[8], paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]}
       >
         {/* ── Commander(s) ── */}
         <View style={styles.section}>

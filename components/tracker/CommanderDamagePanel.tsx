@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CommanderDamageRow } from './CommanderDamageRow';
+import { useResponsive } from '@/hooks/useResponsive';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 import type { EventType } from '@/services/matchEvents';
 
@@ -38,6 +39,7 @@ export function CommanderDamagePanel({
   participationId,
   onEvent,
 }: CommanderDamagePanelProps) {
+  const { scale, isTablet } = useResponsive();
   const [expanded, setExpanded] = useState(false);
 
   if (enemyCommanders.length === 0) return null;
@@ -57,7 +59,7 @@ export function CommanderDamagePanel({
 
       {expanded && (
         <ScrollView
-          style={styles.list}
+          style={[styles.list, isTablet && { maxHeight: scale(160) }]}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled
@@ -86,6 +88,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border.subtle,
+    flexShrink: 1,
   },
   toggle: {
     flexDirection: 'row',

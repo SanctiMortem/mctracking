@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { MatchCard, MatchCardSkeleton } from '@/components/match/MatchCard';
 import { MatchHistoryFilterBar } from '@/components/match/MatchHistoryFilterBar';
 import { useMatchHistory } from '@/hooks/useMatchHistory';
+import { useResponsive } from '@/hooks/useResponsive';
 import { apiFetch } from '@/services/api';
 import { BannerAdWrapper } from '@/components/ads/BannerAdWrapper';
 import { colors, spacing, typography } from '@/styles/tokens';
@@ -72,6 +73,7 @@ export default function HistoryScreen() {
   const router = useRouter();
   const { getToken } = useAuth();
   const { t } = useTranslation();
+  const { isTablet, columns, contentMaxWidth, contentPadding } = useResponsive();
   const {
     matches, hasMore, loading, loadingMore, error,
     filters, setFilters, refresh, loadMore,
@@ -119,18 +121,25 @@ export default function HistoryScreen() {
         <SkeletonList />
       ) : (
         <FlatList
+          key={`history-cols-${columns}`}
           data={matches}
           keyExtractor={(item) => item.match.id}
+          numColumns={columns}
           contentContainerStyle={[
             styles.list,
+            { paddingHorizontal: contentPadding },
+            contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined,
             matches.length === 0 && styles.listEmpty,
           ]}
+          columnWrapperStyle={columns > 1 ? { gap: spacing[3] } : undefined}
           renderItem={({ item }) => (
-            <MatchCard
-              summary={item}
-              onPress={() => router.push(`/match/${item.match.id}`)}
-              onDelete={() => handleDeleteMatch(item.match.id)}
-            />
+            <View style={columns > 1 ? { flex: 1 } : undefined}>
+              <MatchCard
+                summary={item}
+                onPress={() => router.push(`/match/${item.match.id}`)}
+                onDelete={() => handleDeleteMatch(item.match.id)}
+              />
+            </View>
           )}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={<EmptyState hasFilters={hasFilters} />}

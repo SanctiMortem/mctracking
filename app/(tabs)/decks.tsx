@@ -22,11 +22,13 @@ import { DeckForm } from '@/components/decks/DeckForm';
 import { DeckList } from '@/components/decks/DeckList';
 import { useCommanders } from '@/hooks/useCommanders';
 import { useDecks } from '@/hooks/useDecks';
+import { useResponsive } from '@/hooks/useResponsive';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
 export default function DecksScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { contentPadding, contentMaxWidth } = useResponsive();
   const { create: createCommander } = useCommanders();
   const { decks, loading, error, refresh, create, update, remove } = useDecks();
 
@@ -78,7 +80,7 @@ export default function DecksScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]}>
         <Text style={styles.title}>{t('deck.decks')}</Text>
         <Pressable style={styles.fab} onPress={openCreate} accessibilityLabel={t('deck.addDeckLabel')}>
           <Text style={styles.fabLabel}>{t('deck.addDeck')}</Text>
