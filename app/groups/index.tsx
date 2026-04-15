@@ -23,6 +23,7 @@ import {
 } from 'react-native';
 
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'expo-router';
 
 import type { GroupWithRole, InviteData } from '@/hooks/useGroups';
 import { useGroups } from '@/hooks/useGroups';
@@ -43,6 +44,7 @@ type GroupSection = {
 
 export default function GroupsScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
   const { ownedGroups, memberGroups, loading, error, refresh, createGroup, getInvite, joinGroup } =
     useGroups();
 
@@ -217,6 +219,7 @@ export default function GroupsScreen() {
             <GroupRow
               item={item}
               onInvite={(id, name) => openInvite(id, name)}
+              onPress={(id) => router.push(`/groups/${id}`)}
             />
           )}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -342,29 +345,33 @@ export default function GroupsScreen() {
 interface GroupRowProps {
   item: GroupWithRole;
   onInvite: (groupId: string, groupName: string) => void;
+  onPress: (groupId: string) => void;
 }
 
-function GroupRow({ item, onInvite }: GroupRowProps) {
+function GroupRow({ item, onInvite, onPress }: GroupRowProps) {
   const { t } = useTranslation();
   const isOwner = item.role === 'owner';
   return (
-    <View style={styles.row}>
+    <Pressable style={styles.row} onPress={() => onPress(item.group.id)} accessibilityRole="button">
       <View style={styles.rowInfo}>
         <Text style={styles.groupName} numberOfLines={1}>{item.group.name}</Text>
         <View style={[styles.roleBadge, isOwner ? styles.ownerBadge : styles.memberBadge]}>
           <Text style={styles.roleBadgeText}>{isOwner ? t('groups.owner') : t('groups.member')}</Text>
         </View>
       </View>
-      {isOwner && (
-        <Pressable
-          style={styles.inviteBtn}
-          onPress={() => onInvite(item.group.id, item.group.name)}
-          accessibilityLabel={t('groups.getInviteLinkFor', { name: item.group.name })}
-        >
-          <Text style={styles.inviteBtnText}>{t('groups.invite')}</Text>
-        </Pressable>
-      )}
-    </View>
+      <View style={styles.rowActions}>
+        {isOwner && (
+          <Pressable
+            style={styles.inviteBtn}
+            onPress={(e) => { e.stopPropagation(); onInvite(item.group.id, item.group.name); }}
+            accessibilityLabel={t('groups.getInviteLinkFor', { name: item.group.name })}
+          >
+            <Text style={styles.inviteBtnText}>{t('groups.invite')}</Text>
+          </Pressable>
+        )}
+        <Text style={styles.chevron}>›</Text>
+      </View>
+    </Pressable>
   );
 }
 
@@ -505,6 +512,13 @@ const styles = StyleSheet.create({
     fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
+  },
+  rowActions: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
+  chevron: {
+    color: colors.text.muted,
+    fontSize: typography.size['heading-lg'],
+    fontWeight: '300' as any,
+    marginLeft: spacing[1],
   },
   inviteBtn: {
     paddingHorizontal: spacing[3],

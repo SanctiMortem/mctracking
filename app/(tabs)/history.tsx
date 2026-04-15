@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 
 import { MatchCard, MatchCardSkeleton } from '@/components/match/MatchCard';
 import { MatchHistoryFilterBar } from '@/components/match/MatchHistoryFilterBar';
+import { useGroupContext } from '@/contexts/GroupContext';
 import { useMatchHistory } from '@/hooks/useMatchHistory';
 import { useResponsive } from '@/hooks/useResponsive';
 import { apiFetch } from '@/services/api';
@@ -73,11 +74,13 @@ export default function HistoryScreen() {
   const router = useRouter();
   const { getToken } = useAuth();
   const { t } = useTranslation();
+  const { activeContext } = useGroupContext();
+  const groupId = activeContext !== 'personal' ? activeContext : null;
   const { isTablet, columns, contentMaxWidth, contentPadding } = useResponsive();
   const {
     matches, hasMore, loading, loadingMore, error,
     filters, setFilters, refresh, loadMore,
-  } = useMatchHistory();
+  } = useMatchHistory(groupId);
 
   const hasFilters = Object.values(filters).some(Boolean);
 

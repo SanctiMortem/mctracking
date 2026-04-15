@@ -103,6 +103,9 @@ export const spacing = {
 // Display-First: Space Grotesk (headlines) + Manrope (body)
 export const typography = {
   fontFamily: {
+    /** Condensed tall font — ideal for life totals in 5:3 frames */
+    lifeTotal: 'BigShouldersDisplay_700Bold',
+    lifeTotalBold: 'BigShouldersDisplay_600SemiBold',
     display: 'SpaceGrotesk_700Bold',
     headline: 'SpaceGrotesk_600SemiBold',
     body: 'Manrope_400Regular',

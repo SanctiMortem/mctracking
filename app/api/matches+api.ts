@@ -30,6 +30,8 @@ export async function GET(req: Request) {
   const dateFrom = searchParams.get('date_from');
   const dateTo = searchParams.get('date_to');
 
+  const groupId = searchParams.get('group_id');
+  if (groupId) filters.groupId = groupId;
   if (playerId) filters.playerId = playerId;
   if (deckId) filters.deckId = deckId;
   if (commanderId) filters.commanderId = commanderId;
@@ -77,7 +79,10 @@ export async function POST(req: Request) {
     }
   }
 
-  const result = await createMatch(userId, participants as ParticipantInput[]);
+  const { group_id } = body as Record<string, unknown>;
+  const groupId = typeof group_id === 'string' ? group_id : undefined;
+
+  const result = await createMatch(userId, participants as ParticipantInput[], groupId);
 
   if ('invalidPlayerCount' in result) {
     return Response.json(

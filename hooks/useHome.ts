@@ -96,14 +96,18 @@ export function useHome(activeContext: 'personal' | string): UseHomeReturn {
       const token = await getTokenRef.current();
       const authHeader = token ?? undefined;
 
+      const ctx = activeContextRef.current;
+      const historyUrl = ctx !== 'personal'
+        ? `/api/matches?limit=3&group_id=${ctx}`
+        : '/api/matches?limit=3';
+
       const [sessionRes, historyRes, statsRes] = await Promise.all([
         apiFetch<SessionResponse>('/api/auth/session', 'GET', undefined, authHeader),
-        apiFetch<HistoryResponse>('/api/matches?limit=3', 'GET', undefined, authHeader),
+        apiFetch<HistoryResponse>(historyUrl, 'GET', undefined, authHeader),
         apiFetch<GlobalStatsResponse>('/api/stats/global', 'GET', undefined, authHeader),
       ]);
 
       // Active match — filter by active context (ADR-004)
-      const ctx = activeContextRef.current;
       const rawMatch = sessionRes.data.active_match ?? null;
       if (rawMatch) {
         const matchInContext =

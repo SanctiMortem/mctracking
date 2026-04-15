@@ -49,10 +49,11 @@ export type UseMatchHistoryReturn = {
   loadMore: () => void;
 };
 
-function buildQs(filters: HistoryFilters, limit: number, offset: number): string {
+function buildQs(filters: HistoryFilters, limit: number, offset: number, groupId?: string | null): string {
   const params = new URLSearchParams();
   params.set('limit', String(limit));
   params.set('offset', String(offset));
+  if (groupId)              params.set('group_id', groupId);
   if (filters.player_id)    params.set('player_id', filters.player_id);
   if (filters.deck_id)      params.set('deck_id', filters.deck_id);
   if (filters.commander_id) params.set('commander_id', filters.commander_id);
@@ -63,7 +64,7 @@ function buildQs(filters: HistoryFilters, limit: number, offset: number): string
   return `?${params.toString()}`;
 }
 
-export function useMatchHistory(): UseMatchHistoryReturn {
+export function useMatchHistory(groupId?: string | null): UseMatchHistoryReturn {
   const { getToken } = useAuth();
 
   const [matches, setMatches] = useState<MatchSummary[]>([]);
@@ -85,6 +86,9 @@ export function useMatchHistory(): UseMatchHistoryReturn {
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
 
+  const groupIdRef = useRef(groupId);
+  groupIdRef.current = groupId;
+
   const fetchPage = useCallback(async (
     currentFilters: HistoryFilters,
     offset: number,
@@ -92,7 +96,7 @@ export function useMatchHistory(): UseMatchHistoryReturn {
   ) => {
     try {
       const token = await getTokenRef.current();
-      const qs = buildQs(currentFilters, PAGE_SIZE, offset);
+      const qs = buildQs(currentFilters, PAGE_SIZE, offset, groupIdRef.current);
       const res = await apiFetch<ApiResponse>(`/api/matches${qs}`, 'GET', undefined, token ?? undefined);
       const page = res.data;
 
@@ -106,14 +110,14 @@ export function useMatchHistory(): UseMatchHistoryReturn {
     }
   }, []); // stable — no deps, uses refs
 
-  // Initial load + filter change
+  // Initial load + filter/context change
   useEffect(() => {
     offsetRef.current = 0;
     setLoading(true);
     setMatches([]);
     fetchPage(filters, 0, false).finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters]);
+  }, [filters, groupId]);
 
   const refresh = useCallback(() => {
     offsetRef.current = 0;

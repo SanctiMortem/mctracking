@@ -10,7 +10,7 @@
  */
 import { randomBytes } from 'crypto';
 
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull, ne } from 'drizzle-orm';
 
 import { db } from '@/services/db';
 import { groups, groupMembers } from '@/db/schema';
@@ -242,4 +242,33 @@ export async function joinGroup(
     .returning();
 
   return { data: { group, membership } };
+}
+
+/**
+ * Leave a group. Owners cannot leave — they must archive instead.
+ * Deletes the group_members row (BR-GROUP-02: history is preserved in match data).
+ */
+export async function leaveGroup(
+  userId: string,
+  groupId: string,
+): Promise<
+  | { ok: true }
+  | { notMember: true }
+  | { ownerCannotLeave: true }
+> {
+  const membership = await getMembership(groupId, userId);
+  if (!membership) return { notMember: true };
+
+  if (membership.role === 'owner') return { ownerCannotLeave: true };
+
+  await db
+    .delete(groupMembers)
+    .where(
+      and(
+        eq(groupMembers.groupId, groupId),
+        eq(groupMembers.userId, userId),
+      ),
+    );
+
+  return { ok: true };
 }

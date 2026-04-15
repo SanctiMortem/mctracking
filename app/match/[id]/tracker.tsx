@@ -89,7 +89,7 @@ function useTurnTimers(participationIds: string[]) {
 // ─── Screen ─────────────────────────────────────
 
 export default function MatchTrackerScreen() {
-  const { id, rotations: rotationsParam, playerOrder: playerOrderParam } = useLocalSearchParams<{ id: string; rotations?: string; playerOrder?: string }>();
+  const { id, rotations: rotationsParam, playerOrder: playerOrderParam, layout: layoutParam } = useLocalSearchParams<{ id: string; rotations?: string; playerOrder?: string; layout?: string }>();
   const router = useRouter();
   const { t } = useTranslation();
   const timer = useMatchTimer();
@@ -121,10 +121,14 @@ export default function MatchTrackerScreen() {
     clearToastError,
     recordEvent,
     undoLastEvent,
+    addLocalEvent,
   } = useTracker(id);
 
   // Turn timers — initialized once participations load
   const turnTimers = useTurnTimers(participations.map((p) => p.id));
+
+  // Dead players — tracked as local state, only set via the Dead button
+  const [deadPlayerIds, setDeadPlayerIds] = useState<Set<string>>(new Set());
 
   // Clear toast after 3s
   useEffect(() => {
@@ -149,6 +153,17 @@ export default function MatchTrackerScreen() {
   const handleCloseMatch = useCallback(() => {
     router.push(`/match/${id}/close`);
   }, [id, router]);
+
+  const handleUndo = useCallback(async () => {
+    const undoneEvent = await undoLastEvent();
+    if (undoneEvent && (undoneEvent.eventType as string) === 'player_died') {
+      setDeadPlayerIds((prev) => {
+        const next = new Set(prev);
+        next.delete(undoneEvent.participationId);
+        return next;
+      });
+    }
+  }, [undoLastEvent]);
 
   const [hasRolled, setHasRolled] = useState(false);
 
@@ -204,6 +219,12 @@ export default function MatchTrackerScreen() {
         return cmds;
       });
 
+    // Sum all commander damage values for the trigger label
+    const cmdDamageTotal = Object.values(p.commanderDamage ?? {}).reduce(
+      (sum: number, v: unknown) => sum + (typeof v === 'number' ? v : 0),
+      0,
+    );
+
     return {
       id: p.id,
       rotation: rotationMap[p.playerId] ?? 0,
@@ -214,24 +235,36 @@ export default function MatchTrackerScreen() {
           timerSeconds={turnTimers.elapsed[p.id] ?? 0}
           timerActive={turnTimers.activeId === p.id}
           onToggleTimer={() => turnTimers.toggle(p.id)}
-        >
-          <LifeCounter
-            lifeTotal={p.lifeTotal}
-            participationId={p.id}
-            onEvent={recordEvent}
-          />
-          <PoisonCounter
-            poisonCounters={p.poisonCounters}
-            participationId={p.id}
-            onEvent={recordEvent}
-          />
-          <CommanderDamagePanel
-            commanderDamage={p.commanderDamage}
-            enemyCommanders={enemyCommanders}
-            participationId={p.id}
-            onEvent={recordEvent}
-          />
-        </PlayerDashboard>
+          isDead={deadPlayerIds.has(p.id)}
+          onMarkDead={() => {
+            setDeadPlayerIds((prev) => new Set(prev).add(p.id));
+            addLocalEvent({ participationId: p.id, eventType: 'player_died' });
+          }}
+          lifeCounter={
+            <LifeCounter
+              lifeTotal={p.lifeTotal}
+              participationId={p.id}
+              onEvent={recordEvent}
+            />
+          }
+          poisonOverlay={
+            <PoisonCounter
+              poisonCounters={p.poisonCounters}
+              participationId={p.id}
+              onEvent={recordEvent}
+            />
+          }
+          cmdDamageOverlay={
+            <CommanderDamagePanel
+              commanderDamage={p.commanderDamage}
+              enemyCommanders={enemyCommanders}
+              participationId={p.id}
+              onEvent={recordEvent}
+            />
+          }
+          poisonCount={p.poisonCounters}
+          cmdDamageTotal={cmdDamageTotal}
+        />
       ),
     };
   });
@@ -278,7 +311,7 @@ export default function MatchTrackerScreen() {
 
       {/* Tracker layout (Level 1 → Level 2 → Level 3) */}
       <View style={styles.layoutContainer}>
-        <TrackerLayout sections={sections} />
+        <TrackerLayout sections={sections} layoutVariant={layoutParam ? decodeURIComponent(layoutParam) : undefined} />
       </View>
 
       {/* Toast error */}
@@ -291,7 +324,7 @@ export default function MatchTrackerScreen() {
       {/* Floating controls */}
       <View style={styles.floatingRow}>
         <Pressable
-          onPress={undoLastEvent}
+          onPress={handleUndo}
           disabled={!hasUndoableEvents}
           style={[styles.floatingBtn, !hasUndoableEvents && styles.floatingBtnDisabled]}
           accessibilityRole="button"
@@ -317,7 +350,7 @@ export default function MatchTrackerScreen() {
         <EventLogPanel
           events={events}
           participations={participations}
-          onUndo={undoLastEvent}
+          onUndo={handleUndo}
           onClose={() => setLogVisible(false)}
         />
       )}

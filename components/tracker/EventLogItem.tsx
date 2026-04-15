@@ -15,11 +15,8 @@ interface EventLogItemProps {
 }
 
 export function EventLogItem({ event }: EventLogItemProps) {
-  const time = event.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
   return (
     <View style={[styles.row, event.isUndone && styles.rowUndone]}>
-      <Text style={styles.time}>{time}</Text>
       <Text
         style={[styles.description, event.isUndone && styles.descriptionUndone]}
         numberOfLines={2}
@@ -42,12 +39,6 @@ const styles = StyleSheet.create({
   },
   rowUndone: {
     opacity: 0.45,
-  },
-  time: {
-    color: colors.text.muted,
-    fontSize: typography.size.label,
-    fontVariant: ['tabular-nums'],
-    minWidth: 56,
   },
   description: {
     flex: 1,

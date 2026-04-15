@@ -7,7 +7,8 @@
  * TRACK-005 (EPIC-03)
  */
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { GHPressable } from '@/components/ui/GHPressable';
 
 import { useDebounce } from '@/hooks/useDebounce';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -70,74 +71,78 @@ export function CommanderDamageRow({
 
   return (
     <View style={[styles.row, isAtLimit && styles.rowAlert, isTablet && { gap: scale(spacing[2]), paddingVertical: scale(spacing[1]) }]}>
-      <Text style={[styles.name, isAtLimit && styles.nameAlert, isTablet && { fontSize: nameSize }]} numberOfLines={1}>
+      <Text
+        style={[styles.name, isAtLimit && styles.nameAlert, isTablet && { fontSize: nameSize }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+      >
         {commanderName}
       </Text>
 
-      <Pressable
-        onPress={() => applyDelta(-1)}
-        disabled={displayDamage <= 0}
-        style={[styles.btn, displayDamage <= 0 && styles.btnDisabled, isTablet && { width: btnSize, height: btnSize }]}
-        accessibilityRole="button"
-        accessibilityLabel={`Decrease damage from ${commanderName}`}
-      >
-        <Text style={[styles.btnText, isTablet && { fontSize, lineHeight: fontSize * 1.1 }]}>−</Text>
-      </Pressable>
+      <View style={styles.controls}>
+        <GHPressable
+          onPress={() => applyDelta(-1)}
+          disabled={displayDamage <= 0}
+          style={[styles.btn, displayDamage <= 0 && styles.btnDisabled, isTablet && { width: btnSize, height: btnSize }]}
+          accessibilityRole="button"
+          accessibilityLabel={`Decrease damage from ${commanderName}`}
+        >
+          <Text style={[styles.btnText, isTablet && { fontSize, lineHeight: fontSize * 1.1 }]}>−</Text>
+        </GHPressable>
 
-      <Text style={[styles.damage, isAtLimit && styles.damageAlert, isTablet && { fontSize, minWidth: scale(28) }]}>
-        {displayDamage}
-      </Text>
+        <View style={styles.damageWrap}>
+          <Text style={[styles.damage, isAtLimit && styles.damageAlert, isTablet && { fontSize, minWidth: scale(28) }]}>
+            {displayDamage}
+          </Text>
+          {isAtLimit && <Text style={styles.limitBadge}>21!</Text>}
+        </View>
 
-      {/* Always rendered to avoid layout shift */}
-      <Text style={[styles.limitBadge, !isAtLimit && { opacity: 0 }]}>21!</Text>
-
-      <Pressable
-        onPress={() => applyDelta(1)}
-        style={[styles.btn, isTablet && { width: btnSize, height: btnSize }]}
-        accessibilityRole="button"
-        accessibilityLabel={`Increase damage from ${commanderName}`}
-      >
-        <Text style={[styles.btnText, isTablet && { fontSize, lineHeight: fontSize * 1.1 }]}>+</Text>
-      </Pressable>
+        <GHPressable
+          onPress={() => applyDelta(1)}
+          style={[styles.btn, isTablet && { width: btnSize, height: btnSize }]}
+          accessibilityRole="button"
+          accessibilityLabel={`Increase damage from ${commanderName}`}
+        >
+          <Text style={[styles.btnText, isTablet && { fontSize, lineHeight: fontSize * 1.1 }]}>+</Text>
+        </GHPressable>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[2],
-    paddingVertical: spacing[1],
-    paddingHorizontal: spacing[2],
-    borderRadius: radius.sm,
-    backgroundColor: colors.background.surface,
-    marginBottom: spacing[1],
-    borderWidth: 1,
-    borderColor: 'transparent',
+    gap: 0,
+    paddingVertical: 1,
+    marginBottom: 2,
   },
   rowAlert: {
-    borderColor: colors.status.error + '88',
-    backgroundColor: colors.status.error + '12',
+    // Just tint the text, no background box
   },
   name: {
-    flex: 1,
     color: colors.text.secondary,
-    fontSize: typography.size.caption,
+    fontSize: typography.size.label,
     fontWeight: typography.weight.medium,
+    letterSpacing: typography.letterSpacing.wide,
+    textTransform: 'uppercase',
+    textAlign: 'center',
   },
   nameAlert: {
     color: colors.status.error,
   },
+  controls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
+    width: '100%',
+  },
   btn: {
-    width: 28,
+    width: 32,
     height: 28,
-    borderRadius: radius.round,
-    backgroundColor: colors.background.elevated,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border.default,
   },
   btnDisabled: {
     opacity: 0.3,
@@ -145,14 +150,17 @@ const styles = StyleSheet.create({
   btnText: {
     color: colors.text.primary,
     fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.bold,
-    lineHeight: typography.size['body-lg'] * 1.1,
+    fontWeight: typography.weight.semibold,
+  },
+  damageWrap: {
+    alignItems: 'center',
+    minWidth: 20,
   },
   damage: {
     color: colors.text.primary,
     fontSize: typography.size['body-lg'],
     fontWeight: typography.weight.bold,
-    minWidth: 28,
+    minWidth: 20,
     textAlign: 'center',
   },
   damageAlert: {
@@ -160,11 +168,8 @@ const styles = StyleSheet.create({
   },
   limitBadge: {
     color: colors.status.error,
-    fontSize: typography.size.label,
-    fontWeight: typography.weight.bold,
-    backgroundColor: colors.status.error + '22',
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: radius.xs,
+    fontSize: typography.size.label - 2,
+    fontWeight: typography.weight.semibold,
+    marginTop: 0,
   },
 });

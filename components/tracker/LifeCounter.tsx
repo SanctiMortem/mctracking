@@ -1,41 +1,43 @@
 /**
- * LifeCounter — CMP-001.
+ * LifeCounter — CMP-001: Invisible Split HitZone approach.
  *
- * Displays the life total as a large number. Tap +/- for quick changes.
- * Long-press +/- for hold-repeat (every 150ms). Tap the number for direct entry.
+ * The entire 80% action zone is the input surface. An invisible vertical
+ * split divides it down the middle:
+ *   LEFT HALF  → tap −1, hold for rapid decrement
+ *   RIGHT HALF → tap +1, hold for rapid increment
  *
- * Debounces taps into a single API call (BR-TRACK-09). The display shows
- * the pending local value immediately; `onEvent` fires after the debounce window.
+ * The HP number sits centered and is "Transparent to Hits" — tapping on the
+ * number registers +/− based on which side of the center-line is hit.
  *
- * Shows a temporary delta badge (e.g. "+3" / "−5") that fades after 2s.
- * Once the badge disappears the change is already stacked in the undo log.
+ * Double-tap anywhere triggers direct entry (set exact HP).
  *
- * TRACK-008 decision: uses `adjustsFontSizeToFit` for iPhone SE 4p compat.
+ * Delta badge shows accumulated change, fades after 2s.
  *
  * TRACK-004 (EPIC-03)
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
-  Pressable,
+  type LayoutChangeEvent,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
 
 import { useDebounce } from '@/hooks/useDebounce';
-import { useResponsive } from '@/hooks/useResponsive';
 import { colors, radius, spacing, typography, motion } from '@/styles/tokens';
 import type { EventType } from '@/services/matchEvents';
 
 const HOLD_REPEAT_MS = 150;
-const DEBOUNCE_MS = 200; // Snappy response; EPIC-05 will make this configurable
-const DELTA_DISPLAY_MS = 2000; // How long the delta badge stays visible
+const DEBOUNCE_MS = 600;
+const DELTA_DISPLAY_MS = 2000;
 
 interface LifeCounterProps {
   lifeTotal: number;
@@ -48,18 +50,32 @@ interface LifeCounterProps {
   }) => Promise<void>;
 }
 
+// Big Shoulders Display is a condensed font — narrower character widths.
+const CHAR_WIDTH_RATIO = 0.48;
+const NEGATIVE_SIGN_RATIO = 0.28;
+
+/** Compute the largest fontSize that fits `text` inside `w × h`. */
+function computeFontSize(text: string, w: number, h: number): number {
+  if (w <= 0 || h <= 0) return 40;
+  const str = String(text);
+  const charCount = str.replace('-', '').length;
+  const hasNeg = str.startsWith('-');
+  const effectiveChars = charCount * CHAR_WIDTH_RATIO + (hasNeg ? NEGATIVE_SIGN_RATIO : 0);
+  const byWidth = w / Math.max(effectiveChars, 0.5);
+  const byHeight = h * 0.85;
+  return Math.floor(Math.min(byWidth, byHeight));
+}
+
 export function LifeCounter({ lifeTotal, participationId, onEvent }: LifeCounterProps) {
-  const { scale, isTablet } = useResponsive();
-  // pendingDelta accumulates taps before debounce fires
   const [pendingDelta, setPendingDelta] = useState(0);
   const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
 
-  // Delta badge state: shows accumulated change, fades after DELTA_DISPLAY_MS
+  // Delta badge state
   const [displayedDelta, setDisplayedDelta] = useState(0);
   const deltaOpacity = useSharedValue(0);
   const deltaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Display: server value + pending (local feedback)
   const displayValue = lifeTotal + pendingDelta;
 
   const lifeColor = (() => {
@@ -70,7 +86,19 @@ export function LifeCounter({ lifeTotal, participationId, onEvent }: LifeCounter
     return colors.lifeTotal.high;
   })();
 
-  // After debounce: flush accumulated delta to API
+  const onContainerLayout = useCallback((e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    setContainerSize((prev) => {
+      if (Math.abs(prev.w - width) < 2 && Math.abs(prev.h - height) < 2) return prev;
+      return { w: width, h: height };
+    });
+  }, []);
+
+  const dynamicFontSize = useMemo(
+    () => computeFontSize(String(displayValue), containerSize.w, containerSize.h),
+    [displayValue, containerSize.w, containerSize.h],
+  );
+
   const { trigger: debounceTrigger, flush } = useDebounce<number>((accumulatedDelta) => {
     if (accumulatedDelta !== 0) {
       onEvent({ participationId, eventType: 'life_change', delta: accumulatedDelta });
@@ -78,8 +106,6 @@ export function LifeCounter({ lifeTotal, participationId, onEvent }: LifeCounter
     }
   }, DEBOUNCE_MS);
 
-  // Track pending delta in a ref so the badge callback always has the latest value
-  // without needing pendingDelta in dependency arrays (which causes stale closures).
   const pendingDeltaRef = useRef(0);
 
   const applyDelta = useCallback((d: number) => {
@@ -89,8 +115,6 @@ export function LifeCounter({ lifeTotal, participationId, onEvent }: LifeCounter
       pendingDeltaRef.current = next;
       return next;
     });
-    // Show the badge outside the render cycle to avoid writing to
-    // Reanimated shared values during React's render phase.
     setTimeout(() => {
       const val = pendingDeltaRef.current;
       if (val === 0) return;
@@ -114,15 +138,13 @@ export function LifeCounter({ lifeTotal, participationId, onEvent }: LifeCounter
     holdTimerRef.current = setInterval(() => applyDelta(d), HOLD_REPEAT_MS);
   }, [applyDelta]);
 
-  // Flush on unmount
   useEffect(() => () => {
     flush();
     if (deltaTimerRef.current) clearTimeout(deltaTimerRef.current);
   }, [flush]);
 
-  // Direct entry via Alert (simple MVP approach — no modal)
+  // ── Direct entry via Alert.prompt (double-tap) ──
   const handleDirectEntry = useCallback(() => {
-    // Flush any pending delta first
     flush();
     Alert.prompt(
       'Set Life Total',
@@ -133,7 +155,6 @@ export function LifeCounter({ lifeTotal, participationId, onEvent }: LifeCounter
         const delta = parsed - lifeTotal;
         if (delta !== 0) {
           onEvent({ participationId, eventType: 'life_change', delta });
-          // Show badge outside render cycle
           setDisplayedDelta(delta);
           deltaOpacity.value = 1;
           if (deltaTimerRef.current) clearTimeout(deltaTimerRef.current);
@@ -148,138 +169,126 @@ export function LifeCounter({ lifeTotal, participationId, onEvent }: LifeCounter
     );
   }, [displayValue, lifeTotal, participationId, onEvent, flush, deltaOpacity]);
 
+  // ── Gesture handlers ──
+  // We use the tap X coordinate to determine left (-1) vs right (+1)
+  const containerWidthRef = useRef(0);
+  useEffect(() => {
+    containerWidthRef.current = containerSize.w;
+  }, [containerSize.w]);
+
+  const handleTap = useCallback((x: number) => {
+    const mid = containerWidthRef.current / 2;
+    applyDelta(x < mid ? -1 : 1);
+  }, [applyDelta]);
+
+  const handleLongPress = useCallback((x: number) => {
+    const mid = containerWidthRef.current / 2;
+    startHold(x < mid ? -1 : 1);
+  }, [startHold]);
+
+  const handlePressOut = useCallback(() => {
+    stopHold();
+  }, [stopHold]);
+
+  // Single tap — left/right split based on X coordinate
+  const tapGesture = Gesture.Tap()
+    .onEnd((e) => {
+      'worklet';
+      runOnJS(handleTap)(e.x);
+    });
+
+  // Double tap — direct entry
+  const doubleTapGesture = Gesture.Tap()
+    .numberOfTaps(2)
+    .onEnd(() => {
+      'worklet';
+      runOnJS(handleDirectEntry)();
+    });
+
+  // Long press — hold repeat
+  const longPressGesture = Gesture.LongPress()
+    .minDuration(400)
+    .onStart((e) => {
+      'worklet';
+      runOnJS(handleLongPress)(e.x);
+    })
+    .onFinalize(() => {
+      'worklet';
+      runOnJS(handlePressOut)();
+    });
+
+  // Long press wins if held, otherwise single tap fires
+  // Direct entry (double-tap) disabled for now — only −/+ via split hit zones
+  const composed = Gesture.Race(longPressGesture, tapGesture);
+
   const deltaAnimStyle = useAnimatedStyle(() => ({
     opacity: deltaOpacity.value,
   }));
 
-  const btnSize = isTablet ? scale(48) : 48;
-  const btnFontSize = isTablet ? scale(typography.size['heading-lg']) : typography.size['heading-lg'];
-  const lifeFontSize = isTablet ? scale(typography.size['display-lg']) : typography.size['display-lg'];
-  const deltaFontSize = isTablet ? scale(typography.size['body-sm']) : typography.size['body-sm'];
-
   return (
-    <View style={styles.container}>
-      {/* − button */}
-      <Pressable
-        onPress={() => applyDelta(-1)}
-        onLongPress={() => startHold(-1)}
-        onPressOut={stopHold}
-        delayLongPress={400}
-        style={[styles.btn, isTablet && { width: btnSize, height: btnSize, maxWidth: btnSize, maxHeight: btnSize }]}
-        accessibilityRole="button"
-        accessibilityLabel="Decrease life"
-      >
-        <Text style={[styles.btnText, isTablet && { fontSize: btnFontSize }]}>−</Text>
-      </Pressable>
-
-      {/* Life total + delta badge */}
-      <View style={styles.lifeTotalWrapper}>
-        <Pressable onPress={handleDirectEntry} style={styles.lifeTotalContainer}>
+    <GestureDetector gesture={composed}>
+      <Animated.View style={styles.container} onLayout={onContainerLayout}>
+        {/* HP number — transparent to hits (pointerEvents="none") */}
+        <View style={styles.lifeTotalOverlay} pointerEvents="none">
           <Text
-            style={[styles.lifeTotal, { color: lifeColor }, isTablet && { fontSize: lifeFontSize }]}
-            adjustsFontSizeToFit
+            style={[
+              styles.lifeTotal,
+              { color: lifeColor, fontSize: dynamicFontSize, lineHeight: dynamicFontSize * 1.05 },
+            ]}
             numberOfLines={1}
-            minimumFontScale={0.3}
           >
             {displayValue}
           </Text>
-          {/* Always rendered to avoid layout shift — invisible when alive */}
-          <Text style={[styles.deadLabel, displayValue > 0 && { opacity: 0 }]}>☠</Text>
-        </Pressable>
 
-        {/* Delta badge — floats to the right of the life total */}
+        </View>
+
+        {/* Delta badge */}
         <Animated.View style={[styles.deltaBadge, deltaAnimStyle]} pointerEvents="none">
           <Text
             style={[
               styles.deltaBadgeText,
               { color: displayedDelta > 0 ? colors.lifeTotal.high : colors.lifeTotal.critical },
-              isTablet && { fontSize: deltaFontSize },
             ]}
           >
             {displayedDelta > 0 ? `+${displayedDelta}` : displayedDelta}
           </Text>
         </Animated.View>
-      </View>
-
-      {/* + button */}
-      <Pressable
-        onPress={() => applyDelta(1)}
-        onLongPress={() => startHold(1)}
-        onPressOut={stopHold}
-        delayLongPress={400}
-        style={[styles.btn, isTablet && { width: btnSize, height: btnSize, maxWidth: btnSize, maxHeight: btnSize }]}
-        accessibilityRole="button"
-        accessibilityLabel="Increase life"
-      >
-        <Text style={[styles.btnText, isTablet && { fontSize: btnFontSize }]}>+</Text>
-      </Pressable>
-    </View>
+      </Animated.View>
+    </GestureDetector>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    width: '100%',
-    flexShrink: 1,
-  },
-  btn: {
-    width: 48,
-    height: 48,
-    maxWidth: 60,
-    maxHeight: 60,
-    aspectRatio: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 1,
-  },
-  btnText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['heading-xl'],
-    fontWeight: typography.weight.bold,
-  },
-  lifeTotalWrapper: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 40,
-  },
-  lifeTotalContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
     width: '100%',
+    height: '100%',
+  },
+  lifeTotalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   lifeTotal: {
-    fontSize: typography.size['display-lg'] * 1.4,
-    fontFamily: typography.fontFamily.display,
-    fontWeight: typography.weight.black,
-    letterSpacing: typography.letterSpacing.tight,
+    fontFamily: typography.fontFamily.lifeTotal,
+    letterSpacing: -2,
     textAlign: 'center',
-    width: '100%',
-    lineHeight: typography.size['display-lg'] * 1.5,
-  },
-  deadLabel: {
-    fontSize: typography.size['body-sm'],
-    color: colors.lifeTotal.zero,
-    marginTop: -spacing[1],
+    includeFontPadding: false,
+    fontVariant: ['tabular-nums'],
   },
   deltaBadge: {
     position: 'absolute',
-    right: -8,
-    top: 0,
+    right: 8,
+    top: '25%',
     backgroundColor: colors.background.elevated,
     borderRadius: radius.sm,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderWidth: 1,
     borderColor: colors.border.default,
   },
   deltaBadgeText: {
-    fontSize: typography.size['body-sm'],
-    fontFamily: typography.fontFamily.display,
-    fontWeight: typography.weight.bold,
+    fontSize: typography.size['body-lg'],
+    fontFamily: typography.fontFamily.lifeTotalBold,
   },
 });

@@ -8,7 +8,7 @@ import { useAuth } from '@clerk/clerk-expo';
 import { apiFetch } from '@/services/api';
 import type { Player } from '@/db/index';
 
-export function usePlayers() {
+export function usePlayers(opts?: { guestsOnly?: boolean }) {
   const { getToken } = useAuth();
   const getTokenRef = useRef(getToken);
   getTokenRef.current = getToken;
@@ -16,19 +16,22 @@ export function usePlayers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const guestsOnly = opts?.guestsOnly ?? false;
+
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const token = await getTokenRef.current();
-      const data = await apiFetch<Player[]>('/api/players', 'GET', undefined, token ?? undefined);
+      const url = guestsOnly ? '/api/players?guests_only=true' : '/api/players';
+      const data = await apiFetch<Player[]>(url, 'GET', undefined, token ?? undefined);
       setPlayers(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [guestsOnly]);
 
   useEffect(() => { refresh(); }, [refresh]);
 

@@ -11,7 +11,7 @@ import { and, asc, count, desc, eq, gte, inArray, isNull, lte, ne, or } from 'dr
 import { alias } from 'drizzle-orm/pg-core';
 
 import { db } from '@/services/db';
-import { commanders, decks, matchEvents, matchResults, matches, participations, players } from '@/db/schema';
+import { commanders, decks, groupMembers, matchEvents, matchResults, matches, participations, players } from '@/db/schema';
 import type { Commander, Deck, Match, MatchEvent, MatchResult, Participation, Player } from '@/db/index';
 
 // ─────────────────────────────────────────────
@@ -57,17 +57,21 @@ export type CreateMatchResult =
   | { deckInActiveMatch: string }; // deck_id already in a live match
 
 /**
- * Creates a Match (status: in_progress) + Participations in a single transaction.
+ * Creates a Match (status: in_progress) + Participations.
  *
  * Validations (in order):
  *  1. 2–4 participants (BR-MATCH-01)
  *  2. No duplicate deck_id in request (BR-MATCH-02)
- *  3. Each deck must belong to userId (403)
+ *  3. Deck ownership: personal match → deck.createdBy === userId;
+ *     pod match → deck.createdBy must be a member of the group
  *  4. No deck already in an in_progress match (BR-MATCH-04)
+ *
+ * If groupId is provided, the match is scoped to that pod.
  */
 export async function createMatch(
   userId: string,
   participants: ParticipantInput[],
+  groupId?: string | null,
 ): Promise<CreateMatchResult> {
   // 1. Count
   if (participants.length < 2 || participants.length > 4) {
@@ -80,16 +84,37 @@ export async function createMatch(
     return { duplicateDeck: true };
   }
 
-  // 3. Ownership — batch fetch, then verify each
+  // 3. Ownership check
   const deckRows = await db
     .select({ id: decks.id, createdBy: decks.createdBy })
     .from(decks)
     .where(and(inArray(decks.id, deckIds), isNull(decks.deletedAt)));
 
-  for (const deckId of deckIds) {
-    const row = deckRows.find((d) => d.id === deckId);
-    if (!row || row.createdBy !== userId) {
-      return { forbidden: deckId };
+  if (groupId) {
+    // Pod match: verify caller is a member, and each deck belongs to a pod member
+    const memberRows = await db
+      .select({ userId: groupMembers.userId })
+      .from(groupMembers)
+      .where(eq(groupMembers.groupId, groupId));
+
+    const memberUserIds = new Set(memberRows.map((r) => r.userId));
+    if (!memberUserIds.has(userId)) {
+      return { forbidden: 'not_a_member' };
+    }
+
+    for (const deckId of deckIds) {
+      const row = deckRows.find((d) => d.id === deckId);
+      if (!row || !memberUserIds.has(row.createdBy)) {
+        return { forbidden: deckId };
+      }
+    }
+  } else {
+    // Personal match: each deck must belong to the calling user
+    for (const deckId of deckIds) {
+      const row = deckRows.find((d) => d.id === deckId);
+      if (!row || row.createdBy !== userId) {
+        return { forbidden: deckId };
+      }
     }
   }
 
@@ -103,7 +128,7 @@ export async function createMatch(
   // 5. Insert match then participations (neon-http does not support transactions)
   const [match] = await db
     .insert(matches)
-    .values({ createdBy: userId })
+    .values({ createdBy: userId, groupId: groupId ?? null })
     .returning();
 
   const inserted = await db
@@ -378,14 +403,25 @@ export type GetMatchByIdResult =
  * MATCH-004 (EPIC-02) · HIST-003 (EPIC-04) — added events
  */
 export async function getMatchById(userId: string, matchId: string): Promise<GetMatchByIdResult> {
-  // 1. Fetch match — ownership check doubles as the 404 guard
+  // 1. Fetch match
   const [match] = await db
     .select()
     .from(matches)
-    .where(and(eq(matches.id, matchId), eq(matches.createdBy, userId)))
+    .where(eq(matches.id, matchId))
     .limit(1);
 
   if (!match) return { notFound: true };
+
+  // Ownership check: either the creator, or a member of the match's pod
+  if (match.createdBy !== userId) {
+    if (!match.groupId) return { notFound: true };
+    const [membership] = await db
+      .select({ id: groupMembers.id })
+      .from(groupMembers)
+      .where(and(eq(groupMembers.groupId, match.groupId), eq(groupMembers.userId, userId)))
+      .limit(1);
+    if (!membership) return { notFound: true };
+  }
 
   // 2. Fetch participations with player / deck / both commanders joined
   const c1 = alias(commanders, 'commander1');
@@ -485,6 +521,8 @@ export type ListMatchesFilters = {
   limit?: number;
   /** Default 0 */
   offset?: number;
+  /** When set, return matches scoped to this pod (group) instead of user-owned matches */
+  groupId?: string;
 };
 
 export type MatchSummary = {
@@ -520,14 +558,15 @@ export async function listMatches(
 ): Promise<ListMatchesResult> {
   const {
     playerId, deckId, commanderId, result, winCondition,
-    dateFrom, dateTo, limit = 20, offset = 0,
+    dateFrom, dateTo, limit = 20, offset = 0, groupId,
   } = filters;
 
   // ── Step 1: Base match conditions ──
-  // BR-MATCH-07: always exclude in_progress; MVP scope: personal matches only
+  // BR-MATCH-07: always exclude in_progress
+  // Pod scope: show all pod matches; personal scope: show user-created matches
   const matchConditions = [
     ne(matches.status, 'in_progress'),
-    eq(matches.createdBy, userId),
+    groupId ? eq(matches.groupId, groupId) : eq(matches.createdBy, userId),
     result === 'abandoned' ? eq(matches.status, 'abandoned') : undefined,
     dateFrom ? gte(matches.endedAt, new Date(dateFrom)) : undefined,
     dateTo ? lte(matches.endedAt, new Date(dateTo)) : undefined,

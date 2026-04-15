@@ -27,7 +27,7 @@ import { colors, radius, spacing, typography } from '@/styles/tokens';
 export default function PlayersScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { players, loading, error, refresh, create, update, remove } = usePlayers();
+  const { players, loading, error, refresh, create, update, remove } = usePlayers({ guestsOnly: true });
   const { contentPadding, contentMaxWidth } = useResponsive();
   const [formVisible, setFormVisible] = useState(false);
   const [editing, setEditing] = useState<Player | null>(null);
@@ -73,7 +73,7 @@ export default function PlayersScreen() {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={[styles.header, { paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]}>
-        <Text style={styles.title}>{t('player.players')}</Text>
+        <Text style={styles.title}>{t('player.guestPlayers', { defaultValue: 'Guest Players' })}</Text>
         <Pressable style={styles.fab} onPress={openCreate} accessibilityLabel={t('player.addPlayerLabel')}>
           <Text style={styles.fabLabel}>{t('player.addPlayer')}</Text>
         </Pressable>

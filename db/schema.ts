@@ -119,12 +119,15 @@ export const players = pgTable(
     // null = personal player (not group-owned)
     groupId: uuid('group_id').references(() => groups.id),
     createdBy: text('created_by').notNull(), // Clerk user ID
+    // Non-null = account player (linked to Clerk user); null = guest
+    accountUserId: text('account_user_id'),
     deletedAt: timestamp('deleted_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [
     index('players_created_by_idx').on(table.createdBy),
     index('players_group_id_idx').on(table.groupId),
+    uniqueIndex('players_account_user_id_unique').on(table.accountUserId),
   ],
 );
 

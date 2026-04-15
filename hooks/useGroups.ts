@@ -93,6 +93,18 @@ export function useGroups() {
   /** Derived: groups the user is a member of (not owner) */
   const memberGroups = groups.filter((g) => g.role === 'member');
 
+  const leaveGroup = useCallback(async (groupId: string): Promise<void> => {
+    const token = await getTokenRef.current();
+    await apiFetch<{ success: true }>(`/api/groups/${groupId}`, 'DELETE', undefined, token ?? undefined);
+    setGroups((prev) => prev.filter((g) => g.group.id !== groupId));
+  }, []);
+
+  const archiveGroup = useCallback(async (groupId: string): Promise<void> => {
+    const token = await getTokenRef.current();
+    await apiFetch<{ success: true }>(`/api/groups/${groupId}`, 'PATCH', undefined, token ?? undefined);
+    setGroups((prev) => prev.filter((g) => g.group.id !== groupId));
+  }, []);
+
   return {
     groups,
     ownedGroups,
@@ -103,5 +115,7 @@ export function useGroups() {
     createGroup,
     getInvite,
     joinGroup,
+    leaveGroup,
+    archiveGroup,
   };
 }

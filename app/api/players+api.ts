@@ -12,7 +12,9 @@ export async function GET(req: Request) {
   const { userId } = getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const data = await listPlayers(userId);
+  const { searchParams } = new URL(req.url);
+  const guestsOnly = searchParams.get('guests_only') === 'true';
+  const data = await listPlayers(userId, { guestsOnly });
   return Response.json(data);
 }
 

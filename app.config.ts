@@ -10,7 +10,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   scheme: 'mtgtracker',
   userInterfaceStyle: 'dark',
   ios: {
-    supportsTablet: false,
+    supportsTablet: true,
     bundleIdentifier: 'com.aboutagency.mtgtracker',
     buildNumber: '1',
     infoPlist: {

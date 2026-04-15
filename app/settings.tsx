@@ -5,17 +5,17 @@
  *
  * PLAT-008 (EPIC-05)
  */
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  PanResponder,
   Pressable,
   SafeAreaView,
   SectionList,
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -25,84 +25,10 @@ import { useTranslation } from 'react-i18next';
 import { useSettings } from '@/hooks/useSettings';
 import { useIAP } from '@/hooks/useIAP';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useAccountPlayer } from '@/contexts/AccountPlayerContext';
+import { apiFetch } from '@/services/api';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 import i18n from '@/constants/i18n';
-
-// ─────────────────────────────────────────────
-// DebounceSlider (CMP-017) — PanResponder, no external deps
-// ─────────────────────────────────────────────
-
-const DEBOUNCE_MIN = 200;
-const DEBOUNCE_MAX = 2000;
-const DEBOUNCE_STEP = 50;
-
-interface DebounceSliderProps {
-  value: number;
-  onChange: (v: number) => void;
-}
-
-function DebounceSlider({ value, onChange }: DebounceSliderProps) {
-  const [trackWidth, setTrackWidth] = useState(0);
-  const thumbStartXRef = useRef(0);
-
-  const thumbRatio = trackWidth > 0 ? (value - DEBOUNCE_MIN) / (DEBOUNCE_MAX - DEBOUNCE_MIN) : 0;
-  const thumbX = thumbRatio * trackWidth;
-
-  const snapValue = useCallback(
-    (rawX: number): number => {
-      const x = Math.max(0, Math.min(rawX, trackWidth));
-      const raw = (x / trackWidth) * (DEBOUNCE_MAX - DEBOUNCE_MIN) + DEBOUNCE_MIN;
-      const snapped = Math.round(raw / DEBOUNCE_STEP) * DEBOUNCE_STEP;
-      return Math.max(DEBOUNCE_MIN, Math.min(DEBOUNCE_MAX, snapped));
-    },
-    [trackWidth],
-  );
-
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponderCapture: () => true,
-        onPanResponderTerminationRequest: () => false,
-        onPanResponderGrant: (evt) => {
-          if (trackWidth <= 0) return;
-          const x = evt.nativeEvent.locationX;
-          thumbStartXRef.current = x;
-          onChange(snapValue(x));
-        },
-        onPanResponderMove: (_, gestureState) => {
-          if (trackWidth <= 0) return;
-          onChange(snapValue(thumbStartXRef.current + gestureState.dx));
-        },
-      }),
-    [trackWidth, snapValue, onChange],
-  );
-
-  return (
-    <View style={styles.sliderWrapper}>
-      <View
-        style={styles.sliderTrack}
-        onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
-        {...panResponder.panHandlers}
-        accessibilityRole="adjustable"
-        accessibilityValue={{ min: DEBOUNCE_MIN, max: DEBOUNCE_MAX, now: value }}
-      >
-        {trackWidth > 0 && (
-          <>
-            <View style={[styles.sliderFill, { width: thumbX }]} />
-            <View style={[styles.sliderThumb, { left: thumbX - 11 }]} />
-          </>
-        )}
-      </View>
-      <View style={styles.sliderMeta}>
-        <Text style={styles.sliderLabel}>{DEBOUNCE_MIN}ms</Text>
-        <Text style={styles.sliderValue}>{value}ms</Text>
-        <Text style={styles.sliderLabel}>{DEBOUNCE_MAX}ms</Text>
-      </View>
-    </View>
-  );
-}
 
 // ─────────────────────────────────────────────
 // SegmentedPicker — language + life total
@@ -203,13 +129,17 @@ const LIFE_TOTAL_OPTIONS: { label: string; value: number }[] = [
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut, getToken } = useAuth();
   const { t } = useTranslation();
   const { contentMaxWidth, contentPadding } = useResponsive();
   const { settings, loading, error, saving, refresh, patchSetting } = useSettings();
   const { purchase, restore, isPurchasing, isRestoring } = useIAP(refresh);
+  const { accountPlayer, setAccountPlayer } = useAccountPlayer();
 
   const [signingOut, setSigningOut] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [savingName, setSavingName] = useState(false);
 
   // ── Handlers ──────────────────────────────
 
@@ -223,10 +153,30 @@ export default function SettingsScreen() {
     [patchSetting],
   );
 
-  const handleDebounce = useCallback(
-    (v: number) => patchSetting({ debounce_threshold_ms: v }),
-    [patchSetting],
-  );
+  const handleEditName = useCallback(() => {
+    setNameInput(accountPlayer?.name ?? '');
+    setEditingName(true);
+  }, [accountPlayer]);
+
+  const handleSaveName = useCallback(async () => {
+    if (!nameInput.trim() || savingName) return;
+    setSavingName(true);
+    try {
+      const token = await getToken();
+      const res = await apiFetch<{ success: boolean; data: import('@/db/index').Player }>(
+        '/api/players/account',
+        'PATCH',
+        { name: nameInput.trim() },
+        token ?? undefined,
+      );
+      setAccountPlayer(res.data);
+      setEditingName(false);
+    } catch (e) {
+      Alert.alert(t('common.error'), (e as Error).message);
+    } finally {
+      setSavingName(false);
+    }
+  }, [nameInput, savingName, getToken, setAccountPlayer, t]);
 
   const handleSwipeGestures = useCallback(
     (v: boolean) => patchSetting({ swipe_gestures_enabled: v }),
@@ -266,10 +216,10 @@ export default function SettingsScreen() {
 
   type SectionItem =
     | { key: 'swipe' }
-    | { key: 'debounce' }
     | { key: 'require_commander' }
     | { key: 'life_total' }
     | { key: 'language' }
+    | { key: 'player_name' }
     | { key: 'groups' }
     | { key: 'premium' }
     | { key: 'signout' };
@@ -279,7 +229,7 @@ export default function SettingsScreen() {
   const sections: Section[] = [
     {
       title: t('settings.tracker'),
-      data: [{ key: 'swipe' }, { key: 'debounce' }],
+      data: [{ key: 'swipe' }],
     },
     {
       title: t('settings.matchSetup'),
@@ -291,7 +241,7 @@ export default function SettingsScreen() {
     },
     {
       title: t('settings.account'),
-      data: [{ key: 'groups' }, { key: 'premium' }, { key: 'signout' }],
+      data: [{ key: 'player_name' }, { key: 'groups' }, { key: 'premium' }, { key: 'signout' }],
     },
   ];
 
@@ -311,13 +261,6 @@ export default function SettingsScreen() {
                 accessibilityLabel="Enable swipe gestures"
               />
             </SettingRow>
-          );
-
-        case 'debounce':
-          return (
-            <SettingRowStack label={t('settings.debounceThreshold')}>
-              <DebounceSlider value={settings.debounceThresholdMs} onChange={handleDebounce} />
-            </SettingRowStack>
           );
 
         case 'require_commander':
@@ -353,6 +296,45 @@ export default function SettingsScreen() {
                 onSelect={handleLanguage}
               />
             </SettingRowStack>
+          );
+
+        case 'player_name':
+          if (!accountPlayer) return null;
+          return editingName ? (
+            <View style={styles.rowStack}>
+              <Text style={styles.rowLabel}>{t('settings.playerName')}</Text>
+              <View style={styles.nameEditRow}>
+                <TextInput
+                  style={styles.nameInput}
+                  value={nameInput}
+                  onChangeText={setNameInput}
+                  placeholder={t('account.namePlaceholder')}
+                  placeholderTextColor={colors.text.muted}
+                  autoFocus
+                  maxLength={50}
+                  returnKeyType="done"
+                  onSubmitEditing={handleSaveName}
+                />
+                <Pressable style={styles.nameCancel} onPress={() => setEditingName(false)}>
+                  <Text style={styles.nameCancelText}>{t('common.cancel')}</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.nameSave, (!nameInput.trim() || savingName) && styles.nameSaveDisabled]}
+                  onPress={handleSaveName}
+                  disabled={!nameInput.trim() || savingName}
+                >
+                  {savingName
+                    ? <ActivityIndicator color={colors.text.primary} size="small" />
+                    : <Text style={styles.nameSaveText}>{t('common.save')}</Text>
+                  }
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <Pressable style={styles.row} onPress={handleEditName} accessibilityRole="button">
+              <Text style={styles.rowLabel}>{t('settings.playerName')}</Text>
+              <Text style={styles.nameValue}>{accountPlayer.name}</Text>
+            </Pressable>
           );
 
         case 'groups':
@@ -408,8 +390,13 @@ export default function SettingsScreen() {
     },
     [
       settings,
+      accountPlayer,
+      editingName,
+      nameInput,
+      savingName,
+      handleEditName,
+      handleSaveName,
       handleSwipeGestures,
-      handleDebounce,
       handleRequireCommander,
       handleLifeTotal,
       handleLanguage,
@@ -579,48 +566,46 @@ const styles = StyleSheet.create({
     fontWeight: typography.weight.semibold,
   },
 
-  // DebounceSlider (CMP-017)
-  sliderWrapper: { gap: spacing[2] },
-  sliderTrack: {
-    height: 28,
-    justifyContent: 'center',
-    position: 'relative',
-    backgroundColor: colors.border.default,
-    borderRadius: radius.round,
-  },
-  sliderFill: {
-    position: 'absolute',
-    left: 0,
-    height: 28,
-    backgroundColor: colors.accent.primary,
-    borderRadius: radius.round,
-  },
-  sliderThumb: {
-    position: 'absolute',
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.text.primary,
-    top: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 3,
-  },
-  sliderMeta: {
+  // Player name
+  nameEditRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: spacing[2],
   },
-  sliderLabel: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
-  },
-  sliderValue: {
+  nameInput: {
+    flex: 1,
+    backgroundColor: colors.background.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border.default,
     color: colors.text.primary,
+    fontSize: typography.size['body-md'],
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+  },
+  nameCancel: {
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+  },
+  nameCancelText: {
+    color: colors.text.secondary,
+    fontSize: typography.size['body-sm'],
+  },
+  nameSave: {
+    backgroundColor: colors.accent.primary,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+  },
+  nameSaveDisabled: { opacity: 0.5 },
+  nameSaveText: {
+    color: colors.accent.onPrimary,
     fontSize: typography.size['body-sm'],
     fontWeight: typography.weight.semibold,
+  },
+  nameValue: {
+    color: colors.text.secondary,
+    fontSize: typography.size['body-sm'],
   },
 
   // SegmentedPicker

@@ -13,16 +13,29 @@ import { useAuth } from '@clerk/clerk-expo';
 import { apiFetch } from '@/services/api';
 import type { Match, Participation } from '@/db/index';
 
+/**
+ * Available layout variants per player count.
+ * Each variant is a string key used by TrackerLayout to decide how to arrange frames.
+ */
+export const LAYOUT_VARIANTS: Record<number, string[]> = {
+  2: ['2p-stack', '2p-side'],
+  3: ['3p-top1-bot2', '3p-left1-right2', '3p-top2-bot1'],
+  4: ['4p-grid', '4p-top1-bot3', '4p-top3-bot1'],
+};
+
 export type UseMatchSetupReturn = {
   selectedPlayerIds: string[];
   deckAssignments: Record<string, string>; // playerId → deckId
   rotations: Record<string, number>; // playerId → degrees (0, 90, 180, 270)
+  layoutVariant: string;
   togglePlayer: (playerId: string) => void;
   setDeck: (playerId: string, deckId: string) => void;
   /** Replace selectedPlayerIds with a new order (same IDs, different positions). */
   reorderPlayers: (orderedIds: string[]) => void;
   /** Set text rotation for a player's frame. */
   setRotation: (playerId: string, degrees: number) => void;
+  /** Set the layout variant for the current player count. */
+  setLayoutVariant: (variant: string) => void;
   duplicateDeckIds: Set<string>;
   isValid: boolean;
   isSubmitting: boolean;
@@ -31,12 +44,13 @@ export type UseMatchSetupReturn = {
   submit: () => Promise<string | null>;
 };
 
-export function useMatchSetup(): UseMatchSetupReturn {
+export function useMatchSetup(groupId?: string | null): UseMatchSetupReturn {
   const { getToken } = useAuth();
 
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [deckAssignments, setDeckAssignments] = useState<Record<string, string>>({});
   const [rotations, setRotations] = useState<Record<string, number>>({});
+  const [layoutVariant, setLayoutVariant] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
@@ -103,10 +117,12 @@ export function useMatchSetup(): UseMatchSetupReturn {
         player_id: playerId,
         deck_id: deckAssignments[playerId],
       }));
+      const body: Record<string, unknown> = { participants };
+      if (groupId) body.group_id = groupId;
       const res = await apiFetch<{ success: true; data: { match: Match; participations: Participation[] } }>(
         '/api/matches',
         'POST',
-        { participants },
+        body,
         token ?? undefined,
       );
       return res.data.match.id;
@@ -123,16 +139,25 @@ export function useMatchSetup(): UseMatchSetupReturn {
     } finally {
       setIsSubmitting(false);
     }
-  }, [isValid, isSubmitting, getToken, selectedPlayerIds, deckAssignments]);
+  }, [isValid, isSubmitting, getToken, selectedPlayerIds, deckAssignments, groupId]);
+
+  // Auto-select default layout variant when player count changes
+  const playerCount = selectedPlayerIds.length;
+  const variants = LAYOUT_VARIANTS[playerCount] ?? [];
+  const effectiveLayout = layoutVariant && variants.includes(layoutVariant)
+    ? layoutVariant
+    : variants[0] ?? '';
 
   return {
     selectedPlayerIds,
     deckAssignments,
     rotations,
+    layoutVariant: effectiveLayout,
     togglePlayer,
     setDeck,
     reorderPlayers,
     setRotation,
+    setLayoutVariant,
     duplicateDeckIds,
     isValid,
     isSubmitting,

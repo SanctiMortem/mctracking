@@ -14,11 +14,11 @@ import { colors, spacing, typography } from '@/styles/tokens';
 
 export default function MatchSetupScreen() {
   const { t } = useTranslation();
-  function handleSubmit(matchId: string, rotations: Record<string, number>, playerOrder: string[]) {
-    // Encode rotations + player order as JSON in query string for the tracker.
+  function handleSubmit(matchId: string, rotations: Record<string, number>, playerOrder: string[], layoutVariant: string) {
     const rotParam = encodeURIComponent(JSON.stringify(rotations));
     const orderParam = encodeURIComponent(JSON.stringify(playerOrder));
-    router.replace(`/match/${matchId}/tracker?rotations=${rotParam}&playerOrder=${orderParam}` as never);
+    const layoutParam = encodeURIComponent(layoutVariant);
+    router.replace(`/match/${matchId}/tracker?rotations=${rotParam}&playerOrder=${orderParam}&layout=${layoutParam}` as never);
   }
 
   function handleCancel() {

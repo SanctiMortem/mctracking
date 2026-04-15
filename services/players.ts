@@ -17,11 +17,18 @@ import type { Player } from '@/db/index';
 // Queries
 // ─────────────────────────────────────────────
 
-export async function listPlayers(userId: string): Promise<Player[]> {
+export async function listPlayers(
+  userId: string,
+  opts?: { guestsOnly?: boolean },
+): Promise<Player[]> {
+  const conditions = [eq(players.createdBy, userId), isNull(players.deletedAt)];
+  if (opts?.guestsOnly) {
+    conditions.push(isNull(players.accountUserId));
+  }
   return await db
     .select()
     .from(players)
-    .where(and(eq(players.createdBy, userId), isNull(players.deletedAt)))
+    .where(and(...conditions))
     .orderBy(players.name);
 }
 
@@ -32,6 +39,36 @@ export async function getPlayerById(id: string): Promise<Player | null> {
     .where(and(eq(players.id, id), isNull(players.deletedAt)))
     .limit(1);
   return row ?? null;
+}
+
+/** Get the account player for a Clerk user (null if not created yet). */
+export async function getAccountPlayer(userId: string): Promise<Player | null> {
+  const [row] = await db
+    .select()
+    .from(players)
+    .where(and(eq(players.accountUserId, userId), isNull(players.deletedAt)))
+    .limit(1);
+  return row ?? null;
+}
+
+/** Get or create the account player for a Clerk user. */
+export async function getOrCreateAccountPlayer(
+  userId: string,
+  name: string,
+): Promise<{ data: Player; created: boolean }> {
+  const existing = await getAccountPlayer(userId);
+  if (existing) return { data: existing, created: false };
+
+  const [created] = await db
+    .insert(players)
+    .values({
+      name: name.trim(),
+      createdBy: userId,
+      accountUserId: userId,
+    })
+    .returning();
+
+  return { data: created, created: true };
 }
 
 

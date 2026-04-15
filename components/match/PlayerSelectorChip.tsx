@@ -16,9 +16,11 @@ interface PlayerSelectorChipProps {
   player: Player;
   isSelected: boolean;
   onPress: () => void;
+  /** Optional badge: 'pod' or 'guest' — shown below the name */
+  badge?: 'pod' | 'guest';
 }
 
-export function PlayerSelectorChip({ player, isSelected, onPress }: PlayerSelectorChipProps) {
+export function PlayerSelectorChip({ player, isSelected, onPress, badge }: PlayerSelectorChipProps) {
   const initials = player.name
     .split(' ')
     .map((w) => w[0])
@@ -41,6 +43,11 @@ export function PlayerSelectorChip({ player, isSelected, onPress }: PlayerSelect
       <Text style={[styles.name, isSelected && styles.nameSelected]} numberOfLines={1}>
         {player.name.split(' ')[0]}
       </Text>
+      {badge && (
+        <Text style={[styles.badge, badge === 'pod' && styles.badgePod]}>
+          {badge === 'pod' ? '👤' : '🎭'}
+        </Text>
+      )}
     </Pressable>
   );
 }
@@ -87,5 +94,12 @@ const styles = StyleSheet.create({
   nameSelected: {
     color: colors.text.primary,
     fontWeight: typography.weight.medium,
+  },
+  badge: {
+    fontSize: 10,
+    color: colors.text.muted,
+  },
+  badgePod: {
+    color: colors.accent.primary,
   },
 });

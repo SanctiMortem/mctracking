@@ -9,10 +9,9 @@
  *
  * MATCH-005 (EPIC-02)
  */
-import { useCallback, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Modal,
   Pressable,
@@ -27,63 +26,89 @@ import { useTranslation } from 'react-i18next';
 import { ColorChips } from '@/components/ui/ColorChips';
 import { useDecks } from '@/hooks/useDecks';
 import { usePlayers } from '@/hooks/usePlayers';
+import { usePodMembers } from '@/hooks/usePodMembers';
+import { usePodDecks } from '@/hooks/usePodDecks';
 import { useMatchSetup } from '@/hooks/useMatchSetup';
+import { useGroupContext } from '@/contexts/GroupContext';
 import type { DeckWithCommanders } from '@/services/decks';
+import type { PodDeck } from '@/services/pods';
+import type { Player } from '@/db/index';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
 import { LayoutPreview } from './LayoutPreview';
 import { PlayerSelectorChip } from './PlayerSelectorChip';
 
+/** Unified deck type for the picker — works for both personal and pod decks */
+type PickerDeck = DeckWithCommanders & { ownerName?: string };
+
 interface MatchSetupFormProps {
-  onSubmit: (matchId: string, rotations: Record<string, number>, playerOrder: string[]) => void;
+  onSubmit: (matchId: string, rotations: Record<string, number>, playerOrder: string[], layoutVariant: string) => void;
 }
 
 export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
   const { t } = useTranslation();
-  const { players, loading: loadingPlayers } = usePlayers();
-  const { decks, loading: loadingDecks } = useDecks();
+  const { activeContext } = useGroupContext();
+  const isPod = activeContext !== 'personal';
+  const groupId = isPod ? activeContext : null;
+
+  const { players: personalPlayers, loading: loadingPlayers } = usePlayers();
+  const { decks: personalDecks, loading: loadingDecks } = useDecks();
+  const { members: podMemberData, loading: loadingPodMembers } = usePodMembers(groupId);
+  const { podDecks, loading: loadingPodDecks } = usePodDecks(groupId);
+
+  // Build unified player list: pod members + guests (or just personal players)
+  const { allPlayers, guestPlayers, podPlayers } = useMemo(() => {
+    if (!isPod) {
+      return { allPlayers: personalPlayers, guestPlayers: personalPlayers, podPlayers: [] as Player[] };
+    }
+    const podP = podMemberData.map((m) => m.player);
+    // Guests are personal players without accountUserId
+    const guests = personalPlayers.filter((p) => !p.accountUserId);
+    return {
+      allPlayers: [...podP, ...guests],
+      guestPlayers: guests,
+      podPlayers: podP,
+    };
+  }, [isPod, personalPlayers, podMemberData]);
+
+  // Build unified deck list
+  const allDecks: PickerDeck[] = useMemo(() => {
+    if (!isPod) return personalDecks;
+    return podDecks.map((d) => ({ ...d, ownerName: d.ownerName }));
+  }, [isPod, personalDecks, podDecks]);
+
+  const isDataLoading = isPod
+    ? loadingPlayers || loadingPodMembers || loadingPodDecks
+    : loadingPlayers || loadingDecks;
+
   const {
     selectedPlayerIds,
     deckAssignments,
     rotations,
+    layoutVariant,
     togglePlayer,
     setDeck,
     reorderPlayers,
     setRotation,
+    setLayoutVariant,
     duplicateDeckIds,
     isValid,
     isSubmitting,
     apiError,
     submit,
-  } = useMatchSetup();
+  } = useMatchSetup(groupId);
 
   // deckPickerFor: playerId currently opening the deck picker, or null.
   const [deckPickerFor, setDeckPickerFor] = useState<string | null>(null);
-  // Random starter: the playerId who goes first (null = not randomized yet)
-  const [startingPlayerId, setStartingPlayerId] = useState<string | null>(null);
-
-  /** Fisher-Yates shuffle + pick random starting player */
-  const handleRandomize = useCallback(() => {
-    if (selectedPlayerIds.length < 2) return;
-    const shuffled = [...selectedPlayerIds];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    reorderPlayers(shuffled);
-    setStartingPlayerId(shuffled[0]);
-    const starterName = players.find((p) => p.id === shuffled[0])?.name ?? '?';
-    Alert.alert('🎲', t('match.randomStarterResult', { name: starterName }));
-  }, [selectedPlayerIds, reorderPlayers, players, t]);
 
   async function handleSubmit() {
     const matchId = await submit();
-    if (matchId) onSubmit(matchId, rotations, selectedPlayerIds);
+    if (matchId) onSubmit(matchId, rotations, selectedPlayerIds, layoutVariant);
   }
 
   // ─── Edge cases ───────────────────────────────────────────────────────────
 
-  if (loadingPlayers || loadingDecks) {
+  if (isDataLoading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color={colors.accent.primary} />
@@ -91,7 +116,7 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
     );
   }
 
-  if (players.length === 0) {
+  if (allPlayers.length === 0) {
     return (
       <View style={styles.centered}>
         <Text style={styles.edgeCaseTitle}>{t('match.noPlayersYet')}</Text>
@@ -100,7 +125,7 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
     );
   }
 
-  if (decks.length === 0) {
+  if (allDecks.length === 0) {
     return (
       <View style={styles.centered}>
         <Text style={styles.edgeCaseTitle}>{t('match.noDecksYet')}</Text>
@@ -112,10 +137,20 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
   // ─── Derived ──────────────────────────────────────────────────────────────
 
   const selectedPlayers = selectedPlayerIds
-    .map((id) => players.find((p) => p.id === id))
-    .filter(Boolean) as typeof players;
+    .map((id) => allPlayers.find((p) => p.id === id))
+    .filter(Boolean) as Player[];
 
   const hasDuplicate = duplicateDeckIds.size > 0;
+
+  // Group decks by owner for pod deck picker sections
+  const decksByOwner = isPod
+    ? (allDecks as PickerDeck[]).reduce<Record<string, PickerDeck[]>>((acc, d) => {
+        const key = d.ownerName ?? t('match.unknownOwner');
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(d);
+        return acc;
+      }, {})
+    : null;
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -129,20 +164,65 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
       >
         {/* ── Section 1: Player selection ── */}
         <Text style={styles.sectionLabel}>{t('match.selectPlayersLabel')}</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipsRow}
-        >
-          {players.map((player) => (
-            <PlayerSelectorChip
-              key={player.id}
-              player={player}
-              isSelected={selectedPlayerIds.includes(player.id)}
-              onPress={() => togglePlayer(player.id)}
-            />
-          ))}
-        </ScrollView>
+
+        {isPod && podPlayers.length > 0 && (
+          <>
+            <Text style={styles.subSectionLabel}>{t('match.podMembers')}</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipsRow}
+            >
+              {podPlayers.map((player) => (
+                <PlayerSelectorChip
+                  key={player.id}
+                  player={player}
+                  isSelected={selectedPlayerIds.includes(player.id)}
+                  onPress={() => togglePlayer(player.id)}
+                  badge="pod"
+                />
+              ))}
+            </ScrollView>
+          </>
+        )}
+
+        {isPod && guestPlayers.length > 0 && (
+          <>
+            <Text style={styles.subSectionLabel}>{t('match.guestPlayers')}</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipsRow}
+            >
+              {guestPlayers.map((player) => (
+                <PlayerSelectorChip
+                  key={player.id}
+                  player={player}
+                  isSelected={selectedPlayerIds.includes(player.id)}
+                  onPress={() => togglePlayer(player.id)}
+                  badge="guest"
+                />
+              ))}
+            </ScrollView>
+          </>
+        )}
+
+        {!isPod && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chipsRow}
+          >
+            {allPlayers.map((player) => (
+              <PlayerSelectorChip
+                key={player.id}
+                player={player}
+                isSelected={selectedPlayerIds.includes(player.id)}
+                onPress={() => togglePlayer(player.id)}
+              />
+            ))}
+          </ScrollView>
+        )}
 
         {selectedPlayerIds.length > 0 && selectedPlayerIds.length < 2 && (
           <Text style={styles.hintText}>{t('match.selectMorePlayers')}</Text>
@@ -155,7 +235,7 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
             <Text style={styles.sectionLabel}>{t('match.assignDecks')}</Text>
 
             {selectedPlayers.map((player) => {
-              const assignedDeck = decks.find((d) => d.id === deckAssignments[player.id]);
+              const assignedDeck = allDecks.find((d) => d.id === deckAssignments[player.id]);
               const isDuplicateDeck = assignedDeck ? duplicateDeckIds.has(assignedDeck.id) : false;
               const initials = player.name
                 .split(' ')
@@ -204,31 +284,19 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
           </>
         )}
 
-        {/* ── Section 3: Position arrangement + random starter ── */}
+        {/* ── Section 3: Position arrangement ── */}
         {selectedPlayers.length >= 2 && !hasDuplicate && selectedPlayers.every((p) => deckAssignments[p.id]) && (
           <>
             <View style={styles.divider} />
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionLabel}>{t('match.arrangePositions')}</Text>
-              <Pressable onPress={handleRandomize} style={styles.randomizeBtn}>
-                <Text style={styles.randomizeBtnText}>🎲 {t('match.randomize')}</Text>
-              </Pressable>
-            </View>
-
-            {/* Show who goes first */}
-            {startingPlayerId && (
-              <View style={styles.starterBanner}>
-                <Text style={styles.starterText}>
-                  ⭐ {players.find((p) => p.id === startingPlayerId)?.name} {t('match.goesFirst')}
-                </Text>
-              </View>
-            )}
+            <Text style={styles.sectionLabel}>{t('match.arrangePositions')}</Text>
 
             <LayoutPreview
               players={selectedPlayers.map((p) => ({ id: p.id, name: p.name }))}
               rotations={rotations}
+              layoutVariant={layoutVariant}
               onReorder={(reordered) => reorderPlayers(reordered.map((p) => p.id))}
               onRotate={setRotation}
+              onLayoutChange={setLayoutVariant}
             />
           </>
         )}
@@ -278,27 +346,54 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
             </Pressable>
           </View>
 
-          <FlatList
-            data={decks}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => {
-              const isSelected =
-                deckPickerFor !== null && deckAssignments[deckPickerFor] === item.id;
-              return (
-                <DeckOption
-                  deck={item}
-                  isSelected={isSelected}
-                  onSelect={() => {
-                    if (deckPickerFor) setDeck(deckPickerFor, item.id);
-                    setDeckPickerFor(null);
-                  }}
-                />
-              );
-            }}
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
-            contentContainerStyle={styles.deckList}
-            keyboardShouldPersistTaps="handled"
-          />
+          {isPod && decksByOwner ? (
+            <ScrollView contentContainerStyle={styles.deckList} keyboardShouldPersistTaps="handled">
+              {Object.entries(decksByOwner).map(([ownerName, ownerDecks]) => (
+                <View key={ownerName}>
+                  <Text style={styles.deckSectionHeader}>{ownerName}</Text>
+                  {ownerDecks.map((item, idx) => {
+                    const isSelected =
+                      deckPickerFor !== null && deckAssignments[deckPickerFor] === item.id;
+                    return (
+                      <View key={item.id}>
+                        {idx > 0 && <View style={styles.separator} />}
+                        <DeckOption
+                          deck={item}
+                          isSelected={isSelected}
+                          onSelect={() => {
+                            if (deckPickerFor) setDeck(deckPickerFor, item.id);
+                            setDeckPickerFor(null);
+                          }}
+                        />
+                      </View>
+                    );
+                  })}
+                </View>
+              ))}
+            </ScrollView>
+          ) : (
+            <FlatList
+              data={allDecks}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => {
+                const isSelected =
+                  deckPickerFor !== null && deckAssignments[deckPickerFor] === item.id;
+                return (
+                  <DeckOption
+                    deck={item}
+                    isSelected={isSelected}
+                    onSelect={() => {
+                      if (deckPickerFor) setDeck(deckPickerFor, item.id);
+                      setDeckPickerFor(null);
+                    }}
+                  />
+                );
+              }}
+              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              contentContainerStyle={styles.deckList}
+              keyboardShouldPersistTaps="handled"
+            />
+          )}
         </View>
       </Modal>
     </>
@@ -355,12 +450,6 @@ const styles = StyleSheet.create({
   },
 
   // ─── Sections ─────────────────────────────────────────────────────────────
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing[3],
-  },
   sectionLabel: {
     color: colors.text.secondary,
     fontSize: typography.size['body-sm'],
@@ -369,30 +458,14 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: spacing[3],
   },
-  randomizeBtn: {
-    backgroundColor: colors.accent.primary + '22',
-    borderRadius: radius.md,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    marginBottom: spacing[3],
-  },
-  randomizeBtnText: {
-    color: colors.accent.primary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
-  },
-  starterBanner: {
-    backgroundColor: colors.accent.primary + '1A',
-    borderRadius: radius.md,
-    paddingVertical: spacing[2],
-    paddingHorizontal: spacing[3],
-    marginBottom: spacing[3],
-    alignItems: 'center',
-  },
-  starterText: {
-    color: colors.accent.primary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
+  subSectionLabel: {
+    color: colors.text.muted,
+    fontSize: typography.size.caption,
+    fontWeight: typography.weight.medium,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+    marginBottom: spacing[2],
+    marginTop: spacing[1],
   },
   chipsRow: {
     gap: spacing[2],
@@ -547,6 +620,16 @@ const styles = StyleSheet.create({
   },
   deckList: {
     paddingVertical: spacing[2],
+  },
+  deckSectionHeader: {
+    color: colors.text.muted,
+    fontSize: typography.size.caption,
+    fontWeight: typography.weight.semibold,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[4],
+    paddingBottom: spacing[2],
   },
   separator: {
     height: 1,

@@ -189,10 +189,21 @@ export function useTracker(matchId: string): UseTrackerReturn {
   }, [matchId, getToken]);
 
   // ── undoLastEvent ──────────────────────────
-  const undoLastEvent = useCallback(async () => {
+  // Returns the undone event so callers can react (e.g. undo death).
+  const undoLastEvent = useCallback(async (): Promise<LocalEvent | null> => {
     // Find the last non-undone local event
     const lastEvent = [...events].reverse().find((e) => !e.isUndone);
-    if (!lastEvent) return;
+    if (!lastEvent) return null;
+
+    const isLocalOnly = lastEvent.id.startsWith('local-');
+
+    // For local-only events (player_died), just mark undone — no API call needed
+    if (isLocalOnly) {
+      setEvents((evts) =>
+        evts.map((e) => (e.id === lastEvent.id ? { ...e, isUndone: true } : e)),
+      );
+      return lastEvent;
+    }
 
     // Snapshot for rollback
     const prev = participationsRef.current.map((p) => ({ ...p, commanderDamage: { ...p.commanderDamage } }));
@@ -243,9 +254,31 @@ export function useTracker(matchId: string): UseTrackerReturn {
       );
       setToastError((e as Error).message ?? 'Undo failed. Please try again.');
     }
+
+    return lastEvent;
   }, [events, matchId, getToken]);
 
   const clearToastError = useCallback(() => setToastError(null), []);
+
+  /** Inject a local-only event into the log (not sent to API). */
+  const addLocalEvent = useCallback((input: {
+    participationId: string;
+    eventType: string;
+    delta?: number;
+  }) => {
+    setEvents((prev) => [
+      ...prev,
+      {
+        id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        participationId: input.participationId,
+        eventType: input.eventType as EventType,
+        delta: input.delta ?? 0,
+        commanderIdSource: undefined,
+        isUndone: false,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+  }, []);
 
   return {
     match,
@@ -257,5 +290,6 @@ export function useTracker(matchId: string): UseTrackerReturn {
     clearToastError,
     recordEvent,
     undoLastEvent,
+    addLocalEvent,
   };
 }
