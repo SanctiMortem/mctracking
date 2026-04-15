@@ -12,6 +12,7 @@
  * US-044, US-045 · PLAT-010 (EPIC-05)
  */
 import {
+  ActivityIndicator,
   Modal,
   Pressable,
   RefreshControl,
@@ -94,7 +95,7 @@ function ContextSwitcherModal({
       onRequestClose={onClose}
     >
       <Pressable style={styles.modalBackdrop} onPress={onClose}>
-        <View style={styles.modalSheet}>
+        <Pressable style={styles.modalSheet} onPress={(e) => e.stopPropagation()}>
           <Text style={styles.modalTitle}>{t('home.contextSwitcherTitle')}</Text>
           {options.map((opt) => (
             <Pressable
@@ -117,7 +118,7 @@ function ContextSwitcherModal({
               )}
             </Pressable>
           ))}
-        </View>
+        </Pressable>
       </Pressable>
     </Modal>
   );
@@ -178,6 +179,7 @@ function EmptyMatchState({ onNewMatch }: { onNewMatch: () => void }) {
   );
 }
 
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
@@ -201,10 +203,14 @@ export default function HomeScreen() {
   // Sync groups into context so switcher modal has fresh data
   const { setUserGroups } = useGroupContext();
   useEffect(() => {
-    if (!loadingGroups && groups.length !== userGroups.length) {
+    if (!loadingGroups) {
       setUserGroups(groups);
+      // Reset to personal if the active group no longer exists
+      if (activeContext !== 'personal' && !groups.find((g) => g.group.id === activeContext)) {
+        setActiveContext('personal');
+      }
     }
-  }, [loadingGroups, groups, userGroups.length, setUserGroups]);
+  }, [loadingGroups, groups]);
 
   const hasGroups = userGroups.length > 0 || groups.length > 0;
 

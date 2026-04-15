@@ -1,5 +1,16 @@
-import { useCallback, useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet as RNStyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import * as SecureStore from 'expo-secure-store';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -11,12 +22,15 @@ import * as SplashScreen from 'expo-splash-screen';
 // Fonts — "The Mystic Archive" design system
 import { SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import { Manrope_400Regular, Manrope_500Medium } from '@expo-google-fonts/manrope';
+import { BigShouldersDisplay_600SemiBold, BigShouldersDisplay_700Bold } from '@expo-google-fonts/big-shoulders-display';
 
 // i18n init (SETUP-006)
 import '../constants/i18n';
 import { GuestProvider, useGuest } from '@/contexts/GuestContext';
 import { GroupProvider } from '@/contexts/GroupContext';
-import { colors } from '@/styles/tokens';
+import { AccountPlayerProvider, useAccountPlayer } from '@/contexts/AccountPlayerContext';
+import { apiFetch } from '@/services/api';
+import { colors, radius, spacing, typography } from '@/styles/tokens';
 
 // Keep splash visible while fonts load
 SplashScreen.preventAutoHideAsync();
@@ -34,13 +48,199 @@ const tokenCache = {
   },
 };
 
+// ─── Account Player Setup Modal ──────────────────────────────────────────────
+// Rendered inside AuthGate (root level) so it shows reliably on all devices.
+
+function AccountPlayerSetupModal() {
+  const { t } = useTranslation();
+  const { getToken } = useAuth();
+  const { needsSetup, setNeedsSetup, setAccountPlayer } = useAccountPlayer();
+  const [name, setName] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!needsSetup) return null;
+
+  const handleSubmit = async () => {
+    if (!name.trim() || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const token = await getToken();
+      const res = await apiFetch<{ success: boolean; data: import('@/db/index').Player }>(
+        '/api/players/account',
+        'POST',
+        { name: name.trim() },
+        token ?? undefined,
+      );
+      setAccountPlayer(res.data);
+      setNeedsSetup(false);
+    } catch (e) {
+      setError((e as Error).message ?? t('common.error'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal visible transparent animationType="fade">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={setupStyles.backdrop}
+      >
+        <View style={setupStyles.card}>
+          <Text style={setupStyles.title}>{t('account.setupTitle')}</Text>
+          <Text style={setupStyles.subtitle}>{t('account.setupSubtitle')}</Text>
+          <TextInput
+            style={setupStyles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder={t('account.namePlaceholder')}
+            placeholderTextColor={colors.text.muted}
+            autoFocus
+            maxLength={50}
+            returnKeyType="done"
+            onSubmitEditing={handleSubmit}
+          />
+          {error && <Text style={setupStyles.error}>{error}</Text>}
+          <Pressable
+            onPress={handleSubmit}
+            disabled={!name.trim() || submitting}
+            style={[setupStyles.btn, (!name.trim() || submitting) && setupStyles.btnDisabled]}
+          >
+            {submitting ? (
+              <ActivityIndicator color={colors.text.inverse} size="small" />
+            ) : (
+              <Text style={[setupStyles.btnText, (!name.trim() || submitting) && setupStyles.btnTextDisabled]}>
+                {t('common.save')}
+              </Text>
+            )}
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+const setupStyles = RNStyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: colors.background.overlay,
+    justifyContent: 'center',
+    paddingHorizontal: spacing[6],
+  },
+  card: {
+    backgroundColor: colors.background.elevated,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    padding: spacing[6],
+    gap: spacing[4],
+  },
+  title: {
+    color: colors.text.primary,
+    fontSize: typography.size['heading-md'],
+    fontFamily: typography.fontFamily.headline,
+    fontWeight: typography.weight.bold,
+    textAlign: 'center',
+  },
+  subtitle: {
+    color: colors.text.secondary,
+    fontSize: typography.size['body-sm'],
+    textAlign: 'center',
+  },
+  input: {
+    backgroundColor: colors.background.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    color: colors.text.primary,
+    fontSize: typography.size['body-md'],
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+  },
+  error: {
+    color: colors.status.error,
+    fontSize: typography.size['body-sm'],
+    textAlign: 'center',
+  },
+  btn: {
+    backgroundColor: colors.accent.primary,
+    borderRadius: radius.lg,
+    paddingVertical: spacing[3],
+    alignItems: 'center',
+  },
+  btnDisabled: {
+    backgroundColor: colors.background.surface,
+  },
+  btnText: {
+    color: colors.accent.onPrimary,
+    fontSize: typography.size['body-md'],
+    fontWeight: typography.weight.semibold,
+  },
+  btnTextDisabled: {
+    color: colors.text.muted,
+  },
+});
+
 // Auth gate — wrapped inside ClerkProvider + GuestProvider so hooks are available.
 function AuthGate() {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
   const { isGuest } = useGuest();
+  const { accountPlayer, setAccountPlayer, setNeedsSetup } = useAccountPlayer();
   const router = useRouter();
   const segments = useSegments();
   const { t } = useTranslation();
+
+  // Load account player after sign-in (with retry on failure).
+  // On some devices (especially iPhone) the Clerk token may not be ready
+  // immediately after isSignedIn flips, causing a 401 that was previously
+  // silently swallowed — leaving needsSetup stuck at false forever.
+  const retryCount = useRef(0);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
+    if (accountPlayer) return;
+
+    let cancelled = false;
+    retryCount.current = 0;
+
+    async function check() {
+      try {
+        const token = await getToken();
+        if (cancelled) return;
+        if (!token) throw new Error('Token not ready');
+        const res = await apiFetch<{ success: boolean; data: import('@/db/index').Player | null }>(
+          '/api/players/account',
+          'GET',
+          undefined,
+          token,
+        );
+        if (cancelled) return;
+        if (res.data) {
+          setAccountPlayer(res.data);
+          setNeedsSetup(false);
+        } else {
+          setNeedsSetup(true);
+        }
+      } catch {
+        if (cancelled) return;
+        // Retry up to 3 times with increasing delay (1s, 2s, 4s)
+        if (retryCount.current < 3) {
+          const delay = 1000 * Math.pow(2, retryCount.current);
+          retryCount.current += 1;
+          retryTimer.current = setTimeout(check, delay);
+        }
+      }
+    }
+
+    check();
+    return () => {
+      cancelled = true;
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+    };
+  }, [isLoaded, isSignedIn, accountPlayer]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -61,6 +261,8 @@ function AuthGate() {
 
   return (
     <GroupProvider>
+    {/* Account Player Setup — rendered at root so it works on every screen/device */}
+    {isSignedIn && <AccountPlayerSetupModal />}
     <Stack
       screenOptions={{
         headerShown: true,
@@ -95,6 +297,7 @@ function AuthGate() {
       <Stack.Screen name="commanders/[id]" options={{ title: t('game.commander') }} />
       <Stack.Screen name="stats/matchup" options={{ title: t('stats.viewMatchup') }} />
       <Stack.Screen name="groups/index" options={{ title: t('groups.title') }} />
+      <Stack.Screen name="groups/[id]" options={{ title: t('groups.podDetail') }} />
       <Stack.Screen name="settings" options={{ title: t('settings.title') }} />
     </Stack>
     </GroupProvider>
@@ -109,6 +312,8 @@ export default function RootLayout() {
     SpaceGrotesk_700Bold,
     Manrope_400Regular,
     Manrope_500Medium,
+    BigShouldersDisplay_600SemiBold,
+    BigShouldersDisplay_700Bold,
   });
 
   const onLayoutRootView = useCallback(async () => {
@@ -126,13 +331,15 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+    <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
         <GuestProvider>
-          <StatusBar style="light" />
-          <AuthGate />
+          <AccountPlayerProvider>
+            <StatusBar style="light" />
+            <AuthGate />
+          </AccountPlayerProvider>
         </GuestProvider>
       </ClerkProvider>
-    </View>
+    </GestureHandlerRootView>
   );
 }
