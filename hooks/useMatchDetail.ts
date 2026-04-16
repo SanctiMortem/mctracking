@@ -57,6 +57,10 @@ function formatEventReadOnly(
   const part = participations.find((p) => p.id === event.participationId);
   const playerName = part?.player.name ?? 'Unknown';
 
+  if (event.eventType === 'player_died') {
+    return `☠ ${playerName} has died`;
+  }
+
   if (event.eventType === 'life_change') {
     const sign = event.delta > 0 ? '+' : '';
     return `${playerName}: ${sign}${event.delta} life`;

@@ -15,6 +15,27 @@ import { commanders, decks, groupMembers, matchEvents, matchResults, matches, pa
 import type { Commander, Deck, Match, MatchEvent, MatchResult, Participation, Player } from '@/db/index';
 
 // ─────────────────────────────────────────────
+// Pod membership helper
+// ─────────────────────────────────────────────
+
+/** Check if a user is a member of a group. */
+async function isGroupMember(userId: string, groupId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: groupMembers.id })
+    .from(groupMembers)
+    .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
+    .limit(1);
+  return !!row;
+}
+
+/** Check if a user is the creator of a match OR a member of the match's pod. */
+async function canManageMatch(userId: string, match: Match): Promise<boolean> {
+  if (match.createdBy === userId) return true;
+  if (match.groupId) return isGroupMember(userId, match.groupId);
+  return false;
+}
+
+// ─────────────────────────────────────────────
 // Active-match helpers (exported for use in other services)
 // ─────────────────────────────────────────────
 
@@ -191,7 +212,9 @@ export async function closeMatch(
 
   if (!match) return { notFound: true };
   if (match.status !== 'in_progress') return { alreadyClosed: true };
-  if (match.createdBy !== userId) return { forbidden: true };
+
+  // Allow creator or any pod member to close
+  if (!(await canManageMatch(userId, match))) return { forbidden: true };
 
   // 2. Validate win_condition enum
   if (input.action === 'win' && !VALID_WIN_CONDITIONS.has(input.win_condition)) {
@@ -306,7 +329,7 @@ export async function updateMatchResult(
     .limit(1);
 
   if (!match) return { notFound: true };
-  if (match.createdBy !== userId) return { forbidden: true };
+  if (!(await canManageMatch(userId, match))) return { forbidden: true };
   if (match.status !== 'completed') return { notCompleted: true };
 
   // Check 15-min edit window
@@ -412,15 +435,34 @@ export async function getMatchById(userId: string, matchId: string): Promise<Get
 
   if (!match) return { notFound: true };
 
-  // Ownership check: either the creator, or a member of the match's pod
+  // Access check: creator, pod member, or account player who participated
   if (match.createdBy !== userId) {
-    if (!match.groupId) return { notFound: true };
-    const [membership] = await db
-      .select({ id: groupMembers.id })
-      .from(groupMembers)
-      .where(and(eq(groupMembers.groupId, match.groupId), eq(groupMembers.userId, userId)))
-      .limit(1);
-    if (!membership) return { notFound: true };
+    let hasAccess = false;
+
+    // Check pod membership
+    if (match.groupId) {
+      hasAccess = await isGroupMember(userId, match.groupId);
+    }
+
+    // Check if user's account player participated in this match
+    if (!hasAccess) {
+      const [accountPlayer] = await db
+        .select({ id: players.id })
+        .from(players)
+        .where(and(eq(players.accountUserId, userId), isNull(players.deletedAt)))
+        .limit(1);
+
+      if (accountPlayer) {
+        const [participated] = await db
+          .select({ id: participations.id })
+          .from(participations)
+          .where(and(eq(participations.matchId, matchId), eq(participations.playerId, accountPlayer.id)))
+          .limit(1);
+        if (participated) hasAccess = true;
+      }
+    }
+
+    if (!hasAccess) return { notFound: true };
   }
 
   // 2. Fetch participations with player / deck / both commanders joined
@@ -563,10 +605,54 @@ export async function listMatches(
 
   // ── Step 1: Base match conditions ──
   // BR-MATCH-07: always exclude in_progress
-  // Pod scope: show all pod matches; personal scope: show user-created matches
+  // Pod scope: show all pod matches
+  // Personal scope: show matches where the user's account player participated
+  //   OR matches the user created (covers guest-player-only matches)
+  let personalMatchIds: string[] | null = null;
+  if (!groupId) {
+    // Find the user's account player
+    const [accountPlayer] = await db
+      .select({ id: players.id })
+      .from(players)
+      .where(and(eq(players.accountUserId, userId), isNull(players.deletedAt)))
+      .limit(1);
+
+    if (accountPlayer) {
+      // Matches where the account player participated
+      const participatedRows = await db
+        .select({ matchId: participations.matchId })
+        .from(participations)
+        .where(eq(participations.playerId, accountPlayer.id))
+        .groupBy(participations.matchId);
+      const participatedIds = participatedRows.map((r) => r.matchId);
+
+      // Also include matches the user created (guest-player matches)
+      const createdRows = await db
+        .select({ id: matches.id })
+        .from(matches)
+        .where(eq(matches.createdBy, userId));
+      const createdIds = createdRows.map((r) => r.id);
+
+      personalMatchIds = [...new Set([...participatedIds, ...createdIds])];
+    } else {
+      // No account player — fall back to created-by only
+      const createdRows = await db
+        .select({ id: matches.id })
+        .from(matches)
+        .where(eq(matches.createdBy, userId));
+      personalMatchIds = createdRows.map((r) => r.id);
+    }
+
+    if (personalMatchIds.length === 0) {
+      return { data: { matches: [], total: 0, limit, offset, has_more: false } };
+    }
+  }
+
   const matchConditions = [
     ne(matches.status, 'in_progress'),
-    groupId ? eq(matches.groupId, groupId) : eq(matches.createdBy, userId),
+    groupId
+      ? eq(matches.groupId, groupId)
+      : inArray(matches.id, personalMatchIds!),
     result === 'abandoned' ? eq(matches.status, 'abandoned') : undefined,
     dateFrom ? gte(matches.endedAt, new Date(dateFrom)) : undefined,
     dateTo ? lte(matches.endedAt, new Date(dateTo)) : undefined,
@@ -749,7 +835,7 @@ export async function deleteMatch(
     .limit(1);
 
   if (!match) return { notFound: true };
-  if (match.createdBy !== userId) return { forbidden: true };
+  if (!(await canManageMatch(userId, match))) return { forbidden: true };
   if (match.status === 'in_progress') return { activeMatch: true };
 
   // Delete in order: results → events → participations → match

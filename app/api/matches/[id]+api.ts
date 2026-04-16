@@ -105,7 +105,7 @@ export async function PATCH(req: Request) {
   }
 
   if ('forbidden' in result) {
-    return Response.json({ error: 'FORBIDDEN', message: 'You did not create this match' }, { status: 403 });
+    return Response.json({ error: 'FORBIDDEN', message: 'You do not have permission to manage this match' }, { status: 403 });
   }
 
   if ('invalidWinCondition' in result) {
@@ -138,7 +138,7 @@ export async function DELETE(req: Request) {
     return Response.json({ error: 'NOT_FOUND', message: 'Match not found' }, { status: 404 });
   }
   if ('forbidden' in result) {
-    return Response.json({ error: 'FORBIDDEN', message: 'You did not create this match' }, { status: 403 });
+    return Response.json({ error: 'FORBIDDEN', message: 'You do not have permission to manage this match' }, { status: 403 });
   }
   if ('activeMatch' in result) {
     return Response.json({ error: 'MATCH_IN_PROGRESS', message: 'Cannot delete an in-progress match. Abandon it first.' }, { status: 400 });

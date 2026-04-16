@@ -238,7 +238,7 @@ export default function MatchTrackerScreen() {
           isDead={deadPlayerIds.has(p.id)}
           onMarkDead={() => {
             setDeadPlayerIds((prev) => new Set(prev).add(p.id));
-            addLocalEvent({ participationId: p.id, eventType: 'player_died' });
+            recordEvent({ participationId: p.id, eventType: 'player_died', delta: 0 });
           }}
           lifeCounter={
             <LifeCounter
