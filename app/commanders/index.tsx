@@ -19,9 +19,16 @@ import type { Commander } from '@/db/index';
 import { CommanderForm } from '@/components/commanders/CommanderForm';
 import { CommanderList } from '@/components/commanders/CommanderList';
 import { useCommanders } from '@/hooks/useCommanders';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function CommandersScreen() {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   const { commanders, loading, error, refresh, create, update, remove } = useCommanders();
   const [formVisible, setFormVisible] = useState(false);
@@ -71,7 +78,7 @@ export default function CommandersScreen() {
       {/* Body */}
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color={colors.accent.primary} size="large" />
+          <ActivityIndicator color={theme.colors.accent.primary} size="large" />
         </View>
       ) : error ? (
         <View style={styles.center}>
@@ -99,10 +106,10 @@ export default function CommandersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   safe: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.colors.background.primary,
   },
   header: {
     flexDirection: 'row',
@@ -111,23 +118,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[4],
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
+    borderBottomColor: t.colors.border.subtle,
   },
   title: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-lg'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-lg'],
+    fontWeight: t.typography.weight.bold,
   },
   fab: {
-    backgroundColor: colors.accent.primary,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.accent.primary,
+    borderRadius: t.radius.md,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
   },
   fabLabel: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
   },
   center: {
     flex: 1,
@@ -136,20 +143,20 @@ const styles = StyleSheet.create({
     gap: spacing[4],
   },
   errorText: {
-    color: colors.status.error,
-    fontSize: typography.size['body-lg'],
+    color: t.colors.status.error,
+    fontSize: t.typography.size['body-lg'],
     textAlign: 'center',
     paddingHorizontal: spacing[6],
   },
   retryBtn: {
     paddingHorizontal: spacing[6],
     paddingVertical: spacing[3],
-    borderRadius: radius.md,
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
   },
   retryText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-lg'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-lg'],
   },
-});
+})

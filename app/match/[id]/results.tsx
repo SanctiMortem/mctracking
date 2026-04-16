@@ -15,9 +15,16 @@ import { MatchResultCard } from '@/components/match/MatchResultCard';
 import { ParticipantResultRow } from '@/components/match/ParticipantResultRow';
 import { useMatchResults } from '@/hooks/useMatchResults';
 import { useInterstitialAd } from '@/hooks/useInterstitialAd';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function MatchResultsScreen() {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { t } = useTranslation();
@@ -29,7 +36,7 @@ export default function MatchResultsScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.accent.primary} size="large" />
+        <ActivityIndicator color={theme.colors.accent.primary} size="large" />
       </View>
     );
   }
@@ -133,10 +140,10 @@ export default function MatchResultsScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   root: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.colors.background.primary,
   },
   scroll: {
     flex: 1,
@@ -149,15 +156,15 @@ const styles = StyleSheet.create({
 
   center: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.colors.background.primary,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing[4],
     padding: spacing[6],
   },
   errorText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-lg'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-lg'],
     textAlign: 'center',
   },
 
@@ -165,9 +172,9 @@ const styles = StyleSheet.create({
     gap: spacing[3],
   },
   sectionTitle: {
-    color: colors.text.muted,
-    fontSize: typography.size.label,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.label,
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
@@ -181,17 +188,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.md,
   },
   durationLabel: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
   durationValue: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
 
   ctaStack: {
@@ -199,34 +206,34 @@ const styles = StyleSheet.create({
     marginTop: spacing[2],
   },
   ctaPrimary: {
-    backgroundColor: colors.accent.primary,
-    borderRadius: radius.lg,
+    backgroundColor: t.colors.accent.primary,
+    borderRadius: t.radius.lg,
     paddingVertical: spacing[4],
     alignItems: 'center',
   },
   ctaPrimaryText: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
   },
   ctaOutline: {
-    borderRadius: radius.lg,
+    borderRadius: t.radius.lg,
     paddingVertical: spacing[4],
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
   },
   ctaOutlineText: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
   },
   ctaGhost: {
     paddingVertical: spacing[3],
     alignItems: 'center',
   },
   ctaGhostText: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
-});
+})

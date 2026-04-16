@@ -18,7 +18,10 @@ import { useTranslation } from 'react-i18next';
 
 import type { Commander } from '@/db/index';
 import { ColorChips } from '@/components/ui/ColorChips';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface CommanderSelectorProps {
   visible: boolean;
@@ -41,6 +44,10 @@ export function CommanderSelector({
   title,
   excludeId,
 }: CommanderSelectorProps) {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
 
@@ -76,7 +83,7 @@ export function CommanderSelector({
           value={query}
           onChangeText={setQuery}
           placeholder={t('commanders.searchPlaceholder')}
-          placeholderTextColor={colors.text.muted}
+          placeholderTextColor={theme.colors.text.muted}
           clearButtonMode="while-editing"
           autoFocus
         />
@@ -129,8 +136,8 @@ export function CommanderSelector({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.primary },
+const createStyles = (t: AppTheme) => ({
+  container: { flex: 1, backgroundColor: t.colors.background.primary },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -138,80 +145,80 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[4],
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
+    borderBottomColor: t.colors.border.subtle,
   },
   title: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.semibold,
   },
   closeBtn: { padding: spacing[2] },
   closeText: {
-    color: colors.text.link,
-    fontSize: typography.size['body-lg'],
+    color: t.colors.text.link,
+    fontSize: t.typography.size['body-lg'],
   },
   search: {
-    backgroundColor: colors.background.surface,
-    color: colors.text.primary,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    color: t.colors.text.primary,
+    borderRadius: t.radius.md,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
-    fontSize: typography.size['body-lg'],
+    fontSize: t.typography.size['body-lg'],
     margin: spacing[4],
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
-    backgroundColor: colors.background.secondary,
+    backgroundColor: t.colors.background.secondary,
     gap: spacing[3],
   },
   rowSelected: {
-    backgroundColor: colors.accent.primary + '1A',
+    backgroundColor: t.colors.accent.primary + '1A',
   },
   rowInfo: { flex: 1, gap: spacing[1] },
   rowHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
   name: {
     flex: 1,
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
   },
-  nameSelected: { color: colors.accent.primary },
+  nameSelected: { color: t.colors.accent.primary },
   badge: {
-    backgroundColor: colors.accent.primary + '33',
-    borderRadius: radius.xs,
+    backgroundColor: t.colors.accent.primary + '33',
+    borderRadius: t.radius.xs,
     paddingHorizontal: spacing[2],
     paddingVertical: 2,
   },
   badgeText: {
-    color: colors.accent.primary,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
   },
   checkmark: {
-    color: colors.accent.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.bold,
   },
   separator: {
     height: 1,
-    backgroundColor: colors.border.subtle,
+    backgroundColor: t.colors.border.subtle,
     marginHorizontal: spacing[4],
   },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing[8], gap: spacing[2] },
   emptyTitle: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
     textAlign: 'center',
   },
   emptySubtitle: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
   },
-});
+})

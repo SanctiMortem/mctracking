@@ -18,7 +18,6 @@ import {
   RefreshControl,
   SafeAreaView,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -29,10 +28,13 @@ import { useTranslation } from 'react-i18next';
 import { ActiveMatchBanner } from '@/components/home/ActiveMatchBanner';
 import { MatchCard, MatchCardSkeleton } from '@/components/match/MatchCard';
 import { useGroupContext } from '@/contexts/GroupContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useGroups } from '@/hooks/useGroups';
 import { useHome } from '@/hooks/useHome';
 import { useResponsive } from '@/hooks/useResponsive';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { spacing } from '@/styles/tokens';
 import { useEffect, useState } from 'react';
 
 // ─── Context Switcher ─────────────────────────────────────────────────────────
@@ -45,6 +47,7 @@ interface ContextSwitcherProps {
 function ContextSwitcherChip({ activeContext, onPress }: ContextSwitcherProps) {
   const { t } = useTranslation();
   const { userGroups } = useGroupContext();
+  const styles = useThemedStyles(createStyles);
 
   const label =
     activeContext === 'personal'
@@ -81,6 +84,7 @@ function ContextSwitcherModal({
 }: ContextSwitcherModalProps) {
   const { t } = useTranslation();
   const { userGroups } = useGroupContext();
+  const styles = useThemedStyles(createStyles);
 
   const options: { id: 'personal' | string; label: string }[] = [
     { id: 'personal', label: t('home.contextPersonal') },
@@ -133,6 +137,7 @@ interface StatBadgeProps {
 
 function StatBadge({ totalMatches, winRatePct }: StatBadgeProps) {
   const { t } = useTranslation();
+  const styles = useThemedStyles(createStyles);
 
   if (totalMatches === 0) {
     return (
@@ -165,6 +170,7 @@ function StatBadge({ totalMatches, winRatePct }: StatBadgeProps) {
 
 function EmptyMatchState({ onNewMatch }: { onNewMatch: () => void }) {
   const { t } = useTranslation();
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.emptyState}>
       <Text style={styles.emptyIcon}>🃏</Text>
@@ -199,6 +205,8 @@ export default function HomeScreen() {
 
   const { isTablet, contentMaxWidth, contentPadding, scale } = useResponsive();
   const [contextModalVisible, setContextModalVisible] = useState(false);
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Sync groups into context so switcher modal has fresh data
   const { setUserGroups } = useGroupContext();
@@ -256,7 +264,7 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={loading}
             onRefresh={refresh}
-            tintColor={colors.text.muted}
+            tintColor={theme.colors.text.muted}
           />
         }
       >
@@ -332,119 +340,119 @@ export default function HomeScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   screen: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
+    flex: 1 as const,
+    backgroundColor: t.colors.background.primary,
   },
 
   // Header
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
+    borderBottomColor: t.colors.border.subtle,
   },
   headerLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flex: 1 as const,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     gap: spacing[2],
-    flexShrink: 1,
+    flexShrink: 1 as const,
   },
   headerTitle: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontFamily: typography.fontFamily.headline,
-    fontWeight: typography.weight.bold,
-    flexShrink: 0,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontFamily: t.typography.fontFamily.headline,
+    fontWeight: t.typography.weight.bold,
+    flexShrink: 0 as const,
   },
   gearButton: {
     padding: spacing[2],
-    flexShrink: 0,
+    flexShrink: 0 as const,
   },
   gearIcon: {
     fontSize: 20,
-    color: colors.text.secondary,
+    color: t.colors.text.secondary,
   },
 
   // Context Switcher Chip
   contextChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.round,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.round,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
     paddingHorizontal: spacing[3],
     paddingVertical: 4,
     gap: 4,
-    flexShrink: 1,
+    flexShrink: 1 as const,
   },
   contextChipPressed: { opacity: 0.7 },
   contextChipText: {
-    color: colors.text.secondary,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.medium,
-    flexShrink: 1,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.medium,
+    flexShrink: 1 as const,
   },
   contextChipCaret: {
-    color: colors.text.muted,
+    color: t.colors.text.muted,
     fontSize: 10,
-    flexShrink: 0,
+    flexShrink: 0 as const,
   },
 
   // Context Switcher Modal
   modalBackdrop: {
-    flex: 1,
-    backgroundColor: colors.background.overlay,
-    justifyContent: 'flex-start',
+    flex: 1 as const,
+    backgroundColor: t.colors.background.overlay,
+    justifyContent: 'flex-start' as const,
     paddingTop: 80,
     paddingHorizontal: spacing[4],
   },
   modalSheet: {
-    backgroundColor: colors.background.elevated,
-    borderRadius: radius.xl,
+    backgroundColor: t.colors.background.elevated,
+    borderRadius: t.radius.xl,
     borderWidth: 1,
-    borderColor: colors.border.default,
-    overflow: 'hidden',
+    borderColor: t.colors.border.default,
+    overflow: 'hidden' as const,
     paddingVertical: spacing[2],
   },
   modalTitle: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    textTransform: 'uppercase' as const,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
   },
   modalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
   },
   modalOptionActive: {
-    backgroundColor: colors.background.surface,
+    backgroundColor: t.colors.background.surface,
   },
   modalOptionPressed: { opacity: 0.7 },
   modalOptionText: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-sm'],
   },
   modalOptionTextActive: {
-    color: colors.accent.primary,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.accent.primary,
+    fontWeight: t.typography.weight.semibold,
   },
   modalOptionCheck: {
-    color: colors.accent.primary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.bold,
   },
 
   // Scroll
@@ -456,69 +464,69 @@ const styles = StyleSheet.create({
 
   // Error
   errorBanner: {
-    backgroundColor: colors.status.error + '22',
-    borderRadius: radius.md,
+    backgroundColor: t.colors.status.error + '22',
+    borderRadius: t.radius.md,
     padding: spacing[3],
   },
   errorText: {
-    color: colors.status.error,
-    fontSize: typography.size['body-sm'],
-    textAlign: 'center',
+    color: t.colors.status.error,
+    fontSize: t.typography.size['body-sm'],
+    textAlign: 'center' as const,
   },
 
   // New Match CTA
   newMatchButton: {
-    backgroundColor: colors.accent.primary,
-    borderRadius: radius.lg,
+    backgroundColor: t.colors.accent.primary,
+    borderRadius: t.radius.lg,
     padding: spacing[4],
-    alignItems: 'center',
+    alignItems: 'center' as const,
   },
   newMatchText: {
-    color: colors.accent.onPrimary,
-    fontSize: typography.size['body-lg'],
-    fontFamily: typography.fontFamily.headline,
-    fontWeight: typography.weight.bold,
+    color: t.colors.accent.onPrimary,
+    fontSize: t.typography.size['body-lg'],
+    fontFamily: t.typography.fontFamily.headline,
+    fontWeight: t.typography.weight.bold,
     letterSpacing: 0.3,
   },
 
   // Stat Badge
   statBadge: {
-    flexDirection: 'row',
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.lg,
+    flexDirection: 'row' as const,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.lg,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
     padding: spacing[4],
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     gap: spacing[4],
   },
   statItem: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
     gap: 2,
   },
   statValue: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-lg'],
-    fontFamily: typography.fontFamily.display,
-    fontWeight: typography.weight.bold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-lg'],
+    fontFamily: t.typography.fontFamily.display,
+    fontWeight: t.typography.weight.bold,
   },
   statWinRate: {
-    color: colors.status.success,
+    color: t.colors.status.success,
   },
   statLabel: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.medium,
   },
   statBadgePrimary: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
   statDivider: {
     width: 1,
     height: 36,
-    backgroundColor: colors.border.subtle,
+    backgroundColor: t.colors.border.subtle,
   },
 
   // Section
@@ -526,30 +534,30 @@ const styles = StyleSheet.create({
     gap: spacing[3],
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
   },
   sectionTitle: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
   },
   sectionLink: {
-    color: colors.text.link,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.link,
+    fontSize: t.typography.size['body-sm'],
   },
   matchList: {
     gap: spacing[3],
   },
   matchListGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
   },
 
   // Empty state
   emptyState: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
     paddingVertical: spacing[8],
     gap: spacing[3],
   },
@@ -557,21 +565,21 @@ const styles = StyleSheet.create({
     fontSize: 40,
   },
   emptyTitle: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    textAlign: 'center',
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    textAlign: 'center' as const,
   },
   emptyCtaButton: {
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.lg,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.lg,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
   },
   emptyCtaText: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
 });

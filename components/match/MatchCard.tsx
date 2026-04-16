@@ -10,7 +10,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { MatchSummary } from '@/services/matches';
 import { formatMatchDuration, winConditionLabel } from '@/hooks/useMatchResults';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // ─── Outcome helpers ──────────────────────────────────────────────────────────
 
@@ -71,6 +74,8 @@ interface MatchCardProps {
 }
 
 export function MatchCard({ summary, onPress, onDelete }: MatchCardProps) {
+  const styles = useThemedStyles(createStyles);
+
   const outcome = deriveOutcome(summary);
   const style = OUTCOME_STYLES[outcome];
   const duration = formatMatchDuration(summary.match.createdAt, summary.match.endedAt);
@@ -128,11 +133,15 @@ export function MatchCard({ summary, onPress, onDelete }: MatchCardProps) {
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 export function MatchCardSkeleton() {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   return (
     <View style={[styles.card, styles.skeleton]}>
       <View style={styles.header}>
         <View style={[styles.skeletonBar, { width: 120 }]} />
-        <View style={[styles.skeletonBar, { width: 56, height: 22, borderRadius: radius.sm }]} />
+        <View style={[styles.skeletonBar, { width: 56, height: 22, borderRadius: theme.radius.sm }]} />
       </View>
       <View style={[styles.skeletonBar, { width: '80%', marginTop: spacing[2] }]} />
       <View style={[styles.skeletonBar, { width: '50%', marginTop: spacing[1] }]} />
@@ -142,16 +151,16 @@ export function MatchCardSkeleton() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   card: {
-    backgroundColor: colors.background.elevated,
-    borderRadius: radius.lg,
+    backgroundColor: t.colors.background.elevated,
+    borderRadius: t.radius.lg,
     padding: spacing[4],
     gap: spacing[2],
   },
   cardPressed: {
     opacity: 0.75,
-    borderColor: colors.border.strong,
+    borderColor: t.colors.border.strong,
   },
 
   header: {
@@ -166,35 +175,35 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   date: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.tertiary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   dot: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
   duration: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
 
   badge: {
     paddingHorizontal: spacing[2],
     paddingVertical: 3,
-    borderRadius: radius.sm,
+    borderRadius: t.radius.sm,
     flexShrink: 0,
   },
   badgeText: {
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.5,
   },
 
   players: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-sm'],
-    lineHeight: typography.size['body-sm'] * typography.lineHeight.normal,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-sm'],
+    lineHeight: t.typography.size['body-sm'] * t.typography.lineHeight.normal,
   },
 
   winnerRow: {
@@ -207,14 +216,14 @@ const styles = StyleSheet.create({
   },
   winner: {
     color: '#eebf73',
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.medium,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.medium,
     flexShrink: 1,
   },
 
   condition: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
   },
 
   // Skeleton
@@ -223,7 +232,7 @@ const styles = StyleSheet.create({
   },
   skeletonBar: {
     height: 14,
-    borderRadius: radius.xs,
-    backgroundColor: colors.background.elevated,
+    borderRadius: t.radius.xs,
+    backgroundColor: t.colors.background.elevated,
   },
-});
+})

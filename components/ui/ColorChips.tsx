@@ -9,7 +9,10 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import type { MtgColor } from '@/types/index';
-import { colors as tokens, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
 
 const COLOR_DEFS: { code: MtgColor; label: string; bg: string; fg: string }[] = [
   { code: 'W', label: 'W', bg: '#f5f0d0', fg: '#1c1102' },
@@ -27,6 +30,9 @@ interface ColorChipsProps {
 }
 
 export function ColorChips({ selected, onChange, readonly = false }: ColorChipsProps) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   function toggle(code: string) {
     if (readonly || !onChange) return;
     onChange(
@@ -61,14 +67,14 @@ export function ColorChips({ selected, onChange, readonly = false }: ColorChipsP
             onPress={() => toggle(c.code)}
             style={[
               styles.chip,
-              { backgroundColor: active ? c.bg : tokens.background.surface },
+              { backgroundColor: active ? c.bg : theme.colors.background.surface },
               active && styles.chipActive,
             ]}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: active }}
             accessibilityLabel={`Color ${c.code}`}
           >
-            <Text style={[styles.chipLabel, { color: active ? c.fg : tokens.text.secondary }]}>
+            <Text style={[styles.chipLabel, { color: active ? c.fg : theme.colors.text.secondary }]}>
               {c.label}
             </Text>
           </TouchableOpacity>
@@ -81,7 +87,7 @@ export function ColorChips({ selected, onChange, readonly = false }: ColorChipsP
 const CHIP_SIZE = 44;
 const DOT_SIZE = 20;
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   row: {
     flexDirection: 'row',
     gap: spacing[2],
@@ -90,18 +96,18 @@ const styles = StyleSheet.create({
   chip: {
     width: CHIP_SIZE,
     height: CHIP_SIZE,
-    borderRadius: radius.round,
+    borderRadius: t.radius.round,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: tokens.border.default,
+    borderColor: t.colors.border.default,
   },
   chipActive: {
     borderColor: 'transparent',
   },
   chipLabel: {
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.bold,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.bold,
   },
   rowCompact: {
     flexDirection: 'row',
@@ -111,16 +117,16 @@ const styles = StyleSheet.create({
   dot: {
     width: DOT_SIZE,
     height: DOT_SIZE,
-    borderRadius: radius.round,
+    borderRadius: t.radius.round,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dotLabel: {
-    fontSize: typography.size.label,
-    fontWeight: typography.weight.bold,
+    fontSize: t.typography.size.label,
+    fontWeight: t.typography.weight.bold,
   },
   emptyLabel: {
-    color: tokens.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
-});
+})

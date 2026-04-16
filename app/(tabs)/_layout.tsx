@@ -1,20 +1,30 @@
+import { useMemo } from 'react';
 import { Tabs } from 'expo-router';
-import { StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { colors } from '@/styles/tokens';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function TabsLayout() {
   const { t } = useTranslation();
+  const { theme } = useTheme();
+
+  const tabBarStyle = useMemo(
+    () => ({
+      backgroundColor: theme.colors.background.secondary,
+      borderTopColor: theme.colors.border.subtle,
+      borderTopWidth: 1,
+    }),
+    [theme],
+  );
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: colors.accent.primary,
-        tabBarInactiveTintColor: colors.text.muted,
-        tabBarLabelStyle: styles.tabLabel,
+        tabBarStyle,
+        tabBarActiveTintColor: theme.colors.accent.primary,
+        tabBarInactiveTintColor: theme.colors.text.muted,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '500' as const },
       }}
     >
       <Tabs.Screen name="index" options={{ title: t('tabs.home') }} />
@@ -25,15 +35,3 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: colors.background.secondary,
-    borderTopColor: colors.border.subtle,
-    borderTopWidth: 1,
-  },
-  tabLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-  },
-});

@@ -8,18 +8,23 @@
  * HIST-002 (EPIC-04)
  */
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { useTranslation } from 'react-i18next';
 
 import type { HistoryFilters } from '@/hooks/useMatchHistory';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // ─── Chip ─────────────────────────────────────────────────────────────────────
 
 function Chip({
   label, active, onPress,
 }: { label: string; active: boolean; onPress: () => void }) {
+  const styles = useThemedStyles(createStyles);
+
   return (
     <Pressable
       onPress={onPress}
@@ -35,6 +40,8 @@ function Chip({
 // ─── Section label ────────────────────────────────────────────────────────────
 
 function SectionLabel({ label }: { label: string }) {
+  const styles = useThemedStyles(createStyles);
+
   return <Text style={styles.sectionLabel}>{label}</Text>;
 }
 
@@ -46,6 +53,10 @@ interface MatchHistoryFilterBarProps {
 }
 
 export function MatchHistoryFilterBar({ filters, onChange }: MatchHistoryFilterBarProps) {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
@@ -136,7 +147,7 @@ export function MatchHistoryFilterBar({ filters, onChange }: MatchHistoryFilterB
             <TextInput
               style={styles.dateInput}
               placeholder={t('history.dateFrom')}
-              placeholderTextColor={colors.text.muted}
+              placeholderTextColor={theme.colors.text.muted}
               value={filters.date_from ?? ''}
               onChangeText={(v) => onChange({ ...filters, date_from: v || undefined })}
               keyboardType="numbers-and-punctuation"
@@ -146,7 +157,7 @@ export function MatchHistoryFilterBar({ filters, onChange }: MatchHistoryFilterB
             <TextInput
               style={styles.dateInput}
               placeholder={t('history.dateTo')}
-              placeholderTextColor={colors.text.muted}
+              placeholderTextColor={theme.colors.text.muted}
               value={filters.date_to ?? ''}
               onChangeText={(v) => onChange({ ...filters, date_to: v || undefined })}
               keyboardType="numbers-and-punctuation"
@@ -164,11 +175,11 @@ export function MatchHistoryFilterBar({ filters, onChange }: MatchHistoryFilterB
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   root: {
-    backgroundColor: colors.background.secondary,
+    backgroundColor: t.colors.background.secondary,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
+    borderBottomColor: t.colors.border.subtle,
   },
 
   toggle: {
@@ -179,20 +190,20 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[3],
   },
   toggleLabel: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   toggleBadge: {
-    color: colors.accent.primary,
+    color: t.colors.accent.primary,
   },
   clearBtn: {
     paddingHorizontal: spacing[2],
     paddingVertical: 2,
   },
   clearText: {
-    color: colors.status.error,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.status.error,
+    fontSize: t.typography.size['body-sm'],
   },
 
   panel: {
@@ -202,9 +213,9 @@ const styles = StyleSheet.create({
   },
 
   sectionLabel: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     marginTop: spacing[2],
@@ -216,22 +227,22 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[1],
-    borderRadius: radius.round,
+    borderRadius: t.radius.round,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
     marginRight: spacing[2],
   },
   chipActive: {
-    backgroundColor: colors.accent.primary + '33',
-    borderColor: colors.accent.primary,
+    backgroundColor: t.colors.accent.primary + '33',
+    borderColor: t.colors.accent.primary,
   },
   chipText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
   },
   chipTextActive: {
-    color: colors.accent.primary,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.accent.primary,
+    fontWeight: t.typography.weight.semibold,
   },
 
   dateRow: {
@@ -241,24 +252,24 @@ const styles = StyleSheet.create({
   },
   dateInput: {
     flex: 1,
-    backgroundColor: colors.background.elevated,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.elevated,
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
-    color: colors.text.primary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-sm'],
   },
   dateSep: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
 
   stubNote: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
     fontStyle: 'italic',
     marginTop: spacing[2],
   },
-});
+})

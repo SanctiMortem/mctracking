@@ -8,7 +8,10 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Player } from '@/db/index';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const AVATAR_SIZE = 44; // 44pt minimum touch target (mobile-design)
 
@@ -21,6 +24,10 @@ interface PlayerSelectorChipProps {
 }
 
 export function PlayerSelectorChip({ player, isSelected, onPress, badge }: PlayerSelectorChipProps) {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const initials = player.name
     .split(' ')
     .map((w) => w[0])
@@ -35,7 +42,7 @@ export function PlayerSelectorChip({ player, isSelected, onPress, badge }: Playe
       accessibilityRole="checkbox"
       accessibilityState={{ checked: isSelected }}
       accessibilityLabel={`${isSelected ? 'Deselect' : 'Select'} ${player.name}`}
-      android_ripple={{ color: colors.accent.primary + '22', borderless: true }}
+      android_ripple={{ color: theme.colors.accent.primary + '22', borderless: true }}
     >
       <View style={[styles.avatar, isSelected && styles.avatarSelected]}>
         <Text style={[styles.initials, isSelected && styles.initialsSelected]}>{initials}</Text>
@@ -52,54 +59,54 @@ export function PlayerSelectorChip({ player, isSelected, onPress, badge }: Playe
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   chip: {
     width: 68,
     alignItems: 'center',
     gap: spacing[1],
     paddingVertical: spacing[2],
     paddingHorizontal: spacing[1],
-    borderRadius: radius.lg,
+    borderRadius: t.radius.lg,
     borderWidth: 1.5,
     borderColor: 'transparent',
   },
   chipSelected: {
-    borderColor: colors.accent.primary,
-    backgroundColor: colors.accent.primary + '14', // 8% opacity
+    borderColor: t.colors.accent.primary,
+    backgroundColor: t.colors.accent.primary + '14', // 8% opacity
   },
   avatar: {
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
-    borderRadius: radius.round,
-    backgroundColor: colors.background.surface,
+    borderRadius: t.radius.round,
+    backgroundColor: t.colors.background.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarSelected: {
-    backgroundColor: colors.accent.primary + '33',
+    backgroundColor: t.colors.accent.primary + '33',
   },
   initials: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.bold,
   },
   initialsSelected: {
-    color: colors.accent.primary,
+    color: t.colors.accent.primary,
   },
   name: {
-    color: colors.text.secondary,
-    fontSize: typography.size.caption,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size.caption,
     textAlign: 'center',
   },
   nameSelected: {
-    color: colors.text.primary,
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontWeight: t.typography.weight.medium,
   },
   badge: {
     fontSize: 10,
-    color: colors.text.muted,
+    color: t.colors.text.muted,
   },
   badgePod: {
-    color: colors.accent.primary,
+    color: t.colors.accent.primary,
   },
-});
+})

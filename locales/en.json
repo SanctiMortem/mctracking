@@ -338,7 +338,9 @@
     "signOutConfirm": "Are you sure you want to sign out?",
     "premiumComingSoon": "One-time purchase coming soon.",
     "retry": "Retry",
-    "premiumTitle": "Premium"
+    "premiumTitle": "Premium",
+    "appearance": "Appearance",
+    "theme": "Theme"
   },
   "history": {
     "noMatchesFound": "No matches found",

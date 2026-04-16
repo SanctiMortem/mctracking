@@ -23,12 +23,16 @@ import * as SplashScreen from 'expo-splash-screen';
 import { SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import { Manrope_400Regular, Manrope_500Medium } from '@expo-google-fonts/manrope';
 import { BigShouldersDisplay_600SemiBold, BigShouldersDisplay_700Bold } from '@expo-google-fonts/big-shoulders-display';
+// Fonts — "Justice of the Light" skin
+import { NotoSerif_600SemiBold, NotoSerif_700Bold } from '@expo-google-fonts/noto-serif';
+import { WorkSans_400Regular, WorkSans_500Medium } from '@expo-google-fonts/work-sans';
 
 // i18n init (SETUP-006)
 import '../constants/i18n';
 import { GuestProvider, useGuest } from '@/contexts/GuestContext';
 import { GroupProvider } from '@/contexts/GroupContext';
 import { AccountPlayerProvider, useAccountPlayer } from '@/contexts/AccountPlayerContext';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { apiFetch } from '@/services/api';
 import { colors, radius, spacing, typography } from '@/styles/tokens';
 
@@ -188,6 +192,7 @@ function AuthGate() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { isGuest } = useGuest();
   const { accountPlayer, setAccountPlayer, setNeedsSetup } = useAccountPlayer();
+  const { theme } = useTheme();
   const router = useRouter();
   const segments = useSegments();
   const { t } = useTranslation();
@@ -266,11 +271,11 @@ function AuthGate() {
     <Stack
       screenOptions={{
         headerShown: true,
-        headerStyle: { backgroundColor: colors.background.primary },
-        headerTintColor: colors.text.primary,
-        headerTitleStyle: { color: colors.text.primary, fontFamily: 'SpaceGrotesk_600SemiBold' },
+        headerStyle: { backgroundColor: theme.colors.background.primary },
+        headerTintColor: theme.colors.text.primary,
+        headerTitleStyle: { color: theme.colors.text.primary, fontFamily: theme.typography.fontFamily.headline },
         headerBackTitleVisible: false,
-        contentStyle: { backgroundColor: colors.background.primary },
+        contentStyle: { backgroundColor: theme.colors.background.primary },
         animation: 'slide_from_right',
         gestureResponseDistance: { start: 30 } as any,
       }}
@@ -308,12 +313,18 @@ export default function RootLayout() {
   const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
 
   const [fontsLoaded, fontError] = useFonts({
+    // Mystic Archive
     SpaceGrotesk_600SemiBold,
     SpaceGrotesk_700Bold,
     Manrope_400Regular,
     Manrope_500Medium,
     BigShouldersDisplay_600SemiBold,
     BigShouldersDisplay_700Bold,
+    // Justice of the Light
+    NotoSerif_600SemiBold,
+    NotoSerif_700Bold,
+    WorkSans_400Regular,
+    WorkSans_500Medium,
   });
 
   const onLayoutRootView = useCallback(async () => {
@@ -332,14 +343,16 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-        <GuestProvider>
-          <AccountPlayerProvider>
-            <StatusBar style="light" />
-            <AuthGate />
-          </AccountPlayerProvider>
-        </GuestProvider>
-      </ClerkProvider>
+      <ThemeProvider>
+        <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+          <GuestProvider>
+            <AccountPlayerProvider>
+              <StatusBar style="light" />
+              <AuthGate />
+            </AccountPlayerProvider>
+          </GuestProvider>
+        </ClerkProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }

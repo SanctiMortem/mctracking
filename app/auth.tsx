@@ -20,7 +20,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -29,7 +28,10 @@ import {
 
 import { AuthProviderButton } from '@/components/auth/AuthProviderButton';
 import { useGuest } from '@/contexts/GuestContext';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { spacing } from '@/styles/tokens';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -61,6 +63,8 @@ export default function AuthScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { enterGuestMode } = useGuest();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   const { signIn, setActive: setSignInActive, isLoaded: signInLoaded } = useSignIn();
   const { signUp, setActive: setSignUpActive, isLoaded: signUpLoaded } = useSignUp();
@@ -267,7 +271,7 @@ export default function AuthScreen() {
               <TextInput
                 style={styles.input}
                 placeholder={t('auth.emailLabel')}
-                placeholderTextColor={colors.text.muted}
+                placeholderTextColor={theme.colors.text.muted}
                 value={email}
                 onChangeText={(v) => { setEmail(v); clearError(); }}
                 autoCapitalize="none"
@@ -278,7 +282,7 @@ export default function AuthScreen() {
               <TextInput
                 style={styles.input}
                 placeholder={t('auth.passwordPlaceholder')}
-                placeholderTextColor={colors.text.muted}
+                placeholderTextColor={theme.colors.text.muted}
                 value={password}
                 onChangeText={(v) => { setPassword(v); clearError(); }}
                 secureTextEntry
@@ -332,127 +336,127 @@ export default function AuthScreen() {
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   root: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
+    flex: 1 as const,
+    backgroundColor: t.colors.background.primary,
   },
   scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexGrow: 1 as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     paddingHorizontal: spacing[6],
     paddingVertical: spacing[12],
   },
   header: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
     marginBottom: spacing[8],
   },
   appName: {
-    fontSize: typography.size['heading-xl'],
-    fontWeight: typography.weight.bold,
-    color: colors.text.primary,
-    letterSpacing: typography.letterSpacing.wide,
-    textTransform: 'uppercase',
+    fontSize: t.typography.size['heading-xl'],
+    fontWeight: t.typography.weight.bold,
+    color: t.colors.text.primary,
+    letterSpacing: t.typography.letterSpacing.wide,
+    textTransform: 'uppercase' as const,
   },
   appSubtitle: {
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.regular,
-    color: colors.text.secondary,
-    letterSpacing: typography.letterSpacing.wider,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.regular,
+    color: t.colors.text.secondary,
+    letterSpacing: t.typography.letterSpacing.wider,
     marginTop: spacing[1],
-    textTransform: 'uppercase',
+    textTransform: 'uppercase' as const,
   },
   card: {
-    width: '100%',
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.xl,
+    width: '100%' as const,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.xl,
     padding: spacing[6],
     gap: spacing[3],
     borderWidth: 1,
-    borderColor: colors.border.subtle,
+    borderColor: t.colors.border.subtle,
   },
   errorBanner: {
     backgroundColor: 'rgba(211,32,42,0.15)',
-    borderRadius: radius.sm,
+    borderRadius: t.radius.sm,
     padding: spacing[3],
     borderWidth: 1,
     borderColor: 'rgba(211,32,42,0.4)',
   },
   errorText: {
     color: '#E57373',
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
-    textAlign: 'center',
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
+    textAlign: 'center' as const,
   },
   successBanner: {
     backgroundColor: 'rgba(46,204,113,0.12)',
-    borderRadius: radius.sm,
+    borderRadius: t.radius.sm,
     padding: spacing[3],
     borderWidth: 1,
     borderColor: 'rgba(46,204,113,0.3)',
   },
   successText: {
     color: '#66BB6A',
-    fontSize: typography.size['body-sm'],
-    textAlign: 'center',
+    fontSize: t.typography.size['body-sm'],
+    textAlign: 'center' as const,
   },
   emailForm: {
     gap: spacing[2],
   },
   input: {
     height: 48,
-    borderRadius: radius.md,
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: colors.border.default,
-    backgroundColor: colors.background.elevated,
+    borderColor: t.colors.border.default,
+    backgroundColor: t.colors.background.elevated,
     paddingHorizontal: spacing[4],
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
   },
   magicLinkRow: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
     paddingVertical: spacing[1],
   },
   magicLinkText: {
-    color: colors.text.link,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.link,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     gap: spacing[2],
     marginVertical: spacing[1],
   },
   dividerLine: {
-    flex: 1,
+    flex: 1 as const,
     height: 1,
-    backgroundColor: colors.border.subtle,
+    backgroundColor: t.colors.border.subtle,
   },
   dividerLabel: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
-    textTransform: 'uppercase',
-    letterSpacing: typography.letterSpacing.wide,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+    textTransform: 'uppercase' as const,
+    letterSpacing: t.typography.letterSpacing.wide,
   },
   guestButton: {
     height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
   guestLabel: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   dimmed: {
     opacity: 0.38,
   },
   footerNote: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
-    textAlign: 'center',
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+    textAlign: 'center' as const,
     marginTop: spacing[6],
   },
 });

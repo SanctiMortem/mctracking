@@ -21,7 +21,10 @@ import { useTranslation } from 'react-i18next';
 
 import type { Commander } from '@/db/index';
 import { ColorChips } from '@/components/ui/ColorChips';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface CommanderFormProps {
   visible: boolean;
@@ -31,6 +34,10 @@ interface CommanderFormProps {
 }
 
 export function CommanderForm({ visible, commander, onSave, onClose }: CommanderFormProps) {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   const [name, setName] = useState('');
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
@@ -93,7 +100,7 @@ export function CommanderForm({ visible, commander, onSave, onClose }: Commander
           value={name}
           onChangeText={setName}
           placeholder={t('commanders.namePlaceholder')}
-          placeholderTextColor={colors.text.muted}
+          placeholderTextColor={theme.colors.text.muted}
           autoFocus={!isEdit}
           returnKeyType="done"
         />
@@ -111,8 +118,8 @@ export function CommanderForm({ visible, commander, onSave, onClose }: Commander
           <Switch
             value={isPartner}
             onValueChange={setIsPartner}
-            trackColor={{ false: colors.border.default, true: colors.accent.primary }}
-            thumbColor={colors.text.primary}
+            trackColor={{ false: theme.colors.border.default, true: theme.colors.accent.primary }}
+            thumbColor={theme.colors.text.primary}
           />
         </View>
 
@@ -123,7 +130,7 @@ export function CommanderForm({ visible, commander, onSave, onClose }: Commander
           </Pressable>
           <Pressable style={[styles.btnSave, saving && styles.btnDisabled]} onPress={handleSave} disabled={saving}>
             {saving
-              ? <ActivityIndicator color={colors.text.inverse} size="small" />
+              ? <ActivityIndicator color={theme.colors.text.inverse} size="small" />
               : <Text style={styles.btnSaveText}>{isEdit ? t('common.save') : t('common.create')}</Text>
             }
           </Pressable>
@@ -133,15 +140,15 @@ export function CommanderForm({ visible, commander, onSave, onClose }: Commander
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   backdrop: {
     flex: 1,
-    backgroundColor: colors.background.overlay,
+    backgroundColor: t.colors.background.overlay,
   },
   sheet: {
-    backgroundColor: colors.background.elevated,
-    borderTopLeftRadius: radius.xxl,
-    borderTopRightRadius: radius.xxl,
+    backgroundColor: t.colors.background.elevated,
+    borderTopLeftRadius: t.radius.xxl,
+    borderTopRightRadius: t.radius.xxl,
     padding: spacing[6],
     paddingBottom: spacing[8],
     gap: spacing[4],
@@ -149,36 +156,36 @@ const styles = StyleSheet.create({
   handle: {
     width: 40,
     height: 4,
-    borderRadius: radius.round,
-    backgroundColor: colors.border.strong,
+    borderRadius: t.radius.round,
+    backgroundColor: t.colors.border.strong,
     alignSelf: 'center',
     marginBottom: spacing[2],
   },
   title: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.semibold,
   },
   label: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.tertiary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
     marginBottom: -spacing[2],
   },
   hint: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
     marginTop: 2,
   },
   input: {
-    backgroundColor: colors.background.surface,
-    color: colors.text.primary,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    color: t.colors.text.primary,
+    borderRadius: t.radius.md,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
-    fontSize: typography.size['body-lg'],
+    fontSize: t.typography.size['body-lg'],
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
   },
   row: {
     flexDirection: 'row',
@@ -196,29 +203,29 @@ const styles = StyleSheet.create({
   btnCancel: {
     flex: 1,
     paddingVertical: spacing[3],
-    borderRadius: radius.md,
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
     alignItems: 'center',
   },
   btnCancelText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
   },
   btnSave: {
     flex: 2,
     paddingVertical: spacing[3],
-    borderRadius: radius.md,
-    backgroundColor: colors.accent.primary,
+    borderRadius: t.radius.md,
+    backgroundColor: t.colors.accent.primary,
     alignItems: 'center',
   },
   btnSaveText: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
   },
   btnDisabled: {
     opacity: 0.6,
   },
-});
+})

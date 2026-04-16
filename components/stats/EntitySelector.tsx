@@ -9,7 +9,10 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export interface EntityOption {
   id: string;
@@ -31,6 +34,10 @@ export function EntitySelector({
   placeholder,
   searchPlaceholder = 'Buscar…',
 }: EntitySelectorProps) {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const [query, setQuery] = useState('');
 
   const filtered = query.trim()
@@ -42,7 +49,7 @@ export function EntitySelector({
       <TextInput
         style={styles.search}
         placeholder={searchPlaceholder}
-        placeholderTextColor={colors.text.muted}
+        placeholderTextColor={theme.colors.text.muted}
         value={query}
         onChangeText={setQuery}
         autoCorrect={false}
@@ -84,21 +91,21 @@ export function EntitySelector({
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   container: {
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.md,
     overflow: 'hidden',
   },
 
   search: {
-    backgroundColor: colors.background.elevated,
+    backgroundColor: t.colors.background.elevated,
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
-    color: colors.text.primary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-sm'],
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
+    borderBottomColor: t.colors.border.subtle,
   },
 
   list: {
@@ -110,8 +117,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
   },
 
@@ -122,24 +129,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
+    borderBottomColor: t.colors.border.subtle,
   },
   optionSelected: {
-    backgroundColor: colors.accent.primary + '22',
+    backgroundColor: t.colors.accent.primary + '22',
   },
   optionLabel: {
     flex: 1,
-    color: colors.text.primary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-sm'],
   },
   optionLabelSelected: {
-    color: colors.accent.primary,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.accent.primary,
+    fontWeight: t.typography.weight.semibold,
   },
   checkmark: {
-    color: colors.accent.primary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.bold,
     marginLeft: spacing[2],
   },
-});
+})

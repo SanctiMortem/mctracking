@@ -6,7 +6,6 @@ import {
   Alert,
   FlatList,
   Pressable,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -16,7 +15,10 @@ import { useTranslation } from 'react-i18next';
 import type { DeckWithCommanders } from '@/services/decks';
 import { ColorChips } from '@/components/ui/ColorChips';
 import { useResponsive } from '@/hooks/useResponsive';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface DeckListProps {
   decks: DeckWithCommanders[];
@@ -37,6 +39,8 @@ function DeckRow({
   onDelete: () => void;
 }) {
   const { t } = useTranslation();
+  const styles = useThemedStyles(createStyles);
+  const { theme } = useTheme();
 
   function confirmDelete() {
     Alert.alert(
@@ -55,7 +59,7 @@ function DeckRow({
     : (deck.commander.colors ?? []);
 
   return (
-    <Pressable style={styles.row} onPress={onTap} android_ripple={{ color: colors.border.subtle }}>
+    <Pressable style={styles.row} onPress={onTap} android_ripple={{ color: theme.colors.border.subtle }}>
       <View style={styles.rowInfo}>
         {/* Deck name */}
         <Text style={styles.deckName} numberOfLines={1}>{deck.name}</Text>
@@ -83,6 +87,8 @@ function DeckRow({
 }
 
 function EmptyState() {
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   return (
     <View style={styles.empty}>
@@ -93,6 +99,8 @@ function EmptyState() {
 }
 
 export function DeckList({ decks, onTap, onEdit, onDelete }: DeckListProps) {
+  const styles = useThemedStyles(createStyles);
+
   const { contentMaxWidth } = useResponsive();
 
   return (
@@ -118,54 +126,54 @@ export function DeckList({ decks, onTap, onEdit, onDelete }: DeckListProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
-    backgroundColor: colors.background.secondary,
+    backgroundColor: t.colors.background.secondary,
     gap: spacing[3],
   },
   rowInfo: { flex: 1, gap: spacing[1] },
   deckName: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
   },
   commanderName: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
   },
   rowActions: { flexDirection: 'row', gap: spacing[3] },
   actionBtn: { padding: spacing[2] },
   actionEdit: {
-    color: colors.text.link,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.link,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   actionDelete: {
-    color: colors.status.error,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.status.error,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   separator: {
     height: 1,
-    backgroundColor: colors.border.subtle,
+    backgroundColor: t.colors.border.subtle,
     marginHorizontal: spacing[4],
   },
   empty: { alignItems: 'center', gap: spacing[2], padding: spacing[6] },
   emptyContainer: { flex: 1, justifyContent: 'center' },
   emptyTitle: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
     textAlign: 'center',
   },
   emptySubtitle: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
     paddingHorizontal: spacing[4],
   },
-});
+})

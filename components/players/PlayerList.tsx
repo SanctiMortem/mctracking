@@ -6,7 +6,6 @@ import {
   Alert,
   FlatList,
   Pressable,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -15,7 +14,10 @@ import { useTranslation } from 'react-i18next';
 
 import type { Player } from '@/db/index';
 import { useResponsive } from '@/hooks/useResponsive';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // Fixed row height enables getItemLayout optimisation for large lists
 const ROW_HEIGHT = 64;
@@ -39,6 +41,8 @@ function PlayerRow({
   onDelete: () => void;
 }) {
   const { t } = useTranslation();
+  const styles = useThemedStyles(createStyles);
+  const { theme } = useTheme();
 
   function confirmDelete() {
     Alert.alert(
@@ -60,7 +64,7 @@ function PlayerRow({
     .toUpperCase();
 
   return (
-    <Pressable style={styles.row} onPress={onTap} android_ripple={{ color: colors.border.subtle }}>
+    <Pressable style={styles.row} onPress={onTap} android_ripple={{ color: theme.colors.border.subtle }}>
       {/* Avatar */}
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>{initials}</Text>
@@ -83,6 +87,8 @@ function PlayerRow({
 }
 
 function EmptyState() {
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   return (
     <View style={styles.empty}>
@@ -93,6 +99,8 @@ function EmptyState() {
 }
 
 export function PlayerList({ players, onTap, onEdit, onDelete }: PlayerListProps) {
+  const styles = useThemedStyles(createStyles);
+
   const { contentMaxWidth, contentPadding } = useResponsive();
 
   return (
@@ -123,62 +131,62 @@ export function PlayerList({ players, onTap, onEdit, onDelete }: PlayerListProps
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   row: {
     height: ROW_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing[4],
-    backgroundColor: colors.background.secondary,
+    backgroundColor: t.colors.background.secondary,
     gap: spacing[3],
   },
   avatar: {
     width: 40,
     height: 40,
-    borderRadius: radius.round,
-    backgroundColor: colors.accent.primary + '33',
+    borderRadius: t.radius.round,
+    backgroundColor: t.colors.accent.primary + '33',
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    color: colors.accent.primary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.bold,
   },
   name: {
     flex: 1,
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
   },
   actions: { flexDirection: 'row', gap: spacing[3] },
   actionBtn: { padding: spacing[2] },
   actionEdit: {
-    color: colors.text.link,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.link,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   actionDelete: {
-    color: colors.status.error,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.status.error,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   separator: {
     height: 1,
-    backgroundColor: colors.border.subtle,
+    backgroundColor: t.colors.border.subtle,
     marginLeft: spacing[4] + 40 + spacing[3], // align with name text
   },
   empty: { alignItems: 'center', gap: spacing[2] },
   emptyContainer: { flex: 1, justifyContent: 'center' },
   emptyTitle: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
   },
   emptySubtitle: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
     paddingHorizontal: spacing[8],
   },
-});
+})

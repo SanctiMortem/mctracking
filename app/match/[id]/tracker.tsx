@@ -31,7 +31,10 @@ import { PlayerDashboard } from '@/components/tracker/PlayerDashboard';
 import { PoisonCounter } from '@/components/tracker/PoisonCounter';
 import { TrackerLayout } from '@/components/match/TrackerLayout';
 import { useTracker } from '@/hooks/useTracker';
-import { colors, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // ─── Match Timer ────────────────────────────────
 
@@ -89,6 +92,10 @@ function useTurnTimers(participationIds: string[]) {
 // ─── Screen ─────────────────────────────────────
 
 export default function MatchTrackerScreen() {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const { id, rotations: rotationsParam, playerOrder: playerOrderParam, layout: layoutParam } = useLocalSearchParams<{ id: string; rotations?: string; playerOrder?: string; layout?: string }>();
   const router = useRouter();
   const { t } = useTranslation();
@@ -170,7 +177,7 @@ export default function MatchTrackerScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={colors.accent.primary} size="large" />
+        <ActivityIndicator color={theme.colors.accent.primary} size="large" />
       </View>
     );
   }
@@ -358,20 +365,20 @@ export default function MatchTrackerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.colors.background.primary,
   },
   centered: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.colors.background.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   errorText: {
-    color: colors.status.error,
-    fontSize: typography.size['body-lg'],
+    color: t.colors.status.error,
+    fontSize: t.typography.size['body-lg'],
   },
 
   header: {
@@ -381,24 +388,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
+    borderBottomColor: t.colors.border.subtle,
   },
   backBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.background.elevated,
+    backgroundColor: t.colors.background.elevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
   backBtnText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-md'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-md'],
   },
   timer: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
     fontVariant: ['tabular-nums'],
   },
   headerActions: {
@@ -409,26 +416,26 @@ const styles = StyleSheet.create({
   diceBtn: {
     paddingVertical: spacing[2],
     paddingHorizontal: spacing[3],
-    backgroundColor: colors.accent.primary + '22',
+    backgroundColor: t.colors.accent.primary + '22',
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: colors.accent.primary + '44',
+    borderColor: t.colors.accent.primary + '44',
   },
   diceBtnText: {
-    fontSize: typography.size['body-lg'],
+    fontSize: t.typography.size['body-lg'],
   },
   closeBtn: {
     paddingVertical: spacing[2],
     paddingHorizontal: spacing[3],
-    backgroundColor: colors.status.error + '22',
+    backgroundColor: t.colors.status.error + '22',
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: colors.status.error + '55',
+    borderColor: t.colors.status.error + '55',
   },
   closeBtnText: {
-    color: colors.status.error,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.status.error,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
   },
 
   layoutContainer: {
@@ -440,14 +447,14 @@ const styles = StyleSheet.create({
     bottom: 80,
     left: spacing[4],
     right: spacing[4],
-    backgroundColor: colors.status.error,
+    backgroundColor: t.colors.status.error,
     borderRadius: 8,
     paddingVertical: spacing[2],
     paddingHorizontal: spacing[3],
   },
   toastText: {
     color: '#fff',
-    fontSize: typography.size['body-sm'],
+    fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
   },
 
@@ -458,25 +465,25 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[2],
     paddingHorizontal: spacing[4],
     borderTopWidth: 1,
-    borderTopColor: colors.border.subtle,
+    borderTopColor: t.colors.border.subtle,
   },
   floatingBtn: {
     paddingVertical: spacing[2],
     paddingHorizontal: spacing[4],
-    backgroundColor: colors.background.elevated,
+    backgroundColor: t.colors.background.elevated,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
   },
   floatingBtnDisabled: {
     opacity: 0.4,
   },
   floatingBtnText: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   floatingBtnTextDisabled: {
-    color: colors.text.muted,
+    color: t.colors.text.muted,
   },
-});
+})

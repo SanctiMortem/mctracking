@@ -9,7 +9,9 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { ColorChips } from '@/components/ui/ColorChips';
 import type { Commander, Deck } from '@/db/index';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
 
 interface DeckStatRowProps {
   deck: Deck;
@@ -20,6 +22,8 @@ interface DeckStatRowProps {
 }
 
 export function DeckStatRow({ deck, commanders, matches, win_rate_pct, onPress }: DeckStatRowProps) {
+  const styles = useThemedStyles(createStyles);
+
   const isPartner = commanders.length > 1;
   const allColors = commanders.flatMap((c) => c.colors);
   const winRateText = win_rate_pct !== null ? `${win_rate_pct}%` : '—';
@@ -59,12 +63,12 @@ export function DeckStatRow({ deck, commanders, matches, win_rate_pct, onPress }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.md,
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
     gap: spacing[3],
@@ -73,42 +77,42 @@ const styles = StyleSheet.create({
   info: { flex: 1, gap: 4 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
   deckName: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
     flexShrink: 1,
   },
   partnerBadge: {
-    backgroundColor: colors.accent.primary + '33',
-    borderRadius: radius.sm,
+    backgroundColor: t.colors.accent.primary + '33',
+    borderRadius: t.radius.sm,
     paddingHorizontal: spacing[1],
     paddingVertical: 2,
   },
   partnerText: {
-    color: colors.accent.primary,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.3,
   },
 
   stats: { alignItems: 'flex-end', gap: 4, flexShrink: 0 },
   matchCount: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
   wrBadge: {
-    backgroundColor: colors.background.elevated,
-    borderRadius: radius.sm,
+    backgroundColor: t.colors.background.elevated,
+    borderRadius: t.radius.sm,
     paddingHorizontal: spacing[2],
     paddingVertical: 2,
     minWidth: 44,
     alignItems: 'center',
   },
-  wrBadgeActive: { backgroundColor: colors.accent.primary + '22' },
+  wrBadgeActive: { backgroundColor: t.colors.accent.primary + '22' },
   wrText: {
-    color: colors.text.muted,
-    fontSize: typography.size.label,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.label,
+    fontWeight: t.typography.weight.semibold,
   },
-  wrTextActive: { color: colors.accent.primary },
-});
+  wrTextActive: { color: t.colors.accent.primary },
+})

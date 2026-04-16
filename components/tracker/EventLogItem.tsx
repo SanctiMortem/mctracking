@@ -8,13 +8,17 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { FormattedEvent } from '@/hooks/useEventLog';
-import { colors, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
 
 interface EventLogItemProps {
   event: FormattedEvent;
 }
 
 export function EventLogItem({ event }: EventLogItemProps) {
+  const styles = useThemedStyles(createStyles);
+
   return (
     <View style={[styles.row, event.isUndone && styles.rowUndone]}>
       <Text
@@ -28,29 +32,29 @@ export function EventLogItem({ event }: EventLogItemProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
     paddingVertical: spacing[2],
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border.subtle,
+    borderBottomColor: t.colors.border.subtle,
   },
   rowUndone: {
     opacity: 0.45,
   },
   description: {
     flex: 1,
-    color: colors.text.primary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-sm'],
   },
   descriptionUndone: {
     textDecorationLine: 'line-through',
-    color: colors.text.muted,
+    color: t.colors.text.muted,
   },
   undoneTag: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
   },
-});
+})

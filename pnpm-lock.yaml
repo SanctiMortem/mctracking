@@ -20,9 +20,15 @@ importers:
       '@expo-google-fonts/manrope':
         specifier: ^0.4.2
         version: 0.4.2
+      '@expo-google-fonts/noto-serif':
+        specifier: ^0.4.2
+        version: 0.4.2
       '@expo-google-fonts/space-grotesk':
         specifier: ^0.4.1
         version: 0.4.1
+      '@expo-google-fonts/work-sans':
+        specifier: ^0.4.2
+        version: 0.4.2
       '@expo/server':
         specifier: ^0.7.5
         version: 0.7.5
@@ -1258,8 +1264,14 @@ packages:
   '@expo-google-fonts/material-symbols@0.4.30':
     resolution: {integrity: sha512-ZCfA0jcVG/dHJGbweOmIRz6vQ53fR8reuvGSd+GcWzOwMm2Y4tkMIAXhrekltiG8sx4KM9bm4LE18RN8wTxmHg==}
 
+  '@expo-google-fonts/noto-serif@0.4.2':
+    resolution: {integrity: sha512-1xvAYegrtpCuPPunSyhvhV9FHWEzCWjikEoUJkvHt+WWvt+h7lKr+vkXNpqwFQM4W3KjXOccfLd5s04xLMjjDQ==}
+
   '@expo-google-fonts/space-grotesk@0.4.1':
     resolution: {integrity: sha512-ZVQYw4Ok/pgcSJiufP8oRZE3AVxS9xtmKEUfsurbHkHNdMc/GA1gDXP9G4Cr7KL4KqSc0haexR2TuMigotCn4Q==}
+
+  '@expo-google-fonts/work-sans@0.4.2':
+    resolution: {integrity: sha512-v+I8jQgoOAmI77v1V0EXvgKA4NGg8Agy2BCHAI6sswAKTub2sKsi6PXT4vLBn95dbbTqelSlcT79YRDTlCBrRg==}
 
   '@expo/cli@55.0.23':
     resolution: {integrity: sha512-OTGFvb70OGOTa3KZm8f23cPw4X16qavPBNotsumWwdUvLPfKHEQIvbCNWCMs1eAVW/Act/8psnO7cscXnf6Iug==}
@@ -6538,7 +6550,11 @@ snapshots:
 
   '@expo-google-fonts/material-symbols@0.4.30': {}
 
+  '@expo-google-fonts/noto-serif@0.4.2': {}
+
   '@expo-google-fonts/space-grotesk@0.4.1': {}
+
+  '@expo-google-fonts/work-sans@0.4.2': {}
 
   '@expo/cli@55.0.23(@expo/dom-webview@55.0.5)(@expo/metro-runtime@55.0.9)(bufferutil@4.1.0)(expo-constants@55.0.13)(expo-font@55.0.6)(expo-router@55.0.12)(expo@55.0.14)(react-dom@19.2.0(react@19.2.0))(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.0)(utf-8-validate@6.0.6))(react@19.2.0)(typescript@5.9.3)(utf-8-validate@6.0.6)':
     dependencies:

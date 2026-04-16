@@ -12,7 +12,6 @@ import {
   Pressable,
   SafeAreaView,
   SectionList,
-  StyleSheet,
   Switch,
   Text,
   TextInput,
@@ -26,12 +25,17 @@ import { useSettings } from '@/hooks/useSettings';
 import { useIAP } from '@/hooks/useIAP';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAccountPlayer } from '@/contexts/AccountPlayerContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import { themeList } from '@/styles/themes';
+import type { ThemeId } from '@/styles/themes/types';
+import type { AppTheme } from '@/styles/themes/types';
 import { apiFetch } from '@/services/api';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
 import i18n from '@/constants/i18n';
 
 // ─────────────────────────────────────────────
-// SegmentedPicker — language + life total
+// SegmentedPicker — language + life total + theme
 // ─────────────────────────────────────────────
 
 interface SegmentedPickerProps<T extends string | number> {
@@ -45,6 +49,8 @@ function SegmentedPicker<T extends string | number>({
   selected,
   onSelect,
 }: SegmentedPickerProps<T>) {
+  const styles = useThemedStyles(createStyles);
+
   return (
     <View style={styles.segmented}>
       {options.map((opt, i) => {
@@ -77,6 +83,7 @@ function SegmentedPicker<T extends string | number>({
 // ─────────────────────────────────────────────
 
 function SettingRow({ label, children }: { label: string; children: React.ReactNode }) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.row}>
       <Text style={styles.rowLabel}>{label}</Text>
@@ -86,6 +93,7 @@ function SettingRow({ label, children }: { label: string; children: React.ReactN
 }
 
 function SettingRowStack({ label, children }: { label: string; children: React.ReactNode }) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.rowStack}>
       <Text style={styles.rowLabel}>{label}</Text>
@@ -103,6 +111,7 @@ function LinkRow({
   onPress: () => void;
   danger?: boolean;
 }) {
+  const styles = useThemedStyles(createStyles);
   return (
     <Pressable style={styles.row} onPress={onPress} accessibilityRole="button">
       <Text style={[styles.rowLabel, danger && styles.dangerText]}>{label}</Text>
@@ -135,6 +144,8 @@ export default function SettingsScreen() {
   const { settings, loading, error, saving, refresh, patchSetting } = useSettings();
   const { purchase, restore, isPurchasing, isRestoring } = useIAP(refresh);
   const { accountPlayer, setAccountPlayer } = useAccountPlayer();
+  const { theme, themeId, setThemeId } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   const [signingOut, setSigningOut] = useState(false);
   const [editingName, setEditingName] = useState(false);
@@ -146,7 +157,6 @@ export default function SettingsScreen() {
   const handleLanguage = useCallback(
     (lang: 'auto' | 'en' | 'es') => {
       patchSetting({ language: lang });
-      // Apply language change immediately without restart (US-041)
       const target = lang === 'auto' ? 'en' : lang;
       void i18n.changeLanguage(target);
     },
@@ -219,6 +229,7 @@ export default function SettingsScreen() {
     | { key: 'require_commander' }
     | { key: 'life_total' }
     | { key: 'language' }
+    | { key: 'theme' }
     | { key: 'player_name' }
     | { key: 'groups' }
     | { key: 'premium' }
@@ -240,6 +251,10 @@ export default function SettingsScreen() {
       data: [{ key: 'language' }],
     },
     {
+      title: t('settings.appearance'),
+      data: [{ key: 'theme' }],
+    },
+    {
       title: t('settings.account'),
       data: [{ key: 'player_name' }, { key: 'groups' }, { key: 'premium' }, { key: 'signout' }],
     },
@@ -256,8 +271,8 @@ export default function SettingsScreen() {
               <Switch
                 value={settings.swipeGesturesEnabled}
                 onValueChange={handleSwipeGestures}
-                trackColor={{ false: colors.border.strong, true: colors.accent.primary }}
-                thumbColor={colors.text.primary}
+                trackColor={{ false: theme.colors.border.strong, true: theme.colors.accent.primary }}
+                thumbColor={theme.colors.text.primary}
                 accessibilityLabel="Enable swipe gestures"
               />
             </SettingRow>
@@ -269,8 +284,8 @@ export default function SettingsScreen() {
               <Switch
                 value={settings.requireCommander}
                 onValueChange={handleRequireCommander}
-                trackColor={{ false: colors.border.strong, true: colors.accent.primary }}
-                thumbColor={colors.text.primary}
+                trackColor={{ false: theme.colors.border.strong, true: theme.colors.accent.primary }}
+                thumbColor={theme.colors.text.primary}
                 accessibilityLabel="Commander required when creating decks"
               />
             </SettingRow>
@@ -298,6 +313,17 @@ export default function SettingsScreen() {
             </SettingRowStack>
           );
 
+        case 'theme':
+          return (
+            <SettingRowStack label={t('settings.theme')}>
+              <SegmentedPicker<ThemeId>
+                options={themeList.map((th) => ({ label: th.label, value: th.id }))}
+                selected={themeId}
+                onSelect={setThemeId}
+              />
+            </SettingRowStack>
+          );
+
         case 'player_name':
           if (!accountPlayer) return null;
           return editingName ? (
@@ -309,7 +335,7 @@ export default function SettingsScreen() {
                   value={nameInput}
                   onChangeText={setNameInput}
                   placeholder={t('account.namePlaceholder')}
-                  placeholderTextColor={colors.text.muted}
+                  placeholderTextColor={theme.colors.text.muted}
                   autoFocus
                   maxLength={50}
                   returnKeyType="done"
@@ -324,7 +350,7 @@ export default function SettingsScreen() {
                   disabled={!nameInput.trim() || savingName}
                 >
                   {savingName
-                    ? <ActivityIndicator color={colors.text.primary} size="small" />
+                    ? <ActivityIndicator color={theme.colors.text.primary} size="small" />
                     : <Text style={styles.nameSaveText}>{t('common.save')}</Text>
                   }
                 </Pressable>
@@ -390,6 +416,8 @@ export default function SettingsScreen() {
     },
     [
       settings,
+      theme,
+      styles,
       accountPlayer,
       editingName,
       nameInput,
@@ -407,6 +435,8 @@ export default function SettingsScreen() {
       restore,
       isPurchasing,
       isRestoring,
+      themeId,
+      setThemeId,
     ],
   );
 
@@ -419,7 +449,7 @@ export default function SettingsScreen() {
           <Text style={styles.title}>{t('settings.title')}</Text>
         </View>
         <View style={styles.center}>
-          <ActivityIndicator color={colors.accent.primary} size="large" />
+          <ActivityIndicator color={theme.colors.accent.primary} size="large" />
         </View>
       </SafeAreaView>
     );
@@ -445,7 +475,7 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
         <Text style={styles.title}>{t('settings.title')}</Text>
-        {saving && <ActivityIndicator color={colors.accent.primary} size="small" />}
+        {saving && <ActivityIndicator color={theme.colors.accent.primary} size="small" />}
       </View>
 
       <SectionList<SectionItem, Section>
@@ -465,177 +495,175 @@ export default function SettingsScreen() {
 }
 
 // ─────────────────────────────────────────────
-// Styles
+// Themed Styles Factory
 // ─────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background.primary },
+function createStyles(t: AppTheme) {
+  return {
+    safe: { flex: 1 as const, backgroundColor: t.colors.background.primary },
 
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[4],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
-  },
-  title: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-lg'],
-    fontFamily: typography.fontFamily.headline,
-    fontWeight: typography.weight.bold,
-  },
+    header: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[4],
+      borderBottomWidth: 1,
+      borderBottomColor: t.colors.border.subtle,
+    },
+    title: {
+      color: t.colors.text.primary,
+      fontSize: t.typography.size['heading-lg'],
+      fontFamily: t.typography.fontFamily.headline,
+      fontWeight: t.typography.weight.bold,
+    },
 
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[4],
-    paddingHorizontal: spacing[6],
-  },
-  errorText: {
-    color: colors.status.error,
-    fontSize: typography.size['body-lg'],
-    textAlign: 'center',
-  },
-  retryBtn: {
-    paddingHorizontal: spacing[6],
-    paddingVertical: spacing[3],
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  retryText: { color: colors.text.secondary, fontSize: typography.size['body-lg'] },
+    center: {
+      flex: 1 as const,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      gap: spacing[4],
+      paddingHorizontal: spacing[6],
+    },
+    errorText: {
+      color: t.colors.status.error,
+      fontSize: t.typography.size['body-lg'],
+      textAlign: 'center' as const,
+    },
+    retryBtn: {
+      paddingHorizontal: spacing[6],
+      paddingVertical: spacing[3],
+      borderRadius: t.radius.md,
+      borderWidth: 1,
+      borderColor: t.colors.border.default,
+    },
+    retryText: { color: t.colors.text.secondary, fontSize: t.typography.size['body-lg'] },
 
-  // List layout
-  listContent: { paddingBottom: spacing[8] },
-  sectionHeader: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[6],
-    paddingBottom: spacing[2],
-  },
-  sectionSeparator: { height: spacing[1] },
-  separator: {
-    height: 1,
-    backgroundColor: colors.border.subtle,
-    marginHorizontal: spacing[4],
-  },
+    listContent: { paddingBottom: spacing[8] },
+    sectionHeader: {
+      color: t.colors.text.muted,
+      fontSize: t.typography.size['body-sm'],
+      fontWeight: t.typography.weight.semibold,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase' as const,
+      paddingHorizontal: spacing[4],
+      paddingTop: spacing[6],
+      paddingBottom: spacing[2],
+    },
+    sectionSeparator: { height: spacing[1] },
+    separator: {
+      height: 1,
+      backgroundColor: t.colors.border.subtle,
+      marginHorizontal: spacing[4],
+    },
 
-  // Row primitives
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.background.elevated,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[4],
-    minHeight: 52,
-  },
-  rowStack: {
-    backgroundColor: colors.background.elevated,
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[3],
-    paddingBottom: spacing[4],
-    gap: spacing[3],
-  },
-  rowLabel: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.regular,
-    flexShrink: 1,
-  },
-  chevron: {
-    color: colors.text.muted,
-    fontSize: 20,
-    lineHeight: 24,
-  },
-  dangerText: { color: colors.status.error },
-  restoreText: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
-  },
-  premiumActive: {
-    color: colors.status.success,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
-  },
+    row: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      backgroundColor: t.colors.background.elevated,
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[4],
+      minHeight: 52,
+    },
+    rowStack: {
+      backgroundColor: t.colors.background.elevated,
+      paddingHorizontal: spacing[4],
+      paddingTop: spacing[3],
+      paddingBottom: spacing[4],
+      gap: spacing[3],
+    },
+    rowLabel: {
+      color: t.colors.text.primary,
+      fontSize: t.typography.size['body-lg'],
+      fontWeight: t.typography.weight.regular,
+      flexShrink: 1 as const,
+    },
+    chevron: {
+      color: t.colors.text.muted,
+      fontSize: 20,
+      lineHeight: 24,
+    },
+    dangerText: { color: t.colors.status.error },
+    restoreText: {
+      color: t.colors.text.muted,
+      fontSize: t.typography.size['body-sm'],
+    },
+    premiumActive: {
+      color: t.colors.status.success,
+      fontSize: t.typography.size['body-sm'],
+      fontWeight: t.typography.weight.semibold,
+    },
 
-  // Player name
-  nameEditRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-  },
-  nameInput: {
-    flex: 1,
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    color: colors.text.primary,
-    fontSize: typography.size['body-md'],
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-  },
-  nameCancel: {
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-  },
-  nameCancelText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-  },
-  nameSave: {
-    backgroundColor: colors.accent.primary,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-  },
-  nameSaveDisabled: { opacity: 0.5 },
-  nameSaveText: {
-    color: colors.accent.onPrimary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
-  },
-  nameValue: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-  },
+    nameEditRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: spacing[2],
+    },
+    nameInput: {
+      flex: 1 as const,
+      backgroundColor: t.colors.background.surface,
+      borderRadius: t.radius.md,
+      borderWidth: 1,
+      borderColor: t.colors.border.default,
+      color: t.colors.text.primary,
+      fontSize: t.typography.size['body-md'],
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[2],
+    },
+    nameCancel: {
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[2],
+    },
+    nameCancelText: {
+      color: t.colors.text.secondary,
+      fontSize: t.typography.size['body-sm'],
+    },
+    nameSave: {
+      backgroundColor: t.colors.accent.primary,
+      borderRadius: t.radius.md,
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[2],
+    },
+    nameSaveDisabled: { opacity: 0.5 },
+    nameSaveText: {
+      color: t.colors.accent.onPrimary,
+      fontSize: t.typography.size['body-sm'],
+      fontWeight: t.typography.weight.semibold,
+    },
+    nameValue: {
+      color: t.colors.text.secondary,
+      fontSize: t.typography.size['body-sm'],
+    },
 
-  // SegmentedPicker
-  segmented: {
-    flexDirection: 'row',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    overflow: 'hidden',
-  },
-  segmentedBtn: {
-    flex: 1,
-    paddingVertical: spacing[2],
-    alignItems: 'center',
-    backgroundColor: colors.background.surface,
-    borderRightWidth: 1,
-    borderRightColor: colors.border.default,
-  },
-  segmentedBtnActive: {
-    backgroundColor: colors.accent.primary,
-  },
-  segmentedFirst: { borderLeftWidth: 0 },
-  segmentedLast: { borderRightWidth: 0 },
-  segmentedText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
-  },
-  segmentedTextActive: {
-    color: colors.text.primary,
-    fontWeight: typography.weight.semibold,
-  },
-});
+    segmented: {
+      flexDirection: 'row' as const,
+      borderRadius: t.radius.md,
+      borderWidth: 1,
+      borderColor: t.colors.border.default,
+      overflow: 'hidden' as const,
+    },
+    segmentedBtn: {
+      flex: 1 as const,
+      paddingVertical: spacing[2],
+      alignItems: 'center' as const,
+      backgroundColor: t.colors.background.surface,
+      borderRightWidth: 1,
+      borderRightColor: t.colors.border.default,
+    },
+    segmentedBtnActive: {
+      backgroundColor: t.colors.accent.primary,
+    },
+    segmentedFirst: { borderLeftWidth: 0 },
+    segmentedLast: { borderRightWidth: 0 },
+    segmentedText: {
+      color: t.colors.text.secondary,
+      fontSize: t.typography.size['body-sm'],
+      fontWeight: t.typography.weight.medium,
+    },
+    segmentedTextActive: {
+      color: t.colors.text.primary,
+      fontWeight: t.typography.weight.semibold,
+    },
+  };
+}

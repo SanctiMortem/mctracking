@@ -9,7 +9,10 @@
  */
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface AuthProviderButtonProps {
   label: string;
@@ -31,6 +34,10 @@ export function AuthProviderButton({
   icon,
   variant = 'secondary',
 }: AuthProviderButtonProps) {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const dimmed = anyLoading && !loading;
 
   return (
@@ -45,7 +52,7 @@ export function AuthProviderButton({
       activeOpacity={0.75}
     >
       {loading ? (
-        <ActivityIndicator size="small" color={colors.text.primary} />
+        <ActivityIndicator size="small" color={theme.colors.text.primary} />
       ) : (
         <View style={styles.inner}>
           {icon && <View style={styles.icon}>{icon}</View>}
@@ -58,20 +65,20 @@ export function AuthProviderButton({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   button: {
     height: 52,
-    borderRadius: radius.md,
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: colors.border.default,
-    backgroundColor: colors.background.elevated,
+    borderColor: t.colors.border.default,
+    backgroundColor: t.colors.background.elevated,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing[4],
   },
   buttonPrimary: {
-    backgroundColor: colors.accent.primary,
-    borderColor: colors.accent.primary,
+    backgroundColor: t.colors.accent.primary,
+    borderColor: t.colors.accent.primary,
   },
   buttonDimmed: {
     opacity: 0.38,
@@ -88,12 +95,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
-    color: colors.text.primary,
-    letterSpacing: typography.letterSpacing.normal,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
+    color: t.colors.text.primary,
+    letterSpacing: t.typography.letterSpacing.normal,
   },
   labelPrimary: {
-    fontWeight: typography.weight.semibold,
+    fontWeight: t.typography.weight.semibold,
   },
-});
+})

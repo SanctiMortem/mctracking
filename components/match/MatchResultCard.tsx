@@ -11,7 +11,10 @@ import { useTranslation } from 'react-i18next';
 import { ColorChips } from '@/components/ui/ColorChips';
 import type { MatchOutcome } from '@/hooks/useMatchResults';
 import type { ParticipationDetail } from '@/services/matches';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface MatchResultCardProps {
   outcome: MatchOutcome;
@@ -20,6 +23,10 @@ interface MatchResultCardProps {
 }
 
 export function MatchResultCard({ outcome, winner, winConditionDisplay }: MatchResultCardProps) {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
 
   const winnerName = winner?.player.name ?? null;
@@ -30,21 +37,21 @@ export function MatchResultCard({ outcome, winner, winConditionDisplay }: MatchR
         return {
           icon: '✦',
           label: t('match.outcomeVictory').toUpperCase(),
-          accent: colors.accent.primary,
+          accent: theme.colors.accent.primary,
           subtext: winnerName ? t('match.outcomeWinSubtext', { name: winnerName }) : null,
         };
       case 'draw':
         return {
           icon: '◈',
           label: t('match.outcomeDraw').toUpperCase(),
-          accent: colors.accent.primary,
+          accent: theme.colors.accent.primary,
           subtext: t('match.outcomeDrawSubtext'),
         };
       case 'abandoned':
         return {
           icon: '✕',
           label: t('match.outcomeAbandoned').toUpperCase(),
-          accent: colors.text.muted,
+          accent: theme.colors.text.muted,
           subtext: t('match.outcomeAbandonedSubtext'),
         };
     }
@@ -68,7 +75,7 @@ export function MatchResultCard({ outcome, winner, winConditionDisplay }: MatchR
 
           {/* Winner avatar + name */}
           <View style={styles.winnerRow}>
-            <View style={[styles.avatar, { backgroundColor: colors.accent.primary + '33' }]}>
+            <View style={[styles.avatar, { backgroundColor: theme.colors.accent.primary + '33' }]}>
               <Text style={styles.avatarText}>
                 {winner.player.name
                   .split(' ')
@@ -105,10 +112,10 @@ export function MatchResultCard({ outcome, winner, winConditionDisplay }: MatchR
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   card: {
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.xl,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.xl,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -124,13 +131,13 @@ const styles = StyleSheet.create({
     lineHeight: 32,
   },
   label: {
-    fontSize: typography.size['heading-xl'],
-    fontWeight: typography.weight.black,
+    fontSize: t.typography.size['heading-xl'],
+    fontWeight: t.typography.weight.black,
     letterSpacing: 4,
   },
   subtext: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.tertiary,
+    fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
     marginTop: spacing[1],
   },
@@ -152,24 +159,24 @@ const styles = StyleSheet.create({
   avatar: {
     width: 48,
     height: 48,
-    borderRadius: radius.round,
+    borderRadius: t.radius.round,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   avatarText: {
-    color: colors.accent.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.bold,
   },
   winnerInfo: {
     flex: 1,
     gap: 2,
   },
   winnerName: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
   },
   deckRow: {
     flexDirection: 'row',
@@ -177,8 +184,8 @@ const styles = StyleSheet.create({
     gap: spacing[2],
   },
   deckName: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.tertiary,
+    fontSize: t.typography.size['body-sm'],
     flexShrink: 1,
   },
   crown: {
@@ -192,18 +199,18 @@ const styles = StyleSheet.create({
     gap: spacing[2],
   },
   conditionLabel: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
   conditionBadge: {
-    backgroundColor: colors.accent.primary + '22',
-    borderRadius: radius.sm,
+    backgroundColor: t.colors.accent.primary + '22',
+    borderRadius: t.radius.sm,
     paddingHorizontal: spacing[2],
     paddingVertical: 3,
   },
   conditionText: {
-    color: colors.accent.primary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
   },
-});
+})

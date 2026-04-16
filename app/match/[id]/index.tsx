@@ -18,7 +18,10 @@ import { ParticipantResultRow } from '@/components/match/ParticipantResultRow';
 import { useMatchDetail } from '@/hooks/useMatchDetail';
 import type { Match } from '@/db/index';
 import type { MatchOutcome } from '@/hooks/useMatchResults';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -30,27 +33,29 @@ function formatDate(value: string | Date): string {
 
 type StatusConfig = { label: string; color: string; bg: string };
 
-function statusConfig(status: Match['status'], t: TFunction): StatusConfig {
+function statusConfig(status: Match['status'], t: TFunction, theme: AppTheme): StatusConfig {
   switch (status) {
-    case 'completed':   return { label: t('match.statusCompleted'), color: colors.status.success, bg: colors.status.success + '22' };
-    case 'in_progress': return { label: t('match.statusInProgress'), color: colors.accent.primary, bg: colors.accent.primary + '22' };
-    case 'abandoned':   return { label: t('match.statusAbandoned'), color: colors.text.muted, bg: colors.background.elevated };
+    case 'completed':   return { label: t('match.statusCompleted'), color: theme.colors.status.success, bg: theme.colors.status.success + '22' };
+    case 'in_progress': return { label: t('match.statusInProgress'), color: theme.colors.accent.primary, bg: theme.colors.accent.primary + '22' };
+    case 'abandoned':   return { label: t('match.statusAbandoned'), color: theme.colors.text.muted, bg: theme.colors.background.elevated };
   }
 }
 
 type OutcomeLabelConfig = { icon: string; label: string; color: string };
 
-function outcomeLabelConfig(outcome: MatchOutcome, t: TFunction): OutcomeLabelConfig {
+function outcomeLabelConfig(outcome: MatchOutcome, t: TFunction, theme: AppTheme): OutcomeLabelConfig {
   switch (outcome) {
-    case 'win':       return { icon: '✦', label: t('match.outcomeVictory'), color: colors.accent.primary };
-    case 'draw':      return { icon: '◈', label: t('match.outcomeDraw'),    color: colors.accent.primary };
-    case 'abandoned': return { icon: '✕', label: t('match.outcomeAbandoned'), color: colors.text.muted };
+    case 'win':       return { icon: '✦', label: t('match.outcomeVictory'), color: theme.colors.accent.primary };
+    case 'draw':      return { icon: '◈', label: t('match.outcomeDraw'),    color: theme.colors.accent.primary };
+    case 'abandoned': return { icon: '✕', label: t('match.outcomeAbandoned'), color: theme.colors.text.muted };
   }
 }
 
 // ─── Section header ───────────────────────────────────────────────────────────
 
 function SectionTitle({ label, count }: { label: string; count?: number }) {
+  const styles = useThemedStyles(createStyles);
+
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{label}</Text>
@@ -64,6 +69,10 @@ function SectionTitle({ label, count }: { label: string; count?: number }) {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function MatchDetailScreen() {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { t } = useTranslation();
@@ -73,7 +82,7 @@ export default function MatchDetailScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.accent.primary} size="large" />
+        <ActivityIndicator color={theme.colors.accent.primary} size="large" />
       </View>
     );
   }
@@ -90,8 +99,8 @@ export default function MatchDetailScreen() {
   }
 
   const { match, participations, result, formattedEvents, outcome, winner, winConditionDisplay, duration } = data;
-  const sc = statusConfig(match.status, t);
-  const oc = outcomeLabelConfig(outcome, t);
+  const sc = statusConfig(match.status, t, theme);
+  const oc = outcomeLabelConfig(outcome, t, theme);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -158,8 +167,8 @@ export default function MatchDetailScreen() {
                 {winConditionDisplay && (
                   <View style={styles.conditionRow}>
                     <Text style={styles.conditionLabel}>{t('match.winConditionLabel')}</Text>
-                    <View style={[styles.conditionBadge, { backgroundColor: colors.accent.primary + '22' }]}>
-                      <Text style={[styles.conditionText, { color: colors.accent.primary }]}>{winConditionDisplay}</Text>
+                    <View style={[styles.conditionBadge, { backgroundColor: theme.colors.accent.primary + '22' }]}>
+                      <Text style={[styles.conditionText, { color: theme.colors.accent.primary }]}>{winConditionDisplay}</Text>
                     </View>
                   </View>
                 )}
@@ -207,28 +216,28 @@ export default function MatchDetailScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   root: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.colors.background.primary,
   },
 
   center: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.colors.background.primary,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing[3],
     padding: spacing[6],
   },
   errorText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-lg'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-lg'],
     textAlign: 'center',
   },
   linkText: {
-    color: colors.text.link,
-    fontSize: typography.size['body-lg'],
+    color: t.colors.text.link,
+    fontSize: t.typography.size['body-lg'],
   },
 
   // Header
@@ -241,14 +250,14 @@ const styles = StyleSheet.create({
   },
   backBtn: { width: 32, alignItems: 'center' },
   backIcon: {
-    color: colors.text.primary,
+    color: t.colors.text.primary,
     fontSize: 28,
     lineHeight: 32,
   },
   headerTitle: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
   },
 
   // Scroll content
@@ -266,27 +275,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.accent.primary + '22',
-    borderRadius: radius.md,
+    backgroundColor: t.colors.accent.primary + '22',
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: colors.accent.primary + '44',
+    borderColor: t.colors.accent.primary + '44',
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
   },
   inProgressText: {
-    color: colors.accent.primary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
   },
   inProgressCta: {
-    color: colors.accent.primary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-sm'],
   },
 
   // Meta card
   metaCard: {
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.lg,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.lg,
     overflow: 'hidden',
   },
   metaRow: {
@@ -297,27 +306,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
   },
   metaLabel: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
   metaValue: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   separator: {
     height: 1,
-    backgroundColor: colors.border.subtle,
+    backgroundColor: t.colors.border.subtle,
     marginHorizontal: spacing[4],
   },
   statusBadge: {
-    borderRadius: radius.sm,
+    borderRadius: t.radius.sm,
     paddingHorizontal: spacing[2],
     paddingVertical: 3,
   },
   statusText: {
-    fontSize: typography.size.label,
-    fontWeight: typography.weight.semibold,
+    fontSize: t.typography.size.label,
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.5,
   },
 
@@ -329,26 +338,26 @@ const styles = StyleSheet.create({
     gap: spacing[2],
   },
   sectionTitle: {
-    color: colors.text.muted,
-    fontSize: typography.size.label,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.label,
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
   sectionCount: {
-    color: colors.text.muted,
-    fontSize: typography.size.label,
-    backgroundColor: colors.background.elevated,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.label,
+    backgroundColor: t.colors.background.elevated,
     paddingHorizontal: spacing[2],
     paddingVertical: 1,
-    borderRadius: radius.round,
+    borderRadius: t.radius.round,
     overflow: 'hidden',
   },
 
   // Outcome card
   outcomeCard: {
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.lg,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.lg,
     paddingVertical: spacing[4],
     paddingHorizontal: spacing[4],
     gap: spacing[3],
@@ -360,13 +369,13 @@ const styles = StyleSheet.create({
   },
   outcomeIcon: { fontSize: 18 },
   outcomeLabel: {
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.bold,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.bold,
     letterSpacing: 1,
   },
   winnerName: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
     flex: 1,
   },
   conditionRow: {
@@ -375,17 +384,17 @@ const styles = StyleSheet.create({
     gap: spacing[2],
   },
   conditionLabel: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
   conditionBadge: {
-    borderRadius: radius.sm,
+    borderRadius: t.radius.sm,
     paddingHorizontal: spacing[2],
     paddingVertical: 3,
   },
   conditionText: {
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
   },
 
   // Participants
@@ -400,8 +409,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyLogText: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
     fontStyle: 'italic',
   },
-});
+})

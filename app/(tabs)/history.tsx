@@ -20,11 +20,15 @@ import { useMatchHistory } from '@/hooks/useMatchHistory';
 import { useResponsive } from '@/hooks/useResponsive';
 import { apiFetch } from '@/services/api';
 import { BannerAdWrapper } from '@/components/ads/BannerAdWrapper';
-import { colors, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 function EmptyState({ hasFilters }: { hasFilters: boolean }) {
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   return (
     <View style={styles.empty}>
@@ -47,6 +51,8 @@ function EmptyState({ hasFilters }: { hasFilters: boolean }) {
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
 
 function SkeletonList() {
+  const styles = useThemedStyles(createStyles);
+
   return (
     <View style={styles.list}>
       <MatchCardSkeleton />
@@ -59,6 +65,8 @@ function SkeletonList() {
 // ─── Footer spinner ───────────────────────────────────────────────────────────
 
 function LoadMoreFooter({ loading }: { loading: boolean }) {
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   if (!loading) return null;
   return (
@@ -71,6 +79,8 @@ function LoadMoreFooter({ loading }: { loading: boolean }) {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function HistoryScreen() {
+  const styles = useThemedStyles(createStyles);
+
   const router = useRouter();
   const { getToken } = useAuth();
   const { t } = useTranslation();
@@ -163,10 +173,10 @@ export default function HistoryScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.colors.background.primary,
   },
 
   list: {
@@ -192,27 +202,27 @@ const styles = StyleSheet.create({
     fontSize: 48,
   },
   emptyTitle: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.semibold,
     textAlign: 'center',
   },
   emptySubtitle: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
   },
 
   errorBanner: {
-    backgroundColor: colors.status.error + '22',
+    backgroundColor: t.colors.status.error + '22',
     padding: spacing[3],
     marginHorizontal: spacing[4],
     marginTop: spacing[3],
     borderRadius: 8,
   },
   errorText: {
-    color: colors.status.error,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.status.error,
+    fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
   },
 
@@ -221,7 +231,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
-});
+})

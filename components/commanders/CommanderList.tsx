@@ -7,7 +7,6 @@ import {
   Alert,
   FlatList,
   Pressable,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -17,7 +16,10 @@ import { useTranslation } from 'react-i18next';
 
 import type { Commander } from '@/db/index';
 import { ColorChips } from '@/components/ui/ColorChips';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface CommanderListProps {
   commanders: Commander[];
@@ -34,6 +36,7 @@ function CommanderRow({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const styles = useThemedStyles(createStyles);
   const { t } = useTranslation();
 
   function confirmDelete() {
@@ -73,6 +76,8 @@ function CommanderRow({
 }
 
 function EmptyState() {
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   return (
     <View style={styles.empty}>
@@ -83,6 +88,10 @@ function EmptyState() {
 }
 
 export function CommanderList({ commanders, onEdit, onDelete }: CommanderListProps) {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
 
@@ -99,7 +108,7 @@ export function CommanderList({ commanders, onEdit, onDelete }: CommanderListPro
         value={query}
         onChangeText={setQuery}
         placeholder={t('commanders.searchPlaceholder')}
-        placeholderTextColor={colors.text.muted}
+        placeholderTextColor={theme.colors.text.muted}
         clearButtonMode="while-editing"
         returnKeyType="search"
       />
@@ -122,74 +131,74 @@ export function CommanderList({ commanders, onEdit, onDelete }: CommanderListPro
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   container: { flex: 1 },
   search: {
-    backgroundColor: colors.background.surface,
-    color: colors.text.primary,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    color: t.colors.text.primary,
+    borderRadius: t.radius.md,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
-    fontSize: typography.size['body-lg'],
+    fontSize: t.typography.size['body-lg'],
     marginHorizontal: spacing[4],
     marginBottom: spacing[3],
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
-    backgroundColor: colors.background.secondary,
+    backgroundColor: t.colors.background.secondary,
   },
   rowInfo: { flex: 1, gap: spacing[1] },
   rowHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
   name: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
     flex: 1,
   },
   partnerBadge: {
-    backgroundColor: colors.accent.primary + '33',
-    borderRadius: radius.xs,
+    backgroundColor: t.colors.accent.primary + '33',
+    borderRadius: t.radius.xs,
     paddingHorizontal: spacing[2],
     paddingVertical: 2,
   },
   partnerText: {
-    color: colors.accent.primary,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
   },
   rowActions: { flexDirection: 'row', gap: spacing[3] },
   actionBtn: { padding: spacing[2] },
   actionEdit: {
-    color: colors.text.link,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.link,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   actionDelete: {
-    color: colors.status.error,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.status.error,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   separator: {
     height: 1,
-    backgroundColor: colors.border.subtle,
+    backgroundColor: t.colors.border.subtle,
     marginHorizontal: spacing[4],
   },
   empty: { alignItems: 'center', gap: spacing[2] },
   emptyContainer: { flex: 1, justifyContent: 'center' },
   emptyTitle: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
   },
   emptySubtitle: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
     paddingHorizontal: spacing[8],
   },
-});
+})

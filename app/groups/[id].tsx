@@ -19,13 +19,20 @@ import { useTranslation } from 'react-i18next';
 import { usePodMembers, type PodMemberData } from '@/hooks/usePodMembers';
 import { useGroups } from '@/hooks/useGroups';
 import { useAccountPlayer } from '@/contexts/AccountPlayerContext';
-import { colors, radius, spacing, typography, shadows } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // ─────────────────────────────────────────────
 // Main screen
 // ─────────────────────────────────────────────
 
 export default function PodDetailScreen() {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
   const router = useRouter();
@@ -101,6 +108,8 @@ export default function PodDetailScreen() {
   // ─────────────────────────────────────────────
 
   function renderMember({ item }: { item: PodMemberData }) {
+  const styles = useThemedStyles(createStyles);
+
     const isYou = accountPlayer?.id === item.player.id;
     const isMemberOwner = item.member.role === 'owner';
     return (
@@ -151,7 +160,7 @@ export default function PodDetailScreen() {
       {/* Body */}
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color={colors.accent.primary} size="large" />
+          <ActivityIndicator color={theme.colors.accent.primary} size="large" />
         </View>
       ) : error ? (
         <View style={styles.center}>
@@ -179,7 +188,7 @@ export default function PodDetailScreen() {
       {/* Actions */}
       <View style={styles.actions}>
         {actionLoading ? (
-          <ActivityIndicator color={colors.accent.primary} size="small" />
+          <ActivityIndicator color={theme.colors.accent.primary} size="small" />
         ) : isOwner ? (
           <Pressable style={styles.btnDanger} onPress={handleDelete}>
             <Text style={styles.btnDangerText}>{t('groups.deletePod')}</Text>
@@ -198,8 +207,8 @@ export default function PodDetailScreen() {
 // Styles
 // ─────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background.primary },
+const createStyles = (t: AppTheme) => ({
+  safe: { flex: 1, backgroundColor: t.colors.background.primary },
 
   // Header
   header: {
@@ -211,31 +220,31 @@ const styles = StyleSheet.create({
     paddingBottom: spacing[2],
   },
   podName: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-lg'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-lg'],
+    fontWeight: t.typography.weight.bold,
     flexShrink: 1,
   },
   roleBadge: {
     paddingHorizontal: spacing[2],
     paddingVertical: 3,
-    borderRadius: radius.sm,
+    borderRadius: t.radius.sm,
   },
-  ownerBadge: { backgroundColor: colors.accent.primary + '33' },
-  memberBadge: { backgroundColor: colors.background.elevated },
+  ownerBadge: { backgroundColor: t.colors.accent.primary + '33' },
+  memberBadge: { backgroundColor: t.colors.background.elevated },
   roleBadgeText: {
-    color: colors.text.secondary,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
 
   // Section header
   sectionHeader: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     paddingHorizontal: spacing[4],
@@ -245,7 +254,7 @@ const styles = StyleSheet.create({
 
   // List
   listContent: { paddingBottom: spacing[4] },
-  separator: { height: 1, backgroundColor: colors.border.subtle, marginHorizontal: spacing[4] },
+  separator: { height: 1, backgroundColor: t.colors.border.subtle, marginHorizontal: spacing[4] },
 
   // Member row
   memberRow: {
@@ -259,71 +268,71 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.background.elevated,
+    backgroundColor: t.colors.background.elevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    color: colors.accent.primary,
-    fontSize: typography.size['heading-md'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.bold,
   },
   memberInfo: { flex: 1, gap: 2 },
   memberNameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
   memberName: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
     flexShrink: 1,
   },
   memberRole: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
   youBadge: {
-    backgroundColor: colors.accent.primary + '33',
+    backgroundColor: t.colors.accent.primary + '33',
     paddingHorizontal: spacing[2],
     paddingVertical: 2,
-    borderRadius: radius.sm,
+    borderRadius: t.radius.sm,
   },
   youBadgeText: {
-    color: colors.accent.primary,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
   },
 
   // States
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing[4], paddingHorizontal: spacing[6] },
-  errorText: { color: colors.status.error, fontSize: typography.size['body-lg'], textAlign: 'center' },
+  errorText: { color: t.colors.status.error, fontSize: t.typography.size['body-lg'], textAlign: 'center' },
   retryBtn: {
     paddingHorizontal: spacing[6],
     paddingVertical: spacing[3],
-    borderRadius: radius.md,
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
   },
-  retryText: { color: colors.text.secondary, fontSize: typography.size['body-lg'] },
-  emptyText: { color: colors.text.muted, fontSize: typography.size['body-lg'] },
+  retryText: { color: t.colors.text.secondary, fontSize: t.typography.size['body-lg'] },
+  emptyText: { color: t.colors.text.muted, fontSize: t.typography.size['body-lg'] },
 
   // Actions
   actions: {
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[4],
     borderTopWidth: 1,
-    borderTopColor: colors.border.subtle,
+    borderTopColor: t.colors.border.subtle,
     alignItems: 'center',
   },
   btnDanger: {
     width: '100%',
     paddingVertical: spacing[3],
-    borderRadius: radius.md,
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: colors.status.error,
+    borderColor: t.colors.status.error,
     alignItems: 'center',
   },
   btnDangerText: {
-    color: colors.status.error,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.status.error,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
   },
-});
+})

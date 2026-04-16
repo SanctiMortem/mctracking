@@ -11,7 +11,7 @@
  * HIST-011 (EPIC-04)
  */
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -23,7 +23,9 @@ import { useDecks } from '@/hooks/useDecks';
 import { useMatchupStats } from '@/hooks/useMatchupStats';
 import { usePlayers } from '@/hooks/usePlayers';
 import type { Commander, Deck, Player } from '@/db/index';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
 
 type EntityType = 'player' | 'deck' | 'commander';
 type Scope = 'all' | '1v1';
@@ -37,6 +39,8 @@ interface SegmentedControlProps<T extends string> {
 }
 
 function SegmentedControl<T extends string>({ options, value, onChange }: SegmentedControlProps<T>) {
+  const segStyles = useThemedStyles(createSegStyles);
+
   return (
     <View style={segStyles.container}>
       {options.map((opt) => {
@@ -58,35 +62,37 @@ function SegmentedControl<T extends string>({ options, value, onChange }: Segmen
   );
 }
 
-const segStyles = StyleSheet.create({
+const createSegStyles = (theme: AppTheme) => ({
   container: {
-    flexDirection: 'row',
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.md,
+    flexDirection: 'row' as const,
+    backgroundColor: theme.colors.background.surface,
+    borderRadius: theme.radius.md,
     padding: 2,
     gap: 2,
   },
   tab: {
     flex: 1,
     paddingVertical: spacing[2],
-    alignItems: 'center',
-    borderRadius: radius.sm,
+    alignItems: 'center' as const,
+    borderRadius: theme.radius.sm,
   },
-  tabActive: { backgroundColor: colors.background.elevated },
+  tabActive: { backgroundColor: theme.colors.background.elevated },
   tabText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.size['body-sm'],
+    fontWeight: theme.typography.weight.medium,
   },
   tabTextActive: {
-    color: colors.text.primary,
-    fontWeight: typography.weight.semibold,
+    color: theme.colors.text.primary,
+    fontWeight: theme.typography.weight.semibold,
   },
 });
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function MatchupStatsScreen() {
+  const styles = useThemedStyles(createStyles);
+
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const [entityType, setEntityType] = useState<EntityType>('player');
@@ -206,10 +212,10 @@ export default function MatchupStatsScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.colors.background.primary,
   },
   content: {
     padding: spacing[4],
@@ -218,10 +224,10 @@ const styles = StyleSheet.create({
   },
   section: { gap: spacing[2] },
   label: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
-});
+})

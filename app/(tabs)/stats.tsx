@@ -23,17 +23,24 @@ import { ColorChips } from '@/components/ui/ColorChips';
 import { useGlobalStats } from '@/hooks/useGlobalStats';
 import { BannerAdWrapper } from '@/components/ads/BannerAdWrapper';
 import { useResponsive } from '@/hooks/useResponsive';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // ─── Section header ───────────────────────────────────────────────────────────
 
 function SectionHeader({ title }: { title: string }) {
+  const styles = useThemedStyles(createStyles);
+
   return <Text style={styles.sectionHeader}>{title}</Text>;
 }
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 function EmptyState() {
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   return (
     <View style={styles.empty}>
@@ -47,6 +54,10 @@ function EmptyState() {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function StatsScreen() {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const router = useRouter();
   const { t } = useTranslation();
   const { contentMaxWidth, contentPadding } = useResponsive();
@@ -55,7 +66,7 @@ export default function StatsScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.accent.primary} />
+        <ActivityIndicator size="large" color={theme.colors.accent.primary} />
       </View>
     );
   }
@@ -170,10 +181,10 @@ export default function StatsScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.colors.background.primary,
   },
   content: {
     padding: spacing[4],
@@ -181,7 +192,7 @@ const styles = StyleSheet.create({
   },
   center: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.colors.background.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -192,52 +203,52 @@ const styles = StyleSheet.create({
     gap: spacing[1],
   },
   heroNumber: {
-    color: colors.accent.primary,
-    fontSize: typography.size['heading-xl'],
-    fontWeight: typography.weight.black,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['heading-xl'],
+    fontWeight: t.typography.weight.black,
   },
   heroLabel: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
   },
   heroSub: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
   },
 
   matchupCta: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.accent.primary + '22',
-    borderRadius: radius.md,
+    backgroundColor: t.colors.accent.primary + '22',
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: colors.accent.primary + '44',
+    borderColor: t.colors.accent.primary + '44',
     paddingVertical: spacing[4],
     paddingHorizontal: spacing[4],
   },
   matchupCtaTitle: {
-    color: colors.accent.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
   },
   matchupCtaSub: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
     marginTop: 2,
   },
   matchupCtaArrow: {
-    color: colors.accent.primary,
+    color: t.colors.accent.primary,
     fontSize: 28,
     lineHeight: 32,
   },
 
   section: { gap: spacing[3] },
   sectionHeader: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
@@ -246,38 +257,38 @@ const styles = StyleSheet.create({
   commanderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.md,
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
     gap: spacing[3],
   },
   commanderInfo: { flex: 1, gap: 4 },
   commanderName: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
   },
   commanderStats: { alignItems: 'flex-end', gap: 4, flexShrink: 0 },
   matchCount: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
   wrBadge: {
-    backgroundColor: colors.background.elevated,
-    borderRadius: radius.sm,
+    backgroundColor: t.colors.background.elevated,
+    borderRadius: t.radius.sm,
     paddingHorizontal: spacing[2],
     paddingVertical: 2,
     minWidth: 44,
     alignItems: 'center',
   },
-  wrBadgeActive: { backgroundColor: colors.accent.primary + '22' },
+  wrBadgeActive: { backgroundColor: t.colors.accent.primary + '22' },
   wrText: {
-    color: colors.text.muted,
-    fontSize: typography.size.label,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.label,
+    fontWeight: t.typography.weight.semibold,
   },
-  wrTextActive: { color: colors.accent.primary },
+  wrTextActive: { color: t.colors.accent.primary },
 
   empty: {
     alignItems: 'center',
@@ -286,21 +297,21 @@ const styles = StyleSheet.create({
   },
   emptyIcon: { fontSize: 48 },
   emptyTitle: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.semibold,
     textAlign: 'center',
   },
   emptySubtitle: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
   },
 
   errorText: {
-    color: colors.status.error,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.status.error,
+    fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
     paddingHorizontal: spacing[4],
   },
-});
+})

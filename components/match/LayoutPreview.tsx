@@ -12,11 +12,13 @@
  * MATCH-005 (EPIC-02)
  */
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { LAYOUT_VARIANTS } from '@/hooks/useMatchSetup';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
 
 /** Preview takes 45% of the smallest screen dimension. */
 const PREVIEW_RATIO = 9 / 14;
@@ -67,6 +69,7 @@ function VariantThumb({ variant, isSelected, onPress }: {
   isSelected: boolean;
   onPress: () => void;
 }) {
+  const thumbStyles = useThemedStyles(createThumbStyles);
   const thumbH = THUMB_SIZE / THUMB_RATIO;
 
   const renderThumbSlots = () => {
@@ -171,7 +174,7 @@ function VariantThumb({ variant, isSelected, onPress }: {
   );
 }
 
-const thumbStyles = StyleSheet.create({
+const createThumbStyles = (t: AppTheme) => ({
   container: {
     alignItems: 'center',
     gap: 4,
@@ -181,27 +184,27 @@ const thumbStyles = StyleSheet.create({
     borderRadius: 4,
     overflow: 'hidden',
     borderWidth: 1.5,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
   },
   thumbSelected: {
-    borderColor: colors.accent.primary,
+    borderColor: t.colors.accent.primary,
     borderWidth: 2,
   },
   label: {
-    color: colors.text.muted,
-    fontSize: typography.size.label - 1,
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.label - 1,
+    fontWeight: t.typography.weight.medium,
     textAlign: 'center',
   },
   labelSelected: {
-    color: colors.accent.primary,
-    fontWeight: typography.weight.bold,
+    color: t.colors.accent.primary,
+    fontWeight: t.typography.weight.bold,
   },
   full: {
     flex: 1,
-    backgroundColor: colors.background.surface,
+    backgroundColor: t.colors.background.surface,
     borderWidth: 0.5,
-    borderColor: colors.border.subtle,
+    borderColor: t.colors.border.subtle,
   },
   row: {
     flex: 1,
@@ -212,15 +215,15 @@ const thumbStyles = StyleSheet.create({
   },
   half: {
     flex: 1,
-    backgroundColor: colors.background.surface,
+    backgroundColor: t.colors.background.surface,
     borderWidth: 0.5,
-    borderColor: colors.border.subtle,
+    borderColor: t.colors.border.subtle,
   },
   third: {
     flex: 1,
-    backgroundColor: colors.background.surface,
+    backgroundColor: t.colors.background.surface,
     borderWidth: 0.5,
-    borderColor: colors.border.subtle,
+    borderColor: t.colors.border.subtle,
   },
 });
 
@@ -234,6 +237,8 @@ export function LayoutPreview({
   onRotate,
   onLayoutChange,
 }: LayoutPreviewProps) {
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   const { width: screenW, height: screenH } = useWindowDimensions();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -418,15 +423,15 @@ export function LayoutPreview({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   container: {
     marginTop: spacing[3],
     alignItems: 'center',
   },
   variantLabel: {
-    color: colors.text.secondary,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
     marginBottom: spacing[2],
@@ -438,16 +443,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing[4],
   },
   hint: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
     textAlign: 'center',
     marginBottom: spacing[2],
   },
   preview: {
-    borderRadius: radius.lg,
+    borderRadius: t.radius.lg,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
   },
   fullRow: {
     flex: 1,
@@ -459,14 +464,14 @@ const styles = StyleSheet.create({
   },
   slot: {
     flex: 1,
-    backgroundColor: colors.background.secondary,
+    backgroundColor: t.colors.background.secondary,
     borderWidth: 0.5,
-    borderColor: colors.border.subtle,
+    borderColor: t.colors.border.subtle,
     padding: spacing[1],
   },
   slotSelected: {
-    backgroundColor: colors.accent.primary + '33',
-    borderColor: colors.accent.primary,
+    backgroundColor: t.colors.accent.primary + '33',
+    borderColor: t.colors.accent.primary,
     borderWidth: 1.5,
   },
   slotBody: {
@@ -482,29 +487,29 @@ const styles = StyleSheet.create({
     zIndex: 1,
     width: 28,
     height: 28,
-    borderRadius: radius.round,
-    backgroundColor: colors.background.elevated,
+    borderRadius: t.radius.round,
+    backgroundColor: t.colors.background.elevated,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
     alignItems: 'center',
     justifyContent: 'center',
   },
   rotateArrow: {
-    color: colors.accent.primary,
+    color: t.colors.accent.primary,
     fontSize: 16,
-    fontWeight: typography.weight.bold,
+    fontWeight: t.typography.weight.bold,
   },
   positionNumber: {
-    color: colors.accent.primary,
-    fontSize: typography.size.label,
-    fontWeight: typography.weight.bold,
-    letterSpacing: typography.letterSpacing.wide,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size.label,
+    fontWeight: t.typography.weight.bold,
+    letterSpacing: t.typography.letterSpacing.wide,
   },
   slotName: {
-    color: colors.text.primary,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.medium,
     textAlign: 'center',
     maxWidth: '90%',
   },
-});
+})

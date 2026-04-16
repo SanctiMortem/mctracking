@@ -19,7 +19,9 @@ import {
 import { EventLogItem } from './EventLogItem';
 import { useEventLog } from '@/hooks/useEventLog';
 import type { LocalEvent, TrackerParticipation } from '@/hooks/useTracker';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
 
 interface EventLogPanelProps {
   events: LocalEvent[];
@@ -29,6 +31,8 @@ interface EventLogPanelProps {
 }
 
 export function EventLogPanel({ events, participations, onUndo, onClose }: EventLogPanelProps) {
+  const styles = useThemedStyles(createStyles);
+
   const { formatted, hasUndoable } = useEventLog(events, participations);
 
   return (
@@ -79,16 +83,16 @@ export function EventLogPanel({ events, participations, onUndo, onClose }: Event
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   panel: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     maxHeight: '55%',
-    backgroundColor: colors.background.elevated,
-    borderTopLeftRadius: radius.xxl,
-    borderTopRightRadius: radius.xxl,
+    backgroundColor: t.colors.background.elevated,
+    borderTopLeftRadius: t.radius.xxl,
+    borderTopRightRadius: t.radius.xxl,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.5,
@@ -104,19 +108,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
+    borderBottomColor: t.colors.border.subtle,
   },
   title: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.semibold,
   },
   closeBtn: {
     padding: spacing[2],
   },
   closeBtnText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-lg'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-lg'],
   },
 
   // List
@@ -134,8 +138,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[8],
   },
   emptyText: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
 
   // Footer
@@ -143,31 +147,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
     borderTopWidth: 1,
-    borderTopColor: colors.border.subtle,
+    borderTopColor: t.colors.border.subtle,
     alignItems: 'center',
     gap: spacing[1],
   },
   undoBtn: {
     width: '100%',
     height: 48,
-    borderRadius: radius.xl,
-    backgroundColor: colors.accent.primary,
+    borderRadius: t.radius.xl,
+    backgroundColor: t.colors.accent.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   undoBtnDisabled: {
-    backgroundColor: colors.background.surface,
+    backgroundColor: t.colors.background.surface,
   },
   undoBtnText: {
     color: '#fff',
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.semibold,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
   },
   undoBtnTextDisabled: {
-    color: colors.text.muted,
+    color: t.colors.text.muted,
   },
   noUndoHint: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
   },
-});
+})

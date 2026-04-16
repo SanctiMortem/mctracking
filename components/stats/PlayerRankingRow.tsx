@@ -9,7 +9,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { PlayerRanking } from '@/services/stats';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
 
 interface PlayerRankingRowProps {
   ranking: PlayerRanking;
@@ -24,6 +26,8 @@ function getInitials(name: string): string {
 }
 
 export function PlayerRankingRow({ ranking }: PlayerRankingRowProps) {
+  const styles = useThemedStyles(createStyles);
+
   const { player, total_matches, win_rate_pct, rank } = ranking;
   const isTop = rank === 1;
   const winRateText = win_rate_pct !== null ? `${win_rate_pct}%` : '—';
@@ -58,12 +62,12 @@ export function PlayerRankingRow({ ranking }: PlayerRankingRowProps) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.md,
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
     gap: spacing[3],
@@ -73,59 +77,59 @@ const styles = StyleSheet.create({
     width: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background.elevated,
-    borderRadius: radius.sm,
+    backgroundColor: t.colors.background.elevated,
+    borderRadius: t.radius.sm,
     paddingVertical: 2,
     flexShrink: 0,
   },
-  rankBadgeTop: { backgroundColor: colors.accent.primary + '33' },
+  rankBadgeTop: { backgroundColor: t.colors.accent.primary + '33' },
   rankText: {
-    color: colors.text.muted,
-    fontSize: typography.size.label,
-    fontWeight: typography.weight.bold,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.label,
+    fontWeight: t.typography.weight.bold,
   },
-  rankTextTop: { color: colors.accent.primary },
+  rankTextTop: { color: t.colors.accent.primary },
 
   avatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.accent.primary + '33',
+    backgroundColor: t.colors.accent.primary + '33',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   avatarText: {
-    color: colors.accent.primary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.bold,
   },
 
   name: {
     flex: 1,
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
   },
 
   stats: { alignItems: 'flex-end', gap: 4, flexShrink: 0 },
   matchCount: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
   wrBadge: {
-    backgroundColor: colors.background.elevated,
-    borderRadius: radius.sm,
+    backgroundColor: t.colors.background.elevated,
+    borderRadius: t.radius.sm,
     paddingHorizontal: spacing[2],
     paddingVertical: 2,
     minWidth: 44,
     alignItems: 'center',
   },
-  wrBadgeActive: { backgroundColor: colors.accent.primary + '22' },
+  wrBadgeActive: { backgroundColor: t.colors.accent.primary + '22' },
   wrText: {
-    color: colors.text.muted,
-    fontSize: typography.size.label,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.label,
+    fontWeight: t.typography.weight.semibold,
   },
-  wrTextActive: { color: colors.accent.primary },
-});
+  wrTextActive: { color: t.colors.accent.primary },
+})

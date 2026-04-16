@@ -23,11 +23,16 @@ import { useTranslation } from 'react-i18next';
 import { ColorChips } from '@/components/ui/ColorChips';
 import { useDeckStats } from '@/hooks/useDeckStats';
 import { useResponsive } from '@/hooks/useResponsive';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // ─── Commander card (partner-aware) ──────────────────────────────────────────
 
 function CommanderCard({ name, cardColors, isPartner }: { name: string; cardColors: string[]; isPartner: boolean }) {
+  const styles = useThemedStyles(createStyles);
+
   return (
     <View style={styles.commanderCard}>
       <View style={styles.commanderHeader}>
@@ -46,6 +51,8 @@ function CommanderCard({ name, cardColors, isPartner }: { name: string; cardColo
 // ─── Stat pill ────────────────────────────────────────────────────────────────
 
 function StatPill({ value, label, highlight }: { value: string; label: string; highlight?: boolean }) {
+  const styles = useThemedStyles(createStyles);
+
   return (
     <View style={styles.statPill}>
       <Text style={[styles.statValue, highlight && styles.statValueHighlight]}>{value}</Text>
@@ -57,6 +64,10 @@ function StatPill({ value, label, highlight }: { value: string; label: string; h
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function DeckDetailScreen() {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { t } = useTranslation();
@@ -68,7 +79,7 @@ export default function DeckDetailScreen() {
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
         <View style={styles.center}>
-          <ActivityIndicator color={colors.accent.primary} size="large" />
+          <ActivityIndicator color={theme.colors.accent.primary} size="large" />
         </View>
       </View>
     );
@@ -199,10 +210,10 @@ export default function DeckDetailScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   root: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.colors.background.primary,
   },
   center: {
     flex: 1,
@@ -212,13 +223,13 @@ const styles = StyleSheet.create({
     padding: spacing[6],
   },
   errorText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-lg'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-lg'],
     textAlign: 'center',
   },
   linkText: {
-    color: colors.text.link,
-    fontSize: typography.size['body-lg'],
+    color: t.colors.text.link,
+    fontSize: t.typography.size['body-lg'],
   },
 
   // Nav header
@@ -231,14 +242,14 @@ const styles = StyleSheet.create({
   },
   backBtn: { width: 32, alignItems: 'center' },
   backIcon: {
-    color: colors.text.primary,
+    color: t.colors.text.primary,
     fontSize: 28,
     lineHeight: 32,
   },
   navTitle: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
     flex: 1,
     textAlign: 'center',
   },
@@ -253,68 +264,68 @@ const styles = StyleSheet.create({
   // Sections
   section: { gap: spacing[3] },
   sectionTitle: {
-    color: colors.text.muted,
-    fontSize: typography.size.label,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.label,
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
   sectionCount: {
-    color: colors.text.muted,
-    fontSize: typography.size.label,
-    backgroundColor: colors.background.elevated,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.label,
+    backgroundColor: t.colors.background.elevated,
     paddingHorizontal: spacing[2],
     paddingVertical: 1,
-    borderRadius: radius.round,
+    borderRadius: t.radius.round,
     overflow: 'hidden',
   },
 
   // Commander
   commanderCard: {
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.md,
     padding: spacing[4],
     gap: spacing[2],
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
   },
   commanderHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
   commanderName: {
     flex: 1,
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
   },
   partnerBadge: {
-    backgroundColor: colors.accent.primary + '33',
-    borderRadius: radius.sm,
+    backgroundColor: t.colors.accent.primary + '33',
+    borderRadius: t.radius.sm,
     paddingHorizontal: spacing[2],
     paddingVertical: 2,
   },
   partnerBadgeText: {
-    color: colors.accent.primary,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
   },
   partnerDivider: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
   },
-  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border.subtle },
+  dividerLine: { flex: 1, height: 1, backgroundColor: t.colors.border.subtle },
   dividerPlus: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.bold,
   },
 
   // Description
   description: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-lg'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-lg'],
     lineHeight: 24,
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.md,
     padding: spacing[4],
   },
 
@@ -325,34 +336,34 @@ const styles = StyleSheet.create({
   },
   statPill: {
     flex: 1,
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.md,
     paddingVertical: spacing[4],
     paddingHorizontal: spacing[2],
     alignItems: 'center',
     gap: spacing[1],
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
   },
   statValue: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.bold,
   },
-  statValueHighlight: { color: colors.accent.primary },
+  statValueHighlight: { color: t.colors.accent.primary },
   statLabel: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
   },
   emptyStats: {
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.md,
     paddingVertical: spacing[6],
     alignItems: 'center',
   },
   emptyStatsText: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
     fontStyle: 'italic',
   },
 
@@ -361,8 +372,8 @@ const styles = StyleSheet.create({
   playerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.md,
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[3],
     gap: spacing[3],
@@ -370,42 +381,42 @@ const styles = StyleSheet.create({
   playerAvatar: {
     width: 36,
     height: 36,
-    borderRadius: radius.round,
-    backgroundColor: colors.background.elevated,
+    borderRadius: t.radius.round,
+    backgroundColor: t.colors.background.elevated,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   playerAvatarText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.bold,
   },
   playerName: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
     flex: 1,
   },
   playerMatches: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
     flexShrink: 0,
   },
   wrBadge: {
-    backgroundColor: colors.background.elevated,
-    borderRadius: radius.sm,
+    backgroundColor: t.colors.background.elevated,
+    borderRadius: t.radius.sm,
     paddingHorizontal: spacing[2],
     paddingVertical: 2,
     minWidth: 44,
     alignItems: 'center',
     flexShrink: 0,
   },
-  wrBadgeActive: { backgroundColor: colors.accent.primary + '22' },
+  wrBadgeActive: { backgroundColor: t.colors.accent.primary + '22' },
   wrText: {
-    color: colors.text.muted,
-    fontSize: typography.size.label,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.label,
+    fontWeight: t.typography.weight.semibold,
   },
-  wrTextActive: { color: colors.accent.primary },
-});
+  wrTextActive: { color: t.colors.accent.primary },
+})

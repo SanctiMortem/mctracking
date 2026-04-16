@@ -13,7 +13,10 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { MatchupResult } from '@/services/stats';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface MatchupCardProps {
   entityAName: string | null;
@@ -23,6 +26,10 @@ interface MatchupCardProps {
 }
 
 export function MatchupCard({ entityAName, entityBName, data, loading }: MatchupCardProps) {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   const bothSelected = entityAName !== null && entityBName !== null;
 
@@ -37,7 +44,7 @@ export function MatchupCard({ entityAName, entityBName, data, loading }: Matchup
   if (loading) {
     return (
       <View style={[styles.card, styles.center]}>
-        <ActivityIndicator color={colors.accent.primary} />
+        <ActivityIndicator color={theme.colors.accent.primary} />
       </View>
     );
   }
@@ -114,10 +121,10 @@ export function MatchupCard({ entityAName, entityBName, data, loading }: Matchup
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   card: {
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.lg,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.lg,
     padding: spacing[4],
     gap: spacing[3],
   },
@@ -128,27 +135,27 @@ const styles = StyleSheet.create({
   },
 
   prompt: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
     paddingHorizontal: spacing[4],
   },
 
   emptyTitle: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.semibold,
     textAlign: 'center',
   },
   emptySubtitle: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
   },
 
   totalLabel: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
   },
 
@@ -164,20 +171,20 @@ const styles = StyleSheet.create({
   },
   entitySideRight: { alignItems: 'flex-end' },
   entityName: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   entityNameRight: { textAlign: 'right' },
   winsCount: {
-    color: colors.accent.primary,
-    fontSize: typography.size['heading-xl'],
-    fontWeight: typography.weight.black,
-    lineHeight: typography.size['heading-xl'] * 1.1,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['heading-xl'],
+    fontWeight: t.typography.weight.black,
+    lineHeight: t.typography.size['heading-xl'] * 1.1,
   },
   winsLabel: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
   },
 
   divider: {
@@ -186,20 +193,20 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   vsText: {
-    color: colors.text.muted,
-    fontSize: typography.size.label,
-    fontWeight: typography.weight.bold,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.label,
+    fontWeight: t.typography.weight.bold,
     letterSpacing: 1,
   },
   drawsBadge: {
-    backgroundColor: colors.background.elevated,
-    borderRadius: radius.sm,
+    backgroundColor: t.colors.background.elevated,
+    borderRadius: t.radius.sm,
     paddingHorizontal: spacing[2],
     paddingVertical: 2,
   },
   drawsText: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
   },
 
   barContainer: {
@@ -212,6 +219,6 @@ const styles = StyleSheet.create({
   barSegment: {
     borderRadius: 2,
   },
-  barSegmentA: { backgroundColor: colors.accent.primary },
-  barSegmentB: { backgroundColor: colors.accent.primary },
-});
+  barSegmentA: { backgroundColor: t.colors.accent.primary },
+  barSegmentB: { backgroundColor: t.colors.accent.primary },
+})

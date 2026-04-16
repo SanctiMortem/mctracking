@@ -338,7 +338,9 @@
     "signOutConfirm": "¿Estás seguro de que quieres cerrar sesión?",
     "premiumComingSoon": "Compra única próximamente.",
     "retry": "Reintentar",
-    "premiumTitle": "Premium"
+    "premiumTitle": "Premium",
+    "appearance": "Apariencia",
+    "theme": "Tema"
   },
   "history": {
     "noMatchesFound": "Sin partidas encontradas",

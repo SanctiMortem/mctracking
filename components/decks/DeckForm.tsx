@@ -13,7 +13,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Switch,
   Text,
   TextInput,
@@ -23,7 +22,10 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import type { DeckWithCommanders } from '@/services/decks';
-import { colors, mtgColors, radius, spacing, typography } from '@/styles/tokens';
+import { mtgColors, spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // ─── MTG Color Identity ──────────────────────────────────────────────────────
 
@@ -42,6 +44,9 @@ function ColorIdentityPicker({
   selected: Set<string>;
   onToggle: (code: string) => void;
 }) {
+  const { theme } = useTheme();
+  const colorStyles = useThemedStyles(createColorStyles);
+
   return (
     <View style={colorStyles.row}>
       {MTG_COLORS.map(({ code, label, color }) => {
@@ -52,7 +57,7 @@ function ColorIdentityPicker({
             onPress={() => onToggle(code)}
             style={[
               colorStyles.chip,
-              { borderColor: active ? color : colors.border.default },
+              { borderColor: active ? color : theme.colors.border.default },
               active && { backgroundColor: color + '33' },
             ]}
             accessibilityRole="checkbox"
@@ -66,7 +71,7 @@ function ColorIdentityPicker({
                 code === 'W' && { borderColor: '#AAA' },
               ]}
             />
-            <Text style={[colorStyles.chipLabel, active && { color: colors.text.primary }]}>
+            <Text style={[colorStyles.chipLabel, active && { color: theme.colors.text.primary }]}>
               {code}
             </Text>
           </Pressable>
@@ -76,7 +81,7 @@ function ColorIdentityPicker({
   );
 }
 
-const colorStyles = StyleSheet.create({
+const createColorStyles = (t: AppTheme) => ({
   row: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   chip: {
     flexDirection: 'row',
@@ -84,9 +89,9 @@ const colorStyles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: radius.round,
+    borderRadius: t.radius.round,
     borderWidth: 1.5,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
   },
   pip: {
     width: 22,
@@ -96,11 +101,11 @@ const colorStyles = StyleSheet.create({
     borderColor: 'transparent',
   },
   chipLabel: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
   },
-});
+})
 
 // ─── Commander Input Block ───────────────────────────────────────────────────
 
@@ -119,6 +124,10 @@ function CommanderInput({
   onToggleColor: (code: string) => void;
   placeholder: string;
 }) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const cmdStyles = useThemedStyles(createCmdStyles);
+
   return (
     <View style={cmdStyles.block}>
       <Text style={styles.label}>{label}</Text>
@@ -127,7 +136,7 @@ function CommanderInput({
         value={name}
         onChangeText={onChangeName}
         placeholder={placeholder}
-        placeholderTextColor={colors.text.muted}
+        placeholderTextColor={theme.colors.text.muted}
         returnKeyType="next"
       />
       <Text style={cmdStyles.colorLabel}>Color Identity</Text>
@@ -136,12 +145,12 @@ function CommanderInput({
   );
 }
 
-const cmdStyles = StyleSheet.create({
+const createCmdStyles = (t: AppTheme) => ({
   block: { gap: spacing[2] },
   colorLabel: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.medium,
     marginTop: spacing[1],
   },
 });
@@ -162,6 +171,10 @@ interface DeckFormProps {
 }
 
 export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: DeckFormProps) {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
 
   // Deck fields
@@ -303,7 +316,7 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
             value={deckName}
             onChangeText={setDeckName}
             placeholder={t('deck.namePlaceholder')}
-            placeholderTextColor={colors.text.muted}
+            placeholderTextColor={theme.colors.text.muted}
             returnKeyType="next"
           />
 
@@ -323,8 +336,8 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
             <Switch
               value={hasPartner}
               onValueChange={setHasPartner}
-              trackColor={{ false: colors.border.strong, true: colors.accent.primary + '88' }}
-              thumbColor={hasPartner ? colors.accent.primary : colors.text.muted}
+              trackColor={{ false: theme.colors.border.strong, true: theme.colors.accent.primary + '88' }}
+              thumbColor={hasPartner ? theme.colors.accent.primary : theme.colors.text.muted}
             />
           </View>
 
@@ -347,7 +360,7 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
             value={description}
             onChangeText={setDescription}
             placeholder={t('deck.descriptionPlaceholder')}
-            placeholderTextColor={colors.text.muted}
+            placeholderTextColor={theme.colors.text.muted}
             multiline
             numberOfLines={3}
             textAlignVertical="top"
@@ -365,7 +378,7 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
             disabled={saving}
           >
             {saving ? (
-              <ActivityIndicator color={colors.text.inverse} size="small" />
+              <ActivityIndicator color={theme.colors.text.inverse} size="small" />
             ) : (
               <Text style={styles.btnSaveText}>
                 {deck ? t('common.save') : t('common.create')}
@@ -380,12 +393,12 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: colors.background.overlay },
+const createStyles = (t: AppTheme) => ({
+  backdrop: { flex: 1, backgroundColor: t.colors.background.overlay },
   sheet: {
-    backgroundColor: colors.background.elevated,
-    borderTopLeftRadius: radius.xxl,
-    borderTopRightRadius: radius.xxl,
+    backgroundColor: t.colors.background.elevated,
+    borderTopLeftRadius: t.radius.xxl,
+    borderTopRightRadius: t.radius.xxl,
     padding: spacing[6],
     paddingBottom: spacing[8],
     maxHeight: '85%',
@@ -394,32 +407,32 @@ const styles = StyleSheet.create({
   handle: {
     width: 40,
     height: 4,
-    borderRadius: radius.round,
-    backgroundColor: colors.border.strong,
+    borderRadius: t.radius.round,
+    backgroundColor: t.colors.border.strong,
     alignSelf: 'center',
     marginBottom: spacing[2],
   },
   title: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.semibold,
   },
   label: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.tertiary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
     marginTop: spacing[2],
     marginBottom: spacing[2],
   },
   input: {
-    backgroundColor: colors.background.surface,
-    color: colors.text.primary,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    color: t.colors.text.primary,
+    borderRadius: t.radius.md,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
-    fontSize: typography.size['body-lg'],
+    fontSize: t.typography.size['body-lg'],
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
     marginBottom: spacing[2],
   },
   inputMultiline: { minHeight: 80 },
@@ -433,9 +446,9 @@ const styles = StyleSheet.create({
     marginTop: spacing[2],
   },
   partnerLabel: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.tertiary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
 
   // Action buttons
@@ -443,27 +456,27 @@ const styles = StyleSheet.create({
   btnCancel: {
     flex: 1,
     paddingVertical: spacing[3],
-    borderRadius: radius.md,
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
     alignItems: 'center',
   },
   btnCancelText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
   },
   btnSave: {
     flex: 2,
     paddingVertical: spacing[3],
-    borderRadius: radius.md,
-    backgroundColor: colors.accent.primary,
+    borderRadius: t.radius.md,
+    backgroundColor: t.colors.accent.primary,
     alignItems: 'center',
   },
   btnSaveText: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
   },
   btnDisabled: { opacity: 0.6 },
-});
+})

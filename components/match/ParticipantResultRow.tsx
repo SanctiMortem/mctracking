@@ -4,11 +4,14 @@
  *
  * MATCH-007 (EPIC-02)
  */
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { ColorChips } from '@/components/ui/ColorChips';
 import type { ParticipationDetail } from '@/services/matches';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface ParticipantResultRowProps {
   participation: ParticipationDetail;
@@ -16,6 +19,9 @@ interface ParticipantResultRowProps {
 }
 
 export function ParticipantResultRow({ participation, isWinner }: ParticipantResultRowProps) {
+  const styles = useThemedStyles(createStyles);
+  const { theme } = useTheme();
+
   const { player, deck, commander } = participation;
 
   const initials = player.name
@@ -25,7 +31,7 @@ export function ParticipantResultRow({ participation, isWinner }: ParticipantRes
     .slice(0, 2)
     .toUpperCase();
 
-  const badge = resolveBadge(participation.result, isWinner);
+  const badge = resolveBadge(participation.result, isWinner, theme);
 
   return (
     <View style={[styles.row, isWinner && styles.rowWinner]}>
@@ -60,78 +66,78 @@ export function ParticipantResultRow({ participation, isWinner }: ParticipantRes
 
 type BadgeStyle = { label: string; bg: string; fg: string };
 
-function resolveBadge(result: ParticipationDetail['result'], isWinner: boolean): BadgeStyle {
-  if (isWinner || result === 'win') return { label: 'WIN',  bg: colors.accent.primary + '33',                        fg: colors.accent.primary };
-  if (result === 'draw')           return { label: 'DRAW', bg: colors.accent.primary + '33',         fg: colors.accent.primary };
-  if (result === 'lose')           return { label: 'LOSS', bg: colors.background.surface,            fg: colors.text.muted };
+function resolveBadge(result: ParticipationDetail['result'], isWinner: boolean, theme: AppTheme): BadgeStyle {
+  if (isWinner || result === 'win') return { label: 'WIN',  bg: theme.colors.accent.primary + '33',                        fg: theme.colors.accent.primary };
+  if (result === 'draw')           return { label: 'DRAW', bg: theme.colors.accent.primary + '33',         fg: theme.colors.accent.primary };
+  if (result === 'lose')           return { label: 'LOSS', bg: theme.colors.background.surface,            fg: theme.colors.text.muted };
   // null = abandoned
-                                    return { label: '–',    bg: colors.background.surface,            fg: colors.text.muted };
+                                    return { label: '–',    bg: theme.colors.background.surface,            fg: theme.colors.text.muted };
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[3],
-    borderRadius: radius.md,
-    backgroundColor: colors.background.surface,
+    borderRadius: t.radius.md,
+    backgroundColor: t.colors.background.surface,
     gap: spacing[3],
     borderWidth: 1,
     borderColor: 'transparent',
   },
   rowWinner: {
-    backgroundColor: colors.accent.primary + '0F',
-    borderColor: colors.accent.primary + '44',
+    backgroundColor: t.colors.accent.primary + '0F',
+    borderColor: t.colors.accent.primary + '44',
   },
 
   avatar: {
     width: 40,
     height: 40,
-    borderRadius: radius.round,
-    backgroundColor: colors.background.elevated,
+    borderRadius: t.radius.round,
+    backgroundColor: t.colors.background.elevated,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  avatarWinner: { backgroundColor: colors.accent.primary + '33' },
+  avatarWinner: { backgroundColor: t.colors.accent.primary + '33' },
   avatarText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.text.tertiary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.bold,
   },
-  avatarTextWinner: { color: colors.accent.primary },
+  avatarTextWinner: { color: t.colors.accent.primary },
 
   info: { flex: 1, gap: 2 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[1] },
   playerName: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
   },
-  playerNameWinner: { fontWeight: typography.weight.semibold },
+  playerNameWinner: { fontWeight: t.typography.weight.semibold },
   crownIcon: { fontSize: 14 },
 
   deckRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
   deckName: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.tertiary,
+    fontSize: t.typography.size['body-sm'],
     flexShrink: 1,
   },
 
   badge: {
     paddingHorizontal: spacing[2],
     paddingVertical: 4,
-    borderRadius: radius.sm,
+    borderRadius: t.radius.sm,
     minWidth: 44,
     alignItems: 'center',
     flexShrink: 0,
   },
   badgeText: {
-    fontSize: typography.size.label,
-    fontWeight: typography.weight.bold,
+    fontSize: t.typography.size.label,
+    fontWeight: t.typography.weight.bold,
     letterSpacing: 0.5,
   },
-});
+})

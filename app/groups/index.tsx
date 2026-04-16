@@ -27,7 +27,10 @@ import { useRouter } from 'expo-router';
 
 import type { GroupWithRole, InviteData } from '@/hooks/useGroups';
 import { useGroups } from '@/hooks/useGroups';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // ─────────────────────────────────────────────
 // Types
@@ -43,6 +46,10 @@ type GroupSection = {
 // ─────────────────────────────────────────────
 
 export default function GroupsScreen() {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   const router = useRouter();
   const { ownedGroups, memberGroups, loading, error, refresh, createGroup, getInvite, joinGroup } =
@@ -182,7 +189,7 @@ export default function GroupsScreen() {
       {/* Body */}
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color={colors.accent.primary} size="large" />
+          <ActivityIndicator color={theme.colors.accent.primary} size="large" />
         </View>
       ) : error ? (
         <View style={styles.center}>
@@ -241,7 +248,7 @@ export default function GroupsScreen() {
             value={groupName}
             onChangeText={setGroupName}
             placeholder="e.g. MTG Martes"
-            placeholderTextColor={colors.text.muted}
+            placeholderTextColor={theme.colors.text.muted}
             autoFocus
             maxLength={100}
             returnKeyType="done"
@@ -257,7 +264,7 @@ export default function GroupsScreen() {
               disabled={creating}
             >
               {creating
-                ? <ActivityIndicator color={colors.text.primary} size="small" />
+                ? <ActivityIndicator color={theme.colors.text.primary} size="small" />
                 : <Text style={styles.btnPrimaryText}>{t('common.create')}</Text>
               }
             </Pressable>
@@ -277,7 +284,7 @@ export default function GroupsScreen() {
             value={joinCode}
             onChangeText={(v) => { setJoinCode(v); setJoinError(null); }}
             placeholder="e.g. aB3xYz12"
-            placeholderTextColor={colors.text.muted}
+            placeholderTextColor={theme.colors.text.muted}
             autoCapitalize="none"
             autoCorrect={false}
             autoFocus
@@ -297,7 +304,7 @@ export default function GroupsScreen() {
               disabled={joining}
             >
               {joining
-                ? <ActivityIndicator color={colors.text.primary} size="small" />
+                ? <ActivityIndicator color={theme.colors.text.primary} size="small" />
                 : <Text style={styles.btnPrimaryText}>{t('groups.join')}</Text>
               }
             </Pressable>
@@ -313,7 +320,7 @@ export default function GroupsScreen() {
           <Text style={styles.sheetTitle}>{t('groups.inviteTo', { name: inviteGroupName })}</Text>
           {inviteLoading ? (
             <View style={styles.inviteLoading}>
-              <ActivityIndicator color={colors.accent.primary} size="large" />
+              <ActivityIndicator color={theme.colors.accent.primary} size="large" />
             </View>
           ) : inviteData ? (
             <>
@@ -349,6 +356,8 @@ interface GroupRowProps {
 }
 
 function GroupRow({ item, onInvite, onPress }: GroupRowProps) {
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   const isOwner = item.role === 'owner';
   return (
@@ -379,8 +388,8 @@ function GroupRow({ item, onInvite, onPress }: GroupRowProps) {
 // Styles
 // ─────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background.primary },
+const createStyles = (t: AppTheme) => ({
+  safe: { flex: 1, backgroundColor: t.colors.background.primary },
 
   // Header
   header: {
@@ -390,53 +399,53 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[4],
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
+    borderBottomColor: t.colors.border.subtle,
   },
   title: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-lg'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-lg'],
+    fontWeight: t.typography.weight.bold,
   },
   headerActions: { flexDirection: 'row', gap: spacing[2] },
 
   // Buttons
   btnPrimary: {
-    backgroundColor: colors.accent.primary,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.accent.primary,
+    borderRadius: t.radius.md,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
     alignItems: 'center',
   },
   btnPrimaryText: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
   },
   btnSecondary: {
-    borderRadius: radius.md,
+    borderRadius: t.radius.md,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
     alignItems: 'center',
   },
   btnSecondaryText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   btnCancel: {
     flex: 1,
     paddingVertical: spacing[3],
-    borderRadius: radius.md,
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
     alignItems: 'center',
   },
   btnCancelText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
   },
   btnFlex: { flex: 2 },
   btnFullWidth: { width: '100%' },
@@ -444,44 +453,44 @@ const styles = StyleSheet.create({
 
   // States
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing[4], paddingHorizontal: spacing[6] },
-  errorText: { color: colors.status.error, fontSize: typography.size['body-lg'], textAlign: 'center' },
+  errorText: { color: t.colors.status.error, fontSize: t.typography.size['body-lg'], textAlign: 'center' },
   retryBtn: {
     paddingHorizontal: spacing[6],
     paddingVertical: spacing[3],
-    borderRadius: radius.md,
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
   },
-  retryText: { color: colors.text.secondary, fontSize: typography.size['body-lg'] },
+  retryText: { color: t.colors.text.secondary, fontSize: t.typography.size['body-lg'] },
 
   // Empty state
   emptyTitle: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.semibold,
     textAlign: 'center',
   },
   emptyBody: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-lg'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-lg'],
     textAlign: 'center',
-    lineHeight: typography.size['body-lg'] * typography.lineHeight.normal,
+    lineHeight: t.typography.size['body-lg'] * t.typography.lineHeight.normal,
   },
   emptyActions: { gap: spacing[3], width: '100%' },
 
   // List
   listContent: { paddingBottom: spacing[8] },
   sectionHeader: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     paddingHorizontal: spacing[4],
     paddingTop: spacing[6],
     paddingBottom: spacing[2],
   },
-  separator: { height: 1, backgroundColor: colors.border.subtle, marginHorizontal: spacing[4] },
+  separator: { height: 1, backgroundColor: t.colors.border.subtle, marginHorizontal: spacing[4] },
   sectionSeparator: { height: spacing[2] },
 
   // Group row
@@ -490,55 +499,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[4],
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.colors.background.primary,
   },
   rowInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing[3], minWidth: 0 },
   groupName: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
     flexShrink: 1,
   },
   roleBadge: {
     paddingHorizontal: spacing[2],
     paddingVertical: 3,
-    borderRadius: radius.sm,
+    borderRadius: t.radius.sm,
   },
-  ownerBadge: { backgroundColor: colors.accent.primary + '33' }, // 20% opacity
-  memberBadge: { backgroundColor: colors.background.elevated },
+  ownerBadge: { backgroundColor: t.colors.accent.primary + '33' }, // 20% opacity
+  memberBadge: { backgroundColor: t.colors.background.elevated },
   roleBadgeText: {
-    color: colors.text.secondary,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
   rowActions: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
   chevron: {
-    color: colors.text.muted,
-    fontSize: typography.size['heading-lg'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['heading-lg'],
     fontWeight: '300' as any,
     marginLeft: spacing[1],
   },
   inviteBtn: {
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
-    borderRadius: radius.md,
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: colors.accent.primary,
+    borderColor: t.colors.accent.primary,
   },
   inviteBtnText: {
-    color: colors.accent.primary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
 
   // Sheet (bottom modal)
-  backdrop: { flex: 1, backgroundColor: colors.background.overlay },
+  backdrop: { flex: 1, backgroundColor: t.colors.background.overlay },
   sheet: {
-    backgroundColor: colors.background.elevated,
-    borderTopLeftRadius: radius.xxl,
-    borderTopRightRadius: radius.xxl,
+    backgroundColor: t.colors.background.elevated,
+    borderTopLeftRadius: t.radius.xxl,
+    borderTopRightRadius: t.radius.xxl,
     padding: spacing[6],
     paddingBottom: spacing[8],
     gap: spacing[4],
@@ -546,60 +555,60 @@ const styles = StyleSheet.create({
   handle: {
     width: 40,
     height: 4,
-    borderRadius: radius.round,
-    backgroundColor: colors.border.strong,
+    borderRadius: t.radius.round,
+    backgroundColor: t.colors.border.strong,
     alignSelf: 'center',
     marginBottom: spacing[2],
   },
   sheetTitle: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.semibold,
   },
   sheetActions: { flexDirection: 'row', gap: spacing[3], marginTop: spacing[2] },
   inputLabel: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
     marginBottom: -spacing[2],
   },
   input: {
-    backgroundColor: colors.background.surface,
-    color: colors.text.primary,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    color: t.colors.text.primary,
+    borderRadius: t.radius.md,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
-    fontSize: typography.size['body-lg'],
+    fontSize: t.typography.size['body-lg'],
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
   },
-  inputError: { borderColor: colors.status.error },
+  inputError: { borderColor: t.colors.status.error },
   joinErrorText: {
-    color: colors.status.error,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.status.error,
+    fontSize: t.typography.size['body-sm'],
     marginTop: -spacing[2],
   },
 
   // Invite modal content
   inviteLoading: { paddingVertical: spacing[8], alignItems: 'center' },
   inviteCodeBox: {
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.md,
     padding: spacing[4],
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
     alignItems: 'center',
   },
   inviteCode: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.bold,
     letterSpacing: 2,
   },
   inviteExpiry: {
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
     marginTop: -spacing[2],
   },
-});
+})

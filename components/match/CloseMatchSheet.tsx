@@ -23,9 +23,12 @@ import { useTranslation } from 'react-i18next';
 
 import type { CloseMode } from '@/hooks/useCloseMatch';
 import type { ParticipationDetail } from '@/services/matches';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
 
 import { WinConditionPicker } from './WinConditionPicker';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface CloseMatchSheetProps {
   participations: ParticipationDetail[];
@@ -61,6 +64,10 @@ export function CloseMatchSheet({
   onCancel,
   hideAbandon = false,
 }: CloseMatchSheetProps) {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
 
   return (
@@ -86,7 +93,7 @@ export function CloseMatchSheet({
         keyboardShouldPersistTaps="handled"
       >
         {loading ? (
-          <ActivityIndicator color={colors.accent.primary} style={styles.loader} />
+          <ActivityIndicator color={theme.colors.accent.primary} style={styles.loader} />
         ) : (
           <>
             {/* ── Win mode ── */}
@@ -207,11 +214,11 @@ export function CloseMatchSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   sheet: {
-    backgroundColor: colors.background.elevated,
-    borderTopLeftRadius: radius.xxl,
-    borderTopRightRadius: radius.xxl,
+    backgroundColor: t.colors.background.elevated,
+    borderTopLeftRadius: t.radius.xxl,
+    borderTopRightRadius: t.radius.xxl,
     maxHeight: '88%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
@@ -229,8 +236,8 @@ const styles = StyleSheet.create({
   handle: {
     width: 36,
     height: 4,
-    borderRadius: radius.round,
-    backgroundColor: colors.border?.default ?? '#2A2A45',
+    borderRadius: t.radius.round,
+    backgroundColor: t.colors.border?.default ?? '#2A2A45',
   },
 
   // Header
@@ -241,20 +248,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
+    borderBottomColor: t.colors.border.subtle,
   },
   title: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.semibold,
   },
   cancelBtn: {
     padding: spacing[2],
   },
   cancelBtnText: {
-    color: colors.text.link,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.link,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
 
   // Body
@@ -265,9 +272,9 @@ const styles = StyleSheet.create({
 
   // Section label
   sectionLabel: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.tertiary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     marginBottom: spacing[2],
@@ -279,43 +286,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[3],
-    borderRadius: radius.md,
-    backgroundColor: colors.background.surface,
+    borderRadius: t.radius.md,
+    backgroundColor: t.colors.background.surface,
     marginBottom: spacing[2],
     gap: spacing[3],
     borderWidth: 1,
     borderColor: 'transparent',
   },
   playerRowSelected: {
-    backgroundColor: colors.accent.primary + '14',
-    borderColor: colors.accent.primary,
+    backgroundColor: t.colors.accent.primary + '14',
+    borderColor: t.colors.accent.primary,
   },
   avatar: {
     width: 36,
     height: 36,
-    borderRadius: radius.round,
-    backgroundColor: colors.background.elevated,
+    borderRadius: t.radius.round,
+    backgroundColor: t.colors.background.elevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarSelected: { backgroundColor: colors.accent.primary + '33' },
+  avatarSelected: { backgroundColor: t.colors.accent.primary + '33' },
   avatarText: {
-    color: colors.text.secondary,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.bold,
+    color: t.colors.text.tertiary,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.bold,
   },
-  avatarTextSelected: { color: colors.accent.primary },
+  avatarTextSelected: { color: t.colors.accent.primary },
   playerName: {
     flex: 1,
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
   },
-  playerNameSelected: { fontWeight: typography.weight.semibold },
+  playerNameSelected: { fontWeight: t.typography.weight.semibold },
   check: {
-    color: colors.accent.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.bold,
   },
 
   winConditionSection: { marginTop: spacing[4] },
@@ -328,15 +335,15 @@ const styles = StyleSheet.create({
   },
   modeIcon: { fontSize: 40 },
   modeTitle: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.semibold,
   },
   modeBody: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.tertiary,
+    fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
-    lineHeight: typography.size['body-sm'] * 1.6,
+    lineHeight: t.typography.size['body-sm'] * 1.6,
     paddingHorizontal: spacing[4],
   },
 
@@ -349,30 +356,30 @@ const styles = StyleSheet.create({
   secondaryBtn: {
     flex: 1,
     height: 44,
-    borderRadius: radius.md,
-    backgroundColor: colors.background.surface,
+    borderRadius: t.radius.md,
+    backgroundColor: t.colors.background.surface,
     borderWidth: 1,
-    borderColor: colors.border?.default ?? '#2A2A45',
+    borderColor: t.colors.border?.default ?? '#2A2A45',
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryBtnActive: {
-    borderColor: colors.accent.primary,
-    backgroundColor: colors.accent.primary + '1A',
+    borderColor: t.colors.accent.primary,
+    backgroundColor: t.colors.accent.primary + '1A',
   },
   secondaryBtnText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   secondaryBtnTextActive: {
-    color: colors.accent.primary,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.accent.primary,
+    fontWeight: t.typography.weight.semibold,
   },
 
   errorText: {
-    color: colors.status.error,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.status.error,
+    fontSize: t.typography.size['body-sm'],
     marginTop: spacing[3],
   },
 
@@ -382,21 +389,21 @@ const styles = StyleSheet.create({
     paddingTop: spacing[3],
     paddingBottom: spacing[8],
     borderTopWidth: 1,
-    borderTopColor: colors.border.subtle,
+    borderTopColor: t.colors.border.subtle,
   },
   confirmBtn: {
-    backgroundColor: colors.accent.primary,
-    borderRadius: radius.xl,
+    backgroundColor: t.colors.accent.primary,
+    borderRadius: t.radius.xl,
     height: 52,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  confirmBtnDisabled: { backgroundColor: colors.background.surface },
+  confirmBtnDisabled: { backgroundColor: t.colors.background.surface },
   confirmBtnText: {
     color: '#fff',
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.semibold,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.5,
   },
-  confirmBtnTextDisabled: { color: colors.text.muted },
-});
+  confirmBtnTextDisabled: { color: t.colors.text.muted },
+})

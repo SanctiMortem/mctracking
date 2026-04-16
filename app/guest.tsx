@@ -32,7 +32,10 @@ import { PoisonCounter } from '@/components/tracker/PoisonCounter';
 import { TrackerLayout } from '@/components/match/TrackerLayout';
 import { useGuest } from '@/contexts/GuestContext';
 import { useGuestTracker } from '@/hooks/useGuestTracker';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -47,6 +50,10 @@ interface SetupProps {
 }
 
 function GuestSetup({ onStart, onCancel }: SetupProps) {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   const [count, setCount] = useState<PlayerCount>(4);
   const [names, setNames] = useState(['', '', '', '']);
@@ -101,7 +108,7 @@ function GuestSetup({ onStart, onCancel }: SetupProps) {
             key={i}
             style={styles.nameInput}
             placeholder={t('guest.playerN', { n: i + 1 })}
-            placeholderTextColor={colors.text.muted}
+            placeholderTextColor={theme.colors.text.muted}
             value={names[i]}
             onChangeText={(v) => handleNameChange(i, v)}
             maxLength={20}
@@ -143,6 +150,8 @@ function GuestTrackerView({
   onExit,
   onCreateAccount,
 }: TrackerProps) {
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   const sections = participations.map((p) => {
     // Enemy commanders in guest mode = other participants (by id + name)
@@ -299,10 +308,10 @@ export default function GuestScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   root: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.colors.background.primary,
   },
 
   // ── Setup ──────────────────────────────────────────────────────────────────
@@ -313,13 +322,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
+    borderBottomColor: t.colors.border.subtle,
   },
   setupTitle: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.semibold,
-    letterSpacing: typography.letterSpacing.wide,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
+    letterSpacing: t.typography.letterSpacing.wide,
     textTransform: 'uppercase',
   },
   cancelBtn: {
@@ -329,8 +338,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cancelText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['heading-md'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['heading-md'],
   },
   setupContent: {
     paddingHorizontal: spacing[6],
@@ -338,10 +347,10 @@ const styles = StyleSheet.create({
     gap: spacing[3],
   },
   sectionLabel: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
-    letterSpacing: typography.letterSpacing.wider,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
+    letterSpacing: t.typography.letterSpacing.wider,
     textTransform: 'uppercase',
     marginBottom: spacing[1],
     marginTop: spacing[2],
@@ -353,48 +362,48 @@ const styles = StyleSheet.create({
   countBtn: {
     width: 64,
     height: 64,
-    borderRadius: radius.md,
-    backgroundColor: colors.background.surface,
+    borderRadius: t.radius.md,
+    backgroundColor: t.colors.background.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
   },
   countBtnActive: {
-    backgroundColor: colors.accent.primary + '22',
-    borderColor: colors.accent.primary,
+    backgroundColor: t.colors.accent.primary + '22',
+    borderColor: t.colors.accent.primary,
   },
   countBtnText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['heading-xl'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['heading-xl'],
+    fontWeight: t.typography.weight.bold,
   },
   countBtnTextActive: {
-    color: colors.accent.primary,
+    color: t.colors.accent.primary,
   },
   nameInput: {
     height: 48,
-    borderRadius: radius.md,
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: colors.border.default,
-    backgroundColor: colors.background.elevated,
+    borderColor: t.colors.border.default,
+    backgroundColor: t.colors.background.elevated,
     paddingHorizontal: spacing[4],
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
   },
   startBtn: {
     height: 52,
-    borderRadius: radius.md,
-    backgroundColor: colors.accent.primary,
+    borderRadius: t.radius.md,
+    backgroundColor: t.colors.accent.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing[4],
   },
   startBtnText: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.bold,
-    letterSpacing: typography.letterSpacing.wide,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.bold,
+    letterSpacing: t.typography.letterSpacing.wide,
   },
 
   // ── Tracker ────────────────────────────────────────────────────────────────
@@ -405,13 +414,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
+    borderBottomColor: t.colors.border.subtle,
   },
   trackerTitle: {
-    color: colors.text.secondary,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
-    letterSpacing: typography.letterSpacing.wider,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
+    letterSpacing: t.typography.letterSpacing.wider,
     textTransform: 'uppercase',
   },
   exitBtn: {
@@ -421,8 +430,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   exitText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['heading-md'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['heading-md'],
   },
   undoBtn: {
     width: 36,
@@ -431,8 +440,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   undoText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['heading-md'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['heading-md'],
   },
   trackerBody: {
     flex: 1,
@@ -453,21 +462,21 @@ const styles = StyleSheet.create({
     gap: spacing[2],
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
-    backgroundColor: colors.background.surface,
+    backgroundColor: t.colors.background.surface,
     borderTopWidth: 1,
-    borderTopColor: colors.border.subtle,
+    borderTopColor: t.colors.border.subtle,
   },
   guestBannerIcon: {
-    fontSize: typography.size['body-sm'],
+    fontSize: t.typography.size['body-sm'],
   },
   guestBannerText: {
     flex: 1,
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   guestBannerChevron: {
-    color: colors.text.muted,
-    fontSize: typography.size['heading-md'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['heading-md'],
   },
-});
+})

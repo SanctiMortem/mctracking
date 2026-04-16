@@ -10,7 +10,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTranslation } from 'react-i18next';
 
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -22,6 +24,8 @@ interface ActiveMatchBannerProps {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function ActiveMatchBanner({ matchId: _matchId, onPress }: ActiveMatchBannerProps) {
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
 
   return (
@@ -44,14 +48,14 @@ export function ActiveMatchBanner({ matchId: _matchId, onPress }: ActiveMatchBan
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.accent.primary + '18',
-    borderRadius: radius.lg,
+    backgroundColor: t.colors.accent.primary + '18',
+    borderRadius: t.radius.lg,
     borderWidth: 1,
-    borderColor: colors.accent.primary + '44',
+    borderColor: t.colors.accent.primary + '44',
     padding: spacing[4],
     gap: spacing[3],
   },
@@ -62,8 +66,8 @@ const styles = StyleSheet.create({
   pulseIndicator: {
     width: 10,
     height: 10,
-    borderRadius: radius.round,
-    backgroundColor: colors.accent.primary,
+    borderRadius: t.radius.round,
+    backgroundColor: t.colors.accent.primary,
     flexShrink: 0,
   },
 
@@ -72,19 +76,19 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   title: {
-    color: colors.accent.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
   },
   subtitle: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
   },
 
   chevron: {
-    color: colors.accent.primary,
+    color: t.colors.accent.primary,
     fontSize: 22,
-    fontWeight: typography.weight.bold,
+    fontWeight: t.typography.weight.bold,
     flexShrink: 0,
   },
-});
+})

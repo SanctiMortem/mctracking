@@ -16,7 +16,6 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -33,10 +32,13 @@ import { useGroupContext } from '@/contexts/GroupContext';
 import type { DeckWithCommanders } from '@/services/decks';
 import type { PodDeck } from '@/services/pods';
 import type { Player } from '@/db/index';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
 
 import { LayoutPreview } from './LayoutPreview';
 import { PlayerSelectorChip } from './PlayerSelectorChip';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
+import { useTheme } from '@/contexts/ThemeContext';
 
 /** Unified deck type for the picker — works for both personal and pod decks */
 type PickerDeck = DeckWithCommanders & { ownerName?: string };
@@ -46,6 +48,10 @@ interface MatchSetupFormProps {
 }
 
 export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
+  const { theme } = useTheme();
+
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   const { activeContext } = useGroupContext();
   const isPod = activeContext !== 'personal';
@@ -111,7 +117,7 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
   if (isDataLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={colors.accent.primary} />
+        <ActivityIndicator color={theme.colors.accent.primary} />
       </View>
     );
   }
@@ -318,7 +324,7 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
           accessibilityState={{ disabled: !isValid || isSubmitting }}
         >
           {isSubmitting ? (
-            <ActivityIndicator color={colors.text.inverse} size="small" />
+            <ActivityIndicator color={theme.colors.text.inverse} size="small" />
           ) : (
             <Text style={[styles.submitBtnText, (!isValid || isSubmitting) && styles.submitBtnTextDisabled]}>
               {t('match.startMatch')}
@@ -411,6 +417,8 @@ function DeckOption({
   isSelected: boolean;
   onSelect: () => void;
 }) {
+  const styles = useThemedStyles(createStyles);
+
   return (
     <Pressable
       onPress={onSelect}
@@ -437,7 +445,7 @@ function DeckOption({
 const AVATAR_SIZE = 36;
 const FOOTER_HEIGHT = 88;
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   scroll: {
     flex: 1,
   },
@@ -451,17 +459,17 @@ const styles = StyleSheet.create({
 
   // ─── Sections ─────────────────────────────────────────────────────────────
   sectionLabel: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.tertiary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     marginBottom: spacing[3],
   },
   subSectionLabel: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.medium,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
     marginBottom: spacing[2],
@@ -473,12 +481,12 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: colors.border.subtle,
+    backgroundColor: t.colors.border.subtle,
     marginVertical: spacing[6],
   },
   hintText: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
     marginTop: spacing[1],
   },
 
@@ -492,21 +500,21 @@ const styles = StyleSheet.create({
   slotAvatar: {
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
-    borderRadius: radius.round,
-    backgroundColor: colors.accent.primary + '33',
+    borderRadius: t.radius.round,
+    backgroundColor: t.colors.accent.primary + '33',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   slotAvatarText: {
-    color: colors.accent.primary,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.bold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.bold,
   },
   slotPlayerName: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
     width: 64,
     flexShrink: 0,
   },
@@ -516,41 +524,41 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: colors.border?.default ?? '#2A2A45',
+    borderColor: t.colors.border?.default ?? '#2A2A45',
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
     minHeight: 44,
   },
   deckTriggerError: {
-    borderColor: colors.status.error,
+    borderColor: t.colors.status.error,
   },
   deckTriggerFilled: {
     flex: 1,
     gap: spacing[1],
   },
   deckTriggerName: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   deckTriggerPlaceholder: {
     flex: 1,
-    color: colors.text.muted,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
   chevron: {
-    color: colors.text.muted,
+    color: t.colors.text.muted,
     fontSize: 20,
     marginLeft: spacing[2],
   },
 
   // ─── Errors ───────────────────────────────────────────────────────────────
   errorText: {
-    color: colors.status.error,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.status.error,
+    fontSize: t.typography.size['body-sm'],
     marginTop: spacing[3],
   },
 
@@ -563,34 +571,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingBottom: spacing[8],
     paddingTop: spacing[3],
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.colors.background.primary,
     borderTopWidth: 1,
-    borderTopColor: colors.border.subtle,
+    borderTopColor: t.colors.border.subtle,
   },
   submitBtn: {
-    backgroundColor: colors.accent.primary,
-    borderRadius: radius.xl,
+    backgroundColor: t.colors.accent.primary,
+    borderRadius: t.radius.xl,
     height: 52,
     alignItems: 'center',
     justifyContent: 'center',
   },
   submitBtnDisabled: {
-    backgroundColor: colors.background.surface,
+    backgroundColor: t.colors.background.surface,
   },
   submitBtnText: {
-    color: colors.accent.onPrimary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.accent.onPrimary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.5,
   },
   submitBtnTextDisabled: {
-    color: colors.text.muted,
+    color: t.colors.text.muted,
   },
 
   // ─── Deck Picker Modal ────────────────────────────────────────────────────
   modalContainer: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.colors.background.primary,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -599,32 +607,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[4],
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
+    borderBottomColor: t.colors.border.subtle,
   },
   modalTitle: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.semibold,
   },
   modalClose: {
     width: 36,
     height: 36,
-    borderRadius: radius.round,
-    backgroundColor: colors.background.surface,
+    borderRadius: t.radius.round,
+    backgroundColor: t.colors.background.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalCloseText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-lg'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-lg'],
   },
   deckList: {
     paddingVertical: spacing[2],
   },
   deckSectionHeader: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     paddingHorizontal: spacing[4],
@@ -633,7 +641,7 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    backgroundColor: colors.border.subtle,
+    backgroundColor: t.colors.border.subtle,
     marginHorizontal: spacing[4],
   },
   deckOption: {
@@ -644,20 +652,20 @@ const styles = StyleSheet.create({
     gap: spacing[3],
   },
   deckOptionSelected: {
-    backgroundColor: colors.accent.primary + '1A',
+    backgroundColor: t.colors.accent.primary + '1A',
   },
   deckOptionInfo: {
     flex: 1,
     gap: spacing[1],
   },
   deckOptionName: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
   },
   deckOptionCommander: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.tertiary,
+    fontSize: t.typography.size['body-sm'],
   },
 
   // ─── Edge cases ───────────────────────────────────────────────────────────
@@ -669,15 +677,15 @@ const styles = StyleSheet.create({
     gap: spacing[3],
   },
   edgeCaseTitle: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-lg'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
     textAlign: 'center',
   },
   edgeCaseBody: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
+    color: t.colors.text.tertiary,
+    fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
-    lineHeight: typography.size['body-sm'] * 1.5,
+    lineHeight: t.typography.size['body-sm'] * 1.5,
   },
-});
+})

@@ -9,7 +9,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTranslation } from 'react-i18next';
 
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
 
 interface WinConditionPickerProps {
   selected: string | null;
@@ -17,6 +19,8 @@ interface WinConditionPickerProps {
 }
 
 export function WinConditionPicker({ selected, onSelect }: WinConditionPickerProps) {
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
 
   const WIN_CONDITIONS = [
@@ -50,7 +54,7 @@ export function WinConditionPicker({ selected, onSelect }: WinConditionPickerPro
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -59,10 +63,10 @@ const styles = StyleSheet.create({
   chip: {
     paddingVertical: spacing[2],
     paddingHorizontal: spacing[3],
-    borderRadius: radius.md,
-    backgroundColor: colors.background.surface,
+    borderRadius: t.radius.md,
+    backgroundColor: t.colors.background.surface,
     borderWidth: 1,
-    borderColor: colors.border?.default ?? '#2A2A45',
+    borderColor: t.colors.border?.default ?? '#2A2A45',
     minWidth: 88,
     alignItems: 'center',
     // Ensure minimum 44pt touch target height
@@ -70,16 +74,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipActive: {
-    borderColor: colors.accent.primary,
-    backgroundColor: colors.accent.primary + '1A',
+    borderColor: t.colors.accent.primary,
+    backgroundColor: t.colors.accent.primary + '1A',
   },
   label: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   labelActive: {
-    color: colors.accent.primary,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.accent.primary,
+    fontWeight: t.typography.weight.semibold,
   },
-});
+})

@@ -10,9 +10,13 @@ import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { MatchSetupForm } from '@/components/match/MatchSetupForm';
-import { colors, spacing, typography } from '@/styles/tokens';
+import { spacing } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
 
 export default function MatchSetupScreen() {
+  const styles = useThemedStyles(createStyles);
+
   const { t } = useTranslation();
   function handleSubmit(matchId: string, rotations: Record<string, number>, playerOrder: string[], layoutVariant: string) {
     const rotParam = encodeURIComponent(JSON.stringify(rotations));
@@ -47,10 +51,10 @@ export default function MatchSetupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: t.colors.background.primary,
   },
   header: {
     flexDirection: 'row',
@@ -58,28 +62,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
+    borderBottomColor: t.colors.border.subtle,
   },
   closeBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.background.surface,
+    backgroundColor: t.colors.background.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeBtnText: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-lg'],
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-lg'],
   },
   title: {
     flex: 1,
     textAlign: 'center',
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.semibold,
   },
   headerEnd: {
     width: 36,
   },
-});
+})
