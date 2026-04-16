@@ -19,7 +19,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   type LayoutChangeEvent,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -32,7 +31,10 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useDebounce } from '@/hooks/useDebounce';
-import { colors, radius, spacing, typography, motion } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import { useTheme } from '@/contexts/ThemeContext';
+import { motion } from '@/styles/tokens';
+import type { AppTheme } from '@/styles/themes/types';
 import type { EventType } from '@/services/matchEvents';
 
 const HOLD_REPEAT_MS = 150;
@@ -67,6 +69,8 @@ function computeFontSize(text: string, w: number, h: number): number {
 }
 
 export function LifeCounter({ lifeTotal, participationId, onEvent }: LifeCounterProps) {
+  const styles = useThemedStyles(createStyles);
+  const { theme } = useTheme();
   const [pendingDelta, setPendingDelta] = useState(0);
   const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
@@ -79,11 +83,11 @@ export function LifeCounter({ lifeTotal, participationId, onEvent }: LifeCounter
   const displayValue = lifeTotal + pendingDelta;
 
   const lifeColor = (() => {
-    if (displayValue <= 0) return colors.lifeTotal.zero;
-    if (displayValue <= 4) return colors.lifeTotal.critical;
-    if (displayValue <= 9) return colors.lifeTotal.low;
-    if (displayValue <= 20) return colors.lifeTotal.medium;
-    return colors.lifeTotal.high;
+    if (displayValue <= 0) return theme.colors.lifeTotal.zero;
+    if (displayValue <= 4) return theme.colors.lifeTotal.critical;
+    if (displayValue <= 9) return theme.colors.lifeTotal.low;
+    if (displayValue <= 20) return theme.colors.lifeTotal.medium;
+    return theme.colors.lifeTotal.high;
   })();
 
   const onContainerLayout = useCallback((e: LayoutChangeEvent) => {
@@ -247,7 +251,7 @@ export function LifeCounter({ lifeTotal, participationId, onEvent }: LifeCounter
           <Text
             style={[
               styles.deltaBadgeText,
-              { color: displayedDelta > 0 ? colors.lifeTotal.high : colors.lifeTotal.critical },
+              { color: displayedDelta > 0 ? theme.colors.lifeTotal.high : theme.colors.lifeTotal.critical },
             ]}
           >
             {displayedDelta > 0 ? `+${displayedDelta}` : displayedDelta}
@@ -258,37 +262,41 @@ export function LifeCounter({ lifeTotal, participationId, onEvent }: LifeCounter
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   container: {
     flex: 1,
     width: '100%',
     height: '100%',
   },
   lifeTotalOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
   lifeTotal: {
-    fontFamily: typography.fontFamily.lifeTotal,
+    fontFamily: t.typography.fontFamily.lifeTotal,
     letterSpacing: -2,
-    textAlign: 'center',
+    textAlign: 'center' as const,
     includeFontPadding: false,
-    fontVariant: ['tabular-nums'],
+    fontVariant: ['tabular-nums'] as const,
   },
   deltaBadge: {
-    position: 'absolute',
+    position: 'absolute' as const,
     right: 8,
-    top: '25%',
-    backgroundColor: colors.background.elevated,
-    borderRadius: radius.sm,
+    top: '25%' as const,
+    backgroundColor: t.colors.background.elevated,
+    borderRadius: t.radius.sm,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
   },
   deltaBadgeText: {
-    fontSize: typography.size['body-lg'],
-    fontFamily: typography.fontFamily.lifeTotalBold,
+    fontSize: t.typography.size['body-lg'],
+    fontFamily: t.typography.fontFamily.lifeTotalBold,
   },
 });

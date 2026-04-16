@@ -10,11 +10,13 @@
  * TRACK-006 (EPIC-03)
  */
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { GHPressable } from '@/components/ui/GHPressable';
 
 import { useDebounce } from '@/hooks/useDebounce';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import { spacing } from '@/styles/tokens';
+import type { AppTheme } from '@/styles/themes/types';
 import type { EventType } from '@/services/matchEvents';
 
 const DEBOUNCE_MS = 200;
@@ -32,6 +34,7 @@ interface PoisonCounterProps {
 }
 
 export function PoisonCounter({ poisonCounters, participationId, onEvent }: PoisonCounterProps) {
+  const styles = useThemedStyles(createStyles);
   const [pendingDelta, setPendingDelta] = useState(0);
 
   const displayValue = Math.max(0, poisonCounters + pendingDelta);
@@ -89,50 +92,50 @@ export function PoisonCounter({ poisonCounters, participationId, onEvent }: Pois
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   container: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
     gap: spacing[2],
   },
   title: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
-    textTransform: 'uppercase',
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
+    textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
   },
   controls: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     gap: spacing[4],
   },
   btn: {
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
   btnDisabled: {
     opacity: 0.3,
   },
   btnText: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.semibold,
   },
   count: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-lg'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-lg'],
+    fontWeight: t.typography.weight.bold,
     minWidth: 32,
-    textAlign: 'center',
+    textAlign: 'center' as const,
   },
   countAlert: {
-    color: colors.accent.green,
+    color: t.colors.accent.green,
   },
   limitText: {
-    color: colors.accent.green,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.accent.green,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
   },
 });

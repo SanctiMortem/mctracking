@@ -19,7 +19,8 @@
 import { useCallback, useState } from 'react';
 import { type LayoutChangeEvent, StyleSheet, View } from 'react-native';
 
-import { colors } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
 
 /** Width:Height ratio for all player frames */
 const FRAME_RATIO = 5 / 3;
@@ -35,6 +36,7 @@ interface PlayerSectionProps {
 }
 
 export function PlayerSection({ children, flex = 1, rotation = 0, isActive = false, style }: PlayerSectionProps) {
+  const styles = useThemedStyles(createStyles);
   const isSideways = rotation === 90 || rotation === 270;
   const [slotSize, setSlotSize] = useState({ w: 0, h: 0 });
 
@@ -102,30 +104,30 @@ export function PlayerSection({ children, flex = 1, rotation = 0, isActive = fal
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   slot: {
     // Dark neutral fills the dead space outside the 5:3 frame
-    backgroundColor: colors.background.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    backgroundColor: t.colors.background.primary,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    overflow: 'hidden' as const,
   },
   frame: {
-    backgroundColor: colors.background.secondary,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: t.colors.background.secondary,
+    overflow: 'hidden' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(238, 191, 115, 0.15)',
   },
   frameActive: {
-    borderColor: colors.accent.primary,
+    borderColor: t.colors.accent.primary,
     borderWidth: 1.5,
-    backgroundColor: colors.background.secondary + 'ee',
+    backgroundColor: t.colors.background.secondary + 'ee',
   },
   content: {
     // Content always fills the 5:3 box from the player's perspective
-    alignItems: 'stretch',
-    justifyContent: 'center',
+    alignItems: 'stretch' as const,
+    justifyContent: 'center' as const,
   },
 });

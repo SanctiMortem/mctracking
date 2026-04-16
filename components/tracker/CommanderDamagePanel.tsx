@@ -8,11 +8,13 @@
  *
  * TRACK-005 (EPIC-03)
  */
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import { CommanderDamageRow } from './CommanderDamageRow';
 import { useResponsive } from '@/hooks/useResponsive';
-import { colors, spacing, typography } from '@/styles/tokens';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import { spacing } from '@/styles/tokens';
+import type { AppTheme } from '@/styles/themes/types';
 import type { EventType } from '@/services/matchEvents';
 
 interface EnemyCommander {
@@ -41,6 +43,7 @@ export function CommanderDamagePanel({
   onEvent,
 }: CommanderDamagePanelProps) {
   const { scale, isTablet } = useResponsive();
+  const styles = useThemedStyles(createStyles);
 
   if (enemyCommanders.length === 0) return null;
 
@@ -69,22 +72,22 @@ export function CommanderDamagePanel({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   container: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
     gap: spacing[2],
-    width: '100%',
+    width: '100%' as const,
   },
   title: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.semibold,
-    textTransform: 'uppercase',
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
+    textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
   },
   list: {
     maxHeight: 200,
-    width: '100%',
+    width: '100%' as const,
   },
   listContent: {
     paddingHorizontal: spacing[2],

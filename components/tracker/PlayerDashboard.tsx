@@ -19,9 +19,11 @@
  * TRACK-003 (EPIC-03)
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import { type LayoutChangeEvent, Text, View } from 'react-native';
 import { GHPressable } from '@/components/ui/GHPressable';
 import { useTranslation } from 'react-i18next';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppTheme } from '@/styles/themes/types';
 
 // ─── Death messages — 30+ flavour variants ─────────────────────────────────────
 const DEATH_MESSAGES = [
@@ -65,7 +67,6 @@ function pickDeathMessage(): string {
   return DEATH_MESSAGES[Math.floor(Math.random() * DEATH_MESSAGES.length)];
 }
 
-import { colors, spacing, typography } from '@/styles/tokens';
 
 /** Auto-dismiss overlay after this many ms of no interaction */
 const AUTO_DISMISS_MS = 3000;
@@ -117,6 +118,7 @@ export function PlayerDashboard({
   cmdDamageTotal,
 }: PlayerDashboardProps) {
   const { t } = useTranslation();
+  const styles = useThemedStyles(createStyles);
   const [mode, setMode] = useState<DisplayMode>('life');
   const [isCompact, setIsCompact] = useState(false);
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -276,7 +278,7 @@ export function PlayerDashboard({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (t: AppTheme) => ({
   dashboard: {
     flex: 1,
     flexDirection: 'row',
@@ -301,35 +303,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   playerName: {
-    color: colors.text.primary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.bold,
-    letterSpacing: typography.letterSpacing.wide,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.bold,
+    letterSpacing: t.typography.letterSpacing.wide,
     textTransform: 'uppercase',
     textAlign: 'center',
   },
   timer: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
     fontVariant: ['tabular-nums'],
-    fontWeight: typography.weight.medium,
+    fontWeight: t.typography.weight.medium,
     textAlign: 'center',
   },
   timerActive: {
-    color: colors.accent.primary,
-    fontWeight: typography.weight.bold,
+    color: t.colors.accent.primary,
+    fontWeight: t.typography.weight.bold,
   },
   turnHint: {
-    color: colors.text.muted + '99',
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.muted + '99',
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
     textAlign: 'center',
     marginTop: 1,
   },
   turnHintActive: {
-    color: colors.accent.primary,
-    fontSize: typography.size['body-sm'],
-    fontWeight: typography.weight.bold,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.bold,
     textAlign: 'center',
     marginTop: 1,
   },
@@ -341,16 +343,16 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.status.error + '22',
+    backgroundColor: t.colors.status.error + '22',
     borderWidth: 1,
-    borderColor: colors.status.error + '44',
+    borderColor: t.colors.status.error + '44',
     borderRadius: 3,
     marginBottom: 8,
   },
   deadBtnText: {
-    color: colors.status.error,
-    fontSize: typography.size.caption - 2,
-    fontWeight: typography.weight.bold,
+    color: t.colors.status.error,
+    fontSize: t.typography.size.caption - 2,
+    fontWeight: t.typography.weight.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
@@ -362,20 +364,20 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   deadBadgeText: {
-    fontSize: typography.size['body-lg'],
+    fontSize: t.typography.size['body-lg'],
   },
   deadMessageText: {
-    color: colors.text.muted,
-    fontSize: typography.size.label,
-    fontWeight: typography.weight.medium,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.label,
+    fontWeight: t.typography.weight.medium,
     textAlign: 'center',
     letterSpacing: 0.2,
   },
 
   // ── Divider ──────────────────────────────────────
   divider: {
-    width: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border.strong + '44',
+    width: 0.5,
+    backgroundColor: t.colors.border.strong + '44',
     marginVertical: 8,
   },
 
@@ -398,14 +400,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   triggerLabel: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
-    fontWeight: typography.weight.semibold,
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
   triggerLabelAlert: {
-    color: colors.accent.green,
+    color: t.colors.accent.green,
   },
 
   // ── Overlay zone (replaces HP when in poison/cmd mode) ──
