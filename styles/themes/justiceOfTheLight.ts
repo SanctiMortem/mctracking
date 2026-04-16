@@ -54,9 +54,9 @@ export const justiceOfTheLight: AppTheme = {
       info: '#5a8abf',
     },
     border: {
-      subtle: '#2a324020',        // near-invisible steel
-      default: '#3a455426',       // outline-variant at 15% opacity (Ghost Border)
-      strong: '#3a4554',          // outline-variant full
+      subtle: '#3a455430',        // steel at ~19% opacity — section dividers
+      default: '#3a455460',       // steel at ~38% opacity — card outlines
+      strong: '#3a4554',          // full steel — prominent separators
       focus: '#e9c400',           // gold focus ring
     },
     surfaceVariant: '#1e2636',    // chips, tags — dark steel blue

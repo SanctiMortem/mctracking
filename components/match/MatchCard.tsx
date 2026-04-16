@@ -27,11 +27,13 @@ function deriveOutcome(summary: MatchSummary): Outcome {
 
 type OutcomeStyle = { label: string; bg: string; fg: string };
 
-const OUTCOME_STYLES: Record<Outcome, OutcomeStyle> = {
-  win:       { label: 'Win',       bg: '#eebf7322', fg: '#eebf73' },
-  draw:      { label: 'Draw',      bg: '#5a8abf22', fg: '#5a8abf' },
-  abandoned: { label: 'Abandoned', bg: '#6b5c4c22', fg: '#a08c7c' },
-};
+function getOutcomeStyles(accentPrimary: string): Record<Outcome, OutcomeStyle> {
+  return {
+    win:       { label: 'Win',       bg: accentPrimary + '33', fg: accentPrimary },
+    draw:      { label: 'Draw',      bg: '#5a8abf22',          fg: '#5a8abf' },
+    abandoned: { label: 'Abandoned', bg: '#6b5c4c22',          fg: '#a08c7c' },
+  };
+}
 
 // ─── Participant line helpers ─────────────────────────────────────────────────
 
@@ -74,9 +76,11 @@ interface MatchCardProps {
 }
 
 export function MatchCard({ summary, onPress, onDelete }: MatchCardProps) {
+  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
 
   const outcome = deriveOutcome(summary);
+  const OUTCOME_STYLES = getOutcomeStyles(theme.colors.accent.primary);
   const style = OUTCOME_STYLES[outcome];
   const duration = formatMatchDuration(summary.match.createdAt, summary.match.endedAt);
   const date = formatDate(summary.match.endedAt ?? summary.match.createdAt);
@@ -157,6 +161,8 @@ const createStyles = (t: AppTheme) => ({
     borderRadius: t.radius.lg,
     padding: spacing[4],
     gap: spacing[2],
+    borderWidth: 1,
+    borderColor: t.colors.border.default,
   },
   cardPressed: {
     opacity: 0.75,
@@ -215,7 +221,7 @@ const createStyles = (t: AppTheme) => ({
     fontSize: 12,
   },
   winner: {
-    color: '#eebf73',
+    color: t.colors.accent.primary,
     fontSize: t.typography.size.caption,
     fontWeight: t.typography.weight.medium,
     flexShrink: 1,

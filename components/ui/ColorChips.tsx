@@ -14,12 +14,12 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
 
-const COLOR_DEFS: { code: MtgColor; label: string; bg: string; fg: string }[] = [
+const COLOR_DEFS: { code: MtgColor; label: string; bg: string; fg: string; stroke?: string }[] = [
   { code: 'W', label: 'W', bg: '#f5f0d0', fg: '#1c1102' },
-  { code: 'U', label: 'U', bg: '#3a7bd5', fg: '#ede0d4' },
-  { code: 'B', label: 'B', bg: '#6b6b7e', fg: '#ede0d4' },
-  { code: 'R', label: 'R', bg: '#d4380d', fg: '#ede0d4' },
-  { code: 'G', label: 'G', bg: '#2d7d2d', fg: '#ede0d4' },
+  { code: 'U', label: 'U', bg: '#3a7bd5', fg: '#ffffff' },
+  { code: 'B', label: 'B', bg: '#000000', fg: '#ffffff', stroke: 'rgba(255,255,255,0.25)' },
+  { code: 'R', label: 'R', bg: '#d4380d', fg: '#ffffff' },
+  { code: 'G', label: 'G', bg: '#2d7d2d', fg: '#ffffff' },
   { code: 'C', label: 'C', bg: '#9ca3af', fg: '#1c1102' },
 ];
 
@@ -46,7 +46,7 @@ export function ColorChips({ selected, onChange, readonly = false }: ColorChipsP
     return (
       <View style={styles.rowCompact}>
         {COLOR_DEFS.filter((c) => selected.includes(c.code)).map((c) => (
-          <View key={c.code} style={[styles.dot, { backgroundColor: c.bg }]}>
+          <View key={c.code} style={[styles.dot, { backgroundColor: c.bg, borderWidth: c.stroke ? 1 : 0, borderColor: c.stroke ?? 'transparent' }]}>
             <Text style={[styles.dotLabel, { color: c.fg }]}>{c.label}</Text>
           </View>
         ))}
@@ -69,6 +69,7 @@ export function ColorChips({ selected, onChange, readonly = false }: ColorChipsP
               styles.chip,
               { backgroundColor: active ? c.bg : theme.colors.background.surface },
               active && styles.chipActive,
+              active && c.stroke ? { borderWidth: 1, borderColor: c.stroke } : undefined,
             ]}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: active }}

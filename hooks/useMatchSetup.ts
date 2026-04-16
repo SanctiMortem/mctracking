@@ -6,7 +6,7 @@
  *
  * MATCH-005 (EPIC-02)
  */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@clerk/clerk-expo';
 
@@ -21,6 +21,24 @@ export const LAYOUT_VARIANTS: Record<number, string[]> = {
   2: ['2p-stack', '2p-side'],
   3: ['3p-top1-bot2', '3p-left1-right2', '3p-top2-bot1'],
   4: ['4p-grid', '4p-top1-bot3', '4p-top3-bot1'],
+};
+
+/**
+ * Default slot rotations per layout variant.
+ * Rule: bottom slots = 0° (facing toward the person holding the device),
+ *       top slots = 180° (facing toward the center of the table),
+ *       left slots = 90°, right slots = 270°.
+ * Index = slot position (matches selectedPlayerIds order).
+ */
+export const DEFAULT_SLOT_ROTATIONS: Record<string, number[]> = {
+  '2p-stack':        [180, 0],
+  '2p-side':         [90, 270],
+  '3p-top1-bot2':    [180, 0, 0],
+  '3p-left1-right2': [90, 270, 270],
+  '3p-top2-bot1':    [180, 180, 0],
+  '4p-grid':         [180, 180, 0, 0],
+  '4p-top1-bot3':    [180, 0, 0, 0],
+  '4p-top3-bot1':    [180, 180, 180, 0],
 };
 
 export type UseMatchSetupReturn = {
@@ -147,6 +165,21 @@ export function useMatchSetup(groupId?: string | null): UseMatchSetupReturn {
   const effectiveLayout = layoutVariant && variants.includes(layoutVariant)
     ? layoutVariant
     : variants[0] ?? '';
+
+  // Apply default rotations whenever the effective layout or player list changes.
+  // This sets sensible defaults (top=180°, bottom=0°) without overriding manual changes
+  // made after the layout was already set — we only apply when layout or player count changes.
+  useEffect(() => {
+    if (!effectiveLayout || selectedPlayerIds.length < 2) return;
+    const defaults = DEFAULT_SLOT_ROTATIONS[effectiveLayout];
+    if (!defaults) return;
+    const newRotations: Record<string, number> = {};
+    selectedPlayerIds.forEach((id, idx) => {
+      newRotations[id] = defaults[idx] ?? 0;
+    });
+    setRotations(newRotations);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveLayout, playerCount]);
 
   return {
     selectedPlayerIds,

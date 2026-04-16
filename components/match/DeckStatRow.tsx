@@ -69,6 +69,8 @@ const createStyles = (t: AppTheme) => ({
     alignItems: 'center',
     backgroundColor: t.colors.background.surface,
     borderRadius: t.radius.md,
+    borderWidth: 1,
+    borderColor: t.colors.border.default,
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
     gap: spacing[3],

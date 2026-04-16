@@ -18,10 +18,52 @@
  *
  * TRACK-003 (EPIC-03)
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import { GHPressable } from '@/components/ui/GHPressable';
 import { useTranslation } from 'react-i18next';
+
+// ─── Death messages — 30+ flavour variants ─────────────────────────────────────
+const DEATH_MESSAGES = [
+  'Has fallen',
+  'No more',
+  'Was no more',
+  'Conceded to the void',
+  'Returned to the command zone',
+  'Lost the will to fight',
+  'Faded into legend',
+  'Was consumed by shadow',
+  'Shuffled into oblivion',
+  'Took a permanent mulligan',
+  'Left the battlefield',
+  'Ascended beyond this plane',
+  'Met their end here',
+  'Perished gloriously',
+  'Was outpaced',
+  'Fell to the last sword',
+  'Answered the final call',
+  'Passed into history',
+  'Couldn\'t withstand the storm',
+  'Exited stage left, permanently',
+  'Became part of the lore',
+  'Was outplayed',
+  'Rested… forever',
+  'Ran out of resources',
+  'Got bolted to zero',
+  'Could not weather the tide',
+  'Left for Phyrexia',
+  'Was compleated',
+  'Suffered lethal damage',
+  'Walked into the blind eternities',
+  'Conceded like a champ',
+  'Couldn\'t stop the combo',
+  'Was answered by the game state',
+  'Is now merely a memory',
+];
+
+function pickDeathMessage(): string {
+  return DEATH_MESSAGES[Math.floor(Math.random() * DEATH_MESSAGES.length)];
+}
 
 import { colors, spacing, typography } from '@/styles/tokens';
 
@@ -78,6 +120,8 @@ export function PlayerDashboard({
   const [mode, setMode] = useState<DisplayMode>('life');
   const [isCompact, setIsCompact] = useState(false);
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Stable random message — picked once when player dies
+  const deathMessage = useMemo(pickDeathMessage, []);
 
   // ── Auto-dismiss timer ──
   const clearDismissTimer = useCallback(() => {
@@ -175,6 +219,9 @@ export function PlayerDashboard({
         {isDead && (
           <View style={styles.deadBadge}>
             <Text style={styles.deadBadgeText}>☠</Text>
+            <Text style={styles.deadMessageText} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.5}>
+              {deathMessage}
+            </Text>
           </View>
         )}
       </GHPressable>
@@ -309,10 +356,20 @@ const styles = StyleSheet.create({
   },
   deadBadge: {
     alignSelf: 'center',
+    alignItems: 'center',
     marginBottom: 8,
+    paddingHorizontal: 2,
+    gap: 2,
   },
   deadBadgeText: {
     fontSize: typography.size['body-lg'],
+  },
+  deadMessageText: {
+    color: colors.text.muted,
+    fontSize: typography.size.label,
+    fontWeight: typography.weight.medium,
+    textAlign: 'center',
+    letterSpacing: 0.2,
   },
 
   // ── Divider ──────────────────────────────────────
