@@ -11,7 +11,13 @@
  *
  * Double-tap anywhere triggers direct entry (set exact HP).
  *
- * Delta badge shows accumulated change, fades after 2s.
+ * Delta badge shows accumulated change since the last server commit, fades
+ * after 2s of tap inactivity.
+ *
+ * IMPORTANT: `lifeTotal` is the single source of truth for the displayed
+ * number. This component performs NO local arithmetic on it — the parent
+ * (useTracker) updates it synchronously on every tap via `onDelta`. This
+ * eliminates the parent/child race that previously caused mid-tap HP flicker.
  *
  * TRACK-004 (EPIC-03)
  */
@@ -30,26 +36,25 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { useDebounce } from '@/hooks/useDebounce';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { motion } from '@/styles/tokens';
 import type { AppTheme } from '@/styles/themes/types';
-import type { EventType } from '@/services/matchEvents';
 
 const HOLD_REPEAT_MS = 150;
-const DEBOUNCE_MS = 600;
+// Badge accumulator resets after this many ms of tap inactivity — matches
+// the parent's commit debounce so the badge visually corresponds to the
+// "burst" that gets logged as a single event.
+const BADGE_RESET_MS = 600;
 const DELTA_DISPLAY_MS = 2000;
 
 interface LifeCounterProps {
   lifeTotal: number;
   participationId: string;
-  onEvent: (input: {
-    participationId: string;
-    eventType: EventType;
-    delta: number;
-    commanderIdSource?: string;
-  }) => Promise<void>;
+  /** Called on every tap with +1 or −1. Parent updates lifeTotal synchronously. */
+  onDelta: (participationId: string, delta: number) => void;
+  /** Called when the user sets HP directly via double-tap prompt. */
+  onSetAbsolute?: (participationId: string, nextLifeTotal: number) => void;
 }
 
 // Big Shoulders Display is a condensed font — narrower character widths.
@@ -68,19 +73,22 @@ function computeFontSize(text: string, w: number, h: number): number {
   return Math.floor(Math.min(byWidth, byHeight));
 }
 
-export function LifeCounter({ lifeTotal, participationId, onEvent }: LifeCounterProps) {
+export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute }: LifeCounterProps) {
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
-  const [pendingDelta, setPendingDelta] = useState(0);
   const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
 
-  // Delta badge state
+  // Delta badge — purely visual. Tracks the accumulated delta since the
+  // last idle period of BADGE_RESET_MS. It does NOT drive the HP number.
   const [displayedDelta, setDisplayedDelta] = useState(0);
+  const badgeAccumRef = useRef(0);
+  const badgeResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deltaOpacity = useSharedValue(0);
   const deltaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const displayValue = lifeTotal + pendingDelta;
+  // Single source of truth for what the user sees.
+  const displayValue = lifeTotal;
 
   const lifeColor = (() => {
     if (displayValue <= 0) return theme.colors.lifeTotal.zero;
@@ -103,33 +111,27 @@ export function LifeCounter({ lifeTotal, participationId, onEvent }: LifeCounter
     [displayValue, containerSize.w, containerSize.h],
   );
 
-  const { trigger: debounceTrigger, flush } = useDebounce<number>((accumulatedDelta) => {
-    if (accumulatedDelta !== 0) {
-      onEvent({ participationId, eventType: 'life_change', delta: accumulatedDelta });
-      setPendingDelta(0);
-    }
-  }, DEBOUNCE_MS);
-
-  const pendingDeltaRef = useRef(0);
+  const showDeltaBadge = useCallback((value: number) => {
+    setDisplayedDelta(value);
+    deltaOpacity.value = 1;
+    if (deltaTimerRef.current) clearTimeout(deltaTimerRef.current);
+    deltaTimerRef.current = setTimeout(() => {
+      deltaOpacity.value = withTiming(0, { duration: motion.duration.normal });
+    }, DELTA_DISPLAY_MS);
+  }, [deltaOpacity]);
 
   const applyDelta = useCallback((d: number) => {
-    setPendingDelta((prev) => {
-      const next = prev + d;
-      debounceTrigger(next);
-      pendingDeltaRef.current = next;
-      return next;
-    });
-    setTimeout(() => {
-      const val = pendingDeltaRef.current;
-      if (val === 0) return;
-      setDisplayedDelta(val);
-      deltaOpacity.value = 1;
-      if (deltaTimerRef.current) clearTimeout(deltaTimerRef.current);
-      deltaTimerRef.current = setTimeout(() => {
-        deltaOpacity.value = withTiming(0, { duration: motion.duration.normal });
-      }, DELTA_DISPLAY_MS);
-    }, 0);
-  }, [debounceTrigger, deltaOpacity]);
+    // 1. Tell the parent — it updates lifeTotal synchronously.
+    onDelta(participationId, d);
+    // 2. Update the badge accumulator independently.
+    badgeAccumRef.current += d;
+    showDeltaBadge(badgeAccumRef.current);
+    // 3. Schedule accumulator reset after idle window.
+    if (badgeResetTimerRef.current) clearTimeout(badgeResetTimerRef.current);
+    badgeResetTimerRef.current = setTimeout(() => {
+      badgeAccumRef.current = 0;
+    }, BADGE_RESET_MS);
+  }, [onDelta, participationId, showDeltaBadge]);
 
   const stopHold = useCallback(() => {
     if (holdTimerRef.current) {
@@ -143,13 +145,12 @@ export function LifeCounter({ lifeTotal, participationId, onEvent }: LifeCounter
   }, [applyDelta]);
 
   useEffect(() => () => {
-    flush();
     if (deltaTimerRef.current) clearTimeout(deltaTimerRef.current);
-  }, [flush]);
+    if (badgeResetTimerRef.current) clearTimeout(badgeResetTimerRef.current);
+  }, []);
 
   // ── Direct entry via Alert.prompt (double-tap) ──
   const handleDirectEntry = useCallback(() => {
-    flush();
     Alert.prompt(
       'Set Life Total',
       `Current: ${displayValue}`,
@@ -157,21 +158,19 @@ export function LifeCounter({ lifeTotal, participationId, onEvent }: LifeCounter
         const parsed = parseInt(text, 10);
         if (isNaN(parsed)) return;
         const delta = parsed - lifeTotal;
-        if (delta !== 0) {
-          onEvent({ participationId, eventType: 'life_change', delta });
-          setDisplayedDelta(delta);
-          deltaOpacity.value = 1;
-          if (deltaTimerRef.current) clearTimeout(deltaTimerRef.current);
-          deltaTimerRef.current = setTimeout(() => {
-            deltaOpacity.value = withTiming(0, { duration: motion.duration.normal });
-          }, DELTA_DISPLAY_MS);
+        if (delta === 0) return;
+        if (onSetAbsolute) {
+          onSetAbsolute(participationId, parsed);
+        } else {
+          onDelta(participationId, delta);
         }
+        showDeltaBadge(delta);
       },
       'plain-text',
       String(displayValue),
       'number-pad',
     );
-  }, [displayValue, lifeTotal, participationId, onEvent, flush, deltaOpacity]);
+  }, [displayValue, lifeTotal, participationId, onDelta, onSetAbsolute, showDeltaBadge]);
 
   // ── Gesture handlers ──
   // We use the tap X coordinate to determine left (-1) vs right (+1)

@@ -20,7 +20,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
-import { ColorChips } from '@/components/ui/ColorChips';
+import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { useDeckStats } from '@/hooks/useDeckStats';
 import { useResponsive } from '@/hooks/useResponsive';
 import { spacing } from '@/styles/tokens';
@@ -43,7 +43,7 @@ function CommanderCard({ name, cardColors, isPartner }: { name: string; cardColo
           </View>
         )}
       </View>
-      <ColorChips selected={cardColors} readonly />
+      <ManaIdentityRow colors={cardColors} size="sm" />
     </View>
   );
 }
@@ -124,7 +124,7 @@ export default function DeckDetailScreen() {
           </Text>
           <CommanderCard
             name={deck.commander.name}
-            cardColors={deck.commander.colors}
+            cardColors={deck.commander.colorIdentity}
             isPartner={deck.commander.isPartner}
           />
           {deck.commander2 && (
@@ -136,7 +136,7 @@ export default function DeckDetailScreen() {
               </View>
               <CommanderCard
                 name={deck.commander2.name}
-                cardColors={deck.commander2.colors}
+                cardColors={deck.commander2.colorIdentity}
                 isPartner={deck.commander2.isPartner}
               />
             </>

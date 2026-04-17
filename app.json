@@ -26,7 +26,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#0D0D0F"
+        "backgroundColor": "#1c1102"
       },
       "package": "com.aboutagency.mtgtracker",
       "versionCode": 1,
@@ -61,6 +61,12 @@
       "eas": {
         "projectId": "3825a377-c05c-45a2-afff-2a4bd1eccc11"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3825a377-c05c-45a2-afff-2a4bd1eccc11"
     }
   }
 }

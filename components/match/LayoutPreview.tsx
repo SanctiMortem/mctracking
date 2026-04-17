@@ -184,7 +184,8 @@ const createThumbStyles = (t: AppTheme) => ({
     borderRadius: 4,
     overflow: 'hidden',
     borderWidth: 1.5,
-    borderColor: t.colors.border.default,
+    borderColor: '#1a2B45',
+    backgroundColor: '#A8B2C1',
   },
   thumbSelected: {
     borderColor: t.colors.accent.primary,
@@ -202,9 +203,9 @@ const createThumbStyles = (t: AppTheme) => ({
   },
   full: {
     flex: 1,
-    backgroundColor: t.colors.background.surface,
+    backgroundColor: '#A8B2C1',
     borderWidth: 0.5,
-    borderColor: t.colors.border.subtle,
+    borderColor: '#1a2B45',
   },
   row: {
     flex: 1,
@@ -215,15 +216,15 @@ const createThumbStyles = (t: AppTheme) => ({
   },
   half: {
     flex: 1,
-    backgroundColor: t.colors.background.surface,
+    backgroundColor: '#A8B2C1',
     borderWidth: 0.5,
-    borderColor: t.colors.border.subtle,
+    borderColor: '#1a2B45',
   },
   third: {
     flex: 1,
-    backgroundColor: t.colors.background.surface,
+    backgroundColor: '#A8B2C1',
     borderWidth: 0.5,
-    borderColor: t.colors.border.subtle,
+    borderColor: '#1a2B45',
   },
 });
 
@@ -280,7 +281,14 @@ export function LayoutPreview({
     const arrow = ARROW_FOR_ROTATION[deg] ?? '↑';
 
     return (
-      <View key={player.id} style={[styles.slot, isSelected && styles.slotSelected]}>
+      <Pressable
+        key={player.id}
+        onPress={() => handleTap(index)}
+        style={[styles.slot, isSelected && styles.slotSelected]}
+        accessibilityRole="button"
+        accessibilityLabel={`Position ${index + 1}: ${player.name}. Tap to select for swap.`}
+      >
+        {/* Centre rotation arrow — tap to cycle the seat's facing */}
         <Pressable
           onPress={() => handleRotate(player.id)}
           style={styles.rotateBtn}
@@ -291,18 +299,12 @@ export function LayoutPreview({
           <Text style={styles.rotateArrow}>{arrow}</Text>
         </Pressable>
 
-        <Pressable
-          onPress={() => handleTap(index)}
-          style={styles.slotBody}
-          accessibilityRole="button"
-          accessibilityLabel={`Position ${index + 1}: ${player.name}. Tap to select for swap.`}
-        >
-          <Text style={styles.positionNumber}>P{index + 1}</Text>
-          <View style={{ transform: [{ rotate: `${deg}deg` }] }}>
-            <Text style={styles.slotName} numberOfLines={1}>{player.name}</Text>
-          </View>
-        </Pressable>
-      </View>
+        {/* Bottom-left: seat number */}
+        <Text style={styles.positionCorner}>P{index + 1}</Text>
+
+        {/* Bottom-right: player name */}
+        <Text style={styles.nameCorner} numberOfLines={1}>{player.name}</Text>
+      </Pressable>
     );
   };
 
@@ -451,8 +453,8 @@ const createStyles = (t: AppTheme) => ({
   preview: {
     borderRadius: t.radius.lg,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: t.colors.border.default,
+    borderWidth: 1.5,
+    borderColor: '#1a2B45',
   },
   fullRow: {
     flex: 1,
@@ -464,29 +466,23 @@ const createStyles = (t: AppTheme) => ({
   },
   slot: {
     flex: 1,
-    backgroundColor: t.colors.background.secondary,
-    borderWidth: 0.5,
-    borderColor: t.colors.border.subtle,
-    padding: spacing[1],
+    backgroundColor: '#A8B2C1',
+    borderWidth: 1,
+    borderColor: '#1a2B45',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    overflow: 'hidden',
   },
   slotSelected: {
     backgroundColor: t.colors.accent.primary + '33',
     borderColor: t.colors.accent.primary,
     borderWidth: 1.5,
   },
-  slotBody: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[1],
-  },
   rotateBtn: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    zIndex: 1,
-    width: 28,
-    height: 28,
+    // Centred tap target — anchors in the middle of the frame
+    width: 32,
+    height: 32,
     borderRadius: t.radius.round,
     backgroundColor: t.colors.background.elevated,
     borderWidth: 1,
@@ -496,20 +492,27 @@ const createStyles = (t: AppTheme) => ({
   },
   rotateArrow: {
     color: t.colors.accent.primary,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: t.typography.weight.bold,
+    lineHeight: 20,
   },
-  positionNumber: {
-    color: t.colors.accent.primary,
-    fontSize: t.typography.size.label,
+  positionCorner: {
+    position: 'absolute',
+    bottom: 3,
+    left: 5,
+    color: '#1a2B45',
+    fontSize: t.typography.size.label - 1,
     fontWeight: t.typography.weight.bold,
     letterSpacing: t.typography.letterSpacing.wide,
   },
-  slotName: {
-    color: t.colors.text.primary,
+  nameCorner: {
+    position: 'absolute',
+    bottom: 3,
+    right: 5,
+    maxWidth: '55%',
+    color: '#1a2B45',
     fontSize: t.typography.size.caption,
     fontWeight: t.typography.weight.medium,
-    textAlign: 'center',
-    maxWidth: '90%',
+    textAlign: 'right',
   },
 })

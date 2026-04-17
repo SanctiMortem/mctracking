@@ -6,9 +6,11 @@
  *
  * PLAT-004 (EPIC-05)
  */
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { EventType } from '@/services/matchEvents';
+
+const COMMIT_DEBOUNCE_MS = 600;
 
 // ─────────────────────────────────────────────
 // Types
@@ -45,6 +47,16 @@ export interface UseGuestTrackerReturn {
     delta: number;
     commanderIdSource?: string;
   }) => Promise<void>;
+  /** Apply a life delta instantly; log entry batched per 600ms burst. */
+  applyLifeChange: (participationId: string, delta: number) => void;
+  /** Apply a poison delta instantly; log entry batched per 600ms burst. */
+  applyPoisonChange: (participationId: string, delta: number) => void;
+  /** Apply commander damage instantly (reduces life + increments source); batched per 600ms burst. */
+  applyCommanderDamage: (
+    participationId: string,
+    commanderIdSource: string,
+    delta: number,
+  ) => void;
   /** Undo the last non-undone event. */
   undoLastEvent: () => Promise<void>;
 }
@@ -161,7 +173,166 @@ export function useGuestTracker(): UseGuestTrackerReturn {
     );
   }, []);
 
+  // ── Batched per-tap apply (parity with useTracker) ──────────────────
+  type PendingCommit = {
+    life: number;
+    poison: number;
+    cmdDamage: Map<string, number>;
+    timer: ReturnType<typeof setTimeout> | null;
+  };
+  const pendingRef = useRef<Map<string, PendingCommit>>(new Map());
+
+  const getPending = useCallback((pid: string): PendingCommit => {
+    let p = pendingRef.current.get(pid);
+    if (!p) {
+      p = { life: 0, poison: 0, cmdDamage: new Map(), timer: null };
+      pendingRef.current.set(pid, p);
+    }
+    return p;
+  }, []);
+
+  const flushPending = useCallback((pid: string) => {
+    const p = pendingRef.current.get(pid);
+    if (!p) return;
+    if (p.timer) {
+      clearTimeout(p.timer);
+      p.timer = null;
+    }
+    const lifeDelta = p.life;
+    const poisonDelta = p.poison;
+    const cmdEntries = Array.from(p.cmdDamage.entries()).filter(
+      ([, v]) => v !== 0,
+    );
+    p.life = 0;
+    p.poison = 0;
+    p.cmdDamage.clear();
+
+    // Record one log entry per counter-type burst.
+    const newEntries: GuestEvent[] = [];
+    if (lifeDelta !== 0) {
+      newEntries.push({
+        id: localId(),
+        participationId: pid,
+        eventType: 'life_change',
+        delta: lifeDelta,
+        isUndone: false,
+      });
+    }
+    if (poisonDelta !== 0) {
+      newEntries.push({
+        id: localId(),
+        participationId: pid,
+        eventType: 'poison_change',
+        delta: poisonDelta,
+        isUndone: false,
+      });
+    }
+    for (const [cmdId, delta] of cmdEntries) {
+      newEntries.push({
+        id: localId(),
+        participationId: pid,
+        eventType: 'commander_damage',
+        delta,
+        commanderIdSource: cmdId,
+        isUndone: false,
+      });
+    }
+    if (newEntries.length > 0) {
+      setEvents((prev) => [...prev, ...newEntries]);
+    }
+  }, []);
+
+  const scheduleCommit = useCallback(
+    (pid: string) => {
+      const p = getPending(pid);
+      if (p.timer) clearTimeout(p.timer);
+      p.timer = setTimeout(() => flushPending(pid), COMMIT_DEBOUNCE_MS);
+    },
+    [getPending, flushPending],
+  );
+
+  const applyLifeChange = useCallback(
+    (pid: string, delta: number) => {
+      if (delta === 0) return;
+      setParticipations((parts) =>
+        parts.map((p) =>
+          p.id === pid ? { ...p, lifeTotal: p.lifeTotal + delta } : p,
+        ),
+      );
+      const pend = getPending(pid);
+      pend.life += delta;
+      scheduleCommit(pid);
+    },
+    [getPending, scheduleCommit],
+  );
+
+  const applyPoisonChange = useCallback(
+    (pid: string, delta: number) => {
+      if (delta === 0) return;
+      let appliedDelta = delta;
+      setParticipations((parts) =>
+        parts.map((p) => {
+          if (p.id !== pid) return p;
+          const next = Math.max(0, p.poisonCounters + delta);
+          appliedDelta = next - p.poisonCounters;
+          return { ...p, poisonCounters: next };
+        }),
+      );
+      queueMicrotask(() => {
+        if (appliedDelta === 0) return;
+        const pend = getPending(pid);
+        pend.poison += appliedDelta;
+        scheduleCommit(pid);
+      });
+    },
+    [getPending, scheduleCommit],
+  );
+
+  const applyCommanderDamage = useCallback(
+    (pid: string, commanderIdSource: string, delta: number) => {
+      if (delta === 0) return;
+      setParticipations((parts) =>
+        parts.map((p) => {
+          if (p.id !== pid) return p;
+          const current = p.commanderDamage[commanderIdSource] ?? 0;
+          const nextCmd = Math.max(0, current + delta);
+          const appliedCmdDelta = nextCmd - current;
+          return {
+            ...p,
+            commanderDamage: { ...p.commanderDamage, [commanderIdSource]: nextCmd },
+            // Only reduce life by the actual applied delta (prevents negative-damage underflow).
+            lifeTotal: p.lifeTotal - appliedCmdDelta,
+          };
+        }),
+      );
+      const pend = getPending(pid);
+      pend.cmdDamage.set(
+        commanderIdSource,
+        (pend.cmdDamage.get(commanderIdSource) ?? 0) + delta,
+      );
+      scheduleCommit(pid);
+    },
+    [getPending, scheduleCommit],
+  );
+
+  // Flush on unmount so the last burst makes it into the log.
+  useEffect(() => {
+    const map = pendingRef.current;
+    return () => {
+      for (const pid of map.keys()) flushPending(pid);
+    };
+  }, [flushPending]);
+
   const isDirty = useMemo(() => events.some((e) => !e.isUndone), [events]);
 
-  return { participations, isDirty, init, recordEvent, undoLastEvent };
+  return {
+    participations,
+    isDirty,
+    init,
+    recordEvent,
+    applyLifeChange,
+    applyPoisonChange,
+    applyCommanderDamage,
+    undoLastEvent,
+  };
 }

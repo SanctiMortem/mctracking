@@ -8,14 +8,16 @@
       "distribution": "internal",
       "env": {
         "APP_ENV": "development"
-      }
+      },
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
       "env": {
         "APP_ENV": "preview",
         "EXPO_PUBLIC_API_URL": "https://mctracker-about-agency.vercel.app"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "distribution": "store",
@@ -27,7 +29,8 @@
       },
       "env": {
         "APP_ENV": "production"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {

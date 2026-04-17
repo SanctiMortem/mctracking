@@ -15,7 +15,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import type { Commander } from '@/db/index';
-import { ColorChips } from '@/components/ui/ColorChips';
+import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
@@ -61,7 +61,7 @@ function CommanderRow({
             </View>
           )}
         </View>
-        <ColorChips selected={commander.colors ?? []} readonly />
+        <ManaIdentityRow colors={commander.colorIdentity ?? []} size="xs" />
       </View>
       <View style={styles.rowActions}>
         <Pressable onPress={onEdit} style={styles.actionBtn} accessibilityLabel={`${t('common.edit')} ${commander.name}`}>

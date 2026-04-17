@@ -24,7 +24,7 @@ import { SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fon
 import { Manrope_400Regular, Manrope_500Medium } from '@expo-google-fonts/manrope';
 import { BigShouldersDisplay_600SemiBold, BigShouldersDisplay_700Bold } from '@expo-google-fonts/big-shoulders-display';
 // Fonts — "Justice of the Light" skin
-import { NotoSerif_600SemiBold, NotoSerif_700Bold } from '@expo-google-fonts/noto-serif';
+import { NotoSerif_400Regular, NotoSerif_600SemiBold, NotoSerif_700Bold } from '@expo-google-fonts/noto-serif';
 import { WorkSans_400Regular, WorkSans_500Medium } from '@expo-google-fonts/work-sans';
 
 // i18n init (SETUP-006)
@@ -312,6 +312,27 @@ function AuthGate() {
 export default function RootLayout() {
   const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
 
+  // OTA updates — check on launch in release builds.
+  // Lazy dynamic import: the expo-updates native module isn't present in
+  // Expo Go or in a dev client built without it, and a top-level import
+  // would crash the whole module load. No-op when native module is absent.
+  useEffect(() => {
+    if (__DEV__) return;
+    (async () => {
+      try {
+        const Updates = await import('expo-updates');
+        if (!Updates.isEnabled) return;
+        const result = await Updates.checkForUpdateAsync();
+        if (result.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch {
+        // Native module not linked (Expo Go / bare dev client) — silently skip.
+      }
+    })();
+  }, []);
+
   const [fontsLoaded, fontError] = useFonts({
     // Mystic Archive
     SpaceGrotesk_600SemiBold,
@@ -321,6 +342,7 @@ export default function RootLayout() {
     BigShouldersDisplay_600SemiBold,
     BigShouldersDisplay_700Bold,
     // Justice of the Light
+    NotoSerif_400Regular,
     NotoSerif_600SemiBold,
     NotoSerif_700Bold,
     WorkSans_400Regular,

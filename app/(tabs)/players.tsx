@@ -80,7 +80,12 @@ export default function PlayersScreen() {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={[styles.header, { paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]}>
-        <Text style={styles.title}>{t('player.guestPlayers', { defaultValue: 'Guest Players' })}</Text>
+        <View style={styles.titleBlock}>
+          <Text style={styles.title}>{t('player.guestPlayers', { defaultValue: 'Guest Players' })}</Text>
+          <Text style={styles.subtitle}>
+            Where your guests rest. Gather more to join you in battle.
+          </Text>
+        </View>
         <Pressable style={styles.fab} onPress={openCreate} accessibilityLabel={t('player.addPlayerLabel')}>
           <Text style={styles.fabLabel}>{t('player.addPlayer')}</Text>
         </Pressable>
@@ -129,10 +134,23 @@ const createStyles = (t: AppTheme) => ({
     borderBottomWidth: 1,
     borderBottomColor: t.colors.border.subtle,
   },
+  titleBlock: {
+    flex: 1,
+    gap: 2,
+    marginRight: spacing[3],
+  },
   title: {
     color: t.colors.text.primary,
     fontSize: t.typography.size['heading-lg'],
+    fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.bold,
+  },
+  subtitle: {
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size.caption,
+    fontFamily: t.typography.fontFamily.body,
+    fontStyle: 'italic' as const,
+    letterSpacing: 0.2,
   },
   fab: {
     backgroundColor: t.colors.accent.primary,

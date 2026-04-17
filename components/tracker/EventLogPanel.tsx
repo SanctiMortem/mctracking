@@ -112,6 +112,7 @@ const createStyles = (t: AppTheme) => ({
   },
   title: {
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['heading-md'],
     fontWeight: t.typography.weight.semibold,
   },
@@ -139,6 +140,7 @@ const createStyles = (t: AppTheme) => ({
   },
   emptyText: {
     color: t.colors.text.muted,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size['body-sm'],
   },
 
@@ -164,6 +166,7 @@ const createStyles = (t: AppTheme) => ({
   },
   undoBtnText: {
     color: '#fff',
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['body-lg'],
     fontWeight: t.typography.weight.semibold,
   },
@@ -172,6 +175,7 @@ const createStyles = (t: AppTheme) => ({
   },
   noUndoHint: {
     color: t.colors.text.muted,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size.caption,
   },
 })

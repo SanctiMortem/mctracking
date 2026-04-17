@@ -25,20 +25,31 @@ export const LAYOUT_VARIANTS: Record<number, string[]> = {
 
 /**
  * Default slot rotations per layout variant.
- * Rule: bottom slots = 0° (facing toward the person holding the device),
- *       top slots = 180° (facing toward the center of the table),
- *       left slots = 90°, right slots = 270°.
+ *
+ * Mental model: every seat faces the centre of the screen, as if the players
+ * were sitting around the edges of a table. The single player on the "long
+ * side" reads upright/upside-down; the cluster on the opposite side sits like
+ * the ends of a table and is rotated sideways so their text reads toward the
+ * centre.
+ *
+ *   bottom = 0°   top = 180°   left = 90°   right = 270°
+ *
  * Index = slot position (matches selectedPlayerIds order).
  */
 export const DEFAULT_SLOT_ROTATIONS: Record<string, number[]> = {
   '2p-stack':        [180, 0],
   '2p-side':         [90, 270],
-  '3p-top1-bot2':    [180, 0, 0],
+  // 1 top (faces centre down) + 2 bottom sitting as table ends (sideways inward)
+  '3p-top1-bot2':    [180, 90, 270],
+  // 1 left end + 2 right column both facing left toward the centre
   '3p-left1-right2': [90, 270, 270],
-  '3p-top2-bot1':    [180, 180, 0],
+  // 2 top sitting as table ends (sideways inward) + 1 bottom (faces centre up)
+  '3p-top2-bot1':    [90, 270, 0],
   '4p-grid':         [180, 180, 0, 0],
-  '4p-top1-bot3':    [180, 0, 0, 0],
-  '4p-top3-bot1':    [180, 180, 180, 0],
+  // 1 top centre (faces down) + 3 bottom: left end, centre seat, right end
+  '4p-top1-bot3':    [180, 90, 0, 270],
+  // 3 top (left end, centre seat, right end) + 1 bottom centre
+  '4p-top3-bot1':    [90, 180, 270, 0],
 };
 
 export type UseMatchSetupReturn = {

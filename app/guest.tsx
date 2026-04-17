@@ -136,7 +136,9 @@ function GuestSetup({ onStart, onCancel }: SetupProps) {
 interface TrackerProps {
   participations: ReturnType<typeof useGuestTracker>['participations'];
   isDirty: boolean;
-  recordEvent: ReturnType<typeof useGuestTracker>['recordEvent'];
+  applyLifeChange: ReturnType<typeof useGuestTracker>['applyLifeChange'];
+  applyPoisonChange: ReturnType<typeof useGuestTracker>['applyPoisonChange'];
+  applyCommanderDamage: ReturnType<typeof useGuestTracker>['applyCommanderDamage'];
   undoLastEvent: ReturnType<typeof useGuestTracker>['undoLastEvent'];
   onExit: () => void;
   onCreateAccount: () => void;
@@ -145,7 +147,9 @@ interface TrackerProps {
 function GuestTrackerView({
   participations,
   isDirty,
-  recordEvent,
+  applyLifeChange,
+  applyPoisonChange,
+  applyCommanderDamage,
   undoLastEvent,
   onExit,
   onCreateAccount,
@@ -167,18 +171,18 @@ function GuestTrackerView({
           <LifeCounter
             lifeTotal={p.lifeTotal}
             participationId={p.id}
-            onEvent={recordEvent}
+            onDelta={applyLifeChange}
           />
           <PoisonCounter
             poisonCounters={p.poisonCounters}
             participationId={p.id}
-            onEvent={recordEvent}
+            onDelta={applyPoisonChange}
           />
           <CommanderDamagePanel
             commanderDamage={p.commanderDamage}
             enemyCommanders={enemyCommanders}
             participationId={p.id}
-            onEvent={recordEvent}
+            onDelta={applyCommanderDamage}
           />
         </View>
       ),
@@ -234,7 +238,15 @@ function GuestTrackerView({
 export default function GuestScreen() {
   const router = useRouter();
   const { exitGuestMode } = useGuest();
-  const { participations, isDirty, init, recordEvent, undoLastEvent } = useGuestTracker();
+  const {
+    participations,
+    isDirty,
+    init,
+    applyLifeChange,
+    applyPoisonChange,
+    applyCommanderDamage,
+    undoLastEvent,
+  } = useGuestTracker();
 
   const [phase, setPhase] = useState<'setup' | 'tracking'>('setup');
 
@@ -298,7 +310,9 @@ export default function GuestScreen() {
     <GuestTrackerView
       participations={participations}
       isDirty={isDirty}
-      recordEvent={recordEvent}
+      applyLifeChange={applyLifeChange}
+      applyPoisonChange={applyPoisonChange}
+      applyCommanderDamage={applyCommanderDamage}
       undoLastEvent={undoLastEvent}
       onExit={handleExit}
       onCreateAccount={handleCreateAccount}
@@ -326,6 +340,7 @@ const createStyles = (t: AppTheme) => ({
   },
   setupTitle: {
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['body-lg'],
     fontWeight: t.typography.weight.semibold,
     letterSpacing: t.typography.letterSpacing.wide,
@@ -348,6 +363,7 @@ const createStyles = (t: AppTheme) => ({
   },
   sectionLabel: {
     color: t.colors.text.muted,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size.caption,
     fontWeight: t.typography.weight.semibold,
     letterSpacing: t.typography.letterSpacing.wider,
@@ -375,6 +391,7 @@ const createStyles = (t: AppTheme) => ({
   },
   countBtnText: {
     color: t.colors.text.secondary,
+    fontFamily: t.typography.fontFamily.lifeTotalBold,
     fontSize: t.typography.size['heading-xl'],
     fontWeight: t.typography.weight.bold,
   },
@@ -389,6 +406,7 @@ const createStyles = (t: AppTheme) => ({
     backgroundColor: t.colors.background.elevated,
     paddingHorizontal: spacing[4],
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size['body-lg'],
   },
   startBtn: {
@@ -401,6 +419,7 @@ const createStyles = (t: AppTheme) => ({
   },
   startBtnText: {
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['body-lg'],
     fontWeight: t.typography.weight.bold,
     letterSpacing: t.typography.letterSpacing.wide,
@@ -418,6 +437,7 @@ const createStyles = (t: AppTheme) => ({
   },
   trackerTitle: {
     color: t.colors.text.secondary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size.caption,
     fontWeight: t.typography.weight.semibold,
     letterSpacing: t.typography.letterSpacing.wider,
@@ -472,6 +492,7 @@ const createStyles = (t: AppTheme) => ({
   guestBannerText: {
     flex: 1,
     color: t.colors.text.secondary,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.medium,
   },

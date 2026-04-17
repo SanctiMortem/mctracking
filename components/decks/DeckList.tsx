@@ -5,6 +5,7 @@
 import {
   Alert,
   FlatList,
+  Image,
   Pressable,
   Text,
   View,
@@ -13,7 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import type { DeckWithCommanders } from '@/services/decks';
-import { ColorChips } from '@/components/ui/ColorChips';
+import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { useResponsive } from '@/hooks/useResponsive';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -55,11 +56,21 @@ function DeckRow({
 
   const hasPartner = !!deck.commander2;
   const allColors = hasPartner
-    ? [...new Set([...(deck.commander.colors ?? []), ...(deck.commander2?.colors ?? [])])]
-    : (deck.commander.colors ?? []);
+    ? [...new Set([...(deck.commander.colorIdentity ?? []), ...(deck.commander2?.colorIdentity ?? [])])]
+    : (deck.commander.colorIdentity ?? []);
+  const artSrc = deck.commander.artCrop ?? deck.commander2?.artCrop ?? null;
 
   return (
     <Pressable style={styles.row} onPress={onTap} android_ripple={{ color: theme.colors.border.subtle }}>
+      {/* Commander art thumbnail */}
+      <View style={styles.thumb}>
+        {artSrc ? (
+          <Image source={{ uri: artSrc }} style={styles.thumbImg} />
+        ) : (
+          <View style={[styles.thumbImg, styles.thumbFallback]} />
+        )}
+      </View>
+
       <View style={styles.rowInfo}>
         {/* Deck name */}
         <Text style={styles.deckName} numberOfLines={1}>{deck.name}</Text>
@@ -70,8 +81,8 @@ function DeckRow({
           {hasPartner ? ` + ${deck.commander2!.name}` : ''}
         </Text>
 
-        {/* Colors */}
-        <ColorChips selected={allColors} readonly />
+        {/* Color identity — white mana pips */}
+        <ManaIdentityRow colors={allColors} size="xs" />
       </View>
 
       <View style={styles.rowActions}>
@@ -134,6 +145,20 @@ const createStyles = (t: AppTheme) => ({
     paddingVertical: spacing[3],
     backgroundColor: t.colors.background.secondary,
     gap: spacing[3],
+  },
+  thumb: {
+    width: 52,
+    height: 52,
+    borderRadius: t.radius.sm,
+    overflow: 'hidden',
+    backgroundColor: t.colors.border.subtle,
+  },
+  thumbImg: {
+    width: '100%',
+    height: '100%',
+  },
+  thumbFallback: {
+    backgroundColor: t.colors.border.subtle,
   },
   rowInfo: { flex: 1, gap: spacing[1] },
   deckName: {

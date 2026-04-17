@@ -30,14 +30,9 @@ export default function CommandersScreen() {
   const styles = useThemedStyles(createStyles);
 
   const { t } = useTranslation();
-  const { commanders, loading, error, refresh, create, update, remove } = useCommanders();
+  const { commanders, loading, error, refresh, update, remove } = useCommanders();
   const [formVisible, setFormVisible] = useState(false);
   const [editing, setEditing] = useState<Commander | null>(null);
-
-  function openCreate() {
-    setEditing(null);
-    setFormVisible(true);
-  }
 
   function openEdit(commander: Commander) {
     setEditing(commander);
@@ -49,12 +44,9 @@ export default function CommandersScreen() {
     setEditing(null);
   }
 
-  async function handleSave(data: { name: string; colors: string[]; isPartner: boolean }) {
-    if (editing) {
-      await update(editing.id, data);
-    } else {
-      await create(data);
-    }
+  async function handleSave(data: { name: string; is_partner: boolean }) {
+    if (!editing) return;
+    await update(editing.id, data);
   }
 
   async function handleDelete(commander: Commander) {
@@ -67,12 +59,9 @@ export default function CommandersScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      {/* Header */}
+      {/* Header — commanders are created by picking cards in the Deck form */}
       <View style={styles.header}>
         <Text style={styles.title}>{t('commanders.title')}</Text>
-        <Pressable style={styles.fab} onPress={openCreate} accessibilityLabel={t('commanders.addCommanderLabel')}>
-          <Text style={styles.fabLabel}>{t('commanders.addCommander')}</Text>
-        </Pressable>
       </View>
 
       {/* Body */}

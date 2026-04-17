@@ -651,17 +651,25 @@ export type TopCommander = {
   win_rate_pct: number | null;
 };
 
+export type TopPlayerDeck = {
+  deck: Deck;
+  commanders: Commander[];
+  total_matches: number;
+};
+
 export type GlobalStats = {
   total_matches: number;
   total_players: number;
   player_rankings: PlayerRanking[];
   top_decks: TopDeck[];
   top_commanders: TopCommander[];
+  /** Rank-1 player's most-used deck — drives the hero image in the ranking list. */
+  top_player_deck: TopPlayerDeck | null;
 };
 
 export async function getGlobalStats(userId: string): Promise<{ data: GlobalStats }> {
   // Phase 1: All aggregation queries in parallel (scoped to matches.createdBy = userId)
-  const [totalMatchRows, playerStatRows, deckStatRows, commanderPartRows] = await Promise.all([
+  const [totalMatchRows, playerStatRows, deckStatRows, commanderPartRows, perPlayerDeckRows] = await Promise.all([
     // Total completed matches
     db
       .select({ total: count(matches.id) })
@@ -703,6 +711,18 @@ export async function getGlobalStats(userId: string): Promise<{ data: GlobalStat
       .innerJoin(matches, eq(participations.matchId, matches.id))
       .innerJoin(decks, eq(participations.deckId, decks.id))
       .where(and(eq(matches.createdBy, userId), eq(matches.status, 'completed'))),
+
+    // Per-player per-deck play counts (used to find top player's most-used deck)
+    db
+      .select({
+        playerId: participations.playerId,
+        deckId: participations.deckId,
+        total: count(participations.id),
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .where(and(eq(matches.createdBy, userId), eq(matches.status, 'completed')))
+      .groupBy(participations.playerId, participations.deckId),
   ]);
 
   const totalMatchCount = Number(totalMatchRows[0]?.total ?? 0);
@@ -757,10 +777,31 @@ export async function getGlobalStats(userId: string): Promise<{ data: GlobalStat
     .sort((a, b) => (b.wr ?? -1) - (a.wr ?? -1))
     .slice(0, 5);
 
+  // ── Top player's most-used deck (for the ranking list hero thumbnail) ────────
+
+  const topPlayerId = ranked.find((r) => r.rank === 1)?.playerId ?? null;
+  let topPlayerDeckId: string | null = null;
+  let topPlayerDeckPlays = 0;
+  if (topPlayerId) {
+    for (const r of perPlayerDeckRows) {
+      if (r.playerId !== topPlayerId) continue;
+      const total = Number(r.total ?? 0);
+      if (total > topPlayerDeckPlays) {
+        topPlayerDeckPlays = total;
+        topPlayerDeckId = r.deckId;
+      }
+    }
+  }
+
   // ── Phase 2: Resolve objects in parallel ─────────────────────────────────────
 
   const playerIds = ranked.map((r) => r.playerId);
-  const deckIds = top5DeckEntries.map((e) => e.deckId);
+  const deckIds = Array.from(
+    new Set([
+      ...top5DeckEntries.map((e) => e.deckId),
+      ...(topPlayerDeckId ? [topPlayerDeckId] : []),
+    ]),
+  );
   const topCmdIds = top5CmdEntries.map((e) => e.commanderId);
 
   const [playerObjects, deckObjectsRaw, topCmdObjects] = await Promise.all([
@@ -819,6 +860,20 @@ export async function getGlobalStats(userId: string): Promise<{ data: GlobalStat
     })
     .filter((x): x is TopCommander => x !== null);
 
+  // ── Top player's most-used deck — resolve into a TopPlayerDeck payload ──────
+
+  let topPlayerDeck: TopPlayerDeck | null = null;
+  if (topPlayerDeckId) {
+    const deck = deckMap.get(topPlayerDeckId);
+    if (deck) {
+      const tpdCommanders = [deck.commanderId, deck.commanderId2]
+        .filter(Boolean)
+        .map((id) => deckCmdMap.get(id!))
+        .filter(Boolean) as Commander[];
+      topPlayerDeck = { deck, commanders: tpdCommanders, total_matches: topPlayerDeckPlays };
+    }
+  }
+
   return {
     data: {
       total_matches: totalMatchCount,
@@ -826,6 +881,7 @@ export async function getGlobalStats(userId: string): Promise<{ data: GlobalStat
       player_rankings: playerRankings,
       top_decks: topDecks,
       top_commanders: topCommanders,
+      top_player_deck: topPlayerDeck,
     },
   };
 }

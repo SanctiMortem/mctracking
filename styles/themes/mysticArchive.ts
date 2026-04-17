@@ -100,8 +100,8 @@ export const mysticArchive: AppTheme = {
 
   typography: {
     fontFamily: {
-      lifeTotal: 'BigShouldersDisplay_700Bold',
-      lifeTotalBold: 'BigShouldersDisplay_600SemiBold',
+      lifeTotal: 'NotoSerif_400Regular',
+      lifeTotalBold: 'NotoSerif_400Regular',
       display: 'SpaceGrotesk_700Bold',
       headline: 'SpaceGrotesk_600SemiBold',
       body: 'Manrope_400Regular',

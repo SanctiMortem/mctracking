@@ -22,7 +22,7 @@ import {
 
 import { useTranslation } from 'react-i18next';
 
-import { ColorChips } from '@/components/ui/ColorChips';
+import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { useDecks } from '@/hooks/useDecks';
 import { usePlayers } from '@/hooks/usePlayers';
 import { usePodMembers } from '@/hooks/usePodMembers';
@@ -272,7 +272,7 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
                         <Text style={styles.deckTriggerName} numberOfLines={1}>
                           {assignedDeck.name}
                         </Text>
-                        <ColorChips selected={assignedDeck.commander.colors} readonly />
+                        <ManaIdentityRow colors={assignedDeck.commander.colorIdentity} size="xs" />
                       </View>
                     ) : (
                       <Text style={styles.deckTriggerPlaceholder}>{t('match.selectDeck')}</Text>
@@ -435,7 +435,7 @@ function DeckOption({
           {deck.commander2 ? ` / ${deck.commander2.name}` : ''}
         </Text>
       </View>
-      <ColorChips selected={deck.commander.colors} readonly />
+      <ManaIdentityRow colors={deck.commander.colorIdentity} size="xs" />
     </Pressable>
   );
 }
@@ -460,6 +460,7 @@ const createStyles = (t: AppTheme) => ({
   // ─── Sections ─────────────────────────────────────────────────────────────
   sectionLabel: {
     color: t.colors.text.tertiary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.5,
@@ -468,6 +469,7 @@ const createStyles = (t: AppTheme) => ({
   },
   subSectionLabel: {
     color: t.colors.text.muted,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size.caption,
     fontWeight: t.typography.weight.medium,
     letterSpacing: 0.3,
@@ -486,6 +488,7 @@ const createStyles = (t: AppTheme) => ({
   },
   hintText: {
     color: t.colors.text.muted,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size.caption,
     marginTop: spacing[1],
   },
@@ -508,11 +511,13 @@ const createStyles = (t: AppTheme) => ({
   },
   slotAvatarText: {
     color: t.colors.accent.primary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size.caption,
     fontWeight: t.typography.weight.bold,
   },
   slotPlayerName: {
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.medium,
     width: 64,
@@ -541,12 +546,14 @@ const createStyles = (t: AppTheme) => ({
   },
   deckTriggerName: {
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.medium,
   },
   deckTriggerPlaceholder: {
     flex: 1,
     color: t.colors.text.muted,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size['body-sm'],
   },
   chevron: {
@@ -558,6 +565,7 @@ const createStyles = (t: AppTheme) => ({
   // ─── Errors ───────────────────────────────────────────────────────────────
   errorText: {
     color: t.colors.status.error,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size['body-sm'],
     marginTop: spacing[3],
   },
@@ -587,6 +595,7 @@ const createStyles = (t: AppTheme) => ({
   },
   submitBtnText: {
     color: t.colors.accent.onPrimary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['body-lg'],
     fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.5,
@@ -611,6 +620,7 @@ const createStyles = (t: AppTheme) => ({
   },
   modalTitle: {
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['heading-md'],
     fontWeight: t.typography.weight.semibold,
   },
@@ -631,6 +641,7 @@ const createStyles = (t: AppTheme) => ({
   },
   deckSectionHeader: {
     color: t.colors.text.muted,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size.caption,
     fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.5,
@@ -660,11 +671,13 @@ const createStyles = (t: AppTheme) => ({
   },
   deckOptionName: {
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size['body-lg'],
     fontWeight: t.typography.weight.medium,
   },
   deckOptionCommander: {
     color: t.colors.text.tertiary,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size['body-sm'],
   },
 
@@ -678,12 +691,14 @@ const createStyles = (t: AppTheme) => ({
   },
   edgeCaseTitle: {
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['body-lg'],
     fontWeight: t.typography.weight.medium,
     textAlign: 'center',
   },
   edgeCaseBody: {
     color: t.colors.text.tertiary,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
     lineHeight: t.typography.size['body-sm'] * 1.5,

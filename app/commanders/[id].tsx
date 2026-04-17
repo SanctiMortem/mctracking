@@ -20,7 +20,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
-import { ColorChips } from '@/components/ui/ColorChips';
+import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { useCommanderStats } from '@/hooks/useCommanderStats';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -92,8 +92,8 @@ export default function CommanderDetailScreen() {
               </View>
             )}
           </View>
-          <ColorChips selected={commander.colors} readonly />
-          {commander.colors.length === 0 && (
+          <ManaIdentityRow colors={commander.colorIdentity} size="md" />
+          {commander.colorIdentity.length === 0 && (
             <Text style={styles.colorlessNote}>{t('commanders.colorlessCommander')}</Text>
           )}
         </View>

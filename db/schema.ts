@@ -86,15 +86,19 @@ export const groups = pgTable(
 // ─────────────────────────────────────────────
 // commanders
 // E-001 · BR-ENTITY-01 · BR-ENTITY-03 · BR-DECK-03
+// Commanders are pulled from Scryfall — scryfallId is the stable source of truth.
 // ─────────────────────────────────────────────
 export const commanders = pgTable(
   'commanders',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    // Case-insensitive uniqueness enforced by unique index below
+    // Scryfall card UUID — globally unique across users
+    scryfallId: text('scryfall_id'),
     name: text('name').notNull(),
-    // Valid values: W | U | B | R | G | C  (validated in API, not schema)
-    colors: text('colors').array().notNull().default([]),
+    // Scryfall color_identity — subset of W|U|B|R|G (never 'C'; [] = colorless)
+    colorIdentity: text('color_identity').array().notNull().default([]),
+    // Scryfall image_uris.art_crop URL (may be null if card has faces with no top-level image)
+    artCrop: text('art_crop'),
     isPartner: boolean('is_partner').notNull().default(false),
     createdBy: text('created_by').notNull(), // Clerk user ID
     deletedAt: timestamp('deleted_at'),
@@ -102,9 +106,9 @@ export const commanders = pgTable(
   },
   (table) => [
     index('commanders_created_by_idx').on(table.createdBy),
-    // Case-insensitive unique name: enforced via unique index on lower(name)
-    // drizzle-kit generates this as a raw SQL index — see migration for exact DDL
-    index('commanders_name_lower_idx').on(table.name),
+    // Scryfall id is globally unique (when present)
+    uniqueIndex('commanders_scryfall_id_unique').on(table.scryfallId),
+    index('commanders_name_idx').on(table.name),
   ],
 );
 

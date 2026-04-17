@@ -15,7 +15,6 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { spacing } from '@/styles/tokens';
 import type { AppTheme } from '@/styles/themes/types';
-import type { EventType } from '@/services/matchEvents';
 
 interface EnemyCommander {
   id: string;
@@ -28,19 +27,15 @@ interface CommanderDamagePanelProps {
   /** List of all enemy commanders visible to this player (partners as separate entries). */
   enemyCommanders: EnemyCommander[];
   participationId: string;
-  onEvent: (input: {
-    participationId: string;
-    eventType: EventType;
-    delta: number;
-    commanderIdSource?: string;
-  }) => Promise<void>;
+  /** Called on every tap with +1 or −1. Parent updates damage + life synchronously. */
+  onDelta: (participationId: string, commanderIdSource: string, delta: number) => void;
 }
 
 export function CommanderDamagePanel({
   commanderDamage,
   enemyCommanders,
   participationId,
-  onEvent,
+  onDelta,
 }: CommanderDamagePanelProps) {
   const { scale, isTablet } = useResponsive();
   const styles = useThemedStyles(createStyles);
@@ -64,7 +59,7 @@ export function CommanderDamagePanel({
             commanderId={cmd.id}
             currentDamage={commanderDamage[cmd.id] ?? 0}
             participationId={participationId}
-            onEvent={onEvent}
+            onDelta={onDelta}
           />
         ))}
       </ScrollView>
@@ -79,7 +74,8 @@ const createStyles = (t: AppTheme) => ({
     width: '100%' as const,
   },
   title: {
-    color: t.colors.text.secondary,
+    color: t.colors.accent.primaryAlt,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.semibold,
     textTransform: 'uppercase' as const,

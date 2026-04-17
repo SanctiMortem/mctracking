@@ -47,6 +47,7 @@ const createStyles = (t: AppTheme) => ({
   description: {
     flex: 1,
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size['body-sm'],
   },
   descriptionUndone: {
@@ -55,6 +56,7 @@ const createStyles = (t: AppTheme) => ({
   },
   undoneTag: {
     color: t.colors.text.muted,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size.caption,
   },
 })

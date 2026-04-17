@@ -9,54 +9,34 @@
  *
  * TRACK-006 (EPIC-03)
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import { Text, View } from 'react-native';
 import { GHPressable } from '@/components/ui/GHPressable';
 
-import { useDebounce } from '@/hooks/useDebounce';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { spacing } from '@/styles/tokens';
 import type { AppTheme } from '@/styles/themes/types';
-import type { EventType } from '@/services/matchEvents';
 
-const DEBOUNCE_MS = 200;
 const POISON_LIMIT = 10;
 
 interface PoisonCounterProps {
   poisonCounters: number;
   participationId: string;
-  onEvent: (input: {
-    participationId: string;
-    eventType: EventType;
-    delta: number;
-    commanderIdSource?: string;
-  }) => Promise<void>;
+  /** Called on every tap with +1 or −1. Parent updates poisonCounters synchronously. */
+  onDelta: (participationId: string, delta: number) => void;
 }
 
-export function PoisonCounter({ poisonCounters, participationId, onEvent }: PoisonCounterProps) {
+export function PoisonCounter({ poisonCounters, participationId, onDelta }: PoisonCounterProps) {
   const styles = useThemedStyles(createStyles);
-  const [pendingDelta, setPendingDelta] = useState(0);
 
-  const displayValue = Math.max(0, poisonCounters + pendingDelta);
+  // Single source of truth — no local arithmetic on the displayed value.
+  const displayValue = poisonCounters;
   const isAtLimit = displayValue >= POISON_LIMIT;
   const canDecrement = displayValue > 0;
 
-  const { trigger: debounceTrigger, flush } = useDebounce<number>((accumulated) => {
-    if (accumulated !== 0) {
-      onEvent({ participationId, eventType: 'poison_change', delta: accumulated });
-      setPendingDelta(0);
-    }
-  }, DEBOUNCE_MS);
-
   const applyDelta = useCallback((d: number) => {
-    setPendingDelta((prev) => {
-      const next = Math.max(-poisonCounters, prev + d);
-      debounceTrigger(next);
-      return next;
-    });
-  }, [poisonCounters, debounceTrigger]);
-
-  useEffect(() => () => { flush(); }, [flush]);
+    onDelta(participationId, d);
+  }, [onDelta, participationId]);
 
   return (
     <View style={styles.container}>
@@ -98,7 +78,8 @@ const createStyles = (t: AppTheme) => ({
     gap: spacing[2],
   },
   title: {
-    color: t.colors.text.secondary,
+    color: t.colors.accent.primaryAlt,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.semibold,
     textTransform: 'uppercase' as const,
@@ -120,11 +101,13 @@ const createStyles = (t: AppTheme) => ({
   },
   btnText: {
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['heading-md'],
     fontWeight: t.typography.weight.semibold,
   },
   count: {
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.lifeTotalBold,
     fontSize: t.typography.size['heading-lg'],
     fontWeight: t.typography.weight.bold,
     minWidth: 32,
@@ -135,6 +118,7 @@ const createStyles = (t: AppTheme) => ({
   },
   limitText: {
     color: t.colors.accent.green,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size.caption,
     fontWeight: t.typography.weight.semibold,
   },

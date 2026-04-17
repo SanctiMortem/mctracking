@@ -2,18 +2,26 @@
  * Client-side API fetch helper.
  * Resolves the base URL for Expo Router API Routes from the native client.
  *
- * In development: uses expo-constants hostUri (Metro dev server).
- * In production:  uses EXPO_PUBLIC_API_URL env var.
+ * Resolution order:
+ *   1. EXPO_PUBLIC_API_URL (baked at build time in preview/prod).
+ *   2. Metro dev server via expo-constants hostUri (only in __DEV__).
+ *   3. Hard-coded production fallback — protects release builds where the
+ *      env var wasn't baked in, otherwise requests would go to
+ *      http://localhost:8081 and fail with "Network request failed".
  */
 import Constants from 'expo-constants';
+
+const PRODUCTION_API_URL = 'https://mctracker-about-agency.vercel.app';
 
 function getBaseUrl(): string {
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
   }
-  // Metro dev server — hostUri is "192.168.x.x:8081"
-  const host = Constants.expoConfig?.hostUri?.split(':').shift() ?? 'localhost';
-  return `http://${host}:8081`;
+  if (__DEV__) {
+    const host = Constants.expoConfig?.hostUri?.split(':').shift() ?? 'localhost';
+    return `http://${host}:8081`;
+  }
+  return PRODUCTION_API_URL;
 }
 
 type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';

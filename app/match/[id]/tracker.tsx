@@ -127,6 +127,9 @@ export default function MatchTrackerScreen() {
     toastError,
     clearToastError,
     recordEvent,
+    applyLifeChange,
+    applyPoisonChange,
+    applyCommanderDamage,
     undoLastEvent,
     addLocalEvent,
   } = useTracker(id);
@@ -239,6 +242,7 @@ export default function MatchTrackerScreen() {
       content: (
         <PlayerDashboard
           playerName={p.player.name}
+          artCrop={p.commander.artCrop ?? p.commander2?.artCrop ?? null}
           timerSeconds={turnTimers.elapsed[p.id] ?? 0}
           timerActive={turnTimers.activeId === p.id}
           onToggleTimer={() => turnTimers.toggle(p.id)}
@@ -251,14 +255,14 @@ export default function MatchTrackerScreen() {
             <LifeCounter
               lifeTotal={p.lifeTotal}
               participationId={p.id}
-              onEvent={recordEvent}
+              onDelta={applyLifeChange}
             />
           }
           poisonOverlay={
             <PoisonCounter
               poisonCounters={p.poisonCounters}
               participationId={p.id}
-              onEvent={recordEvent}
+              onDelta={applyPoisonChange}
             />
           }
           cmdDamageOverlay={
@@ -266,7 +270,7 @@ export default function MatchTrackerScreen() {
               commanderDamage={p.commanderDamage}
               enemyCommanders={enemyCommanders}
               participationId={p.id}
-              onEvent={recordEvent}
+              onDelta={applyCommanderDamage}
             />
           }
           poisonCount={p.poisonCounters}

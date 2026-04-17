@@ -6,7 +6,7 @@
  *
  * HIST-011 (EPIC-04)
  */
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 
 import type { PlayerRanking } from '@/services/stats';
 import { spacing } from '@/styles/tokens';
@@ -15,6 +15,10 @@ import type { AppTheme } from '@/styles/themes/types';
 
 interface PlayerRankingRowProps {
   ranking: PlayerRanking;
+  /** Commander art crop URL — only passed in for the rank-1 player. */
+  topDeckArtCrop?: string | null;
+  /** Commander/deck label — shown underneath the player name when present. */
+  topDeckLabel?: string | null;
 }
 
 function getInitials(name: string): string {
@@ -25,27 +29,37 @@ function getInitials(name: string): string {
     .join('');
 }
 
-export function PlayerRankingRow({ ranking }: PlayerRankingRowProps) {
+export function PlayerRankingRow({ ranking, topDeckArtCrop, topDeckLabel }: PlayerRankingRowProps) {
   const styles = useThemedStyles(createStyles);
 
   const { player, total_matches, win_rate_pct, rank } = ranking;
   const isTop = rank === 1;
   const winRateText = win_rate_pct !== null ? `${win_rate_pct}%` : '—';
+  const showArt = isTop && !!topDeckArtCrop;
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, showArt && styles.rowTop]}>
       {/* Rank badge */}
       <View style={[styles.rankBadge, isTop && styles.rankBadgeTop]}>
         <Text style={[styles.rankText, isTop && styles.rankTextTop]}>#{rank}</Text>
       </View>
 
-      {/* Initials avatar */}
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{getInitials(player.name)}</Text>
-      </View>
+      {/* Avatar — commander art for #1, initials otherwise */}
+      {showArt ? (
+        <Image source={{ uri: topDeckArtCrop! }} style={styles.artAvatar} resizeMode="cover" />
+      ) : (
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{getInitials(player.name)}</Text>
+        </View>
+      )}
 
-      {/* Name */}
-      <Text style={styles.name} numberOfLines={1}>{player.name}</Text>
+      {/* Name + optional deck label */}
+      <View style={styles.nameBlock}>
+        <Text style={styles.name} numberOfLines={1}>{player.name}</Text>
+        {showArt && topDeckLabel && (
+          <Text style={styles.deckLabel} numberOfLines={1}>{topDeckLabel}</Text>
+        )}
+      </View>
 
       {/* Stats */}
       <View style={styles.stats}>
@@ -69,10 +83,14 @@ const createStyles = (t: AppTheme) => ({
     backgroundColor: t.colors.background.surface,
     borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: t.colors.border.default,
+    borderColor: t.colors.accent.primaryAlt + '55',
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
     gap: spacing[3],
+  },
+  rowTop: {
+    borderColor: t.colors.accent.primary + '99',
+    backgroundColor: t.colors.accent.primary + '12',
   },
 
   rankBadge: {
@@ -107,11 +125,23 @@ const createStyles = (t: AppTheme) => ({
     fontWeight: t.typography.weight.bold,
   },
 
+  artAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    flexShrink: 0,
+    backgroundColor: t.colors.background.elevated,
+  },
+
+  nameBlock: { flex: 1, gap: 2 },
   name: {
-    flex: 1,
-    color: t.colors.text.primary,
+    color: t.colors.accent.primaryAlt,
     fontSize: t.typography.size['body-lg'],
-    fontWeight: t.typography.weight.medium,
+    fontWeight: t.typography.weight.semibold,
+  },
+  deckLabel: {
+    color: t.colors.text.tertiary,
+    fontSize: t.typography.size.label,
   },
 
   stats: { alignItems: 'flex-end', gap: 4, flexShrink: 0 },

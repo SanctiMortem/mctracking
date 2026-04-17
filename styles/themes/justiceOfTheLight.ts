@@ -104,8 +104,8 @@ export const justiceOfTheLight: AppTheme = {
 
   typography: {
     fontFamily: {
-      lifeTotal: 'BigShouldersDisplay_700Bold',  // stays — tracker rule
-      lifeTotalBold: 'BigShouldersDisplay_600SemiBold',
+      lifeTotal: 'NotoSerif_400Regular',
+      lifeTotalBold: 'NotoSerif_400Regular',
       display: 'NotoSerif_700Bold',              // "carved" serif headlines
       headline: 'NotoSerif_600SemiBold',
       body: 'WorkSans_400Regular',               // clean functional body

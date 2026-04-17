@@ -8,8 +8,19 @@ import { useAuth } from '@clerk/clerk-expo';
 import { apiFetch } from '@/services/api';
 import type { Commander } from '@/db/index';
 
-type CreateInput = { name: string; colors: string[]; isPartner: boolean };
-type UpdateInput = Partial<CreateInput>;
+type CreateInput = {
+  scryfall_id: string;
+  name: string;
+  color_identity: string[];
+  art_crop: string | null;
+  is_partner: boolean;
+};
+type UpdateInput = Partial<{
+  name: string;
+  color_identity: string[];
+  art_crop: string | null;
+  is_partner: boolean;
+}>;
 
 export function useCommanders() {
   const { getToken } = useAuth();

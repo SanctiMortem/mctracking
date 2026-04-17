@@ -119,6 +119,13 @@ export default function HistoryScreen() {
 
   return (
     <View style={styles.screen}>
+      {/* Intro — flavor subtitle */}
+      <View style={styles.intro}>
+        <Text style={styles.introSubtitle}>
+          Where the memories of past struggles and adventures are remembered.
+        </Text>
+      </View>
+
       {/* Filter bar — always visible */}
       <MatchHistoryFilterBar filters={filters} onChange={setFilters} />
 
@@ -177,6 +184,19 @@ const createStyles = (t: AppTheme) => ({
   screen: {
     flex: 1,
     backgroundColor: t.colors.background.primary,
+  },
+
+  intro: {
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[3],
+    paddingBottom: spacing[1],
+  },
+  introSubtitle: {
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size.caption,
+    fontFamily: t.typography.fontFamily.body,
+    fontStyle: 'italic' as const,
+    letterSpacing: 0.2,
   },
 
   list: {

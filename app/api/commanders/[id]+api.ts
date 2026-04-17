@@ -1,7 +1,10 @@
 /**
  * GET    /api/commanders/:id — commander detail (owner only)
- * PATCH  /api/commanders/:id — update a commander (owner only)
- * DELETE /api/commanders/:id — soft delete a commander (owner only)
+ * PATCH  /api/commanders/:id — update editable fields (owner only)
+ * DELETE /api/commanders/:id — soft delete (owner only)
+ *
+ * Editable fields: name, color_identity, art_crop, is_partner
+ * (scryfall_id is immutable — to switch cards, create a new commander)
  *
  * DATA-002 / DATA-010 (EPIC-01)
  */
@@ -12,7 +15,7 @@ import {
   getCommanderById,
   softDeleteCommander,
   updateCommander,
-  validateColors,
+  validateColorIdentity,
 } from '@/services/commanders';
 
 export async function GET(req: Request) {
@@ -41,7 +44,7 @@ export async function PATCH(req: Request) {
     return Response.json({ error: 'VALIDATION_ERROR', message: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { name, colors, isPartner } = body as Record<string, unknown>;
+  const { name, color_identity, art_crop, is_partner } = body as Record<string, unknown>;
   const update: Record<string, unknown> = {};
 
   if (name !== undefined) {
@@ -54,30 +57,28 @@ export async function PATCH(req: Request) {
     update.name = name.trim();
   }
 
-  if (colors !== undefined) {
-    if (!validateColors(colors)) {
+  if (color_identity !== undefined) {
+    if (!validateColorIdentity(color_identity)) {
       return Response.json(
-        { error: 'VALIDATION_ERROR', field: 'colors', message: 'colors must be an array of W|U|B|R|G|C' },
+        { error: 'VALIDATION_ERROR', field: 'color_identity', message: 'color_identity must be an array of W|U|B|R|G' },
         { status: 400 },
       );
     }
-    update.colors = colors;
+    update.colorIdentity = color_identity;
   }
 
-  if (isPartner !== undefined) {
-    update.isPartner = Boolean(isPartner);
+  if ('art_crop' in body) {
+    update.artCrop = typeof art_crop === 'string' ? art_crop : null;
+  }
+
+  if (is_partner !== undefined) {
+    update.isPartner = Boolean(is_partner);
   }
 
   const result = await updateCommander(userId, id, update);
 
   if ('notFound' in result) return Response.json({ error: 'NOT_FOUND' }, { status: 404 });
   if ('forbidden' in result) return Response.json({ error: 'Forbidden' }, { status: 403 });
-  if ('conflict' in result) {
-    return Response.json(
-      { error: 'CONFLICT', message: 'A commander with this name already exists' },
-      { status: 409 },
-    );
-  }
 
   return Response.json(result.data);
 }

@@ -43,8 +43,10 @@ function buildDeckSelect() {
       // Primary commander
       commander: {
         id: cmd1.id,
+        scryfallId: cmd1.scryfallId,
         name: cmd1.name,
-        colors: cmd1.colors,
+        colorIdentity: cmd1.colorIdentity,
+        artCrop: cmd1.artCrop,
         isPartner: cmd1.isPartner,
         createdBy: cmd1.createdBy,
         deletedAt: cmd1.deletedAt,
@@ -53,8 +55,10 @@ function buildDeckSelect() {
       // Partner commander (nullable)
       commander2: {
         id: cmd2.id,
+        scryfallId: cmd2.scryfallId,
         name: cmd2.name,
-        colors: cmd2.colors,
+        colorIdentity: cmd2.colorIdentity,
+        artCrop: cmd2.artCrop,
         isPartner: cmd2.isPartner,
         createdBy: cmd2.createdBy,
         deletedAt: cmd2.deletedAt,

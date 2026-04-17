@@ -410,8 +410,8 @@ export type ParticipationDetail = Pick<
 > & {
   player: Pick<Player, 'id' | 'name'>;
   deck: Pick<Deck, 'id' | 'name'>;
-  commander: Pick<Commander, 'id' | 'name' | 'colors' | 'isPartner'>;
-  commander2: Pick<Commander, 'id' | 'name' | 'colors' | 'isPartner'> | null;
+  commander: Pick<Commander, 'id' | 'name' | 'colorIdentity' | 'artCrop' | 'isPartner'>;
+  commander2: Pick<Commander, 'id' | 'name' | 'colorIdentity' | 'artCrop' | 'isPartner'> | null;
 };
 
 export type GetMatchByIdResult =
@@ -484,11 +484,13 @@ export async function getMatchById(userId: string, matchId: string): Promise<Get
       deckName: decks.name,
       c1Id: c1.id,
       c1Name: c1.name,
-      c1Colors: c1.colors,
+      c1ColorIdentity: c1.colorIdentity,
+      c1ArtCrop: c1.artCrop,
       c1IsPartner: c1.isPartner,
       c2Id: c2.id,
       c2Name: c2.name,
-      c2Colors: c2.colors,
+      c2ColorIdentity: c2.colorIdentity,
+      c2ArtCrop: c2.artCrop,
       c2IsPartner: c2.isPartner,
     })
     .from(participations)
@@ -511,9 +513,21 @@ export async function getMatchById(userId: string, matchId: string): Promise<Get
     createdAt: row.createdAt,
     player: { id: row.playerId, name: row.playerName },
     deck: { id: row.deckId, name: row.deckName },
-    commander: { id: row.c1Id, name: row.c1Name, colors: row.c1Colors, isPartner: row.c1IsPartner },
+    commander: {
+      id: row.c1Id,
+      name: row.c1Name,
+      colorIdentity: row.c1ColorIdentity,
+      artCrop: row.c1ArtCrop,
+      isPartner: row.c1IsPartner,
+    },
     commander2: row.c2Id !== null
-      ? { id: row.c2Id, name: row.c2Name!, colors: row.c2Colors!, isPartner: row.c2IsPartner! }
+      ? {
+          id: row.c2Id,
+          name: row.c2Name!,
+          colorIdentity: row.c2ColorIdentity!,
+          artCrop: row.c2ArtCrop,
+          isPartner: row.c2IsPartner!,
+        }
       : null,
   }));
 
@@ -754,11 +768,13 @@ export async function listMatches(
       deckName: decks.name,
       c1Id: c1.id,
       c1Name: c1.name,
-      c1Colors: c1.colors,
+      c1ColorIdentity: c1.colorIdentity,
+      c1ArtCrop: c1.artCrop,
       c1IsPartner: c1.isPartner,
       c2Id: c2.id,
       c2Name: c2.name,
-      c2Colors: c2.colors,
+      c2ColorIdentity: c2.colorIdentity,
+      c2ArtCrop: c2.artCrop,
       c2IsPartner: c2.isPartner,
     })
     .from(participations)
@@ -782,9 +798,21 @@ export async function listMatches(
       createdAt: row.createdAt,
       player: { id: row.playerId, name: row.playerName },
       deck: { id: row.deckId, name: row.deckName },
-      commander: { id: row.c1Id, name: row.c1Name, colors: row.c1Colors, isPartner: row.c1IsPartner },
+      commander: {
+        id: row.c1Id,
+        name: row.c1Name,
+        colorIdentity: row.c1ColorIdentity,
+        artCrop: row.c1ArtCrop,
+        isPartner: row.c1IsPartner,
+      },
       commander2: row.c2Id !== null
-        ? { id: row.c2Id, name: row.c2Name!, colors: row.c2Colors!, isPartner: row.c2IsPartner! }
+        ? {
+            id: row.c2Id,
+            name: row.c2Name!,
+            colorIdentity: row.c2ColorIdentity!,
+            artCrop: row.c2ArtCrop,
+            isPartner: row.c2IsPartner!,
+          }
         : null,
     };
     if (!partsByMatchId.has(row.matchId)) partsByMatchId.set(row.matchId, []);

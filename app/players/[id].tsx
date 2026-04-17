@@ -21,7 +21,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
-import { ColorChips } from '@/components/ui/ColorChips';
+import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { DeckStatRow } from '@/components/match/DeckStatRow';
 import { usePlayerStats } from '@/hooks/usePlayerStats';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -196,7 +196,7 @@ export default function PlayerProfileScreen() {
                     <Text style={styles.commanderName} numberOfLines={1}>
                       {fc.commander.name}
                     </Text>
-                    <ColorChips selected={fc.commander.colors} readonly />
+                    <ManaIdentityRow colors={fc.commander.colorIdentity} size="xs" />
                   </View>
                   <View style={styles.commanderStats}>
                     <Text style={styles.cmdMatchCount}>{fc.matches}p</Text>

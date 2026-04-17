@@ -88,7 +88,12 @@ export default function DecksScreen() {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={[styles.header, { paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]}>
-        <Text style={styles.title}>{t('deck.decks')}</Text>
+        <View style={styles.titleBlock}>
+          <Text style={styles.title}>{t('deck.decks')}</Text>
+          <Text style={styles.subtitle}>
+            Your arsenal — the blades and bindings you bring to the duel.
+          </Text>
+        </View>
         <Pressable style={styles.fab} onPress={openCreate} accessibilityLabel={t('deck.addDeckLabel')}>
           <Text style={styles.fabLabel}>{t('deck.addDeck')}</Text>
         </Pressable>
@@ -138,10 +143,23 @@ const createStyles = (t: AppTheme) => ({
     borderBottomWidth: 1,
     borderBottomColor: t.colors.border.subtle,
   },
+  titleBlock: {
+    flex: 1,
+    gap: 2,
+    marginRight: spacing[3],
+  },
   title: {
     color: t.colors.text.primary,
     fontSize: t.typography.size['heading-lg'],
+    fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.bold,
+  },
+  subtitle: {
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size.caption,
+    fontFamily: t.typography.fontFamily.body,
+    fontStyle: 'italic' as const,
+    letterSpacing: 0.2,
   },
   fab: {
     backgroundColor: t.colors.accent.primary,

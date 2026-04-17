@@ -252,6 +252,7 @@ const createStyles = (t: AppTheme) => ({
   },
   title: {
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['heading-md'],
     fontWeight: t.typography.weight.semibold,
   },
@@ -260,6 +261,7 @@ const createStyles = (t: AppTheme) => ({
   },
   cancelBtnText: {
     color: t.colors.text.link,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.medium,
   },
@@ -273,6 +275,7 @@ const createStyles = (t: AppTheme) => ({
   // Section label
   sectionLabel: {
     color: t.colors.text.tertiary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.5,
@@ -308,6 +311,7 @@ const createStyles = (t: AppTheme) => ({
   avatarSelected: { backgroundColor: t.colors.accent.primary + '33' },
   avatarText: {
     color: t.colors.text.tertiary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size.caption,
     fontWeight: t.typography.weight.bold,
   },
@@ -315,6 +319,7 @@ const createStyles = (t: AppTheme) => ({
   playerName: {
     flex: 1,
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size['body-lg'],
     fontWeight: t.typography.weight.medium,
   },
@@ -336,11 +341,13 @@ const createStyles = (t: AppTheme) => ({
   modeIcon: { fontSize: 40 },
   modeTitle: {
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['heading-md'],
     fontWeight: t.typography.weight.semibold,
   },
   modeBody: {
     color: t.colors.text.tertiary,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size['body-sm'],
     textAlign: 'center',
     lineHeight: t.typography.size['body-sm'] * 1.6,
@@ -369,6 +376,7 @@ const createStyles = (t: AppTheme) => ({
   },
   secondaryBtnText: {
     color: t.colors.text.secondary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.medium,
   },
@@ -379,6 +387,7 @@ const createStyles = (t: AppTheme) => ({
 
   errorText: {
     color: t.colors.status.error,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size['body-sm'],
     marginTop: spacing[3],
   },
@@ -401,6 +410,7 @@ const createStyles = (t: AppTheme) => ({
   confirmBtnDisabled: { backgroundColor: t.colors.background.surface },
   confirmBtnText: {
     color: '#fff',
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['body-lg'],
     fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.5,

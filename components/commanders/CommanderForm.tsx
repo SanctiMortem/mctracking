@@ -1,5 +1,11 @@
 /**
- * CommanderForm — Modal form for creating / editing a commander.
+ * CommanderForm — Modal form for editing an existing commander.
+ *
+ * Commanders are created by picking a card from Scryfall inside DeckForm, so
+ * this form no longer offers manual creation: only name, partner-capable flag,
+ * and color identity display are editable. Color identity itself is pulled
+ * from Scryfall at creation time and shown read-only here.
+ *
  * DATA-005 (EPIC-01)
  */
 import { useEffect, useState } from 'react';
@@ -10,7 +16,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  StyleSheet,
   Switch,
   Text,
   TextInput,
@@ -20,7 +25,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import type { Commander } from '@/db/index';
-import { ColorChips } from '@/components/ui/ColorChips';
+import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
@@ -29,30 +34,25 @@ import { useTheme } from '@/contexts/ThemeContext';
 interface CommanderFormProps {
   visible: boolean;
   commander?: Commander | null;
-  onSave: (data: { name: string; colors: string[]; isPartner: boolean }) => Promise<void>;
+  onSave: (data: { name: string; is_partner: boolean }) => Promise<void>;
   onClose: () => void;
 }
 
 export function CommanderForm({ visible, commander, onSave, onClose }: CommanderFormProps) {
   const { theme } = useTheme();
-
   const styles = useThemedStyles(createStyles);
-
   const { t } = useTranslation();
+
   const [name, setName] = useState('');
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [isPartner, setIsPartner] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Populate when editing
   useEffect(() => {
     if (commander) {
       setName(commander.name);
-      setSelectedColors(commander.colors ?? []);
       setIsPartner(commander.isPartner);
     } else {
       setName('');
-      setSelectedColors([]);
       setIsPartner(false);
     }
   }, [commander, visible]);
@@ -64,34 +64,27 @@ export function CommanderForm({ visible, commander, onSave, onClose }: Commander
     }
     setSaving(true);
     try {
-      await onSave({ name: name.trim(), colors: selectedColors, isPartner });
+      await onSave({ name: name.trim(), is_partner: isPartner });
       onClose();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : t('common.error');
-      const isConflict = (e as { code?: string }).code === 'CONFLICT';
-      Alert.alert(isConflict ? t('commanders.nameExists') : t('common.error'), msg);
+      Alert.alert(t('common.error'), msg);
     } finally {
       setSaving(false);
     }
   }
 
-  const isEdit = !!commander;
+  if (!commander) return null;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.sheet}
       >
         <View style={styles.handle} />
-
-        <Text style={styles.title}>{isEdit ? t('commanders.editCommander') : t('commanders.newCommander')}</Text>
+        <Text style={styles.title}>{t('commanders.editCommander')}</Text>
 
         {/* Name */}
         <Text style={styles.label}>{t('commanders.name')}</Text>
@@ -99,15 +92,15 @@ export function CommanderForm({ visible, commander, onSave, onClose }: Commander
           style={styles.input}
           value={name}
           onChangeText={setName}
-          placeholder={t('commanders.namePlaceholder')}
           placeholderTextColor={theme.colors.text.muted}
-          autoFocus={!isEdit}
           returnKeyType="done"
         />
 
-        {/* Colors */}
+        {/* Color identity (read-only, from Scryfall) */}
         <Text style={styles.label}>{t('commanders.colors')}</Text>
-        <ColorChips selected={selectedColors} onChange={setSelectedColors} />
+        <View style={styles.colorRow}>
+          <ManaIdentityRow colors={commander.colorIdentity ?? []} size="md" />
+        </View>
 
         {/* Partner toggle */}
         <View style={styles.row}>
@@ -131,7 +124,7 @@ export function CommanderForm({ visible, commander, onSave, onClose }: Commander
           <Pressable style={[styles.btnSave, saving && styles.btnDisabled]} onPress={handleSave} disabled={saving}>
             {saving
               ? <ActivityIndicator color={theme.colors.text.inverse} size="small" />
-              : <Text style={styles.btnSaveText}>{isEdit ? t('common.save') : t('common.create')}</Text>
+              : <Text style={styles.btnSaveText}>{t('common.save')}</Text>
             }
           </Pressable>
         </View>
@@ -141,10 +134,7 @@ export function CommanderForm({ visible, commander, onSave, onClose }: Commander
 }
 
 const createStyles = (t: AppTheme) => ({
-  backdrop: {
-    flex: 1,
-    backgroundColor: t.colors.background.overlay,
-  },
+  backdrop: { flex: 1, backgroundColor: t.colors.background.overlay },
   sheet: {
     backgroundColor: t.colors.background.elevated,
     borderTopLeftRadius: t.radius.xxl,
@@ -187,19 +177,16 @@ const createStyles = (t: AppTheme) => ({
     borderWidth: 1,
     borderColor: t.colors.border.default,
   },
+  colorRow: {
+    paddingVertical: spacing[2],
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  rowLabel: {
-    flex: 1,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing[3],
-    marginTop: spacing[2],
-  },
+  rowLabel: { flex: 1 },
+  actions: { flexDirection: 'row', gap: spacing[3], marginTop: spacing[2] },
   btnCancel: {
     flex: 1,
     paddingVertical: spacing[3],
@@ -225,7 +212,5 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size['body-lg'],
     fontWeight: t.typography.weight.semibold,
   },
-  btnDisabled: {
-    opacity: 0.6,
-  },
-})
+  btnDisabled: { opacity: 0.6 },
+});

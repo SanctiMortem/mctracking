@@ -8,7 +8,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { ColorChips } from '@/components/ui/ColorChips';
+import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import type { MatchOutcome } from '@/hooks/useMatchResults';
 import type { ParticipationDetail } from '@/services/matches';
 import { spacing } from '@/styles/tokens';
@@ -89,7 +89,7 @@ export function MatchResultCard({ outcome, winner, winConditionDisplay }: MatchR
               <Text style={styles.winnerName}>{winner.player.name}</Text>
               <View style={styles.deckRow}>
                 <Text style={styles.deckName} numberOfLines={1}>{winner.deck.name}</Text>
-                <ColorChips selected={winner.commander.colors} readonly />
+                <ManaIdentityRow colors={winner.commander.colorIdentity} size="xs" />
               </View>
             </View>
             <Text style={styles.crown}>👑</Text>

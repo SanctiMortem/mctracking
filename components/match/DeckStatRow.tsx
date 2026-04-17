@@ -7,7 +7,7 @@
  */
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { ColorChips } from '@/components/ui/ColorChips';
+import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import type { Commander, Deck } from '@/db/index';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -25,7 +25,7 @@ export function DeckStatRow({ deck, commanders, matches, win_rate_pct, onPress }
   const styles = useThemedStyles(createStyles);
 
   const isPartner = commanders.length > 1;
-  const allColors = commanders.flatMap((c) => c.colors);
+  const allColors = Array.from(new Set(commanders.flatMap((c) => c.colorIdentity ?? [])));
   const winRateText = win_rate_pct !== null ? `${win_rate_pct}%` : '—';
 
   return (
@@ -45,7 +45,7 @@ export function DeckStatRow({ deck, commanders, matches, win_rate_pct, onPress }
             </View>
           )}
         </View>
-        <ColorChips selected={allColors} readonly />
+        <ManaIdentityRow colors={allColors} size="xs" />
       </View>
 
       {/* Right: stats */}
@@ -70,7 +70,7 @@ const createStyles = (t: AppTheme) => ({
     backgroundColor: t.colors.background.surface,
     borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: t.colors.border.default,
+    borderColor: t.colors.accent.primaryAlt + '55',
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
     gap: spacing[3],
@@ -79,9 +79,9 @@ const createStyles = (t: AppTheme) => ({
   info: { flex: 1, gap: 4 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
   deckName: {
-    color: t.colors.text.primary,
+    color: t.colors.accent.primaryAlt,
     fontSize: t.typography.size['body-lg'],
-    fontWeight: t.typography.weight.medium,
+    fontWeight: t.typography.weight.semibold,
     flexShrink: 1,
   },
   partnerBadge: {

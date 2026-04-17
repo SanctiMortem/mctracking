@@ -45,16 +45,41 @@ export type UseTrackerReturn = {
   error: string | null;
   toastError: string | null;
   clearToastError: () => void;
-  /** Record a tracker state change. Called by child components after debounce. */
+  /**
+   * Record a one-shot event that fires immediately with no debounce/batching
+   * (e.g. player_died). For incremental +/− counters, prefer the
+   * `applyLifeChange` / `applyPoisonChange` / `applyCommanderDamage` APIs
+   * which update state synchronously on every tap and batch the server commit.
+   */
   recordEvent: (input: {
     participationId: string;
     eventType: EventType;
     delta: number;
     commanderIdSource?: string;
   }) => Promise<void>;
+  /**
+   * Apply a life delta to a participation. Immediately updates local state
+   * (no visual lag) and debounces a batched POST /api/match-events for the
+   * accumulated delta since the last commit.
+   */
+  applyLifeChange: (participationId: string, delta: number) => void;
+  /** Apply a poison counter delta (same batching semantics as applyLifeChange). */
+  applyPoisonChange: (participationId: string, delta: number) => void;
+  /**
+   * Apply commander damage from `commanderIdSource` to a participation.
+   * Immediately subtracts from life total AND increments the per-commander
+   * damage map (atomic visual update). Server commit is debounced.
+   */
+  applyCommanderDamage: (
+    participationId: string,
+    commanderIdSource: string,
+    delta: number,
+  ) => void;
   /** Undo the last non-undone event. */
   undoLastEvent: () => Promise<void>;
 };
+
+const COMMIT_DEBOUNCE_MS = 600;
 
 // ─────────────────────────────────────────────
 // Hook
@@ -73,6 +98,20 @@ export function useTracker(matchId: string): UseTrackerReturn {
   // Keep a ref to participations for use inside async callbacks without stale closure
   const participationsRef = useRef<TrackerParticipation[]>([]);
   participationsRef.current = participations;
+
+  // ── Per-participation accumulators for debounced server commits ──
+  // Structure: participationId → { life, poison, cmdDamage: Map<srcId, delta>, timer }
+  // These refs track deltas that have been applied to local state but not yet
+  // persisted. A single debounce timer per participation flushes the whole
+  // bundle in one burst, keeping server load identical to the old design while
+  // letting the UI update synchronously on every tap.
+  type PendingCommit = {
+    life: number;
+    poison: number;
+    cmdDamage: Map<string, number>;
+    timer: ReturnType<typeof setTimeout> | null;
+  };
+  const pendingRef = useRef<Map<string, PendingCommit>>(new Map());
 
   // ── Load match on mount ────────────────────
   useEffect(() => {
@@ -188,6 +227,250 @@ export function useTracker(matchId: string): UseTrackerReturn {
     }
   }, [matchId, getToken]);
 
+  // ── Batched per-tap apply + debounced commit ──────────────────────────
+  // The counter components (LifeCounter, PoisonCounter, CommanderDamageRow)
+  // call these on EVERY tap. State updates synchronously so the displayed
+  // number has no coordination with any second value — eliminating the
+  // parent/child state race that caused mid-tap HP bounces. Server commits
+  // are debounced per participation and fire independent POSTs for life,
+  // poison, and each commander-damage source, each representing the full
+  // accumulated delta since the last commit.
+
+  const getPending = useCallback((pid: string): PendingCommit => {
+    let p = pendingRef.current.get(pid);
+    if (!p) {
+      p = { life: 0, poison: 0, cmdDamage: new Map(), timer: null };
+      pendingRef.current.set(pid, p);
+    }
+    return p;
+  }, []);
+
+  // Post a single event and append to log on success; revert state on failure.
+  // Retries on transient failures so a brief network blip doesn't cause the
+  // HP (or poison / commander damage) to visibly snap back after the user
+  // finishes a burst of taps.
+  const commitSingleEvent = useCallback(
+    async (input: {
+      participationId: string;
+      eventType: EventType;
+      delta: number;
+      commanderIdSource?: string;
+    }) => {
+      const MAX_ATTEMPTS = 3;
+      const BACKOFF_MS = [0, 400, 1000]; // cumulative ~1.4s before giving up
+      let lastError: unknown = null;
+
+      for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        if (BACKOFF_MS[attempt] > 0) {
+          await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt]));
+        }
+        try {
+          const token = await getToken();
+          const res = await apiFetch<{ success: true; data: MatchEvent }>(
+            '/api/match-events',
+            'POST',
+            {
+              match_id: matchId,
+              participation_id: input.participationId,
+              event_type: input.eventType,
+              delta: input.delta,
+              commander_id_source: input.commanderIdSource,
+            },
+            token ?? undefined,
+          );
+          setEvents((prev) => [
+            ...prev,
+            {
+              id: res.data.id,
+              participationId: res.data.participationId,
+              eventType: res.data.eventType,
+              delta: res.data.delta,
+              commanderIdSource: res.data.commanderIdSource,
+              isUndone: false,
+              createdAt: res.data.createdAt,
+            },
+          ]);
+          return; // success — done
+        } catch (e) {
+          lastError = e;
+        }
+      }
+
+      // All attempts failed — revert the optimistic delta for the affected
+      // counter only, leaving any later (already-applied) deltas in place.
+      setParticipations((parts) =>
+        parts.map((p) => {
+          if (p.id !== input.participationId) return p;
+          if (input.eventType === 'life_change') {
+            return { ...p, lifeTotal: p.lifeTotal - input.delta };
+          }
+          if (input.eventType === 'poison_change') {
+            return {
+              ...p,
+              poisonCounters: Math.max(0, p.poisonCounters - input.delta),
+            };
+          }
+          if (input.eventType === 'commander_damage' && input.commanderIdSource) {
+            const current = p.commanderDamage[input.commanderIdSource] ?? 0;
+            return {
+              ...p,
+              lifeTotal: p.lifeTotal + input.delta,
+              commanderDamage: {
+                ...p.commanderDamage,
+                [input.commanderIdSource]: Math.max(0, current - input.delta),
+              },
+            };
+          }
+          return p;
+        }),
+      );
+      setToastError(
+        (lastError as Error)?.message ?? 'Failed to record event. Please try again.',
+      );
+    },
+    [matchId, getToken],
+  );
+
+  // Flush the accumulated deltas for one participation to the server.
+  const flushPending = useCallback(
+    (pid: string) => {
+      const p = pendingRef.current.get(pid);
+      if (!p) return;
+      if (p.timer) {
+        clearTimeout(p.timer);
+        p.timer = null;
+      }
+      const lifeDelta = p.life;
+      const poisonDelta = p.poison;
+      const cmdEntries = Array.from(p.cmdDamage.entries()).filter(
+        ([, v]) => v !== 0,
+      );
+      // Clear accumulators BEFORE firing so concurrent taps accumulate into a
+      // fresh bucket for the next commit window.
+      p.life = 0;
+      p.poison = 0;
+      p.cmdDamage.clear();
+
+      if (lifeDelta !== 0) {
+        void commitSingleEvent({
+          participationId: pid,
+          eventType: 'life_change',
+          delta: lifeDelta,
+        });
+      }
+      if (poisonDelta !== 0) {
+        void commitSingleEvent({
+          participationId: pid,
+          eventType: 'poison_change',
+          delta: poisonDelta,
+        });
+      }
+      for (const [cmdId, delta] of cmdEntries) {
+        void commitSingleEvent({
+          participationId: pid,
+          eventType: 'commander_damage',
+          delta,
+          commanderIdSource: cmdId,
+        });
+      }
+    },
+    [commitSingleEvent],
+  );
+
+  const scheduleCommit = useCallback(
+    (pid: string) => {
+      const p = getPending(pid);
+      if (p.timer) clearTimeout(p.timer);
+      p.timer = setTimeout(() => flushPending(pid), COMMIT_DEBOUNCE_MS);
+    },
+    [getPending, flushPending],
+  );
+
+  const applyLifeChange = useCallback(
+    (pid: string, delta: number) => {
+      if (delta === 0) return;
+      setParticipations((parts) =>
+        parts.map((p) =>
+          p.id === pid ? { ...p, lifeTotal: p.lifeTotal + delta } : p,
+        ),
+      );
+      const pend = getPending(pid);
+      pend.life += delta;
+      scheduleCommit(pid);
+    },
+    [getPending, scheduleCommit],
+  );
+
+  const applyPoisonChange = useCallback(
+    (pid: string, delta: number) => {
+      if (delta === 0) return;
+      // Track the actual delta applied (may be clamped by floor) so the
+      // server commit matches what the user saw.
+      let appliedDelta = delta;
+      setParticipations((parts) =>
+        parts.map((p) => {
+          if (p.id !== pid) return p;
+          const next = Math.max(0, p.poisonCounters + delta);
+          appliedDelta = next - p.poisonCounters;
+          return { ...p, poisonCounters: next };
+        }),
+      );
+      // Defer the accumulator update until after the state updater has run,
+      // so `appliedDelta` reflects the clamped value.
+      queueMicrotask(() => {
+        if (appliedDelta === 0) return;
+        const pend = getPending(pid);
+        pend.poison += appliedDelta;
+        scheduleCommit(pid);
+      });
+    },
+    [getPending, scheduleCommit],
+  );
+
+  const applyCommanderDamage = useCallback(
+    (pid: string, commanderIdSource: string, delta: number) => {
+      if (delta === 0) return;
+      setParticipations((parts) =>
+        parts.map((p) => {
+          if (p.id !== pid) return p;
+          const current = p.commanderDamage[commanderIdSource] ?? 0;
+          return {
+            ...p,
+            lifeTotal: p.lifeTotal - delta,
+            commanderDamage: {
+              ...p.commanderDamage,
+              [commanderIdSource]: Math.max(0, current + delta),
+            },
+          };
+        }),
+      );
+      const pend = getPending(pid);
+      pend.cmdDamage.set(
+        commanderIdSource,
+        (pend.cmdDamage.get(commanderIdSource) ?? 0) + delta,
+      );
+      scheduleCommit(pid);
+    },
+    [getPending, scheduleCommit],
+  );
+
+  // Flush any pending commits on unmount so a navigation-away doesn't drop
+  // the last burst of taps.
+  //
+  // CRITICAL: we ref-hold `flushPending` so this effect runs once per mount.
+  // If we put `flushPending` in the deps array, Clerk's unstable `getToken`
+  // reference would make `commitSingleEvent` → `flushPending` re-create on
+  // every render, triggering this cleanup on every setParticipations call —
+  // which would flush the debounce on every single tap.
+  const flushPendingRef = useRef(flushPending);
+  flushPendingRef.current = flushPending;
+  useEffect(() => {
+    const map = pendingRef.current;
+    return () => {
+      for (const pid of map.keys()) flushPendingRef.current(pid);
+    };
+  }, []);
+
   // ── undoLastEvent ──────────────────────────
   // Returns the undone event so callers can react (e.g. undo death).
   const undoLastEvent = useCallback(async (): Promise<LocalEvent | null> => {
@@ -289,6 +572,9 @@ export function useTracker(matchId: string): UseTrackerReturn {
     toastError,
     clearToastError,
     recordEvent,
+    applyLifeChange,
+    applyPoisonChange,
+    applyCommanderDamage,
     undoLastEvent,
     addLocalEvent,
   };

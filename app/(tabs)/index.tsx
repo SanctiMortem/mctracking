@@ -227,13 +227,20 @@ export default function HomeScreen() {
       {/* ── Header ── */}
       <View style={[styles.header, { paddingHorizontal: contentPadding }]}>
         <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>{t('tabs.home')}</Text>
-          {hasGroups && (
-            <ContextSwitcherChip
-              activeContext={activeContext}
-              onPress={() => setContextModalVisible(true)}
-            />
-          )}
+          <View style={styles.headerTitleBlock}>
+            <View style={styles.headerTitleRow}>
+              <Text style={styles.headerTitle}>{t('tabs.home')}</Text>
+              {hasGroups && (
+                <ContextSwitcherChip
+                  activeContext={activeContext}
+                  onPress={() => setContextModalVisible(true)}
+                />
+              )}
+            </View>
+            <Text style={styles.headerSubtitle}>
+              The gate to your journey — where every legend begins.
+            </Text>
+          </View>
         </View>
         <Pressable
           onPress={() => router.push('/settings')}
@@ -363,12 +370,30 @@ const createStyles = (t: AppTheme) => ({
     gap: spacing[2],
     flexShrink: 1 as const,
   },
+  headerTitleBlock: {
+    flex: 1 as const,
+    gap: 2,
+    flexShrink: 1 as const,
+  },
+  headerTitleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: spacing[2],
+    flexShrink: 1 as const,
+  },
   headerTitle: {
     color: t.colors.text.primary,
     fontSize: t.typography.size['heading-md'],
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.bold,
     flexShrink: 0 as const,
+  },
+  headerSubtitle: {
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size.caption,
+    fontFamily: t.typography.fontFamily.body,
+    fontStyle: 'italic' as const,
+    letterSpacing: 0.2,
   },
   gearButton: {
     padding: spacing[2],

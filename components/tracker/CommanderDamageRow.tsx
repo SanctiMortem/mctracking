@@ -2,23 +2,20 @@
  * CommanderDamageRow — one row per enemy commander in CommanderDamagePanel.
  *
  * Tap +/- to add commander damage. Alert at 21 (BR-TRACK-04).
- * Debounced — fires onEvent after DEBOUNCE_MS.
+ * Fires onDelta on every tap; parent batches the server commit.
  *
  * TRACK-005 (EPIC-03)
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import { Text, View } from 'react-native';
 import { GHPressable } from '@/components/ui/GHPressable';
 
-import { useDebounce } from '@/hooks/useDebounce';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { spacing } from '@/styles/tokens';
 import type { AppTheme } from '@/styles/themes/types';
-import type { EventType } from '@/services/matchEvents';
 
-const DEBOUNCE_MS = 200;
 const COMMANDER_DAMAGE_LIMIT = 21;
 
 interface CommanderDamageRowProps {
@@ -26,12 +23,8 @@ interface CommanderDamageRowProps {
   commanderId: string;
   currentDamage: number;
   participationId: string;
-  onEvent: (input: {
-    participationId: string;
-    eventType: EventType;
-    delta: number;
-    commanderIdSource?: string;
-  }) => Promise<void>;
+  /** Called on every tap with +1 or −1. Parent updates damage + life synchronously. */
+  onDelta: (participationId: string, commanderId: string, delta: number) => void;
 }
 
 export function CommanderDamageRow({
@@ -39,36 +32,18 @@ export function CommanderDamageRow({
   commanderId,
   currentDamage,
   participationId,
-  onEvent,
+  onDelta,
 }: CommanderDamageRowProps) {
   const { scale, isTablet } = useResponsive();
   const styles = useThemedStyles(createStyles);
   const { theme: t } = useTheme();
-  const [pendingDelta, setPendingDelta] = useState(0);
-  const displayDamage = currentDamage + pendingDelta;
+  // Single source of truth — no local arithmetic on displayed damage.
+  const displayDamage = currentDamage;
   const isAtLimit = displayDamage >= COMMANDER_DAMAGE_LIMIT;
 
-  const { trigger: debounceTrigger, flush } = useDebounce<number>((accumulated) => {
-    if (accumulated !== 0) {
-      onEvent({
-        participationId,
-        eventType: 'commander_damage',
-        delta: accumulated,
-        commanderIdSource: commanderId,
-      });
-      setPendingDelta(0);
-    }
-  }, DEBOUNCE_MS);
-
   const applyDelta = useCallback((d: number) => {
-    setPendingDelta((prev) => {
-      const next = prev + d;
-      debounceTrigger(next);
-      return next;
-    });
-  }, [debounceTrigger]);
-
-  useEffect(() => () => { flush(); }, [flush]);
+    onDelta(participationId, commanderId, d);
+  }, [onDelta, participationId, commanderId]);
 
   const btnSize = isTablet ? scale(28) : 28;
   const fontSize = isTablet ? scale(t.typography.size['body-lg']) : t.typography.size['body-lg'];
@@ -127,9 +102,10 @@ const createStyles = (t: AppTheme) => ({
     // Just tint the text, no background box
   },
   name: {
-    color: t.colors.text.secondary,
+    color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size.label,
-    fontWeight: t.typography.weight.medium,
+    fontWeight: t.typography.weight.semibold,
     letterSpacing: t.typography.letterSpacing.wide,
     textTransform: 'uppercase' as const,
     textAlign: 'center' as const,
@@ -154,6 +130,7 @@ const createStyles = (t: AppTheme) => ({
   },
   btnText: {
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['body-lg'],
     fontWeight: t.typography.weight.semibold,
   },
@@ -163,6 +140,7 @@ const createStyles = (t: AppTheme) => ({
   },
   damage: {
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.lifeTotalBold,
     fontSize: t.typography.size['body-lg'],
     fontWeight: t.typography.weight.bold,
     minWidth: 20,
@@ -173,6 +151,7 @@ const createStyles = (t: AppTheme) => ({
   },
   limitBadge: {
     color: t.colors.status.error,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size.label - 2,
     fontWeight: t.typography.weight.semibold,
     marginTop: 0,

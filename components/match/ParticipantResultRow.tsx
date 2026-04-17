@@ -6,7 +6,7 @@
  */
 import { Text, View } from 'react-native';
 
-import { ColorChips } from '@/components/ui/ColorChips';
+import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import type { ParticipationDetail } from '@/services/matches';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -50,7 +50,7 @@ export function ParticipantResultRow({ participation, isWinner }: ParticipantRes
         </View>
         <View style={styles.deckRow}>
           <Text style={styles.deckName} numberOfLines={1}>{deck.name}</Text>
-          <ColorChips selected={commander.colors} readonly />
+          <ManaIdentityRow colors={commander.colorIdentity} size="xs" />
         </View>
       </View>
 

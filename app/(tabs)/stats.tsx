@@ -19,7 +19,8 @@ import { useTranslation } from 'react-i18next';
 
 import { DeckStatRow } from '@/components/match/DeckStatRow';
 import { PlayerRankingRow } from '@/components/stats/PlayerRankingRow';
-import { ColorChips } from '@/components/ui/ColorChips';
+import { TopDeckPodiumCard, type PodiumTier } from '@/components/stats/TopDeckPodiumCard';
+import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { useGlobalStats } from '@/hooks/useGlobalStats';
 import { BannerAdWrapper } from '@/components/ads/BannerAdWrapper';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -94,6 +95,9 @@ export default function StatsScreen() {
         <Text style={styles.heroNumber}>{data.total_matches}</Text>
         <Text style={styles.heroLabel}>{t('stats.completedMatches')}</Text>
         <Text style={styles.heroSub}>{data.total_players} {data.total_players === 1 ? t('stats.activePlayer') : t('stats.activePlayers')}</Text>
+        <Text style={styles.heroFlavor}>
+          The ledger of triumphs and defeats — take measure of your legend.
+        </Text>
       </View>
 
       {/* Matchup CTA */}
@@ -109,24 +113,23 @@ export default function StatsScreen() {
         <Text style={styles.matchupCtaArrow}>›</Text>
       </TouchableOpacity>
 
-      {/* Player Rankings */}
-      {data.player_rankings.length > 0 && (
-        <View style={styles.section}>
-          <SectionHeader title={t('stats.playerRanking')} />
-          <View style={styles.list}>
-            {data.player_rankings.map((ranking) => (
-              <PlayerRankingRow key={ranking.player.id} ranking={ranking} />
-            ))}
-          </View>
-        </View>
-      )}
-
-      {/* Top Decks */}
+      {/* Top Decks — podium: #1 big art, #2 @ 2/3, #3 @ 1/2, ranks 4–5 as plain rows */}
       {data.top_decks.length > 0 && (
         <View style={styles.section}>
           <SectionHeader title={t('stats.topDecks')} />
           <View style={styles.list}>
-            {data.top_decks.map((entry) => (
+            {data.top_decks.slice(0, 3).map((entry, i) => (
+              <TopDeckPodiumCard
+                key={entry.deck.id}
+                tier={(i + 1) as PodiumTier}
+                deck={entry.deck}
+                commanders={entry.commanders}
+                matches={entry.total_matches}
+                win_rate_pct={entry.win_rate_pct}
+                onPress={() => router.push(`/decks/${entry.deck.id}`)}
+              />
+            ))}
+            {data.top_decks.slice(3).map((entry) => (
               <DeckStatRow
                 key={entry.deck.id}
                 deck={entry.deck}
@@ -136,6 +139,28 @@ export default function StatsScreen() {
                 onPress={() => router.push(`/decks/${entry.deck.id}`)}
               />
             ))}
+          </View>
+        </View>
+      )}
+
+      {/* Player Rankings — rank #1 gets a commander art thumbnail of their most-used deck */}
+      {data.player_rankings.length > 0 && (
+        <View style={styles.section}>
+          <SectionHeader title={t('stats.playerRanking')} />
+          <View style={styles.list}>
+            {data.player_rankings.map((ranking) => {
+              const isTop = ranking.rank === 1;
+              return (
+                <PlayerRankingRow
+                  key={ranking.player.id}
+                  ranking={ranking}
+                  topDeckArtCrop={
+                    isTop ? data.top_player_deck?.commanders[0]?.artCrop ?? null : null
+                  }
+                  topDeckLabel={isTop ? data.top_player_deck?.deck.name ?? null : null}
+                />
+              );
+            })}
           </View>
         </View>
       )}
@@ -156,7 +181,7 @@ export default function StatsScreen() {
                 >
                   <View style={styles.commanderInfo}>
                     <Text style={styles.commanderName} numberOfLines={1}>{entry.commander.name}</Text>
-                    <ColorChips selected={entry.commander.colors} readonly />
+                    <ManaIdentityRow colors={entry.commander.colorIdentity} size="xs" />
                   </View>
                   <View style={styles.commanderStats}>
                     <Text style={styles.matchCount}>{entry.total_matches}p</Text>
@@ -215,6 +240,16 @@ const createStyles = (t: AppTheme) => ({
   heroSub: {
     color: t.colors.text.secondary,
     fontSize: t.typography.size['body-sm'],
+  },
+  heroFlavor: {
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size.caption,
+    fontFamily: t.typography.fontFamily.body,
+    fontStyle: 'italic' as const,
+    letterSpacing: 0.2,
+    textAlign: 'center' as const,
+    marginTop: spacing[2],
+    paddingHorizontal: spacing[4],
   },
 
   matchupCta: {

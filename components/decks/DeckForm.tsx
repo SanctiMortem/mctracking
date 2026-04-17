@@ -1,13 +1,20 @@
 /**
  * DeckForm — Modal form for creating / editing a deck.
- * Commander entered as text + WUBRG color identity picker + optional partner.
- * Creates the commander record automatically on save.
+ *
+ * Commander fields are now Scryfall-backed: the user types a partial card
+ * name, picks from the autocomplete dropdown, and we resolve the full card
+ * (id, color_identity, art_crop) from Scryfall before saving.
+ *
+ * The commander record in our DB is created/reused by scryfall_id via
+ * /api/commanders — no manual WUBRG picker, no free text.
+ *
  * DATA-007 (EPIC-01)
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -22,140 +29,220 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import type { DeckWithCommanders } from '@/services/decks';
-import { mtgColors, spacing } from '@/styles/tokens';
+import { findCommander, type ScryfallCommander } from '@/services/scryfall';
+import { useScryfallAutocomplete } from '@/hooks/useScryfallAutocomplete';
+import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
+import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
 import { useTheme } from '@/contexts/ThemeContext';
 
-// ─── MTG Color Identity ──────────────────────────────────────────────────────
+// ─── Scryfall autocomplete input ──────────────────────────────────────────────
 
-const MTG_COLORS: { code: string; label: string; color: string }[] = [
-  { code: 'W', label: 'White', color: mtgColors.white },
-  { code: 'U', label: 'Blue', color: mtgColors.blue },
-  { code: 'B', label: 'Black', color: '#3A2A1E' },
-  { code: 'R', label: 'Red', color: mtgColors.red },
-  { code: 'G', label: 'Green', color: mtgColors.green },
-];
-
-function ColorIdentityPicker({
-  selected,
-  onToggle,
-}: {
-  selected: Set<string>;
-  onToggle: (code: string) => void;
-}) {
-  const { theme } = useTheme();
-  const colorStyles = useThemedStyles(createColorStyles);
-
-  return (
-    <View style={colorStyles.row}>
-      {MTG_COLORS.map(({ code, label, color }) => {
-        const active = selected.has(code);
-        return (
-          <Pressable
-            key={code}
-            onPress={() => onToggle(code)}
-            style={[
-              colorStyles.chip,
-              { borderColor: active ? color : theme.colors.border.default },
-              active && { backgroundColor: color + '33' },
-            ]}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: active }}
-            accessibilityLabel={label}
-          >
-            <View
-              style={[
-                colorStyles.pip,
-                { backgroundColor: color },
-                code === 'W' && { borderColor: '#AAA' },
-              ]}
-            />
-            <Text style={[colorStyles.chipLabel, active && { color: theme.colors.text.primary }]}>
-              {code}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
+interface CommanderPickerProps {
+  label: string;
+  selected: ScryfallCommander | null;
+  onSelect: (c: ScryfallCommander | null) => void;
+  placeholder: string;
 }
 
-const createColorStyles = (t: AppTheme) => ({
-  row: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: t.radius.round,
-    borderWidth: 1.5,
-    borderColor: t.colors.border.default,
-  },
-  pip: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-  },
-  chipLabel: {
-    color: t.colors.text.muted,
-    fontSize: t.typography.size['body-sm'],
-    fontWeight: t.typography.weight.semibold,
-  },
-})
-
-// ─── Commander Input Block ───────────────────────────────────────────────────
-
-function CommanderInput({
-  label,
-  name,
-  onChangeName,
-  selectedColors,
-  onToggleColor,
-  placeholder,
-}: {
-  label: string;
-  name: string;
-  onChangeName: (v: string) => void;
-  selectedColors: Set<string>;
-  onToggleColor: (code: string) => void;
-  placeholder: string;
-}) {
+function CommanderPicker({ label, selected, onSelect, placeholder }: CommanderPickerProps) {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const cmdStyles = useThemedStyles(createCmdStyles);
+  const pickerStyles = useThemedStyles(createPickerStyles);
+
+  const [query, setQuery] = useState(selected?.name ?? '');
+  const [resolving, setResolving] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const { suggestions, loading } = useScryfallAutocomplete(focused ? query : '');
+
+  // Keep query in sync when selected changes externally (e.g. opening for edit)
+  useEffect(() => {
+    setQuery(selected?.name ?? '');
+  }, [selected?.id]);
+
+  const onChangeText = useCallback((v: string) => {
+    setQuery(v);
+    // Clear the selected commander as soon as the user edits the text away
+    if (selected && v !== selected.name) onSelect(null);
+  }, [selected, onSelect]);
+
+  const pickSuggestion = useCallback(async (name: string) => {
+    setResolving(true);
+    setQuery(name);
+    setFocused(false);
+    try {
+      const card = await findCommander(name);
+      if (!card) {
+        Alert.alert('Not a commander', `${name} is not a legal commander.`);
+        onSelect(null);
+        return;
+      }
+      onSelect(card);
+    } finally {
+      setResolving(false);
+    }
+  }, [onSelect]);
+
+  const showDropdown = focused && query.trim().length >= 2 && !selected;
 
   return (
-    <View style={cmdStyles.block}>
+    <View style={pickerStyles.block}>
       <Text style={styles.label}>{label}</Text>
+
       <TextInput
-        style={styles.input}
-        value={name}
-        onChangeText={onChangeName}
+        style={[styles.input, selected && pickerStyles.inputSelected]}
+        value={query}
+        onChangeText={onChangeText}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setTimeout(() => setFocused(false), 150)}
         placeholder={placeholder}
         placeholderTextColor={theme.colors.text.muted}
-        returnKeyType="next"
+        autoCorrect={false}
+        autoCapitalize="words"
+        returnKeyType="search"
       />
-      <Text style={cmdStyles.colorLabel}>Color Identity</Text>
-      <ColorIdentityPicker selected={selectedColors} onToggle={onToggleColor} />
+
+      {/* Autocomplete dropdown */}
+      {showDropdown && (
+        <View style={pickerStyles.dropdown}>
+          {loading && suggestions.length === 0 && (
+            <View style={pickerStyles.dropdownLoading}>
+              <ActivityIndicator color={theme.colors.accent.primary} size="small" />
+            </View>
+          )}
+          {!loading && suggestions.length === 0 && (
+            <Text style={pickerStyles.dropdownEmpty}>No matches</Text>
+          )}
+          <ScrollView keyboardShouldPersistTaps="always" style={{ maxHeight: 220 }}>
+            {suggestions.map((name) => (
+              <Pressable
+                key={name}
+                onPress={() => pickSuggestion(name)}
+                style={({ pressed }) => [
+                  pickerStyles.dropdownRow,
+                  pressed && pickerStyles.dropdownRowPressed,
+                ]}
+              >
+                <Text style={pickerStyles.dropdownRowText} numberOfLines={1}>
+                  {name}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Selected card preview */}
+      {selected && (
+        <View style={pickerStyles.selectedRow}>
+          {selected.artCrop ? (
+            <Image source={{ uri: selected.artCrop }} style={pickerStyles.selectedArt} />
+          ) : (
+            <View style={[pickerStyles.selectedArt, pickerStyles.selectedArtFallback]} />
+          )}
+          <View style={pickerStyles.selectedMeta}>
+            <Text style={pickerStyles.selectedName} numberOfLines={1}>
+              {selected.name}
+            </Text>
+            <ManaIdentityRow colors={selected.colorIdentity} size="xs" />
+          </View>
+        </View>
+      )}
+
+      {resolving && (
+        <View style={pickerStyles.resolvingRow}>
+          <ActivityIndicator color={theme.colors.accent.primary} size="small" />
+          <Text style={pickerStyles.resolvingText}>Loading card…</Text>
+        </View>
+      )}
     </View>
   );
 }
 
-const createCmdStyles = (t: AppTheme) => ({
+const createPickerStyles = (t: AppTheme) => ({
   block: { gap: spacing[2] },
-  colorLabel: {
+  inputSelected: {
+    borderColor: t.colors.accent.primary + 'AA',
+  },
+  dropdown: {
+    backgroundColor: t.colors.background.elevated,
+    borderRadius: t.radius.md,
+    borderWidth: 1,
+    borderColor: t.colors.border.default,
+    marginTop: -spacing[1],
+    overflow: 'hidden' as const,
+  },
+  dropdownLoading: {
+    padding: spacing[3],
+    alignItems: 'center' as const,
+  },
+  dropdownEmpty: {
     color: t.colors.text.muted,
-    fontSize: t.typography.size.caption,
-    fontWeight: t.typography.weight.medium,
-    marginTop: spacing[1],
+    padding: spacing[3],
+    textAlign: 'center' as const,
+    fontSize: t.typography.size['body-sm'],
+  },
+  dropdownRow: {
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[3],
+    borderBottomWidth: 0.5,
+    borderBottomColor: t.colors.border.subtle,
+  },
+  dropdownRowPressed: {
+    backgroundColor: t.colors.background.surface,
+  },
+  dropdownRowText: {
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-md'] ?? t.typography.size['body-lg'],
+  },
+  selectedRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: spacing[3],
+    padding: spacing[2],
+    borderRadius: t.radius.md,
+    backgroundColor: t.colors.background.surface,
+  },
+  selectedArt: {
+    width: 56,
+    height: 56,
+    borderRadius: t.radius.sm,
+    backgroundColor: t.colors.border.subtle,
+  },
+  selectedArtFallback: {
+    backgroundColor: t.colors.border.subtle,
+  },
+  selectedMeta: {
+    flex: 1,
+    gap: spacing[1],
+  },
+  selectedName: {
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-md'] ?? t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
+  },
+  resolvingRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: spacing[2],
+    paddingVertical: spacing[1],
+  },
+  resolvingText: {
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
   },
 });
 
 // ─── DeckForm ────────────────────────────────────────────────────────────────
+
+export type DeckCreateCommanderInput = {
+  scryfall_id: string;
+  name: string;
+  color_identity: string[];
+  art_crop: string | null;
+  is_partner: boolean;
+};
 
 interface DeckFormProps {
   visible: boolean;
@@ -167,125 +254,89 @@ interface DeckFormProps {
     description?: string | null;
   }) => Promise<void>;
   onClose: () => void;
-  onCreateCommander: (input: { name: string; colors: string[]; isPartner: boolean }) => Promise<{ id: string }>;
+  onCreateCommander: (input: DeckCreateCommanderInput) => Promise<{ id: string }>;
 }
 
 export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: DeckFormProps) {
   const { theme } = useTheme();
-
   const styles = useThemedStyles(createStyles);
-
   const { t } = useTranslation();
 
   // Deck fields
   const [deckName, setDeckName] = useState('');
   const [description, setDescription] = useState('');
 
-  // Commander 1
-  const [cmdName, setCmdName] = useState('');
-  const [cmdColors, setCmdColors] = useState<Set<string>>(new Set());
+  // Scryfall-resolved commanders
+  const [cmd1, setCmd1] = useState<ScryfallCommander | null>(null);
+  const [cmd2, setCmd2] = useState<ScryfallCommander | null>(null);
 
-  // Partner toggle + Commander 2
+  // Partner toggle
   const [hasPartner, setHasPartner] = useState(false);
-  const [cmd2Name, setCmd2Name] = useState('');
-  const [cmd2Colors, setCmd2Colors] = useState<Set<string>>(new Set());
 
   const [saving, setSaving] = useState(false);
 
-  // Populate when editing
+  // Hydrate when opening the form (editing or creating)
   useEffect(() => {
+    if (!visible) return;
     if (deck) {
       setDeckName(deck.name);
       setDescription(deck.description ?? '');
-      setCmdName(deck.commander?.name ?? '');
-      setCmdColors(new Set(deck.commander?.colors ?? []));
+      setCmd1(commanderToScryfall(deck.commander));
       if (deck.commander2) {
         setHasPartner(true);
-        setCmd2Name(deck.commander2.name);
-        setCmd2Colors(new Set(deck.commander2.colors));
+        setCmd2(commanderToScryfall(deck.commander2));
       } else {
         setHasPartner(false);
-        setCmd2Name('');
-        setCmd2Colors(new Set());
+        setCmd2(null);
       }
     } else {
       setDeckName('');
       setDescription('');
-      setCmdName('');
-      setCmdColors(new Set());
+      setCmd1(null);
+      setCmd2(null);
       setHasPartner(false);
-      setCmd2Name('');
-      setCmd2Colors(new Set());
     }
   }, [deck, visible]);
 
-  function toggleCmdColor(code: string) {
-    setCmdColors((prev) => {
-      const next = new Set(prev);
-      next.has(code) ? next.delete(code) : next.add(code);
-      return next;
-    });
-  }
-
-  function toggleCmd2Color(code: string) {
-    setCmd2Colors((prev) => {
-      const next = new Set(prev);
-      next.has(code) ? next.delete(code) : next.add(code);
-      return next;
-    });
-  }
-
   async function handleSave() {
-    // Validate deck name
     if (!deckName.trim()) {
       Alert.alert(t('deck.nameRequired'), t('deck.nameRequiredMessage'));
       return;
     }
-
-    // Validate commander
-    if (!cmdName.trim()) {
-      Alert.alert(t('common.error'), 'Commander name is required.');
+    if (!cmd1) {
+      Alert.alert(t('common.error'), 'Select a commander from the search results.');
       return;
     }
-    if (cmdColors.size === 0) {
-      Alert.alert(t('common.error'), 'Select at least one color for the commander.');
+    if (hasPartner && !cmd2) {
+      Alert.alert(t('common.error'), 'Select a partner commander from the search results.');
       return;
-    }
-
-    // Validate partner if enabled
-    if (hasPartner) {
-      if (!cmd2Name.trim()) {
-        Alert.alert(t('common.error'), 'Partner commander name is required.');
-        return;
-      }
-      if (cmd2Colors.size === 0) {
-        Alert.alert(t('common.error'), 'Select at least one color for the partner commander.');
-        return;
-      }
     }
 
     setSaving(true);
     try {
-      // Create commander(s) first, then create the deck
-      const cmd1 = await onCreateCommander({
-        name: cmdName.trim(),
-        colors: Array.from(cmdColors),
-        isPartner: hasPartner,
+      const created1 = await onCreateCommander({
+        scryfall_id: cmd1.id,
+        name: cmd1.name,
+        color_identity: cmd1.colorIdentity,
+        art_crop: cmd1.artCrop,
+        is_partner: hasPartner, // rely on user toggle for this deck's partner intent
       });
 
       let cmd2Id: string | null = null;
-      if (hasPartner) {
-        const cmd2 = await onCreateCommander({
-          name: cmd2Name.trim(),
-          colors: Array.from(cmd2Colors),
-          isPartner: true,
+      if (hasPartner && cmd2) {
+        const created2 = await onCreateCommander({
+          scryfall_id: cmd2.id,
+          name: cmd2.name,
+          color_identity: cmd2.colorIdentity,
+          art_crop: cmd2.artCrop,
+          is_partner: true,
         });
-        cmd2Id = cmd2.id;
+        cmd2Id = created2.id;
       }
 
       await onSave({
         name: deckName.trim(),
-        commander_id: cmd1.id,
+        commander_id: created1.id,
         commander_id_2: cmd2Id,
         description: description.trim() || null,
       });
@@ -297,6 +348,9 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
       setSaving(false);
     }
   }
+
+  // Partner hint: auto-suggest enabling partner toggle if the picked cmd1 has partner text
+  const partnerHint = useMemo(() => cmd1?.hasPartner ?? false, [cmd1]);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -321,21 +375,27 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
           />
 
           {/* Commander */}
-          <CommanderInput
+          <CommanderPicker
             label={t('game.commander')}
-            name={cmdName}
-            onChangeName={setCmdName}
-            selectedColors={cmdColors}
-            onToggleColor={toggleCmdColor}
+            selected={cmd1}
+            onSelect={setCmd1}
             placeholder="e.g. Atraxa, Praetors' Voice"
           />
 
           {/* Partner toggle */}
           <View style={styles.partnerRow}>
-            <Text style={styles.partnerLabel}>Partner Commander</Text>
+            <Text style={styles.partnerLabel}>
+              Partner Commander
+              {partnerHint && !hasPartner && (
+                <Text style={{ color: theme.colors.accent.primary }}>  ·  has Partner</Text>
+              )}
+            </Text>
             <Switch
               value={hasPartner}
-              onValueChange={setHasPartner}
+              onValueChange={(v) => {
+                setHasPartner(v);
+                if (!v) setCmd2(null);
+              }}
               trackColor={{ false: theme.colors.border.strong, true: theme.colors.accent.primary + '88' }}
               thumbColor={hasPartner ? theme.colors.accent.primary : theme.colors.text.muted}
             />
@@ -343,12 +403,10 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
 
           {/* Partner Commander */}
           {hasPartner && (
-            <CommanderInput
+            <CommanderPicker
               label="Partner Commander"
-              name={cmd2Name}
-              onChangeName={setCmd2Name}
-              selectedColors={cmd2Colors}
-              onToggleColor={toggleCmd2Color}
+              selected={cmd2}
+              onSelect={setCmd2}
               placeholder="e.g. Thrasios, Triton Hero"
             />
           )}
@@ -389,6 +447,17 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
       </KeyboardAvoidingView>
     </Modal>
   );
+}
+
+// Map our DB Commander → ScryfallCommander (lossy but enough for UI prefill)
+function commanderToScryfall(c: { id: string; scryfallId: string | null; name: string; colorIdentity: string[]; artCrop: string | null; isPartner: boolean }): ScryfallCommander {
+  return {
+    id: c.scryfallId ?? c.id,
+    name: c.name,
+    colorIdentity: c.colorIdentity ?? [],
+    artCrop: c.artCrop,
+    hasPartner: c.isPartner,
+  };
 }
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
@@ -479,4 +548,4 @@ const createStyles = (t: AppTheme) => ({
     fontWeight: t.typography.weight.semibold,
   },
   btnDisabled: { opacity: 0.6 },
-})
+});

@@ -19,7 +19,7 @@
  * TRACK-003 (EPIC-03)
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type LayoutChangeEvent, Text, View } from 'react-native';
+import { Image, type LayoutChangeEvent, Text, View } from 'react-native';
 import { GHPressable } from '@/components/ui/GHPressable';
 import { useTranslation } from 'react-i18next';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -96,6 +96,8 @@ interface PlayerDashboardProps {
   poisonCount: number;
   /** Total commander damage received for the trigger label. */
   cmdDamageTotal: number;
+  /** Optional Scryfall art_crop URL — renders as faded background. */
+  artCrop?: string | null;
 }
 
 function formatTimer(seconds: number): string {
@@ -116,6 +118,7 @@ export function PlayerDashboard({
   cmdDamageOverlay,
   poisonCount,
   cmdDamageTotal,
+  artCrop = null,
 }: PlayerDashboardProps) {
   const { t } = useTranslation();
   const styles = useThemedStyles(createStyles);
@@ -179,6 +182,18 @@ export function PlayerDashboard({
       style={[styles.dashboard, isDead && styles.dashboardDead]}
       onLayout={onDashboardLayout}
     >
+      {/* ── Commander art backdrop (faded) ── */}
+      {artCrop && (
+        <View style={styles.artBackdropWrap} pointerEvents="none">
+          <Image
+            source={{ uri: artCrop }}
+            style={styles.artBackdrop}
+            resizeMode="cover"
+          />
+          <View style={styles.artScrim} />
+        </View>
+      )}
+
       {/* ── SIDEBAR (20%) — Name, Timer, Dead ── */}
       <GHPressable onPress={handleSidebarPress} style={styles.sidebar}>
         <View style={styles.sidebarContent}>
@@ -284,9 +299,35 @@ const createStyles = (t: AppTheme) => ({
     flexDirection: 'row',
     width: '100%',
     height: '100%',
+    overflow: 'hidden',
   },
   dashboardDead: {
     opacity: 0.45,
+  },
+
+  // ── Commander art backdrop ──
+  artBackdropWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  artBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.22,
+  },
+  artScrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: t.colors.background.primary + 'AA',
   },
 
   // ── Sidebar (20%) ───────────────────────────────
@@ -304,6 +345,7 @@ const createStyles = (t: AppTheme) => ({
   },
   playerName: {
     color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.bold,
     letterSpacing: t.typography.letterSpacing.wide,
@@ -311,7 +353,8 @@ const createStyles = (t: AppTheme) => ({
     textAlign: 'center',
   },
   timer: {
-    color: t.colors.text.muted,
+    color: t.colors.text.secondary,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size.caption,
     fontVariant: ['tabular-nums'],
     fontWeight: t.typography.weight.medium,
@@ -322,7 +365,8 @@ const createStyles = (t: AppTheme) => ({
     fontWeight: t.typography.weight.bold,
   },
   turnHint: {
-    color: t.colors.text.muted + '99',
+    color: t.colors.text.secondary,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.medium,
     textAlign: 'center',
@@ -330,6 +374,7 @@ const createStyles = (t: AppTheme) => ({
   },
   turnHintActive: {
     color: t.colors.accent.primary,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.bold,
     textAlign: 'center',
@@ -351,6 +396,7 @@ const createStyles = (t: AppTheme) => ({
   },
   deadBtnText: {
     color: t.colors.status.error,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size.caption - 2,
     fontWeight: t.typography.weight.bold,
     textTransform: 'uppercase',
@@ -367,7 +413,8 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size['body-lg'],
   },
   deadMessageText: {
-    color: t.colors.text.muted,
+    color: t.colors.text.secondary,
+    fontFamily: t.typography.fontFamily.body,
     fontSize: t.typography.size.label,
     fontWeight: t.typography.weight.medium,
     textAlign: 'center',
@@ -400,7 +447,8 @@ const createStyles = (t: AppTheme) => ({
     justifyContent: 'center',
   },
   triggerLabel: {
-    color: t.colors.text.muted,
+    color: t.colors.accent.primaryAlt,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size.caption,
     fontWeight: t.typography.weight.semibold,
     textTransform: 'uppercase',
