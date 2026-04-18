@@ -165,12 +165,9 @@ export function useTracker(matchId: string): UseTrackerReturn {
   }) => {
     const { participationId, eventType, delta, commanderIdSource } = input;
 
-    // Snapshot pre-update state for rollback
-    const prev = participationsRef.current.map((p) => ({ ...p, commanderDamage: { ...p.commanderDamage } }));
-
-    // Commit the delta to canonical state so the counter components
-    // can reset their pendingDelta to 0 without visual flicker.
-    // Commander damage also reduces the target player's life total.
+    // Optimistic update — mirrors applyLifeChange/applyPoisonChange/applyCommanderDamage.
+    // We do NOT revert on failure (see commitSingleEvent doc): what the user sees
+    // is authoritative; server errors surface as a toast only.
     setParticipations((parts) =>
       parts.map((p) => {
         if (p.id !== participationId) return p;
@@ -184,7 +181,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
           const current = p.commanderDamage[commanderIdSource] ?? 0;
           return {
             ...p,
-            lifeTotal: p.lifeTotal - delta, // commander damage reduces HP
+            lifeTotal: p.lifeTotal - delta,
             commanderDamage: { ...p.commanderDamage, [commanderIdSource]: current + delta },
           };
         }
@@ -207,7 +204,6 @@ export function useTracker(matchId: string): UseTrackerReturn {
         token ?? undefined,
       );
 
-      // Append to local event log (don't re-update participations — already committed)
       setEvents((prev) => [
         ...prev,
         {
@@ -221,9 +217,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
         },
       ]);
     } catch (e) {
-      // Revert optimistic update on failure
-      setParticipations(prev);
-      setToastError((e as Error).message ?? 'Failed to record event. Please try again.');
+      setToastError((e as Error).message ?? 'Could not sync last change.');
     }
   }, [matchId, getToken]);
 
@@ -245,10 +239,14 @@ export function useTracker(matchId: string): UseTrackerReturn {
     return p;
   }, []);
 
-  // Post a single event and append to log on success; revert state on failure.
-  // Retries on transient failures so a brief network blip doesn't cause the
-  // HP (or poison / commander damage) to visibly snap back after the user
-  // finishes a burst of taps.
+  // Post a single event and append to log on success.
+  //
+  // UX invariant: the HP/poison/commander-damage value the user sees is
+  // authoritative. Server commits retry in the background but NEVER revert
+  // what's on screen — a late network failure changing the displayed number
+  // under the user's finger is the "snapback" we're eliminating. On failure
+  // we surface a toast and keep the optimistic state; the user can Undo if
+  // they want to rollback.
   const commitSingleEvent = useCallback(
     async (input: {
       participationId: string;
@@ -257,7 +255,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
       commanderIdSource?: string;
     }) => {
       const MAX_ATTEMPTS = 3;
-      const BACKOFF_MS = [0, 400, 1000]; // cumulative ~1.4s before giving up
+      const BACKOFF_MS = [0, 400, 1000];
       let lastError: unknown = null;
 
       for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
@@ -290,42 +288,14 @@ export function useTracker(matchId: string): UseTrackerReturn {
               createdAt: res.data.createdAt,
             },
           ]);
-          return; // success — done
+          return;
         } catch (e) {
           lastError = e;
         }
       }
 
-      // All attempts failed — revert the optimistic delta for the affected
-      // counter only, leaving any later (already-applied) deltas in place.
-      setParticipations((parts) =>
-        parts.map((p) => {
-          if (p.id !== input.participationId) return p;
-          if (input.eventType === 'life_change') {
-            return { ...p, lifeTotal: p.lifeTotal - input.delta };
-          }
-          if (input.eventType === 'poison_change') {
-            return {
-              ...p,
-              poisonCounters: Math.max(0, p.poisonCounters - input.delta),
-            };
-          }
-          if (input.eventType === 'commander_damage' && input.commanderIdSource) {
-            const current = p.commanderDamage[input.commanderIdSource] ?? 0;
-            return {
-              ...p,
-              lifeTotal: p.lifeTotal + input.delta,
-              commanderDamage: {
-                ...p.commanderDamage,
-                [input.commanderIdSource]: Math.max(0, current - input.delta),
-              },
-            };
-          }
-          return p;
-        }),
-      );
       setToastError(
-        (lastError as Error)?.message ?? 'Failed to record event. Please try again.',
+        (lastError as Error)?.message ?? 'Could not sync last change. Your taps are preserved — try again if this persists.',
       );
     },
     [matchId, getToken],

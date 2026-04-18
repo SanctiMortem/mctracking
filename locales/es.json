@@ -340,7 +340,15 @@
     "retry": "Reintentar",
     "premiumTitle": "Premium",
     "appearance": "Apariencia",
-    "theme": "Tema"
+    "theme": "Tema",
+    "data": "Datos",
+    "clearHistory": "Borrar historial de partidas",
+    "clearHistoryTitle": "¿Borrar historial?",
+    "clearHistoryConfirm": "Esto eliminará permanentemente todas tus partidas, resultados y eventos. Los mazos y jugadores se conservan. No se puede deshacer.",
+    "clearHistoryAction": "Borrar historial",
+    "clearing": "Borrando…",
+    "clearHistoryDone": "Historial borrado.",
+    "clearHistoryError": "No se pudo borrar el historial."
   },
   "history": {
     "noMatchesFound": "Sin partidas encontradas",

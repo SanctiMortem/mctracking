@@ -340,7 +340,15 @@
     "retry": "Retry",
     "premiumTitle": "Premium",
     "appearance": "Appearance",
-    "theme": "Theme"
+    "theme": "Theme",
+    "data": "Data",
+    "clearHistory": "Clear match history",
+    "clearHistoryTitle": "Clear match history?",
+    "clearHistoryConfirm": "This permanently deletes all your matches, results, and events. Decks and players are kept. This cannot be undone.",
+    "clearHistoryAction": "Clear history",
+    "clearing": "Clearing…",
+    "clearHistoryDone": "Match history cleared.",
+    "clearHistoryError": "Could not clear history."
   },
   "history": {
     "noMatchesFound": "No matches found",

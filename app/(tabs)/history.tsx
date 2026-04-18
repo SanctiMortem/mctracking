@@ -7,7 +7,7 @@
  *
  * HIST-002 (EPIC-04)
  */
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
@@ -118,7 +118,7 @@ export default function HistoryScreen() {
   };
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen}>
       {/* Intro — flavor subtitle */}
       <View style={styles.intro}>
         <Text style={styles.introSubtitle}>
@@ -174,7 +174,7 @@ export default function HistoryScreen() {
 
       {/* Banner ad — hidden for premium users (BR-AUTH-04) */}
       <BannerAdWrapper />
-    </View>
+    </SafeAreaView>
   );
 }
 

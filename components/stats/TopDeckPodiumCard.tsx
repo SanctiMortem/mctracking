@@ -2,13 +2,12 @@
  * TopDeckPodiumCard — hero card for a ranked deck on the stats podium.
  *
  * Visual hierarchy (large → small):
- *   tier 1 → art 260dp, prominent "#1 DECK" gold pill, oversized win-rate
- *   tier 2 → art 180dp, top-right "RANK 02" chip, medium win-rate
- *   tier 3 → art 140dp, top-right "RANK 03" chip, medium win-rate
+ *   tier 1 → art 260dp, prominent "#1 DECK" gold banner overlapping top edge
+ *   tier 2 → art 190dp, "RANK 02" pill overlapping top edge
+ *   tier 3 → art 150dp, "RANK 03" pill overlapping top edge
  *
- * Each card: commander art on top, deck name + match count + mana identity
- * bottom-left, WIN RATE label + bold percentage bottom-right. Only ranks 1–3
- * use this card; ranks 4+ render with the plain DeckStatRow.
+ * Commander art is inset inside a frame (card bg visible around it) and
+ * carries a subtle top/bottom vignette. Ranks 4+ use the plain DeckStatRow.
  */
 import { Image, Text, TouchableOpacity, View } from 'react-native';
 
@@ -18,7 +17,7 @@ import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
 
-const ART_HEIGHT = { 1: 260, 2: 180, 3: 140 } as const;
+const ART_HEIGHT = { 1: 260, 2: 190, 3: 150 } as const;
 
 export type PodiumTier = 1 | 2 | 3;
 
@@ -50,153 +49,206 @@ export function TopDeckPodiumCard({
   const rankLabel = tier === 1 ? '#1 DECK' : `RANK 0${tier}`;
 
   return (
-    <TouchableOpacity
-      style={[styles.card, isTop && styles.cardTop]}
-      activeOpacity={onPress ? 0.85 : 1}
-      onPress={onPress}
-      disabled={!onPress}
-    >
-      {/* Top rank badge — gold pill centered for #1, subtle chip top-right otherwise */}
-      {isTop ? (
-        <View style={styles.topBadgeWrap}>
-          <View style={styles.topBadge}>
-            <Text style={styles.topBadgeText}>{rankLabel}</Text>
-          </View>
+    // Outer wrapper has no overflow — lets the rank badge float above the top edge.
+    <View style={styles.wrapper}>
+      {/* Rank badge — sits above the card edge for all tiers */}
+      <View style={[styles.badgeWrap, isTop && styles.badgeWrapTop]} pointerEvents="none">
+        <View style={isTop ? styles.topBadge : styles.rankChip}>
+          <Text style={isTop ? styles.topBadgeText : styles.rankChipText}>{rankLabel}</Text>
         </View>
-      ) : (
-        <View style={styles.rankChip}>
-          <Text style={styles.rankChipText}>{rankLabel}</Text>
-        </View>
-      )}
-
-      {/* Commander art */}
-      <View style={[styles.art, { height: artHeight }]}>
-        {artCrop ? (
-          <Image source={{ uri: artCrop }} style={styles.artImage} resizeMode="cover" />
-        ) : (
-          <View style={styles.artPlaceholder} />
-        )}
       </View>
 
-      {/* Gold accent divider on tier 1 only */}
-      {isTop && <View style={styles.accentDivider} />}
-
-      {/* Info row — name/meta on left, win rate on right */}
-      <View style={[styles.infoRow, isTop && styles.infoRowTop]}>
-        <View style={styles.infoLeft}>
-          <View style={styles.nameRow}>
-            <Text
-              style={[styles.deckName, isTop && styles.deckNameTop]}
-              numberOfLines={2}
-            >
-              {deck.name}
-            </Text>
-            {isPartner && (
-              <View style={styles.partnerBadge}>
-                <Text style={styles.partnerText}>Partner</Text>
-              </View>
+      <TouchableOpacity
+        style={[styles.card, isTop && styles.cardTop]}
+        activeOpacity={onPress ? 0.85 : 1}
+        onPress={onPress}
+        disabled={!onPress}
+      >
+        {/* Art frame — card bg padding creates a visible border around the image */}
+        <View style={[styles.artFrame, isTop && styles.artFrameTop]}>
+          <View style={[styles.artClip, { height: artHeight }]}>
+            {artCrop ? (
+              <Image source={{ uri: artCrop }} style={styles.artImage} resizeMode="cover" />
+            ) : (
+              <View style={styles.artPlaceholder} />
             )}
+            {/* Vignette — subtle dark fade at top and bottom edges */}
+            <View style={styles.vignetteTop} pointerEvents="none" />
+            <View style={styles.vignetteBottom} pointerEvents="none" />
           </View>
-          <Text style={styles.metaLine}>{matches} total games</Text>
-          <ManaIdentityRow colors={allColors} size="xs" />
         </View>
 
-        <View style={styles.infoRight}>
-          <Text style={styles.wrLabel}>WIN RATE</Text>
-          <Text
-            style={[
-              styles.wrValue,
-              isTop && styles.wrValueTop,
-              win_rate_pct !== null && styles.wrValueActive,
-            ]}
-          >
-            {winRateText}
-          </Text>
+        {/* Gold accent divider on tier 1 only */}
+        {isTop && <View style={styles.accentDivider} />}
+
+        {/* Info row — name/meta on left, win rate on right */}
+        <View style={[styles.infoRow, isTop && styles.infoRowTop]}>
+          <View style={styles.infoLeft}>
+            <View style={styles.nameRow}>
+              <Text
+                style={[styles.deckName, isTop && styles.deckNameTop]}
+                numberOfLines={2}
+              >
+                {deck.name}
+              </Text>
+              {isPartner && (
+                <View style={styles.partnerBadge}>
+                  <Text style={styles.partnerText}>Partner</Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.metaLine}>{matches} total games</Text>
+            <ManaIdentityRow colors={allColors} size="xs" />
+          </View>
+
+          <View style={styles.infoRight}>
+            <Text style={styles.wrLabel}>WIN RATE</Text>
+            <Text
+              style={[
+                styles.wrValue,
+                isTop && styles.wrValueTop,
+                win_rate_pct !== null && styles.wrValueActive,
+              ]}
+            >
+              {winRateText}
+            </Text>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const createStyles = (t: AppTheme) => ({
+  // Outer wrapper with enough top padding to reserve space for the overflowing badge.
+  wrapper: {
+    position: 'relative' as const,
+    paddingTop: spacing[4],
+  },
+
   card: {
     backgroundColor: t.colors.background.surface,
     borderRadius: t.radius.lg,
     borderWidth: 1,
     borderColor: t.colors.accent.primaryAlt + '66',
-    overflow: 'hidden',
-    position: 'relative',
+    position: 'relative' as const,
   },
   cardTop: {
     borderColor: t.colors.accent.primary + '99',
-    paddingTop: spacing[6],
+    borderWidth: 1.5,
   },
 
-  // Tier 1 — gold pill centered at top, overlapping the card edge
-  topBadgeWrap: {
-    position: 'absolute',
-    top: -2,
+  // Rank badge — absolute, positioned above the card top edge
+  badgeWrap: {
+    position: 'absolute' as const,
+    top: 0,
     left: 0,
     right: 0,
-    alignItems: 'center',
-    zIndex: 2,
+    alignItems: 'center' as const,
+    zIndex: 3,
   },
+  badgeWrapTop: {
+    top: -4,
+  },
+
+  // Tier 1 — large gold banner
   topBadge: {
     backgroundColor: t.colors.accent.primary,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    borderBottomLeftRadius: t.radius.md,
-    borderBottomRightRadius: t.radius.md,
+    paddingHorizontal: spacing[4] + 4,
+    paddingVertical: spacing[2] + 2,
+    borderRadius: t.radius.md,
+    borderWidth: 1.5,
+    borderColor: t.colors.accent.primary,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+    elevation: 5,
   },
   topBadgeText: {
     color: t.colors.background.primary,
-    fontSize: t.typography.size.label,
+    fontSize: t.typography.size['body-md'],
+    fontFamily: t.typography.fontFamily.display,
     fontWeight: t.typography.weight.black,
-    letterSpacing: 1.5,
+    letterSpacing: 1.8,
   },
 
-  // Tier 2 / 3 — subtle chip in top-right corner, floating over the art
+  // Tier 2 / 3 — pill overlapping the top edge
   rankChip: {
-    position: 'absolute',
-    top: spacing[2],
-    right: spacing[2],
-    zIndex: 2,
-    backgroundColor: t.colors.background.primary + 'DD',
-    borderRadius: t.radius.sm,
-    paddingHorizontal: spacing[2],
-    paddingVertical: 3,
+    backgroundColor: t.colors.background.elevated,
+    borderRadius: t.radius.md,
+    paddingHorizontal: spacing[3] + 2,
+    paddingVertical: spacing[1] + 2,
+    borderWidth: 1,
+    borderColor: t.colors.accent.primaryAlt + '99',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 3,
   },
   rankChipText: {
-    color: t.colors.text.primary,
-    fontSize: t.typography.size.label,
+    color: t.colors.accent.primaryAlt,
+    fontSize: t.typography.size['body-sm'],
+    fontFamily: t.typography.fontFamily.display,
     fontWeight: t.typography.weight.bold,
-    letterSpacing: 1,
+    letterSpacing: 1.3,
   },
 
-  // Art
-  art: {
-    width: '100%',
+  // Art — inset inside the card so the background creates a visible border frame
+  artFrame: {
+    padding: spacing[2],
+    paddingTop: spacing[3],
+  },
+  artFrameTop: {
+    padding: spacing[3],
+    paddingTop: spacing[4],
+  },
+  artClip: {
+    width: '100%' as const,
+    borderRadius: t.radius.md,
+    overflow: 'hidden' as const,
     backgroundColor: t.colors.background.elevated,
+    position: 'relative' as const,
   },
   artImage: {
-    width: '100%',
-    height: '100%',
+    width: '100%' as const,
+    height: '100%' as const,
   },
   artPlaceholder: {
     flex: 1,
     backgroundColor: t.colors.background.elevated,
   },
 
+  // Vignette — two soft dark edges for a subtle framing effect
+  vignetteTop: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 24,
+    backgroundColor: 'rgba(0,0,0,0.22)',
+  },
+  vignetteBottom: {
+    position: 'absolute' as const,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 36,
+    backgroundColor: 'rgba(0,0,0,0.28)',
+  },
+
   // Gold divider under the art on tier 1
   accentDivider: {
     height: 2,
     backgroundColor: t.colors.accent.primary,
+    marginHorizontal: spacing[3],
   },
 
   // Info row
   infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     gap: spacing[3],
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
@@ -206,16 +258,18 @@ const createStyles = (t: AppTheme) => ({
   },
 
   infoLeft: { flex: 1, gap: 4 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
+  nameRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing[2] },
   deckName: {
     color: t.colors.accent.primaryAlt,
     fontSize: t.typography.size['body-lg'],
+    fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.semibold,
     flexShrink: 1,
   },
   deckNameTop: {
     color: t.colors.accent.primary,
     fontSize: t.typography.size['heading-md'],
+    fontFamily: t.typography.fontFamily.display,
     fontWeight: t.typography.weight.black,
   },
   partnerBadge: {
@@ -227,27 +281,31 @@ const createStyles = (t: AppTheme) => ({
   partnerText: {
     color: t.colors.accent.primary,
     fontSize: t.typography.size.caption,
+    fontFamily: t.typography.fontFamily.bodyMedium,
     fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.3,
   },
   metaLine: {
     color: t.colors.text.muted,
     fontSize: t.typography.size['body-sm'],
+    fontFamily: t.typography.fontFamily.body,
   },
 
   // Win rate block
-  infoRight: { alignItems: 'flex-end', gap: 2, flexShrink: 0 },
+  infoRight: { alignItems: 'flex-end' as const, gap: 2, flexShrink: 0 },
   wrLabel: {
     color: t.colors.text.muted,
     fontSize: t.typography.size.caption,
+    fontFamily: t.typography.fontFamily.bodyMedium,
     fontWeight: t.typography.weight.semibold,
     letterSpacing: 1,
   },
   wrValue: {
     color: t.colors.text.primary,
     fontSize: t.typography.size['heading-md'],
+    fontFamily: t.typography.fontFamily.display,
     fontWeight: t.typography.weight.black,
-    fontVariant: ['tabular-nums'],
+    fontVariant: ['tabular-nums'] as const,
   },
   wrValueActive: {
     color: t.colors.accent.primary,

@@ -117,7 +117,7 @@ export default function StatsScreen() {
       {data.top_decks.length > 0 && (
         <View style={styles.section}>
           <SectionHeader title={t('stats.topDecks')} />
-          <View style={styles.list}>
+          <View style={styles.podiumList}>
             {data.top_decks.slice(0, 3).map((entry, i) => (
               <TopDeckPodiumCard
                 key={entry.deck.id}
@@ -230,16 +230,19 @@ const createStyles = (t: AppTheme) => ({
   heroNumber: {
     color: t.colors.accent.primary,
     fontSize: t.typography.size['heading-xl'],
+    fontFamily: t.typography.fontFamily.display,
     fontWeight: t.typography.weight.black,
   },
   heroLabel: {
     color: t.colors.text.primary,
     fontSize: t.typography.size['body-lg'],
+    fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.semibold,
   },
   heroSub: {
     color: t.colors.text.secondary,
     fontSize: t.typography.size['body-sm'],
+    fontFamily: t.typography.fontFamily.body,
   },
   heroFlavor: {
     color: t.colors.text.secondary,
@@ -266,11 +269,13 @@ const createStyles = (t: AppTheme) => ({
   matchupCtaTitle: {
     color: t.colors.accent.primary,
     fontSize: t.typography.size['body-lg'],
+    fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.semibold,
   },
   matchupCtaSub: {
     color: t.colors.text.secondary,
     fontSize: t.typography.size['body-sm'],
+    fontFamily: t.typography.fontFamily.body,
     marginTop: 2,
   },
   matchupCtaArrow: {
@@ -283,11 +288,13 @@ const createStyles = (t: AppTheme) => ({
   sectionHeader: {
     color: t.colors.text.secondary,
     fontSize: t.typography.size['body-sm'],
+    fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   list: { gap: spacing[2] },
+  podiumList: { gap: spacing[4] + 4 },
 
   commanderRow: {
     flexDirection: 'row',
@@ -302,12 +309,14 @@ const createStyles = (t: AppTheme) => ({
   commanderName: {
     color: t.colors.text.primary,
     fontSize: t.typography.size['body-lg'],
+    fontFamily: t.typography.fontFamily.bodyMedium,
     fontWeight: t.typography.weight.medium,
   },
   commanderStats: { alignItems: 'flex-end', gap: 4, flexShrink: 0 },
   matchCount: {
     color: t.colors.text.muted,
     fontSize: t.typography.size['body-sm'],
+    fontFamily: t.typography.fontFamily.body,
   },
   wrBadge: {
     backgroundColor: t.colors.background.elevated,
@@ -321,6 +330,7 @@ const createStyles = (t: AppTheme) => ({
   wrText: {
     color: t.colors.text.muted,
     fontSize: t.typography.size.label,
+    fontFamily: t.typography.fontFamily.bodyMedium,
     fontWeight: t.typography.weight.semibold,
   },
   wrTextActive: { color: t.colors.accent.primary },
@@ -334,18 +344,21 @@ const createStyles = (t: AppTheme) => ({
   emptyTitle: {
     color: t.colors.text.primary,
     fontSize: t.typography.size['heading-md'],
+    fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.semibold,
     textAlign: 'center',
   },
   emptySubtitle: {
     color: t.colors.text.secondary,
     fontSize: t.typography.size['body-sm'],
+    fontFamily: t.typography.fontFamily.body,
     textAlign: 'center',
   },
 
   errorText: {
     color: t.colors.status.error,
     fontSize: t.typography.size['body-sm'],
+    fontFamily: t.typography.fontFamily.body,
     textAlign: 'center',
     paddingHorizontal: spacing[4],
   },

@@ -151,6 +151,7 @@ export default function SettingsScreen() {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState('');
   const [savingName, setSavingName] = useState(false);
+  const [clearingHistory, setClearingHistory] = useState(false);
 
   // ── Handlers ──────────────────────────────
 
@@ -203,6 +204,38 @@ export default function SettingsScreen() {
     [patchSetting],
   );
 
+  const handleClearHistory = useCallback(() => {
+    Alert.alert(
+      t('settings.clearHistoryTitle'),
+      t('settings.clearHistoryConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('settings.clearHistoryAction'),
+          style: 'destructive',
+          onPress: async () => {
+            if (clearingHistory) return;
+            setClearingHistory(true);
+            try {
+              const token = await getToken();
+              await apiFetch<{ success: boolean }>(
+                '/api/admin/clear-history',
+                'POST',
+                {},
+                token ?? undefined,
+              );
+              Alert.alert(t('settings.clearHistoryDone'));
+            } catch (e) {
+              Alert.alert(t('settings.clearHistoryError'), (e as Error).message);
+            } finally {
+              setClearingHistory(false);
+            }
+          },
+        },
+      ],
+    );
+  }, [clearingHistory, getToken, t]);
+
   const handleSignOut = useCallback(() => {
     Alert.alert(t('settings.signOutTitle'), t('settings.signOutConfirm'), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -233,6 +266,7 @@ export default function SettingsScreen() {
     | { key: 'player_name' }
     | { key: 'groups' }
     | { key: 'premium' }
+    | { key: 'clear_history' }
     | { key: 'signout' };
 
   type Section = { title: string; data: SectionItem[] };
@@ -257,6 +291,10 @@ export default function SettingsScreen() {
     {
       title: t('settings.account'),
       data: [{ key: 'player_name' }, { key: 'groups' }, { key: 'premium' }, { key: 'signout' }],
+    },
+    {
+      title: t('settings.data'),
+      data: [{ key: 'clear_history' }],
     },
   ];
 
@@ -401,6 +439,15 @@ export default function SettingsScreen() {
             </>
           );
 
+        case 'clear_history':
+          return (
+            <LinkRow
+              label={clearingHistory ? t('settings.clearing') : t('settings.clearHistory')}
+              onPress={handleClearHistory}
+              danger
+            />
+          );
+
         case 'signout':
           return (
             <LinkRow
@@ -429,6 +476,8 @@ export default function SettingsScreen() {
       handleLifeTotal,
       handleLanguage,
       handleSignOut,
+      handleClearHistory,
+      clearingHistory,
       signingOut,
       router,
       purchase,

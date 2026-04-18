@@ -55,10 +55,12 @@ export async function PATCH(req: Request) {
     );
   }
 
-  // Find the account player first
+  // Find the account player first — if missing (e.g. after a data wipe),
+  // upsert by creating one with the given name so the client self-heals.
   const accountPlayer = await getAccountPlayer(userId);
   if (!accountPlayer) {
-    return Response.json({ error: 'NOT_FOUND', message: 'No account player found' }, { status: 404 });
+    const created = await getOrCreateAccountPlayer(userId, name.trim());
+    return Response.json({ success: true, data: created.data }, { status: created.created ? 201 : 200 });
   }
 
   const updated = await updatePlayer(userId, accountPlayer.id, name.trim());
