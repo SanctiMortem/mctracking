@@ -114,12 +114,20 @@ export function useTracker(matchId: string): UseTrackerReturn {
   const pendingRef = useRef<Map<string, PendingCommit>>(new Map());
 
   // ── Load match on mount ────────────────────
+  // CRITICAL: `getToken` from Clerk is an unstable reference — it re-creates
+  // on every render. If we depend on it here, this effect re-runs after every
+  // setParticipations, refetching from the server and overwriting optimistic
+  // state with stale values the instant the user stops tapping. That's the
+  // HP "snapback". Ref-hold getToken so the load only runs when matchId
+  // changes. See the matching guard on line ~430 for the flush cleanup.
+  const getTokenRef = useRef(getToken);
+  getTokenRef.current = getToken;
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       try {
-        const token = await getToken();
+        const token = await getTokenRef.current();
         const res = await apiFetch<{
           success: true;
           data: {
@@ -150,7 +158,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
 
     load();
     return () => { cancelled = true; };
-  }, [matchId, getToken]);
+  }, [matchId]);
 
   // ── recordEvent ────────────────────────────
   // Called by counter components AFTER their local debounce fires.
