@@ -1,11 +1,8 @@
 /**
  * GET   /api/settings — return user_settings for the authenticated user.
- * PATCH /api/settings — update user preferences (PLAT-007).
+ * PATCH /api/settings — update user preferences.
  *
  * GET creates settings with defaults if they don't exist (bootstrap).
- * PATCH: `premium` field is explicitly rejected — use POST /purchases/verify (ADR-007).
- *
- * PLAT-002, PLAT-007 (EPIC-05)
  */
 import { getAuth } from '@/services/auth';
 
@@ -32,14 +29,6 @@ export async function PATCH(req: Request) {
   }
 
   const raw = body as Record<string, unknown>;
-
-  // ADR-007 / BR-AUTH-04: premium is not updatable via this endpoint
-  if ('premium' in raw) {
-    return Response.json(
-      { error: 'VALIDATION_ERROR', message: 'premium cannot be set via this endpoint — use POST /purchases/verify' },
-      { status: 400 },
-    );
-  }
 
   // Build and validate patch
   const patch: SettingsPatch = {};

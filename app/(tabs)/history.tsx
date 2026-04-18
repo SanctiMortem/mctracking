@@ -19,7 +19,6 @@ import { useGroupContext } from '@/contexts/GroupContext';
 import { useMatchHistory } from '@/hooks/useMatchHistory';
 import { useResponsive } from '@/hooks/useResponsive';
 import { apiFetch } from '@/services/api';
-import { BannerAdWrapper } from '@/components/ads/BannerAdWrapper';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
@@ -181,8 +180,6 @@ export default function HistoryScreen() {
         />
       )}
 
-      {/* Banner ad — hidden for premium users (BR-AUTH-04) */}
-      <BannerAdWrapper />
     </SafeAreaView>
   );
 }

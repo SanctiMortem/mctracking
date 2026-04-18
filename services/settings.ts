@@ -1,8 +1,5 @@
 /**
  * Settings service — upsert and retrieve user_settings.
- *
- * PLAT-002 (EPIC-05) — getOrCreateSettings
- * PLAT-007 (EPIC-05) — updateSettings
  */
 import { eq } from 'drizzle-orm';
 
@@ -61,7 +58,6 @@ export type UpdateSettingsResult =
  * Validations enforced:
  *   - debounce_threshold_ms ∈ [200, 2000] (BR-TRACK-10)
  *   - default_life_total ∈ [1, 999]
- *   - premium is NOT part of SettingsPatch — blocked at API layer (ADR-007)
  */
 export async function updateSettings(
   userId: string,

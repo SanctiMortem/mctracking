@@ -13,7 +13,6 @@ import {
   getOrRegenerateInvite,
   joinGroup,
 } from '@/services/groups';
-import { setPremiumTrue } from '@/services/purchases';
 import { db } from '@/services/db';
 import { groupMembers, groups, userSettings } from '@/db/schema';
 import {
@@ -79,7 +78,6 @@ describe('GET /api/auth/session', () => {
     expect(settings.language).toBe('auto');
     expect(settings.debounceThresholdMs).toBe(500);
     expect(settings.defaultLifeTotal).toBe(40);
-    expect(settings.premium).toBe(false);
     expect(settings.swipeGesturesEnabled).toBe(true);
     expect(settings.requireCommander).toBe(true);
 
@@ -390,66 +388,3 @@ describe('POST /api/groups/join', () => {
   });
 });
 
-// ─────────────────────────────────────────────
-// PLAT-012: POST /purchases/verify
-// ─────────────────────────────────────────────
-
-describe('POST /api/purchases/verify', () => {
-  it('setPremiumTrue sets premium=true in user_settings (BR-AUTH-04)', async () => {
-    // Ensure settings exist
-    await getOrCreateSettings(TEST_USER_ID);
-
-    const result = await setPremiumTrue(TEST_USER_ID);
-    expect('data' in result).toBe(true);
-    if ('data' in result) {
-      expect(result.data.premium).toBe(true);
-    }
-
-    // Verify in DB
-    const [row] = await db
-      .select()
-      .from(userSettings)
-      .where(eq(userSettings.userId, TEST_USER_ID));
-    expect(row.premium).toBe(true);
-  });
-
-  it('is idempotent — returns premium=true without error when user is already premium', async () => {
-    // Already premium from previous test
-    const result = await setPremiumTrue(TEST_USER_ID);
-    expect('data' in result).toBe(true);
-    if ('data' in result) {
-      expect(result.data.premium).toBe(true);
-    }
-
-    // Only one row exists
-    const rows = await db
-      .select()
-      .from(userSettings)
-      .where(eq(userSettings.userId, TEST_USER_ID));
-    expect(rows.length).toBe(1);
-  });
-
-  it('returns notFound when no user_settings row exists', async () => {
-    const result = await setPremiumTrue('nonexistent_user_xyz');
-    expect(result).toEqual({ notFound: true });
-  });
-
-  it('premium field cannot be changed via updateSettings (ADR-007)', async () => {
-    // The SettingsPatch type does not include `premium`, so TypeScript prevents it.
-    // We verify that updating settings does not touch the premium field.
-    await getOrCreateSettings(TEST_USER_ID);
-    await setPremiumTrue(TEST_USER_ID);
-
-    // Update a different field
-    const result = await updateSettings(TEST_USER_ID, { language: 'es' });
-    expect('data' in result).toBe(true);
-    if ('data' in result) {
-      // Premium should still be true — updateSettings does not modify it
-      expect(result.data.premium).toBe(true);
-      expect(result.data.language).toBe('es');
-    }
-
-    // Reset
-    await updateSettings(TEST_USER_ID, { language: 'auto' });
-  });
-});

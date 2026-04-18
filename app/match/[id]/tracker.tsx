@@ -31,6 +31,7 @@ import { PlayerDashboard } from '@/components/tracker/PlayerDashboard';
 import { PoisonCounter } from '@/components/tracker/PoisonCounter';
 import { TrackerLayout } from '@/components/match/TrackerLayout';
 import { useTracker } from '@/hooks/useTracker';
+import { loadMatchLayout, saveMatchLayout } from '@/services/matchLayout';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
@@ -102,21 +103,63 @@ export default function MatchTrackerScreen() {
   const timer = useMatchTimer();
   const [logVisible, setLogVisible] = useState(false);
 
-  // Parse rotation map from setup screen (playerId → degrees)
-  const rotationMap: Record<string, number> = (() => {
-    if (!rotationsParam) return {};
+  // Parse rotation map from setup screen (playerId → degrees). If the URL
+  // params are missing (user resumed after closing the app), we fall back to
+  // the values in `storedLayout` below.
+  const paramRotations: Record<string, number> | null = (() => {
+    if (!rotationsParam) return null;
     try { return JSON.parse(decodeURIComponent(rotationsParam)); }
-    catch { return {}; }
+    catch { return null; }
   })();
 
-  // Parse player order from setup screen — used to sort participations into
-  // the exact seat arrangement the user configured, since all participations
-  // share the same createdAt and DB order is non-deterministic.
-  const playerOrder: string[] = (() => {
-    if (!playerOrderParam) return [];
+  const paramPlayerOrder: string[] | null = (() => {
+    if (!playerOrderParam) return null;
     try { return JSON.parse(decodeURIComponent(playerOrderParam)); }
-    catch { return []; }
+    catch { return null; }
   })();
+
+  const paramLayoutVariant: string | null = layoutParam
+    ? decodeURIComponent(layoutParam)
+    : null;
+
+  // Hydrate from SecureStore when URL params are missing, and save back so
+  // resuming keeps working after a reload.
+  const [storedLayout, setStoredLayout] = useState<{
+    rotations: Record<string, number>;
+    playerOrder: string[];
+    layoutVariant: string;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    // Prefer URL params (fresh from setup); write them through so next resume
+    // can recover. Otherwise, load from SecureStore.
+    if (paramRotations && paramPlayerOrder && paramLayoutVariant) {
+      void saveMatchLayout(id, {
+        rotations: paramRotations,
+        playerOrder: paramPlayerOrder,
+        layoutVariant: paramLayoutVariant,
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+    (async () => {
+      const loaded = await loadMatchLayout(id);
+      if (!cancelled && loaded) setStoredLayout(loaded);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, rotationsParam, playerOrderParam, layoutParam]);
+
+  const rotationMap: Record<string, number> =
+    paramRotations ?? storedLayout?.rotations ?? {};
+  const playerOrder: string[] =
+    paramPlayerOrder ?? storedLayout?.playerOrder ?? [];
+  const resolvedLayoutVariant: string | undefined =
+    paramLayoutVariant ?? storedLayout?.layoutVariant ?? undefined;
 
   const {
     match,
@@ -322,7 +365,7 @@ export default function MatchTrackerScreen() {
 
       {/* Tracker layout (Level 1 → Level 2 → Level 3) */}
       <View style={styles.layoutContainer}>
-        <TrackerLayout sections={sections} layoutVariant={layoutParam ? decodeURIComponent(layoutParam) : undefined} />
+        <TrackerLayout sections={sections} layoutVariant={resolvedLayoutVariant} />
       </View>
 
       {/* Toast error */}

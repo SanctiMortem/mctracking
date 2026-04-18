@@ -31,7 +31,6 @@ const DEFAULT_SETTINGS = {
   debounceThresholdMs: 500,
   requireCommander: false,
   defaultLifeTotal: 40,
-  premium: false,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };

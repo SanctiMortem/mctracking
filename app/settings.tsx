@@ -1,9 +1,7 @@
 /**
  * SCR-018 — Settings
- * Tracker prefs, match setup, language, account (groups, premium CTA, sign out).
+ * Tracker prefs, match setup, language, account (groups, sign out).
  * Access: gear icon in SCR-002 header.
- *
- * PLAT-008 (EPIC-05)
  */
 import { useCallback, useState } from 'react';
 import {
@@ -22,7 +20,6 @@ import { useAuth } from '@clerk/clerk-expo';
 import { useTranslation } from 'react-i18next';
 
 import { useSettings } from '@/hooks/useSettings';
-import { useIAP } from '@/hooks/useIAP';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAccountPlayer } from '@/contexts/AccountPlayerContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -142,7 +139,6 @@ export default function SettingsScreen() {
   const { t } = useTranslation();
   const { contentMaxWidth, contentPadding } = useResponsive();
   const { settings, loading, error, saving, refresh, patchSetting } = useSettings();
-  const { purchase, restore, isPurchasing, isRestoring } = useIAP(refresh);
   const { accountPlayer, setAccountPlayer } = useAccountPlayer();
   const { theme, themeId, setThemeId } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -265,7 +261,6 @@ export default function SettingsScreen() {
     | { key: 'theme' }
     | { key: 'player_name' }
     | { key: 'groups' }
-    | { key: 'premium' }
     | { key: 'clear_history' }
     | { key: 'signout' };
 
@@ -290,7 +285,7 @@ export default function SettingsScreen() {
     },
     {
       title: t('settings.account'),
-      data: [{ key: 'player_name' }, { key: 'groups' }, { key: 'premium' }, { key: 'signout' }],
+      data: [{ key: 'player_name' }, { key: 'groups' }, { key: 'signout' }],
     },
     {
       title: t('settings.data'),
@@ -409,36 +404,6 @@ export default function SettingsScreen() {
             />
           );
 
-        case 'premium':
-          return settings.premium ? (
-            <View style={styles.row}>
-              <Text style={styles.rowLabel}>{t('settings.premium')}</Text>
-              <Text style={styles.premiumActive}>{t('settings.premiumActive')}</Text>
-            </View>
-          ) : (
-            <>
-              <Pressable
-                style={styles.row}
-                onPress={isPurchasing || isRestoring ? undefined : purchase}
-                accessibilityRole="button"
-              >
-                <Text style={styles.rowLabel}>
-                  {isPurchasing ? `${t('common.loading')}` : t('settings.premiumCta')}
-                </Text>
-                {!isPurchasing && <Text style={styles.chevron}>›</Text>}
-              </Pressable>
-              <Pressable
-                style={styles.row}
-                onPress={isPurchasing || isRestoring ? undefined : restore}
-                accessibilityRole="button"
-              >
-                <Text style={[styles.rowLabel, styles.restoreText]}>
-                  {isRestoring ? `${t('common.loading')}` : t('settings.retry')}
-                </Text>
-              </Pressable>
-            </>
-          );
-
         case 'clear_history':
           return (
             <LinkRow
@@ -480,10 +445,6 @@ export default function SettingsScreen() {
       clearingHistory,
       signingOut,
       router,
-      purchase,
-      restore,
-      isPurchasing,
-      isRestoring,
       themeId,
       setThemeId,
     ],
@@ -634,15 +595,6 @@ function createStyles(t: AppTheme) {
       lineHeight: 24,
     },
     dangerText: { color: t.colors.status.error },
-    restoreText: {
-      color: t.colors.text.muted,
-      fontSize: t.typography.size['body-sm'],
-    },
-    premiumActive: {
-      color: t.colors.status.success,
-      fontSize: t.typography.size['body-sm'],
-      fontWeight: t.typography.weight.semibold,
-    },
 
     nameEditRow: {
       flexDirection: 'row' as const,

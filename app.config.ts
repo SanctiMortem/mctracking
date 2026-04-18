@@ -12,7 +12,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.aboutagency.mtgtracker',
-    buildNumber: '1',
+    buildNumber: '3',
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
     },
@@ -23,7 +23,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundColor: '#1c1102',
     },
     package: 'com.aboutagency.mtgtracker',
-    versionCode: 1,
+    versionCode: 3,
   },
   plugins: [
     'expo-router',
@@ -34,9 +34,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         faceIDPermission: 'Allow MTG Commander Tracker to use Face ID.',
       },
     ],
-    // react-native-google-mobile-ads disabled until real AdMob IDs are configured.
-    // The SDK crashes on launch with placeholder IDs (GADInvalidInitializationException).
-    'expo-iap',
     'expo-web-browser',
   ],
   web: {

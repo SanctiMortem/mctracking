@@ -10,6 +10,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 
 import { CloseMatchSheet } from '@/components/match/CloseMatchSheet';
 import { useCloseMatch } from '@/hooks/useCloseMatch';
+import { clearMatchLayout } from '@/services/matchLayout';
 
 export default function MatchCloseScreen() {
   const { id, edit } = useLocalSearchParams<{ id: string; edit?: string }>();
@@ -41,6 +42,9 @@ export default function MatchCloseScreen() {
     }
     const ok = await submit();
     if (ok) {
+      // Match is done — drop the persisted layout so it doesn't leak into
+      // future matches and takes no space in SecureStore.
+      void clearMatchLayout(id);
       // Dismiss all modals (tracker + close sheet) before navigating
       router.dismissAll();
       if (mode === 'abandon') {

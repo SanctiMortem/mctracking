@@ -10,6 +10,7 @@ import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { MatchSetupForm } from '@/components/match/MatchSetupForm';
+import { saveMatchLayout } from '@/services/matchLayout';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
@@ -19,6 +20,9 @@ export default function MatchSetupScreen() {
 
   const { t } = useTranslation();
   function handleSubmit(matchId: string, rotations: Record<string, number>, playerOrder: string[], layoutVariant: string) {
+    // Persist first so a close-and-resume flow can recover the layout. Fire-and-forget
+    // — SecureStore writes are fast and failures are non-fatal.
+    void saveMatchLayout(matchId, { rotations, playerOrder, layoutVariant });
     const rotParam = encodeURIComponent(JSON.stringify(rotations));
     const orderParam = encodeURIComponent(JSON.stringify(playerOrder));
     const layoutParam = encodeURIComponent(layoutVariant);

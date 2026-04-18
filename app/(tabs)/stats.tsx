@@ -22,7 +22,6 @@ import { PlayerRankingRow } from '@/components/stats/PlayerRankingRow';
 import { TopDeckPodiumCard, type PodiumTier } from '@/components/stats/TopDeckPodiumCard';
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { useGlobalStats } from '@/hooks/useGlobalStats';
-import { BannerAdWrapper } from '@/components/ads/BannerAdWrapper';
 import { useResponsive } from '@/hooks/useResponsive';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -198,8 +197,6 @@ export default function StatsScreen() {
         </View>
       )}
 
-      {/* Banner ad — hidden for premium users (BR-AUTH-04) */}
-      <BannerAdWrapper />
     </ScrollView>
   );
 }

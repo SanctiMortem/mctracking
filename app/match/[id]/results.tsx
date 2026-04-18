@@ -14,7 +14,6 @@ import { useTranslation } from 'react-i18next';
 import { MatchResultCard } from '@/components/match/MatchResultCard';
 import { ParticipantResultRow } from '@/components/match/ParticipantResultRow';
 import { useMatchResults } from '@/hooks/useMatchResults';
-import { useInterstitialAd } from '@/hooks/useInterstitialAd';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
@@ -30,7 +29,6 @@ export default function MatchResultsScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { data, loading, error } = useMatchResults(id);
-  const { showAd } = useInterstitialAd();
 
   // ─── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
@@ -127,7 +125,7 @@ export default function MatchResultsScreen() {
 
           <TouchableOpacity
             style={styles.ctaGhost}
-            onPress={() => showAd(() => router.replace('/(tabs)'))}
+            onPress={() => router.replace('/(tabs)')}
             activeOpacity={0.7}
           >
             <Text style={styles.ctaGhostText}>{t('tabs.home')}</Text>

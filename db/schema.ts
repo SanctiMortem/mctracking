@@ -279,7 +279,7 @@ export const groupMembers = pgTable(
 
 // ─────────────────────────────────────────────
 // user_settings
-// E-011 · BR-I18N-01 · BR-TRACK-08 · BR-TRACK-10 · BR-AUTH-04 · PLAT-001
+// E-011 · BR-I18N-01 · BR-TRACK-08 · BR-TRACK-10 · PLAT-001
 // debounce_threshold_ms validated 200–2000 at API layer (BR-TRACK-10)
 // ─────────────────────────────────────────────
 export const userSettings = pgTable(
@@ -292,7 +292,6 @@ export const userSettings = pgTable(
     debounceThresholdMs: integer('debounce_threshold_ms').notNull().default(500),
     requireCommander: boolean('require_commander').notNull().default(true),
     defaultLifeTotal: integer('default_life_total').notNull().default(40),
-    premium: boolean('premium').notNull().default(false),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },

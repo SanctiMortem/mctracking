@@ -108,8 +108,6 @@ export default function PodDetailScreen() {
   // ─────────────────────────────────────────────
 
   function renderMember({ item }: { item: PodMemberData }) {
-  const styles = useThemedStyles(createStyles);
-
     const isYou = accountPlayer?.id === item.player.id;
     const isMemberOwner = item.member.role === 'owner';
     return (

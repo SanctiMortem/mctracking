@@ -11,7 +11,7 @@
       "supportsTablet": true,
       "requireFullScreen": false,
       "bundleIdentifier": "com.aboutagency.mtgtracker",
-      "buildNumber": "1",
+      "buildNumber": "3",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIRequiresFullScreen": false,
@@ -29,7 +29,7 @@
         "backgroundColor": "#1c1102"
       },
       "package": "com.aboutagency.mtgtracker",
-      "versionCode": 1,
+      "versionCode": 3,
       "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
@@ -43,14 +43,6 @@
         "expo-secure-store",
         {
           "faceIDPermission": "Allow MTG Commander Tracker to use Face ID."
-        }
-      ],
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-PLACEHOLDER~PLACEHOLDER",
-          "iosAppId": "ca-app-pub-PLACEHOLDER~PLACEHOLDER",
-          "userTrackingUsageDescription": "This identifier will be used to personalize ads."
         }
       ]
     ],

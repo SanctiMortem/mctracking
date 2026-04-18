@@ -1,13 +1,11 @@
 /**
  * E2E tests — Platform epic critical flows
- * PLAT-014 (EPIC-05)
  *
  * These tests require a running app + Clerk test credentials + Neon test DB.
  * All suites are skipped until the E2E harness (Detox / Maestro) is configured.
  *
  * Mock strategy:
- *   - expo-iap: jest.mock('expo-iap', ...) — see PLAT-014 issue for mock spec
- *   - Clerk: jest.mock('@clerk/clerk-expo', ...) — see PLAT-014 issue for mock spec
+ *   - Clerk: jest.mock('@clerk/clerk-expo', ...) — see issue for mock spec
  *   - Second user for group flows: seeded via API before test run
  */
 
@@ -22,7 +20,7 @@ describe.skip('E2E — registration + settings bootstrap', () => {
     // 3. Enter valid email + password → tap Sign Up
     // 4. Assert: navigated to Home (index tab)
     // 5. Assert: GET /auth/session response contains user_settings with defaults
-    //    (language='auto', debounce_threshold_ms=500, default_life_total=40, premium=false)
+    //    (language='auto', debounce_threshold_ms=500, default_life_total=40)
     // 6. Assert: Home shows "New Match" CTA
   });
 
@@ -58,37 +56,5 @@ describe.skip('E2E — group lifecycle', () => {
     // User B taps "Join Group" and enters the expired code
     // Assert: error banner shows GROUP_INVITE_EXPIRED message
     // Assert: user B is NOT added as member
-  });
-});
-
-// ─────────────────────────────────────────────
-// E2E Flow 3: Premium IAP — ads disappear after purchase
-// ─────────────────────────────────────────────
-
-describe.skip('E2E — premium IAP flow', () => {
-  it('settings IAP → mock purchase → premium=true → ads hidden immediately', async () => {
-    // Precondition: user is on free tier (premium=false, ads visible)
-    //
-    // 1. Navigate to Settings tab
-    // 2. Assert: "Remove Ads" CTA is visible
-    // 3. Assert: BannerAd component is rendered on Home
-    //
-    // 4. Tap "Remove Ads" → IAP sheet appears (mocked via expo-iap mock)
-    // 5. Mock purchase resolves with { receiptData: 'mock-receipt' }
-    // 6. Assert: POST /purchases/verify called with { receipt: 'mock-receipt', platform: <current> }
-    // 7. Assert: 200 response → user_settings.premium = true
-    //
-    // 8. Navigate back to Home
-    // 9. Assert: BannerAd component is NO longer rendered (no app restart required)
-    // 10. Assert: "Remove Ads" CTA is no longer visible in Settings
-  });
-
-  it('restore purchases reactivates premium for returning user', async () => {
-    // Precondition: user reinstalled app; premium=false locally but purchase exists in store
-    // 1. Navigate to Settings
-    // 2. Tap "Restore Purchases"
-    // 3. Mock StoreKit/Play Billing returns previous receipt
-    // 4. Assert: POST /purchases/verify called with restored receipt
-    // 5. Assert: premium=true → ads hidden immediately
   });
 });
