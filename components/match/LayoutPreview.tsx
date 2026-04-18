@@ -28,13 +28,23 @@ const SCREEN_FRACTION = 0.45;
 const THUMB_SIZE = 56;
 const THUMB_RATIO = 9 / 14;
 
-const ROTATION_STEPS = [0, 90, 180, 270] as const;
+// Cardinal Orientation System — rotation cycles within the slot's axis only.
+//   NS axis: 0° (North) ↔ 180° (South)
+//   EW axis: 90° (East) ↔ 270° (West)
 const ARROW_FOR_ROTATION: Record<number, string> = {
-  0: '↑',
-  90: '→',
-  180: '↓',
-  270: '←',
+  0: '↑',   // faces North
+  90: '→',  // faces East
+  180: '↓', // faces South
+  270: '←', // faces West
 };
+
+function flipWithinAxis(rotation: number): 0 | 90 | 180 | 270 {
+  const norm = ((rotation % 360) + 360) % 360;
+  if (norm === 0) return 180;
+  if (norm === 180) return 0;
+  if (norm === 90) return 270;
+  return 90; // 270 → 90, and any unexpected value snaps to an EW facing
+}
 
 /** Human-readable labels for layout variants */
 const VARIANT_LABELS: Record<string, string> = {
@@ -44,8 +54,7 @@ const VARIANT_LABELS: Record<string, string> = {
   '3p-left1-right2': '1 Left + 2 Right',
   '3p-top2-bot1': '2 Top + 1 Bottom',
   '4p-grid': '2x2 Grid',
-  '4p-top1-bot3': '1 Top + 3 Bottom',
-  '4p-top3-bot1': '3 Top + 1 Bottom',
+  '4p-pod': 'Commander Pod',
 };
 
 interface Player {
@@ -131,26 +140,16 @@ function VariantThumb({ variant, isSelected, onPress }: {
             </View>
           </>
         );
-      case '4p-top1-bot3':
+      case '4p-pod':
+        // 1-2-1 Commander Pod: Row full / Row 50-50 / Row full
         return (
           <>
-            <View style={[thumbStyles.full, { flex: 2 }]} />
-            <View style={[thumbStyles.row, { flex: 3 }]}>
-              <View style={thumbStyles.third} />
-              <View style={thumbStyles.third} />
-              <View style={thumbStyles.third} />
+            <View style={thumbStyles.full} />
+            <View style={thumbStyles.row}>
+              <View style={thumbStyles.half} />
+              <View style={thumbStyles.half} />
             </View>
-          </>
-        );
-      case '4p-top3-bot1':
-        return (
-          <>
-            <View style={[thumbStyles.row, { flex: 3 }]}>
-              <View style={thumbStyles.third} />
-              <View style={thumbStyles.third} />
-              <View style={thumbStyles.third} />
-            </View>
-            <View style={[thumbStyles.full, { flex: 2 }]} />
+            <View style={thumbStyles.full} />
           </>
         );
       default:
@@ -268,9 +267,7 @@ export function LayoutPreview({
 
   const handleRotate = useCallback((playerId: string) => {
     const current = rotations[playerId] ?? 0;
-    const currentStep = ROTATION_STEPS.indexOf(current as typeof ROTATION_STEPS[number]);
-    const nextStep = (currentStep + 1) % ROTATION_STEPS.length;
-    onRotate(playerId, ROTATION_STEPS[nextStep]);
+    onRotate(playerId, flipWithinAxis(current));
   }, [rotations, onRotate]);
 
   const renderSlot = (index: number) => {
@@ -368,26 +365,16 @@ export function LayoutPreview({
             </View>
           </>
         );
-      case '4p-top1-bot3':
+      case '4p-pod':
+        // 1-2-1 Commander Pod
         return (
           <>
-            <View style={[styles.fullRow, { flex: 2 }]}>{renderSlot(0)}</View>
-            <View style={[styles.halfRow, { flex: 3 }]}>
-              {renderSlot(1)}
-              {renderSlot(2)}
-              {renderSlot(3)}
-            </View>
-          </>
-        );
-      case '4p-top3-bot1':
-        return (
-          <>
-            <View style={[styles.halfRow, { flex: 3 }]}>
-              {renderSlot(0)}
+            <View style={styles.fullRow}>{renderSlot(0)}</View>
+            <View style={styles.halfRow}>
               {renderSlot(1)}
               {renderSlot(2)}
             </View>
-            <View style={[styles.fullRow, { flex: 2 }]}>{renderSlot(3)}</View>
+            <View style={styles.fullRow}>{renderSlot(3)}</View>
           </>
         );
       default:

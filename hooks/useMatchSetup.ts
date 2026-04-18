@@ -16,40 +16,51 @@ import type { Match, Participation } from '@/db/index';
 /**
  * Available layout variants per player count.
  * Each variant is a string key used by TrackerLayout to decide how to arrange frames.
+ *
+ * All variants are "center-facing": every slot's default rotation points
+ * the player toward the centre of the device.
  */
 export const LAYOUT_VARIANTS: Record<number, string[]> = {
   2: ['2p-stack', '2p-side'],
   3: ['3p-top1-bot2', '3p-left1-right2', '3p-top2-bot1'],
-  4: ['4p-grid', '4p-top1-bot3', '4p-top3-bot1'],
+  4: ['4p-grid', '4p-pod'],
 };
 
 /**
- * Default slot rotations per layout variant.
+ * Default slot rotations per layout variant — Cardinal Orientation System.
  *
- * Mental model: every seat faces the centre of the screen, as if the players
- * were sitting around the edges of a table. The single player on the "long
- * side" reads upright/upside-down; the cluster on the opposite side sits like
- * the ends of a table and is rotated sideways so their text reads toward the
- * centre.
+ *   CSS 0°   → player faces North (sits on South edge, reads up)
+ *   CSS 180° → player faces South (sits on North edge, reads upside-down)
+ *   CSS 90°  → player faces East  (sits on West edge, lands content landscape)
+ *   CSS 270° → player faces West  (sits on East edge, lands content landscape)
  *
- *   bottom = 0°   top = 180°   left = 90°   right = 270°
+ * Each slot is pinned to an axis (NS or EW). Manual flip swaps within the
+ * axis only (0↔180 for NS, 90↔270 for EW).
  *
  * Index = slot position (matches selectedPlayerIds order).
  */
 export const DEFAULT_SLOT_ROTATIONS: Record<string, number[]> = {
+  // ── 2 players ──
+  // NS axis: top faces South, bottom faces North.
   '2p-stack':        [180, 0],
+  // EW axis: left faces East, right faces West.
   '2p-side':         [90, 270],
-  // 1 top (faces centre down) + 2 bottom sitting as table ends (sideways inward)
+
+  // ── 3 players ──
+  // Top player on NS axis; bottom pair on EW axis (East-facer on the left,
+  // West-facer on the right).
   '3p-top1-bot2':    [180, 90, 270],
-  // 1 left end + 2 right column both facing left toward the centre
+  // Landscape split: left column on EW axis (faces East), right column has
+  // two W-facers stacked vertically.
   '3p-left1-right2': [90, 270, 270],
-  // 2 top sitting as table ends (sideways inward) + 1 bottom (faces centre up)
+  // Top pair on EW axis; bottom player on NS axis.
   '3p-top2-bot1':    [90, 270, 0],
-  '4p-grid':         [180, 180, 0, 0],
-  // 1 top centre (faces down) + 3 bottom: left end, centre seat, right end
-  '4p-top1-bot3':    [180, 90, 0, 270],
-  // 3 top (left end, centre seat, right end) + 1 bottom centre
-  '4p-top3-bot1':    [90, 180, 270, 0],
+
+  // ── 4 players ──
+  // Quad 2×2 (EW axis throughout): left column faces East, right faces West.
+  '4p-grid':         [90, 270, 90, 270],
+  // 1-2-1 Commander Pod: top NS-South, mid pair EW (East, West), bottom NS-North.
+  '4p-pod':          [180, 90, 270, 0],
 };
 
 export type UseMatchSetupReturn = {

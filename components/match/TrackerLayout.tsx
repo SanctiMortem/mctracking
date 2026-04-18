@@ -1,26 +1,29 @@
 /**
- * TrackerLayout — Collapsed Grid for 2/3/4 player frames.
+ * TrackerLayout — Level 1: Elastic grid of center-facing frames.
  *
- * Design contract (per TRACK-003 layout spec):
- *   • Frames are packed tightly together at the center of the viewport.
- *   • Gutter between frames is a hard 2px — NO space-around / space-between.
- *     We use `gap: 2` with a centered flexbox; leftover screen real estate
- *     is absorbed as outer padding (alignItems/justifyContent: center on the
- *     wrapper).
- *   • Each frame keeps its 5:3 player aspect ratio. We compute the packed
- *     width/height the frames need and hand those exact dimensions to
- *     PlayerSection — so no slot letterboxing, no dead space between frames.
+ * CARDINAL ORIENTATION MATRIX
+ *   Every layout is a pure JSX tree of flex containers. Frames are flex:1
+ *   so they fill 100 % of the cell the grid gave them. A fixed 2 px gap
+ *   sits between every frame; leftover viewport real-estate is pushed to
+ *   the edges (outer `justifyContent: 'center'`).
+ *
+ *   The set of supported center-facing variants:
+ *     2p-side     — 2 columns (EW axis)
+ *     2p-stack    — 2 rows    (NS axis, kept for symmetry)
+ *     3p-left1-right2  — col + (col of 2)            [EW / EW / EW]
+ *     3p-top1-bot2     — row + (row of 2)            [NS / EW / EW]
+ *     3p-top2-bot1     — (row of 2) + row            [EW / EW / NS]
+ *     4p-grid     — 2 × (row of 2)                   [EW × 4]
+ *     4p-pod      — 4-row grid, top/bot span width,  [NS / EW / EW / NS]
+ *                   mid pair spans rows 2+3
  *
  * TRACK-003 (EPIC-03)
  */
-import { useCallback, useState } from 'react';
-import { type LayoutChangeEvent, View } from 'react-native';
+import { View } from 'react-native';
 
 import { PlayerSection } from './PlayerSection';
 
 const GAP = 2;
-// Frame aspect (width / height) from the player's perspective.
-const FRAME_ASPECT = 5 / 3;
 
 export interface SectionData {
   id: string;
@@ -35,118 +38,11 @@ interface TrackerLayoutProps {
   layoutVariant?: string;
 }
 
-// ─── Layout schema ────────────────────────────────────────────────────────────
-// Each variant is described as a vertical stack of rows. Each row has a
-// `weight` (relative height share) and a list of section indices that sit
-// horizontally in that row. `3p-left1-right2` uses a single outer row with
-// two columns — we handle it as a one-off below.
+// ─── Frame + flex helpers ────────────────────────────────────────────────────
 
-type RowSpec = { weight: number; cells: number[] };
-
-function schemaFor(variant: string | undefined, count: number): RowSpec[] | null {
-  if (count === 2) {
-    if (variant === '2p-side') {
-      return [{ weight: 1, cells: [0, 1] }];
-    }
-    // Default 2p-stack
-    return [
-      { weight: 1, cells: [0] },
-      { weight: 1, cells: [1] },
-    ];
-  }
-
-  if (count === 3) {
-    if (variant === '3p-top2-bot1') {
-      return [
-        { weight: 3, cells: [0, 1] },
-        { weight: 2, cells: [2] },
-      ];
-    }
-    if (variant === '3p-left1-right2') {
-      // Handled as a dedicated layout below — signal with null.
-      return null;
-    }
-    // Default 3p-top1-bot2
-    return [
-      { weight: 2, cells: [0] },
-      { weight: 3, cells: [1, 2] },
-    ];
-  }
-
-  if (count === 4) {
-    if (variant === '4p-top1-bot3') {
-      return [
-        { weight: 2, cells: [0] },
-        { weight: 3, cells: [1, 2, 3] },
-      ];
-    }
-    if (variant === '4p-top3-bot1') {
-      return [
-        { weight: 3, cells: [0, 1, 2] },
-        { weight: 2, cells: [3] },
-      ];
-    }
-    // Default 4p-grid (2x2)
-    return [
-      { weight: 1, cells: [0, 1] },
-      { weight: 1, cells: [2, 3] },
-    ];
-  }
-
-  return null;
-}
-
-// ─── Pack computation ─────────────────────────────────────────────────────────
-// Given a viewport and a row schema, compute the largest frame sizes that:
-//   1. Keep every frame at the 5:3 aspect ratio,
-//   2. Use row weights as the ratio between row heights (once all cells share
-//      the same height per row),
-//   3. Fit inside the viewport with 2px gaps, horizontal and vertical.
-//
-// Strategy: assume the available height is the binding constraint, compute
-// heights from weights, derive widths from the aspect ratio, then scale the
-// whole layout down uniformly if the widest row would overflow.
-
-type PackedRow = { weight: number; h: number; frameW: number; cells: number[] };
-
-function packRows(rows: RowSpec[], vpW: number, vpH: number): { packed: PackedRow[]; packW: number; packH: number } {
-  const totalWeight = rows.reduce((s, r) => s + r.weight, 0);
-  const availH = vpH - GAP * (rows.length - 1);
-
-  // First pass — distribute height by weight; width follows from aspect.
-  const packed: PackedRow[] = rows.map((r) => {
-    const h = (availH * r.weight) / totalWeight;
-    const frameW = h * FRAME_ASPECT;
-    return { weight: r.weight, h, frameW, cells: r.cells };
-  });
-
-  // Horizontal fit — if any row's packed width exceeds the viewport, scale
-  // everything down uniformly so proportions stay intact.
-  const worstRowW = Math.max(
-    ...packed.map((r) => r.frameW * r.cells.length + GAP * (r.cells.length - 1)),
-  );
-  const scale = worstRowW > vpW ? vpW / worstRowW : 1;
-
-  if (scale < 1) {
-    for (const r of packed) {
-      r.h *= scale;
-      r.frameW *= scale;
-    }
-  }
-
-  const packW = Math.max(
-    ...packed.map((r) => r.frameW * r.cells.length + GAP * (r.cells.length - 1)),
-  );
-  const packH = packed.reduce((s, r) => s + r.h, 0) + GAP * (packed.length - 1);
-
-  return { packed, packW, packH };
-}
-
-// ─── Components ───────────────────────────────────────────────────────────────
-
-function Frame({ s, w, h }: { s: SectionData; w: number; h: number }) {
+function Cell({ s, flex = 1 }: { s: SectionData; flex?: number }) {
   return (
-    <View style={{ width: w, height: h }}>
+    <View style={{ flex, minWidth: 0, minHeight: 0 }}>
       <PlayerSection rotation={s.rotation} isActive={s.isActive}>
         {s.content}
       </PlayerSection>
@@ -154,89 +50,149 @@ function Frame({ s, w, h }: { s: SectionData; w: number; h: number }) {
   );
 }
 
-export function TrackerLayout({ sections, layoutVariant }: TrackerLayoutProps) {
-  const [viewport, setViewport] = useState({ w: 0, h: 0 });
+function Row({ children, flex = 1 }: { children: React.ReactNode; flex?: number }) {
+  return (
+    <View style={{ flex, flexDirection: 'row', gap: GAP, minWidth: 0, minHeight: 0 }}>
+      {children}
+    </View>
+  );
+}
 
-  const onLayout = useCallback((e: LayoutChangeEvent) => {
-    const { width, height } = e.nativeEvent.layout;
-    setViewport((prev) => {
-      if (Math.abs(prev.w - width) < 1 && Math.abs(prev.h - height) < 1) return prev;
-      return { w: width, h: height };
-    });
-  }, []);
+function Col({ children, flex = 1 }: { children: React.ReactNode; flex?: number }) {
+  return (
+    <View style={{ flex, flexDirection: 'column', gap: GAP, minWidth: 0, minHeight: 0 }}>
+      {children}
+    </View>
+  );
+}
 
+// ─── Variant renderer ────────────────────────────────────────────────────────
+
+function renderVariant(variant: string | undefined, sections: SectionData[]): React.ReactNode {
   const count = sections.length;
-  const measured = viewport.w > 0 && viewport.h > 0;
+  const v = normalizeVariant(variant, count);
 
-  // ─── 3p-left1-right2 — special two-column pack ──
-  if (count === 3 && layoutVariant === '3p-left1-right2' && measured) {
-    const { w: vpW, h: vpH } = viewport;
-    // Left column: 1 frame at full viewport height.
-    // Right column: 2 stacked frames, each at half height (minus GAP).
-    const leftH = vpH;
-    const leftW = leftH * FRAME_ASPECT;
-    const rightFrameH = (vpH - GAP) / 2;
-    const rightFrameW = rightFrameH * FRAME_ASPECT;
-
-    let packW = leftW + GAP + rightFrameW;
-    let packH = vpH;
-
-    const scale = packW > vpW ? vpW / packW : 1;
-    if (scale < 1) {
-      packW *= scale;
-      packH *= scale;
+  if (count === 2) {
+    if (v === '2p-side') {
+      // EW axis: West-facing player | East-facing player
+      return (
+        <Row>
+          <Cell s={sections[0]} />
+          <Cell s={sections[1]} />
+        </Row>
+      );
     }
-
-    const sLeftW = leftW * scale;
-    const sLeftH = leftH * scale;
-    const sRightW = rightFrameW * scale;
-    const sRightH = rightFrameH * scale;
-
+    // 2p-stack (NS axis): South-facing player above North-facing player
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }} onLayout={onLayout}>
-        <View style={{ flexDirection: 'row', gap: GAP, width: packW, height: packH }}>
-          <Frame s={sections[0]} w={sLeftW} h={sLeftH} />
-          <View style={{ gap: GAP }}>
-            <Frame s={sections[1]} w={sRightW} h={sRightH} />
-            <Frame s={sections[2]} w={sRightW} h={sRightH} />
-          </View>
-        </View>
-      </View>
+      <Col>
+        <Cell s={sections[0]} />
+        <Cell s={sections[1]} />
+      </Col>
     );
   }
 
-  const rows = schemaFor(layoutVariant, count);
-  if (!rows || !measured) {
-    // Render the onLayout container so we can measure; once measured, we re-render.
-    return <View style={{ flex: 1 }} onLayout={onLayout} />;
+  if (count === 3) {
+    if (v === '3p-top2-bot1') {
+      return (
+        <Col>
+          <Row>
+            <Cell s={sections[0]} />
+            <Cell s={sections[1]} />
+          </Row>
+          <Row>
+            <Cell s={sections[2]} />
+          </Row>
+        </Col>
+      );
+    }
+    if (v === '3p-left1-right2') {
+      // Column 1 (full height) + Column 2 (split vertically)
+      return (
+        <Row>
+          <Cell s={sections[0]} />
+          <Col>
+            <Cell s={sections[1]} />
+            <Cell s={sections[2]} />
+          </Col>
+        </Row>
+      );
+    }
+    // 3p-top1-bot2: Row 1 (full) + Row 2 (split horizontally)
+    return (
+      <Col>
+        <Row>
+          <Cell s={sections[0]} />
+        </Row>
+        <Row>
+          <Cell s={sections[1]} />
+          <Cell s={sections[2]} />
+        </Row>
+      </Col>
+    );
   }
 
-  const { packed, packW, packH } = packRows(rows, viewport.w, viewport.h);
+  if (count === 4) {
+    if (v === '4p-pod') {
+      // Commander Pod 1-2-1 expressed as a 4-row grid where the middle
+      // player pair spans rows 2+3. We realise that with three rows whose
+      // flex weights are 1 / 2 / 1 (top / mid-pair / bottom).
+      return (
+        <Col>
+          <Row flex={1}>
+            <Cell s={sections[0]} />
+          </Row>
+          <Row flex={2}>
+            <Cell s={sections[1]} />
+            <Cell s={sections[2]} />
+          </Row>
+          <Row flex={1}>
+            <Cell s={sections[3]} />
+          </Row>
+        </Col>
+      );
+    }
+    // 4p-grid — Quad 2×2 (EW axis throughout)
+    return (
+      <Col>
+        <Row>
+          <Cell s={sections[0]} />
+          <Cell s={sections[1]} />
+        </Row>
+        <Row>
+          <Cell s={sections[2]} />
+          <Cell s={sections[3]} />
+        </Row>
+      </Col>
+    );
+  }
 
+  // Fallback — single row for any unexpected count.
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }} onLayout={onLayout}>
-      <View style={{ width: packW, height: packH, gap: GAP }}>
-        {packed.map((row, rowIdx) => (
-          <View
-            key={rowIdx}
-            style={{
-              flexDirection: 'row',
-              gap: GAP,
-              justifyContent: 'center',
-              height: row.h,
-            }}
-          >
-            {row.cells.map((sectionIdx) => (
-              <Frame
-                key={sections[sectionIdx].id}
-                s={sections[sectionIdx]}
-                w={row.frameW}
-                h={row.h}
-              />
-            ))}
-          </View>
-        ))}
-      </View>
+    <Row>
+      {sections.map((s) => (
+        <Cell key={s.id} s={s} />
+      ))}
+    </Row>
+  );
+}
+
+// Legacy variants fold into current ones so in-progress matches keep working.
+function normalizeVariant(variant: string | undefined, count: number): string | undefined {
+  if (!variant) return undefined;
+  if (count === 4) {
+    if (variant === '4p-top1-bot3' || variant === '4p-top3-bot1' || variant === '4p-vstack') {
+      return '4p-pod';
+    }
+  }
+  return variant;
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+export function TrackerLayout({ sections, layoutVariant }: TrackerLayoutProps) {
+  return (
+    <View style={{ flex: 1, alignItems: 'stretch', justifyContent: 'center' }}>
+      {renderVariant(layoutVariant, sections)}
     </View>
   );
 }
