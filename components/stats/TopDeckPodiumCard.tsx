@@ -9,7 +9,8 @@
  * Commander art is inset inside a frame (card bg visible around it) and
  * carries a subtle top/bottom vignette. Ranks 4+ use the plain DeckStatRow.
  */
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import type { Commander, Deck } from '@/db/index';
@@ -72,9 +73,28 @@ export function TopDeckPodiumCard({
             ) : (
               <View style={styles.artPlaceholder} />
             )}
-            {/* Vignette — subtle dark fade at top and bottom edges */}
-            <View style={styles.vignetteTop} pointerEvents="none" />
-            <View style={styles.vignetteBottom} pointerEvents="none" />
+            {/* Vignette — circular radial fade: 80% at the outer edge → 0% toward the center */}
+            <Svg
+              style={StyleSheet.absoluteFill}
+              pointerEvents="none"
+              preserveAspectRatio="none"
+            >
+              <Defs>
+                <RadialGradient
+                  id="podiumVignette"
+                  cx="50%"
+                  cy="50%"
+                  rx="70%"
+                  ry="70%"
+                  fx="50%"
+                  fy="50%"
+                >
+                  <Stop offset="0" stopColor="#000" stopOpacity="0" />
+                  <Stop offset="1" stopColor="#000" stopOpacity="0.8" />
+                </RadialGradient>
+              </Defs>
+              <Rect x="0" y="0" width="100%" height="100%" fill="url(#podiumVignette)" />
+            </Svg>
           </View>
         </View>
 
@@ -218,24 +238,6 @@ const createStyles = (t: AppTheme) => ({
   artPlaceholder: {
     flex: 1,
     backgroundColor: t.colors.background.elevated,
-  },
-
-  // Vignette — two soft dark edges for a subtle framing effect
-  vignetteTop: {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 24,
-    backgroundColor: 'rgba(0,0,0,0.22)',
-  },
-  vignetteBottom: {
-    position: 'absolute' as const,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 36,
-    backgroundColor: 'rgba(0,0,0,0.28)',
   },
 
   // Gold divider under the art on tier 1

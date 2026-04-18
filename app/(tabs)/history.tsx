@@ -119,9 +119,18 @@ export default function HistoryScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      {/* Intro — flavor subtitle */}
-      <View style={styles.intro}>
-        <Text style={styles.introSubtitle}>
+      {/* Header — title + flavor subtitle (matches Decks screen) */}
+      <View
+        style={[
+          styles.header,
+          { paddingHorizontal: contentPadding },
+          contentMaxWidth
+            ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number }
+            : undefined,
+        ]}
+      >
+        <Text style={styles.title}>{t('tabs.history')}</Text>
+        <Text style={styles.subtitle}>
           Where the memories of past struggles and adventures are remembered.
         </Text>
       </View>
@@ -186,12 +195,20 @@ const createStyles = (t: AppTheme) => ({
     backgroundColor: t.colors.background.primary,
   },
 
-  intro: {
+  header: {
+    gap: 2,
     paddingHorizontal: spacing[4],
-    paddingTop: spacing[3],
-    paddingBottom: spacing[1],
+    paddingVertical: spacing[4],
+    borderBottomWidth: 1,
+    borderBottomColor: t.colors.border.subtle,
   },
-  introSubtitle: {
+  title: {
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-lg'],
+    fontFamily: t.typography.fontFamily.headline,
+    fontWeight: t.typography.weight.bold,
+  },
+  subtitle: {
     color: t.colors.text.secondary,
     fontSize: t.typography.size.caption,
     fontFamily: t.typography.fontFamily.body,
