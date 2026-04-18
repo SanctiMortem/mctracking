@@ -13,7 +13,7 @@
  * HIST-011 (EPIC-04)
  */
 import { useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -72,68 +72,87 @@ export default function StatsScreen() {
     ...groups.map((g) => ({ id: g.group.id, label: g.group.name })),
   ];
 
-  const scopePicker = scopeOptions.length > 1 ? (
-    <View style={{ paddingHorizontal: contentPadding }}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scopeRow}
-        style={styles.scopeScroll}
-      >
-        {scopeOptions.map((opt) => {
-          const selected = opt.id === scopeGroupId;
-          return (
-            <TouchableOpacity
-              key={opt.id ?? 'personal'}
-              style={[styles.scopeChip, selected && styles.scopeChipActive]}
-              onPress={() => setScopeGroupId(opt.id)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.scopeChipText, selected && styles.scopeChipTextActive]} numberOfLines={1}>
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+  const header = (
+    <View
+      style={[
+        styles.header,
+        { paddingHorizontal: contentPadding },
+        contentMaxWidth
+          ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number }
+          : undefined,
+      ]}
+    >
+      <Text style={styles.title}>{t('tabs.stats')}</Text>
+      <Text style={styles.subtitle}>
+        The ledger of triumphs and defeats — take measure of your legend.
+      </Text>
     </View>
+  );
+
+  const scopePicker = scopeOptions.length > 1 ? (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={[styles.scopeRow, { paddingHorizontal: contentPadding }]}
+      style={styles.scopeScroll}
+    >
+      {scopeOptions.map((opt) => {
+        const selected = opt.id === scopeGroupId;
+        return (
+          <TouchableOpacity
+            key={opt.id ?? 'personal'}
+            style={[styles.scopeChip, selected && styles.scopeChipActive]}
+            onPress={() => setScopeGroupId(opt.id)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.scopeChipText, selected && styles.scopeChipTextActive]} numberOfLines={1}>
+              {opt.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
   ) : null;
 
   if (loading) {
     return (
-      <View style={styles.screen}>
+      <SafeAreaView style={styles.screen}>
+        {header}
         {scopePicker}
         <View style={styles.center}>
           <ActivityIndicator size="large" color={theme.colors.accent.primary} />
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.screen}>
+      <SafeAreaView style={styles.screen}>
+        {header}
         {scopePicker}
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (!data || data.total_matches === 0) {
     return (
-      <View style={styles.screen}>
+      <SafeAreaView style={styles.screen}>
+        {header}
         {scopePicker}
         <View style={styles.center}>
           <EmptyState />
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen}>
+      {header}
       {scopePicker}
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]} showsVerticalScrollIndicator={false}>
       {/* Hero — total matches */}
@@ -141,9 +160,6 @@ export default function StatsScreen() {
         <Text style={styles.heroNumber}>{data.total_matches}</Text>
         <Text style={styles.heroLabel}>{t('stats.completedMatches')}</Text>
         <Text style={styles.heroSub}>{data.total_players} {data.total_players === 1 ? t('stats.activePlayer') : t('stats.activePlayers')}</Text>
-        <Text style={styles.heroFlavor}>
-          The ledger of triumphs and defeats — take measure of your legend.
-        </Text>
       </View>
 
       {/* Matchup CTA */}
@@ -245,7 +261,7 @@ export default function StatsScreen() {
       )}
 
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -267,16 +283,37 @@ const createStyles = (t: AppTheme) => ({
     justifyContent: 'center',
   },
 
+  header: {
+    gap: 2,
+    paddingVertical: spacing[4],
+    borderBottomWidth: 1,
+    borderBottomColor: t.colors.border.subtle,
+  },
+  title: {
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-lg'],
+    fontFamily: t.typography.fontFamily.headline,
+    fontWeight: t.typography.weight.bold,
+  },
+  subtitle: {
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size.caption,
+    fontFamily: t.typography.fontFamily.body,
+    fontStyle: 'italic' as const,
+    letterSpacing: 0.2,
+  },
+
   scopeScroll: {
     flexGrow: 0,
   },
   scopeRow: {
-    paddingVertical: spacing[2],
+    paddingVertical: spacing[3],
     gap: spacing[2],
+    alignItems: 'center' as const,
   },
   scopeChip: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[3],
+    paddingVertical: 6,
     borderRadius: t.radius.round,
     borderWidth: 1,
     borderColor: t.colors.border.default,
@@ -288,7 +325,7 @@ const createStyles = (t: AppTheme) => ({
   },
   scopeChipText: {
     color: t.colors.text.secondary,
-    fontSize: t.typography.size['body-sm'],
+    fontSize: t.typography.size.caption,
     fontFamily: t.typography.fontFamily.bodyMedium,
     fontWeight: t.typography.weight.semibold,
   },
@@ -318,17 +355,6 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size['body-sm'],
     fontFamily: t.typography.fontFamily.body,
   },
-  heroFlavor: {
-    color: t.colors.text.secondary,
-    fontSize: t.typography.size.caption,
-    fontFamily: t.typography.fontFamily.body,
-    fontStyle: 'italic' as const,
-    letterSpacing: 0.2,
-    textAlign: 'center' as const,
-    marginTop: spacing[2],
-    paddingHorizontal: spacing[4],
-  },
-
   matchupCta: {
     flexDirection: 'row',
     alignItems: 'center',
