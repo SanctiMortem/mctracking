@@ -6,7 +6,7 @@
  *
  * HIST-011 (EPIC-04)
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@clerk/clerk-expo';
 
@@ -31,6 +31,8 @@ export function useMatchupStats(
   scope: 'all' | '1v1',
 ): UseMatchupStatsReturn {
   const { getToken } = useAuth();
+  const getTokenRef = useRef(getToken);
+  getTokenRef.current = getToken;
   const [data, setData] = useState<MatchupResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -9,12 +9,14 @@
  */
 import {
   ActivityIndicator,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -101,9 +103,30 @@ export default function DeckDetailScreen() {
   const { deck, total_matches, wins, win_rate_pct, players_used_by } = data;
   const hasMatches = total_matches > 0;
   const winRateDisplay = win_rate_pct !== null ? `${win_rate_pct}%` : '—';
+  const bgArt = deck.commander.artCrop ?? deck.commander2?.artCrop ?? null;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
+      {/* ── Faded commander background ── */}
+      {bgArt && (
+        <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+          <Image
+            source={{ uri: bgArt }}
+            style={[StyleSheet.absoluteFillObject, styles.bgImage]}
+            resizeMode="cover"
+          />
+          <Svg style={StyleSheet.absoluteFill} preserveAspectRatio="none">
+            <Defs>
+              <RadialGradient id="deckBgVignette" cx="50%" cy="45%" rx="75%" ry="75%" fx="50%" fy="45%">
+                <Stop offset="0" stopColor={theme.colors.background.primary} stopOpacity="0.55" />
+                <Stop offset="1" stopColor={theme.colors.background.primary} stopOpacity="1" />
+              </RadialGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#deckBgVignette)" />
+          </Svg>
+        </View>
+      )}
+
       {/* ── Nav header ── */}
       <View style={styles.navHeader}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} hitSlop={8}>
@@ -214,6 +237,9 @@ const createStyles = (t: AppTheme) => ({
   root: {
     flex: 1,
     backgroundColor: t.colors.background.primary,
+  },
+  bgImage: {
+    opacity: 0.35,
   },
   center: {
     flex: 1,

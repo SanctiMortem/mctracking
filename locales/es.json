@@ -400,7 +400,10 @@
     "entityDeck": "Deck",
     "entityCommander": "Commander",
     "scopeAll": "Todos",
-    "scope1v1": "Solo 1v1"
+    "scope1v1": "Solo 1v1",
+    "scopeLabel": "Ámbito",
+    "scopePersonal": "Todas mis partidas",
+    "scopePod": "Pod"
   },
   "guest": {
     "title": "Tracker Invitado",

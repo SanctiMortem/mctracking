@@ -12,6 +12,7 @@
  *
  * HIST-011 (EPIC-04)
  */
+import { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
@@ -22,6 +23,7 @@ import { PlayerRankingRow } from '@/components/stats/PlayerRankingRow';
 import { TopDeckPodiumCard, type PodiumTier } from '@/components/stats/TopDeckPodiumCard';
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { useGlobalStats } from '@/hooks/useGlobalStats';
+import { useGroups } from '@/hooks/useGroups';
 import { useResponsive } from '@/hooks/useResponsive';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -61,34 +63,79 @@ export default function StatsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { contentMaxWidth, contentPadding } = useResponsive();
-  const { data, loading, error } = useGlobalStats();
+  const [scopeGroupId, setScopeGroupId] = useState<string | null>(null);
+  const { groups } = useGroups();
+  const { data, loading, error } = useGlobalStats(scopeGroupId);
+
+  const scopeOptions: Array<{ id: string | null; label: string }> = [
+    { id: null, label: t('stats.scopePersonal') },
+    ...groups.map((g) => ({ id: g.group.id, label: g.group.name })),
+  ];
+
+  const scopePicker = scopeOptions.length > 1 ? (
+    <View style={{ paddingHorizontal: contentPadding }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scopeRow}
+        style={styles.scopeScroll}
+      >
+        {scopeOptions.map((opt) => {
+          const selected = opt.id === scopeGroupId;
+          return (
+            <TouchableOpacity
+              key={opt.id ?? 'personal'}
+              style={[styles.scopeChip, selected && styles.scopeChipActive]}
+              onPress={() => setScopeGroupId(opt.id)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.scopeChipText, selected && styles.scopeChipTextActive]} numberOfLines={1}>
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </View>
+  ) : null;
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={theme.colors.accent.primary} />
+      <View style={styles.screen}>
+        {scopePicker}
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={theme.colors.accent.primary} />
+        </View>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>{error}</Text>
+      <View style={styles.screen}>
+        {scopePicker}
+        <View style={styles.center}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
       </View>
     );
   }
 
   if (!data || data.total_matches === 0) {
     return (
-      <View style={[styles.screen, styles.center]}>
-        <EmptyState />
+      <View style={styles.screen}>
+        {scopePicker}
+        <View style={styles.center}>
+          <EmptyState />
+        </View>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={[styles.content, { paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]} showsVerticalScrollIndicator={false}>
+    <View style={styles.screen}>
+      {scopePicker}
+      <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]} showsVerticalScrollIndicator={false}>
       {/* Hero — total matches */}
       <View style={styles.hero}>
         <Text style={styles.heroNumber}>{data.total_matches}</Text>
@@ -197,7 +244,8 @@ export default function StatsScreen() {
         </View>
       )}
 
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -217,6 +265,35 @@ const createStyles = (t: AppTheme) => ({
     backgroundColor: t.colors.background.primary,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  scopeScroll: {
+    flexGrow: 0,
+  },
+  scopeRow: {
+    paddingVertical: spacing[2],
+    gap: spacing[2],
+  },
+  scopeChip: {
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    borderRadius: t.radius.round,
+    borderWidth: 1,
+    borderColor: t.colors.border.default,
+    backgroundColor: t.colors.background.surface,
+  },
+  scopeChipActive: {
+    backgroundColor: t.colors.accent.primary + '22',
+    borderColor: t.colors.accent.primary + '99',
+  },
+  scopeChipText: {
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontFamily: t.typography.fontFamily.bodyMedium,
+    fontWeight: t.typography.weight.semibold,
+  },
+  scopeChipTextActive: {
+    color: t.colors.accent.primary,
   },
 
   hero: {

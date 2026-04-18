@@ -4,6 +4,9 @@
  * Fetches GET /api/stats/global, which returns total_matches, total_players,
  * player_rankings, top_decks, and top_commanders.
  *
+ * Pass a `groupId` to scope the stats to a specific pod. When null/undefined
+ * the stats are personal (matches created by the user).
+ *
  * HIST-011 (EPIC-04)
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -25,7 +28,7 @@ type ApiResponse = {
   data: GlobalStats;
 };
 
-export function useGlobalStats(): UseGlobalStatsReturn {
+export function useGlobalStats(groupId?: string | null): UseGlobalStatsReturn {
   const { getToken } = useAuth();
   const getTokenRef = useRef(getToken);
   getTokenRef.current = getToken;
@@ -40,7 +43,10 @@ export function useGlobalStats(): UseGlobalStatsReturn {
 
     try {
       const token = await getTokenRef.current();
-      const res = await apiFetch<ApiResponse>('/api/stats/global', 'GET', undefined, token ?? undefined);
+      const path = groupId
+        ? `/api/stats/global?group_id=${encodeURIComponent(groupId)}`
+        : '/api/stats/global';
+      const res = await apiFetch<ApiResponse>(path, 'GET', undefined, token ?? undefined);
       if (!cancelled) {
         setData(res.data);
         setError(null);
@@ -52,7 +58,7 @@ export function useGlobalStats(): UseGlobalStatsReturn {
     }
 
     return () => { cancelled = true; };
-  }, []);
+  }, [groupId]);
 
   useEffect(() => {
     load();

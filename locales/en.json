@@ -400,7 +400,10 @@
     "entityDeck": "Deck",
     "entityCommander": "Commander",
     "scopeAll": "All",
-    "scope1v1": "1v1 only"
+    "scope1v1": "1v1 only",
+    "scopeLabel": "Scope",
+    "scopePersonal": "All my matches",
+    "scopePod": "Pod"
   },
   "guest": {
     "title": "Guest Tracker",

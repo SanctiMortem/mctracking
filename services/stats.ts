@@ -667,14 +667,23 @@ export type GlobalStats = {
   top_player_deck: TopPlayerDeck | null;
 };
 
-export async function getGlobalStats(userId: string): Promise<{ data: GlobalStats }> {
-  // Phase 1: All aggregation queries in parallel (scoped to matches.createdBy = userId)
+export async function getGlobalStats(
+  userId: string,
+  groupId?: string | null,
+): Promise<{ data: GlobalStats }> {
+  // Scope: when groupId is set, include any match with that groupId (the API route
+  // validates membership). Otherwise, personal scope = matches created by the user.
+  const matchScope = groupId
+    ? and(eq(matches.groupId, groupId), eq(matches.status, 'completed'))
+    : and(eq(matches.createdBy, userId), eq(matches.status, 'completed'));
+
+  // Phase 1: All aggregation queries in parallel
   const [totalMatchRows, playerStatRows, deckStatRows, commanderPartRows, perPlayerDeckRows] = await Promise.all([
     // Total completed matches
     db
       .select({ total: count(matches.id) })
       .from(matches)
-      .where(and(eq(matches.createdBy, userId), eq(matches.status, 'completed'))),
+      .where(matchScope),
 
     // Per-player stats
     db
@@ -685,7 +694,7 @@ export async function getGlobalStats(userId: string): Promise<{ data: GlobalStat
       })
       .from(participations)
       .innerJoin(matches, eq(participations.matchId, matches.id))
-      .where(and(eq(matches.createdBy, userId), eq(matches.status, 'completed')))
+      .where(matchScope)
       .groupBy(participations.playerId),
 
     // Per-deck stats (all decks; min-3 filter applied in JS)
@@ -697,7 +706,7 @@ export async function getGlobalStats(userId: string): Promise<{ data: GlobalStat
       })
       .from(participations)
       .innerJoin(matches, eq(participations.matchId, matches.id))
-      .where(and(eq(matches.createdBy, userId), eq(matches.status, 'completed')))
+      .where(matchScope)
       .groupBy(participations.deckId),
 
     // Commander participation rows for JS aggregation (both primary + partner)
@@ -710,7 +719,7 @@ export async function getGlobalStats(userId: string): Promise<{ data: GlobalStat
       .from(participations)
       .innerJoin(matches, eq(participations.matchId, matches.id))
       .innerJoin(decks, eq(participations.deckId, decks.id))
-      .where(and(eq(matches.createdBy, userId), eq(matches.status, 'completed'))),
+      .where(matchScope),
 
     // Per-player per-deck play counts (used to find top player's most-used deck)
     db
@@ -721,7 +730,7 @@ export async function getGlobalStats(userId: string): Promise<{ data: GlobalStat
       })
       .from(participations)
       .innerJoin(matches, eq(participations.matchId, matches.id))
-      .where(and(eq(matches.createdBy, userId), eq(matches.status, 'completed')))
+      .where(matchScope)
       .groupBy(participations.playerId, participations.deckId),
   ]);
 
