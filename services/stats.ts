@@ -11,7 +11,7 @@
 import { and, count, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 
 import { db } from '@/services/db';
-import { commanders, decks, matches, participations, players } from '@/db/schema';
+import { commanders, decks, matchEvents, matchResults, matches, participations, players } from '@/db/schema';
 import type { Commander, Deck, Player } from '@/db/index';
 
 // ─── CALC-001 ─────────────────────────────────────────────────────────────────
@@ -971,6 +971,182 @@ export async function getGlobalStats(
       top_decks: topDecks,
       top_commanders: topCommanders,
       top_player_deck: topPlayerDeck,
+    },
+  };
+}
+
+// ─── Account Home Stats (PLAT-010) ────────────────────────────────────────────
+
+export type AccountHomeMostPlayedDeck = {
+  deck: Deck;
+  commanders: Commander[];
+  matches: number;
+};
+
+export type AccountHomeStats = {
+  /** Account player linked to this user (null if user hasn't created one). */
+  player: Player | null;
+  total_matches: number;
+  wins: number;
+  win_rate_pct: number | null;
+  most_played_deck: AccountHomeMostPlayedDeck | null;
+  /** winConditionEnum value, or null when no wins yet. */
+  most_common_wincon: string | null;
+  /** Average number of turns elapsed in matches the account player won (rounded 1 dp). */
+  avg_win_turn: number | null;
+};
+
+export async function getAccountHomeStats(
+  userId: string,
+): Promise<{ data: AccountHomeStats }> {
+  // 1. Resolve the account player.
+  const [accountPlayer] = await db
+    .select()
+    .from(players)
+    .where(and(eq(players.accountUserId, userId), isNull(players.deletedAt)))
+    .limit(1);
+
+  if (!accountPlayer) {
+    return {
+      data: {
+        player: null,
+        total_matches: 0,
+        wins: 0,
+        win_rate_pct: null,
+        most_played_deck: null,
+        most_common_wincon: null,
+        avg_win_turn: null,
+      },
+    };
+  }
+
+  const playerId = accountPlayer.id;
+  const completedFilter = and(
+    eq(participations.playerId, playerId),
+    eq(matches.status, 'completed'),
+  );
+
+  // 2. Aggregations in parallel.
+  const [overallRows, deckRows, winningParticipations] = await Promise.all([
+    db
+      .select({
+        total: count(participations.id),
+        wins: sql<number>`sum(case when ${participations.result} = 'win' then 1 else 0 end)`,
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .where(completedFilter),
+
+    db
+      .select({
+        deckId: participations.deckId,
+        matches: count(participations.id),
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .where(completedFilter)
+      .groupBy(participations.deckId)
+      .orderBy(desc(count(participations.id)))
+      .limit(1),
+
+    // Participations the account player won, with their match IDs (for wincon + turn aggregation).
+    db
+      .select({
+        participationId: participations.id,
+        matchId: participations.matchId,
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .where(and(completedFilter, eq(participations.result, 'win'))),
+  ]);
+
+  const overall = overallRows[0];
+  const totalMatches = Number(overall?.total ?? 0);
+  const wins = Number(overall?.wins ?? 0);
+
+  // 3. Most-played deck — resolve into Deck + Commander[].
+  let mostPlayedDeck: AccountHomeMostPlayedDeck | null = null;
+  if (deckRows[0]) {
+    const top = deckRows[0];
+    const [deckRow] = await db.select().from(decks).where(eq(decks.id, top.deckId)).limit(1);
+    if (deckRow) {
+      const cmdIds = [deckRow.commanderId, deckRow.commanderId2].filter(Boolean) as string[];
+      const cmdObjects = cmdIds.length > 0
+        ? await db.select().from(commanders).where(inArray(commanders.id, cmdIds))
+        : [];
+      const cmdMap = new Map(cmdObjects.map((c) => [c.id, c]));
+      const orderedCommanders = cmdIds
+        .map((id) => cmdMap.get(id))
+        .filter(Boolean) as Commander[];
+      mostPlayedDeck = {
+        deck: deckRow,
+        commanders: orderedCommanders,
+        matches: Number(top.matches ?? 0),
+      };
+    }
+  }
+
+  // 4. Most common wincon + average win turn from won matches.
+  let mostCommonWincon: string | null = null;
+  let avgWinTurn: number | null = null;
+
+  if (winningParticipations.length > 0) {
+    const winningMatchIds = winningParticipations.map((r) => r.matchId);
+    const winningParticipationIds = winningParticipations.map((r) => r.participationId);
+
+    const [resultRows, turnRows] = await Promise.all([
+      // Restrict to matches won by this participation; draws (BR-MATCH-08) have a null winner_participation_id and are excluded.
+      db
+        .select({ winCondition: matchResults.winCondition })
+        .from(matchResults)
+        .where(and(
+          inArray(matchResults.matchId, winningMatchIds),
+          inArray(matchResults.winnerParticipationId, winningParticipationIds),
+        )),
+
+      // Avg turn: count non-undone turn_passed events per match.
+      db
+        .select({
+          matchId: matchEvents.matchId,
+          turns: count(matchEvents.id),
+        })
+        .from(matchEvents)
+        .where(and(
+          inArray(matchEvents.matchId, winningMatchIds),
+          eq(matchEvents.eventType, 'turn_passed'),
+          eq(matchEvents.isUndone, false),
+        ))
+        .groupBy(matchEvents.matchId),
+    ]);
+
+    if (resultRows.length > 0) {
+      const wcMap = new Map<string, number>();
+      for (const r of resultRows) {
+        wcMap.set(r.winCondition, (wcMap.get(r.winCondition) ?? 0) + 1);
+      }
+      let topWc: string | null = null;
+      let topCount = 0;
+      for (const [wc, c] of wcMap) {
+        if (c > topCount) { topWc = wc; topCount = c; }
+      }
+      mostCommonWincon = topWc;
+    }
+
+    if (turnRows.length > 0) {
+      const total = turnRows.reduce((acc, r) => acc + Number(r.turns ?? 0), 0);
+      avgWinTurn = Math.round((total / turnRows.length) * 10) / 10;
+    }
+  }
+
+  return {
+    data: {
+      player: accountPlayer,
+      total_matches: totalMatches,
+      wins,
+      win_rate_pct: calcWinRate(wins, totalMatches),
+      most_played_deck: mostPlayedDeck,
+      most_common_wincon: mostCommonWincon,
+      avg_win_turn: avgWinTurn,
     },
   };
 }

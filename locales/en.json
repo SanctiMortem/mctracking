@@ -448,6 +448,13 @@
     "statMatchesPlayed": "matches played",
     "statWinRate": "win rate",
     "statNoMatches": "No matches yet",
+    "accountStatsTitle": "Your stats",
+    "statTotalMatches": "Matches",
+    "statMostPlayedDeck": "Top deck",
+    "statMostCommonWincon": "Top wincon",
+    "statAvgWinTurn": "Avg win turn",
+    "accountStatsEmpty": "Play your first match to see your stats here.",
+    "accountStatsNoPlayer": "Create your account player to track personal stats.",
     "emptyTitle": "No matches yet",
     "emptyCtaButton": "Start your first match"
   }

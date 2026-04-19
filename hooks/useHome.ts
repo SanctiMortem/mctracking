@@ -17,7 +17,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@clerk/clerk-expo';
 
 import { apiFetch } from '@/services/api';
-import type { GlobalStats } from '@/services/stats';
+import type { AccountHomeStats, GlobalStats } from '@/services/stats';
 import type { MatchSummary } from '@/services/matches';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -45,12 +45,15 @@ type HistoryPage = {
 
 type HistoryResponse = { success: true; data: HistoryPage };
 type GlobalStatsResponse = { success: true; data: GlobalStats };
+type AccountHomeStatsResponse = { success: true; data: AccountHomeStats };
 
 export type UseHomeReturn = {
   activeMatch: ActiveMatch | null;
   recentMatches: MatchSummary[];
   totalMatches: number;
   winRatePct: number | null;
+  /** Account-player-scoped stats for the home dashboard card. */
+  accountStats: AccountHomeStats | null;
   loading: boolean;
   error: string | null;
   refresh: () => void;
@@ -79,6 +82,7 @@ export function useHome(activeContext: 'personal' | string): UseHomeReturn {
   const [recentMatches, setRecentMatches] = useState<MatchSummary[]>([]);
   const [totalMatches, setTotalMatches] = useState(0);
   const [winRatePct, setWinRatePct] = useState<number | null>(null);
+  const [accountStats, setAccountStats] = useState<AccountHomeStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -101,10 +105,11 @@ export function useHome(activeContext: 'personal' | string): UseHomeReturn {
         ? `/api/matches?limit=3&group_id=${ctx}`
         : '/api/matches?limit=3';
 
-      const [sessionRes, historyRes, statsRes] = await Promise.all([
+      const [sessionRes, historyRes, statsRes, accountRes] = await Promise.all([
         apiFetch<SessionResponse>('/api/auth/session', 'GET', undefined, authHeader),
         apiFetch<HistoryResponse>(historyUrl, 'GET', undefined, authHeader),
         apiFetch<GlobalStatsResponse>('/api/stats/global', 'GET', undefined, authHeader),
+        apiFetch<AccountHomeStatsResponse>('/api/stats/account-home', 'GET', undefined, authHeader),
       ]);
 
       // Active match — filter by active context (ADR-004)
@@ -122,6 +127,7 @@ export function useHome(activeContext: 'personal' | string): UseHomeReturn {
       setRecentMatches(historyRes.data.matches);
       setTotalMatches(historyRes.data.total);
       setWinRatePct(computeWinRate(statsRes.data));
+      setAccountStats(accountRes.data);
     } catch (e) {
       setError((e as Error).message ?? 'Failed to load home data.');
     } finally {
@@ -138,6 +144,7 @@ export function useHome(activeContext: 'personal' | string): UseHomeReturn {
     recentMatches,
     totalMatches,
     winRatePct,
+    accountStats,
     loading,
     error,
     refresh: load,

@@ -25,6 +25,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { AccountStatsCard } from '@/components/home/AccountStatsCard';
 import { ActiveMatchBanner } from '@/components/home/ActiveMatchBanner';
 import { MatchCard, MatchCardSkeleton } from '@/components/match/MatchCard';
 import { useGroupContext } from '@/contexts/GroupContext';
@@ -128,44 +129,6 @@ function ContextSwitcherModal({
   );
 }
 
-// ─── Stat Highlight Badge ─────────────────────────────────────────────────────
-
-interface StatBadgeProps {
-  totalMatches: number;
-  winRatePct: number | null;
-}
-
-function StatBadge({ totalMatches, winRatePct }: StatBadgeProps) {
-  const { t } = useTranslation();
-  const styles = useThemedStyles(createStyles);
-
-  if (totalMatches === 0) {
-    return (
-      <View style={styles.statBadge}>
-        <Text style={styles.statBadgePrimary}>{t('home.statNoMatches')}</Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.statBadge}>
-      <View style={styles.statItem}>
-        <Text style={styles.statValue}>{totalMatches}</Text>
-        <Text style={styles.statLabel}>{t('home.statMatchesPlayed')}</Text>
-      </View>
-      {winRatePct !== null && (
-        <>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, styles.statWinRate]}>{winRatePct}%</Text>
-            <Text style={styles.statLabel}>{t('home.statWinRate')}</Text>
-          </View>
-        </>
-      )}
-    </View>
-  );
-}
-
 // ─── Empty State ──────────────────────────────────────────────────────────────
 
 function EmptyMatchState({ onNewMatch }: { onNewMatch: () => void }) {
@@ -197,7 +160,7 @@ export default function HomeScreen() {
     activeMatch,
     recentMatches,
     totalMatches,
-    winRatePct,
+    accountStats,
     loading,
     error,
     refresh,
@@ -299,9 +262,9 @@ export default function HomeScreen() {
           <Text style={styles.newMatchText}>{t('match.newMatch')}</Text>
         </Pressable>
 
-        {/* ── Stat Highlight ── */}
-        {!loading && (
-          <StatBadge totalMatches={totalMatches} winRatePct={winRatePct} />
+        {/* ── Account Stats ── */}
+        {!loading && accountStats && (
+          <AccountStatsCard stats={accountStats} />
         )}
 
         {/* ── Recent Matches ── */}
@@ -512,46 +475,6 @@ const createStyles = (t: AppTheme) => ({
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.bold,
     letterSpacing: 0.3,
-  },
-
-  // Stat Badge
-  statBadge: {
-    flexDirection: 'row' as const,
-    backgroundColor: t.colors.background.surface,
-    borderRadius: t.radius.lg,
-    borderWidth: 1,
-    borderColor: t.colors.border.default,
-    padding: spacing[4],
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: spacing[4],
-  },
-  statItem: {
-    alignItems: 'center' as const,
-    gap: 2,
-  },
-  statValue: {
-    color: t.colors.text.primary,
-    fontSize: t.typography.size['heading-lg'],
-    fontFamily: t.typography.fontFamily.display,
-    fontWeight: t.typography.weight.bold,
-  },
-  statWinRate: {
-    color: t.colors.status.success,
-  },
-  statLabel: {
-    color: t.colors.text.muted,
-    fontSize: t.typography.size.caption,
-    fontWeight: t.typography.weight.medium,
-  },
-  statBadgePrimary: {
-    color: t.colors.text.muted,
-    fontSize: t.typography.size['body-sm'],
-  },
-  statDivider: {
-    width: 1,
-    height: 36,
-    backgroundColor: t.colors.border.subtle,
   },
 
   // Section
