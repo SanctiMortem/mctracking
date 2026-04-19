@@ -34,7 +34,7 @@
  * TRACK-003 (EPIC-03)
  */
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { type LayoutChangeEvent, StyleSheet, View } from 'react-native';
+import { type LayoutChangeEvent, View } from 'react-native';
 
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
@@ -155,8 +155,8 @@ const createStyles = (t: AppTheme) => ({
     position: 'relative' as const,
     backgroundColor: t.colors.background.secondary,
     overflow: 'hidden' as const,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(238, 191, 115, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(238, 191, 115, 0.40)',
   },
   frameActive: {
     borderColor: t.colors.accent.primary,
