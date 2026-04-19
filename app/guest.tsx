@@ -1,13 +1,14 @@
 /**
  * SCR-019 — Guest Tracker
  *
- * Two-phase screen:
- *  1. Setup: select player count (2/3/4) + optional name inputs.
- *  2. Tracking: full TrackerLayout with LifeCounter, PoisonCounter,
- *     CommanderDamagePanel — all in-memory, zero API calls (BR-AUTH-01).
+ * Three-phase screen:
+ *  1. Home: minimal entry — "New Match" + "Sign In" only.
+ *  2. Setup: player count (1-4) + starting HP (25/30/40) + layout (when ≥ 2).
+ *     No name inputs — players are auto-labeled P1..P4.
+ *  3. Tracking: TrackerLayout with LifeCounter, PoisonCounter, CommanderDamagePanel.
+ *     All in-memory, zero API calls (BR-AUTH-01).
  *
  * Exit with unsaved changes shows a confirmation dialog (BR-AUTH-01).
- * Guest banner at the bottom links back to SCR-001 (ADR-006: no mid-match upgrade).
  *
  * PLAT-004 (EPIC-05)
  */
@@ -17,10 +18,7 @@ import {
   Pressable,
   SafeAreaView,
   ScrollView,
-  StyleSheet,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -32,52 +30,91 @@ import { PoisonCounter } from '@/components/tracker/PoisonCounter';
 import { TrackerLayout } from '@/components/match/TrackerLayout';
 import { useGuest } from '@/contexts/GuestContext';
 import { useGuestTracker } from '@/hooks/useGuestTracker';
+import { DEFAULT_SLOT_ROTATIONS, LAYOUT_VARIANTS } from '@/hooks/useMatchSetup';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
-import { useTheme } from '@/contexts/ThemeContext';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const PLAYER_COUNT_OPTIONS = [2, 3, 4] as const;
+const PLAYER_COUNT_OPTIONS = [1, 2, 3, 4] as const;
 type PlayerCount = (typeof PLAYER_COUNT_OPTIONS)[number];
+
+const STARTING_LIFE_OPTIONS = [25, 30, 40] as const;
+type StartingLife = (typeof STARTING_LIFE_OPTIONS)[number];
+
+// ─── Home Phase ──────────────────────────────────────────────────────────────
+
+interface HomeProps {
+  onNewMatch: () => void;
+  onSignIn: () => void;
+}
+
+function GuestHome({ onNewMatch, onSignIn }: HomeProps) {
+  const styles = useThemedStyles(createStyles);
+  const { t } = useTranslation();
+
+  return (
+    <SafeAreaView style={styles.root}>
+      <View style={styles.homeContainer}>
+        <Pressable
+          onPress={onNewMatch}
+          style={styles.newMatchBtn}
+          accessibilityRole="button"
+          accessibilityLabel={t('guest.newMatch')}
+        >
+          <Text style={styles.newMatchText}>{t('guest.newMatch')}</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={onSignIn}
+          style={styles.signInBtn}
+          accessibilityRole="button"
+          accessibilityLabel={t('guest.signIn')}
+        >
+          <Text style={styles.signInText}>{t('guest.signIn')}</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
+  );
+}
 
 // ─── Setup Phase ─────────────────────────────────────────────────────────────
 
 interface SetupProps {
-  onStart: (names: string[]) => void;
-  onCancel: () => void;
+  onStart: (count: PlayerCount, startingLife: StartingLife, layoutVariant: string) => void;
+  onBack: () => void;
 }
 
-function GuestSetup({ onStart, onCancel }: SetupProps) {
-  const { theme } = useTheme();
-
+function GuestSetup({ onStart, onBack }: SetupProps) {
   const styles = useThemedStyles(createStyles);
-
   const { t } = useTranslation();
-  const [count, setCount] = useState<PlayerCount>(4);
-  const [names, setNames] = useState(['', '', '', '']);
 
-  function handleNameChange(index: number, value: string) {
-    setNames((prev) => {
-      const next = [...prev];
-      next[index] = value;
-      return next;
-    });
+  const [count, setCount] = useState<PlayerCount>(4);
+  const [startingLife, setStartingLife] = useState<StartingLife>(40);
+
+  const variants = LAYOUT_VARIANTS[count] ?? [];
+  const [layoutVariant, setLayoutVariant] = useState<string>(variants[0] ?? '');
+
+  // When count changes, reset layout variant to that count's first option.
+  function handleCountChange(n: PlayerCount) {
+    setCount(n);
+    const next = LAYOUT_VARIANTS[n] ?? [];
+    setLayoutVariant(next[0] ?? '');
   }
 
   function handleStart() {
-    onStart(names.slice(0, count));
+    onStart(count, startingLife, layoutVariant);
   }
 
   return (
     <SafeAreaView style={styles.root}>
       {/* Header */}
       <View style={styles.setupHeader}>
-        <Pressable onPress={onCancel} style={styles.cancelBtn} accessibilityRole="button" accessibilityLabel={t('guest.cancelSetupLabel')}>
-          <Text style={styles.cancelText}>✕</Text>
+        <Pressable onPress={onBack} style={styles.cancelBtn} accessibilityRole="button" accessibilityLabel={t('common.back')}>
+          <Text style={styles.cancelText}>‹</Text>
         </Pressable>
-        <Text style={styles.setupTitle}>{t('guest.title')}</Text>
+        <Text style={styles.setupTitle}>{t('guest.newMatch')}</Text>
         <View style={styles.cancelBtn} />
       </View>
 
@@ -88,7 +125,7 @@ function GuestSetup({ onStart, onCancel }: SetupProps) {
           {PLAYER_COUNT_OPTIONS.map((n) => (
             <Pressable
               key={n}
-              onPress={() => setCount(n)}
+              onPress={() => handleCountChange(n)}
               style={[styles.countBtn, count === n && styles.countBtnActive]}
               accessibilityRole="button"
               accessibilityLabel={`${n} players`}
@@ -101,21 +138,47 @@ function GuestSetup({ onStart, onCancel }: SetupProps) {
           ))}
         </View>
 
-        {/* Optional name inputs */}
-        <Text style={styles.sectionLabel}>{t('guest.namesOptional')}</Text>
-        {Array.from({ length: count }, (_, i) => (
-          <TextInput
-            key={i}
-            style={styles.nameInput}
-            placeholder={t('guest.playerN', { n: i + 1 })}
-            placeholderTextColor={theme.colors.text.muted}
-            value={names[i]}
-            onChangeText={(v) => handleNameChange(i, v)}
-            maxLength={20}
-            returnKeyType="next"
-            autoCapitalize="words"
-          />
-        ))}
+        {/* Starting HP */}
+        <Text style={styles.sectionLabel}>{t('guest.startingHp')}</Text>
+        <View style={styles.countRow}>
+          {STARTING_LIFE_OPTIONS.map((hp) => (
+            <Pressable
+              key={hp}
+              onPress={() => setStartingLife(hp)}
+              style={[styles.lifeChip, startingLife === hp && styles.lifeChipActive]}
+              accessibilityRole="button"
+              accessibilityLabel={`${hp} life`}
+              accessibilityState={{ selected: startingLife === hp }}
+            >
+              <Text style={[styles.lifeChipText, startingLife === hp && styles.lifeChipTextActive]}>
+                {hp}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Layout — only when count ≥ 2 */}
+        {count >= 2 && variants.length > 1 && (
+          <>
+            <Text style={styles.sectionLabel}>{t('guest.layout')}</Text>
+            <View style={styles.layoutRow}>
+              {variants.map((v) => (
+                <Pressable
+                  key={v}
+                  onPress={() => setLayoutVariant(v)}
+                  style={[styles.layoutBtn, layoutVariant === v && styles.layoutBtnActive]}
+                  accessibilityRole="button"
+                  accessibilityLabel={v}
+                  accessibilityState={{ selected: layoutVariant === v }}
+                >
+                  <Text style={[styles.layoutBtnText, layoutVariant === v && styles.layoutBtnTextActive]}>
+                    {v}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
 
         {/* Start button */}
         <Pressable
@@ -135,29 +198,29 @@ function GuestSetup({ onStart, onCancel }: SetupProps) {
 
 interface TrackerProps {
   participations: ReturnType<typeof useGuestTracker>['participations'];
-  isDirty: boolean;
+  layoutVariant: string;
   applyLifeChange: ReturnType<typeof useGuestTracker>['applyLifeChange'];
   applyPoisonChange: ReturnType<typeof useGuestTracker>['applyPoisonChange'];
   applyCommanderDamage: ReturnType<typeof useGuestTracker>['applyCommanderDamage'];
   undoLastEvent: ReturnType<typeof useGuestTracker>['undoLastEvent'];
   onExit: () => void;
-  onCreateAccount: () => void;
 }
 
 function GuestTrackerView({
   participations,
-  isDirty,
+  layoutVariant,
   applyLifeChange,
   applyPoisonChange,
   applyCommanderDamage,
   undoLastEvent,
   onExit,
-  onCreateAccount,
 }: TrackerProps) {
   const styles = useThemedStyles(createStyles);
-
   const { t } = useTranslation();
-  const sections = participations.map((p) => {
+
+  const slotRotations = DEFAULT_SLOT_ROTATIONS[layoutVariant] ?? [];
+
+  const sections = participations.map((p, idx) => {
     // Enemy commanders in guest mode = other participants (by id + name)
     const enemyCommanders = participations
       .filter((other) => other.id !== p.id)
@@ -165,7 +228,7 @@ function GuestTrackerView({
 
     return {
       id: p.id,
-      playerName: p.name,
+      rotation: slotRotations[idx] ?? 0,
       content: (
         <View style={styles.sectionContent}>
           <LifeCounter
@@ -214,26 +277,15 @@ function GuestTrackerView({
 
       {/* Tracker layout */}
       <View style={styles.trackerBody}>
-        <TrackerLayout sections={sections} />
+        <TrackerLayout sections={sections} layoutVariant={layoutVariant} />
       </View>
-
-      {/* Guest banner — informational only (ADR-006: no mid-match upgrade) */}
-      <TouchableOpacity
-        onPress={onCreateAccount}
-        activeOpacity={0.8}
-        style={styles.guestBanner}
-        accessibilityRole="button"
-        accessibilityLabel="Create account to save match history"
-      >
-        <Text style={styles.guestBannerIcon}>💾</Text>
-        <Text style={styles.guestBannerText}>{t('guest.createAccountBanner')}</Text>
-        <Text style={styles.guestBannerChevron}>›</Text>
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
+
+type Phase = 'home' | 'setup' | 'tracking';
 
 export default function GuestScreen() {
   const router = useRouter();
@@ -248,74 +300,59 @@ export default function GuestScreen() {
     undoLastEvent,
   } = useGuestTracker();
 
-  const [phase, setPhase] = useState<'setup' | 'tracking'>('setup');
+  const [phase, setPhase] = useState<Phase>('home');
+  const [layoutVariant, setLayoutVariant] = useState<string>('');
 
   const navigateToAuth = useCallback(() => {
     exitGuestMode();
     router.replace('/auth');
   }, [exitGuestMode, router]);
 
-  const handleSetupCancel = useCallback(() => {
-    navigateToAuth();
-  }, [navigateToAuth]);
+  const handleStart = useCallback(
+    (count: PlayerCount, startingLife: StartingLife, variant: string) => {
+      init(count, startingLife);
+      setLayoutVariant(variant);
+      setPhase('tracking');
+    },
+    [init],
+  );
 
-  const handleStart = useCallback((names: string[]) => {
-    init(names);
-    setPhase('tracking');
-  }, [init]);
-
-  const handleExit = useCallback(() => {
+  const handleTrackerExit = useCallback(() => {
     if (!isDirty) {
-      navigateToAuth();
+      setPhase('home');
       return;
     }
     Alert.alert(
-      'Exit Guest Tracker?',
+      'Exit match?',
       'All tracking data will be lost.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Discard',
           style: 'destructive',
-          onPress: navigateToAuth,
+          onPress: () => setPhase('home'),
         },
       ],
     );
-  }, [isDirty, navigateToAuth]);
+  }, [isDirty]);
 
-  const handleCreateAccount = useCallback(() => {
-    if (!isDirty) {
-      navigateToAuth();
-      return;
-    }
-    Alert.alert(
-      'Create an account?',
-      'Your current tracking data will be lost.',
-      [
-        { text: 'Stay', style: 'cancel' },
-        {
-          text: 'Create account',
-          style: 'default',
-          onPress: navigateToAuth,
-        },
-      ],
-    );
-  }, [isDirty, navigateToAuth]);
+  if (phase === 'home') {
+    return <GuestHome onNewMatch={() => setPhase('setup')} onSignIn={navigateToAuth} />;
+  }
 
   if (phase === 'setup') {
-    return <GuestSetup onStart={handleStart} onCancel={handleSetupCancel} />;
+    return <GuestSetup onStart={handleStart} onBack={() => setPhase('home')} />;
   }
 
   return (
     <GuestTrackerView
       participations={participations}
-      isDirty={isDirty}
+      layoutVariant={layoutVariant}
       applyLifeChange={applyLifeChange}
       applyPoisonChange={applyPoisonChange}
       applyCommanderDamage={applyCommanderDamage}
       undoLastEvent={undoLastEvent}
-      onExit={handleExit}
-      onCreateAccount={handleCreateAccount}
+      onExit={handleTrackerExit}
     />
   );
 }
@@ -326,6 +363,46 @@ const createStyles = (t: AppTheme) => ({
   root: {
     flex: 1,
     backgroundColor: t.colors.background.primary,
+  },
+
+  // ── Home ───────────────────────────────────────────────────────────────────
+  homeContainer: {
+    flex: 1,
+    paddingHorizontal: spacing[6],
+    justifyContent: 'space-between',
+    paddingTop: spacing[16],
+    paddingBottom: spacing[8],
+  },
+  newMatchBtn: {
+    height: 96,
+    borderRadius: t.radius.lg,
+    backgroundColor: t.colors.accent.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  newMatchText: {
+    color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.headline,
+    fontSize: t.typography.size['heading-lg'],
+    fontWeight: t.typography.weight.bold,
+    letterSpacing: t.typography.letterSpacing.wide,
+    textTransform: 'uppercase',
+  },
+  signInBtn: {
+    height: 52,
+    borderRadius: t.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: t.colors.border.default,
+    backgroundColor: t.colors.background.surface,
+  },
+  signInText: {
+    color: t.colors.text.secondary,
+    fontFamily: t.typography.fontFamily.headline,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
+    letterSpacing: t.typography.letterSpacing.wide,
   },
 
   // ── Setup ──────────────────────────────────────────────────────────────────
@@ -354,7 +431,7 @@ const createStyles = (t: AppTheme) => ({
   },
   cancelText: {
     color: t.colors.text.secondary,
-    fontSize: t.typography.size['heading-md'],
+    fontSize: t.typography.size['heading-lg'],
   },
   setupContent: {
     paddingHorizontal: spacing[6],
@@ -374,6 +451,7 @@ const createStyles = (t: AppTheme) => ({
   countRow: {
     flexDirection: 'row',
     gap: spacing[3],
+    flexWrap: 'wrap',
   },
   countBtn: {
     width: 64,
@@ -398,16 +476,57 @@ const createStyles = (t: AppTheme) => ({
   countBtnTextActive: {
     color: t.colors.accent.primary,
   },
-  nameInput: {
+  lifeChip: {
+    minWidth: 64,
     height: 48,
+    paddingHorizontal: spacing[3],
     borderRadius: t.radius.md,
+    backgroundColor: t.colors.background.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: t.colors.border.default,
-    backgroundColor: t.colors.background.elevated,
-    paddingHorizontal: spacing[4],
-    color: t.colors.text.primary,
+  },
+  lifeChipActive: {
+    backgroundColor: t.colors.accent.primary + '22',
+    borderColor: t.colors.accent.primary,
+  },
+  lifeChipText: {
+    color: t.colors.text.secondary,
+    fontFamily: t.typography.fontFamily.lifeTotalBold,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.bold,
+  },
+  lifeChipTextActive: {
+    color: t.colors.accent.primary,
+  },
+  layoutRow: {
+    flexDirection: 'row',
+    gap: spacing[2],
+    flexWrap: 'wrap',
+  },
+  layoutBtn: {
+    paddingHorizontal: spacing[3],
+    height: 40,
+    borderRadius: t.radius.md,
+    backgroundColor: t.colors.background.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: t.colors.border.default,
+  },
+  layoutBtnActive: {
+    backgroundColor: t.colors.accent.primary + '22',
+    borderColor: t.colors.accent.primary,
+  },
+  layoutBtnText: {
+    color: t.colors.text.secondary,
     fontFamily: t.typography.fontFamily.body,
-    fontSize: t.typography.size['body-lg'],
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
+  },
+  layoutBtnTextActive: {
+    color: t.colors.accent.primary,
   },
   startBtn: {
     height: 52,
@@ -473,31 +592,5 @@ const createStyles = (t: AppTheme) => ({
     justifyContent: 'center',
     gap: spacing[2],
     paddingVertical: spacing[2],
-  },
-
-  // ── Guest banner ───────────────────────────────────────────────────────────
-  guestBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
-    backgroundColor: t.colors.background.surface,
-    borderTopWidth: 1,
-    borderTopColor: t.colors.border.subtle,
-  },
-  guestBannerIcon: {
-    fontSize: t.typography.size['body-sm'],
-  },
-  guestBannerText: {
-    flex: 1,
-    color: t.colors.text.secondary,
-    fontFamily: t.typography.fontFamily.body,
-    fontSize: t.typography.size['body-sm'],
-    fontWeight: t.typography.weight.medium,
-  },
-  guestBannerChevron: {
-    color: t.colors.text.muted,
-    fontSize: t.typography.size['heading-md'],
   },
 })

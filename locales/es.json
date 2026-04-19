@@ -413,7 +413,11 @@
   },
   "guest": {
     "title": "Tracker Invitado",
+    "newMatch": "Nueva Partida",
+    "signIn": "Iniciar sesión",
     "players": "Jugadores",
+    "startingHp": "Vida inicial",
+    "layout": "Distribución",
     "namesOptional": "Nombres (opcional)",
     "startTracking": "Iniciar Tracking",
     "startTrackerLabel": "Iniciar tracker de invitado",

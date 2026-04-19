@@ -38,8 +38,8 @@ export interface UseGuestTrackerReturn {
   participations: GuestParticipation[];
   /** True if any non-undone event exists — used for confirm-before-exit dialog. */
   isDirty: boolean;
-  /** Initialize participations from setup phase names (empty string → "Player N"). */
-  init: (names: string[]) => void;
+  /** Initialize `count` participations labeled P1..PN with the given starting life total. */
+  init: (count: number, startingLife: number) => void;
   /** Apply a state change in-memory. Signature matches useTracker.recordEvent for component reuse. */
   recordEvent: (input: {
     participationId: string;
@@ -70,11 +70,11 @@ function localId(): string {
   return `g-${Date.now()}-${++_counter}`;
 }
 
-function buildParticipation(name: string, index: number): GuestParticipation {
+function buildParticipation(index: number, startingLife: number): GuestParticipation {
   return {
     id: localId(),
-    name: name.trim() || `Player ${index + 1}`,
-    lifeTotal: 40,
+    name: `P${index + 1}`,
+    lifeTotal: startingLife,
     poisonCounters: 0,
     commanderDamage: {},
   };
@@ -92,8 +92,11 @@ export function useGuestTracker(): UseGuestTrackerReturn {
   const eventsRef = useRef<GuestEvent[]>([]);
   eventsRef.current = events;
 
-  const init = useCallback((names: string[]) => {
-    setParticipations(names.map(buildParticipation));
+  const init = useCallback((count: number, startingLife: number) => {
+    const safeCount = Math.max(1, Math.min(4, Math.floor(count)));
+    setParticipations(
+      Array.from({ length: safeCount }, (_, i) => buildParticipation(i, startingLife)),
+    );
     setEvents([]);
   }, []);
 

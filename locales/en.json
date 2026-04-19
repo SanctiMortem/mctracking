@@ -413,7 +413,11 @@
   },
   "guest": {
     "title": "Guest Tracker",
+    "newMatch": "New Match",
+    "signIn": "Sign In",
     "players": "Players",
+    "startingHp": "Starting HP",
+    "layout": "Layout",
     "namesOptional": "Names (optional)",
     "startTracking": "Start Tracking",
     "startTrackerLabel": "Start guest tracker",

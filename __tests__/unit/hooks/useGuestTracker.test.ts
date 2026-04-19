@@ -16,36 +16,36 @@ beforeEach(() => {
 });
 
 describe('useGuestTracker — init', () => {
-  it('creates participations with default names "Player N" when names are empty', () => {
+  it('creates participations auto-labeled P1..PN', () => {
     const { result } = renderHook(() => useGuestTracker());
 
     act(() => {
-      result.current.init(['', '', '']);
+      result.current.init(3, 40);
     });
 
     expect(result.current.participations).toHaveLength(3);
-    expect(result.current.participations[0].name).toBe('Player 1');
-    expect(result.current.participations[1].name).toBe('Player 2');
-    expect(result.current.participations[2].name).toBe('Player 3');
+    expect(result.current.participations[0].name).toBe('P1');
+    expect(result.current.participations[1].name).toBe('P2');
+    expect(result.current.participations[2].name).toBe('P3');
   });
 
-  it('creates participations with provided names when names are non-empty', () => {
+  it('uses the supplied startingLife for every participant', () => {
     const { result } = renderHook(() => useGuestTracker());
 
     act(() => {
-      result.current.init(['Alice', 'Bob']);
+      result.current.init(2, 25);
     });
 
     expect(result.current.participations).toHaveLength(2);
-    expect(result.current.participations[0].name).toBe('Alice');
-    expect(result.current.participations[1].name).toBe('Bob');
+    expect(result.current.participations[0].lifeTotal).toBe(25);
+    expect(result.current.participations[1].lifeTotal).toBe(25);
   });
 
-  it('sets lifeTotal=40, poisonCounters=0, commanderDamage={} for each participant', () => {
+  it('sets poisonCounters=0 and commanderDamage={} for each participant', () => {
     const { result } = renderHook(() => useGuestTracker());
 
     act(() => {
-      result.current.init(['Alice', 'Bob']);
+      result.current.init(2, 40);
     });
 
     for (const p of result.current.participations) {
@@ -59,7 +59,7 @@ describe('useGuestTracker — init', () => {
     const { result } = renderHook(() => useGuestTracker());
 
     act(() => {
-      result.current.init(['Alice']);
+      result.current.init(1, 40);
     });
 
     const pid = result.current.participations[0].id;
@@ -70,7 +70,7 @@ describe('useGuestTracker — init', () => {
     expect(result.current.isDirty).toBe(true);
 
     act(() => {
-      result.current.init(['Bob']);
+      result.current.init(1, 40);
     });
 
     expect(result.current.isDirty).toBe(false);
@@ -81,7 +81,7 @@ describe('useGuestTracker — init', () => {
 describe('useGuestTracker — recordEvent', () => {
   it('life_change updates lifeTotal by delta', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     const pid = result.current.participations[0].id;
 
     await act(async () => {
@@ -93,7 +93,7 @@ describe('useGuestTracker — recordEvent', () => {
 
   it('poison_change updates poisonCounters by delta, floors at 0', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     const pid = result.current.participations[0].id;
 
     await act(async () => {
@@ -110,7 +110,7 @@ describe('useGuestTracker — recordEvent', () => {
 
   it('commander_damage updates commanderDamage[commanderIdSource] by delta, floors at 0', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice', 'Bob']); });
+    act(() => { result.current.init(2, 40); });
     const pid = result.current.participations[0].id;
     const cmdSource = result.current.participations[1].id;
 
@@ -140,7 +140,7 @@ describe('useGuestTracker — recordEvent', () => {
 
   it('event is appended to history with isUndone=false', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     const pid = result.current.participations[0].id;
 
     await act(async () => {
@@ -153,7 +153,7 @@ describe('useGuestTracker — recordEvent', () => {
 
   it('isDirty becomes true after first recordEvent', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
 
     expect(result.current.isDirty).toBe(false);
 
@@ -169,7 +169,7 @@ describe('useGuestTracker — recordEvent', () => {
 describe('useGuestTracker — undoLastEvent', () => {
   it('reverts lifeTotal to value before last life_change event', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     const pid = result.current.participations[0].id;
 
     await act(async () => {
@@ -185,7 +185,7 @@ describe('useGuestTracker — undoLastEvent', () => {
 
   it('reverts poisonCounters to value before last poison_change event', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     const pid = result.current.participations[0].id;
 
     await act(async () => {
@@ -201,7 +201,7 @@ describe('useGuestTracker — undoLastEvent', () => {
 
   it('reverts commanderDamage entry before last commander_damage event', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice', 'Bob']); });
+    act(() => { result.current.init(2, 40); });
     const pid = result.current.participations[0].id;
     const cmdSource = result.current.participations[1].id;
 
@@ -223,7 +223,7 @@ describe('useGuestTracker — undoLastEvent', () => {
 
   it('marks the reverted event as isUndone=true', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     const pid = result.current.participations[0].id;
 
     await act(async () => {
@@ -240,7 +240,7 @@ describe('useGuestTracker — undoLastEvent', () => {
 
   it('does nothing when all events are already undone', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     const pid = result.current.participations[0].id;
 
     await act(async () => {
@@ -262,7 +262,7 @@ describe('useGuestTracker — undoLastEvent', () => {
 
   it('isDirty returns false when all events are undone', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     const pid = result.current.participations[0].id;
 
     await act(async () => {
@@ -282,7 +282,7 @@ describe('useGuestTracker — undoLastEvent', () => {
 
   it('only affects the last non-undone event (second-to-last remains intact)', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     const pid = result.current.participations[0].id;
 
     // Event 1: -5 life (40 -> 35)
@@ -310,13 +310,13 @@ describe('useGuestTracker — undoLastEvent', () => {
 describe('useGuestTracker — isDirty', () => {
   it('is false on initial state (no events)', () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     expect(result.current.isDirty).toBe(false);
   });
 
   it('is true after a non-undone event exists', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     const pid = result.current.participations[0].id;
 
     await act(async () => {
@@ -328,7 +328,7 @@ describe('useGuestTracker — isDirty', () => {
 
   it('is false after all events are undone via undoLastEvent', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     const pid = result.current.participations[0].id;
 
     await act(async () => {
@@ -345,7 +345,7 @@ describe('useGuestTracker — isDirty', () => {
 describe('useGuestTracker — isolation (no API calls)', () => {
   it('recordEvent does not call fetch or any /api/* endpoint', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     const pid = result.current.participations[0].id;
 
     await act(async () => {
@@ -357,7 +357,7 @@ describe('useGuestTracker — isolation (no API calls)', () => {
 
   it('undoLastEvent does not call fetch or any /api/* endpoint', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     const pid = result.current.participations[0].id;
 
     await act(async () => {
@@ -374,7 +374,7 @@ describe('useGuestTracker — isolation (no API calls)', () => {
 
   it('all state mutations are in-memory only (no side effects outside the hook)', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice', 'Bob']); });
+    act(() => { result.current.init(2, 40); });
     const pid = result.current.participations[0].id;
 
     await act(async () => {
@@ -396,13 +396,13 @@ describe('useGuestTracker — isolation (no API calls)', () => {
 describe('GuestScreen — confirm dialog', () => {
   it('does not show confirm dialog when isDirty=false (no changes made)', () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     expect(result.current.isDirty).toBe(false);
   });
 
   it('shows confirm dialog with "Discard" option when isDirty=true and exit is pressed', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     const pid = result.current.participations[0].id;
 
     await act(async () => {
@@ -417,7 +417,7 @@ describe('GuestScreen — confirm dialog', () => {
     // This test verifies the isDirty flag which the screen component uses
     // to decide whether to show the confirm dialog. Navigation is handled by the screen.
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     const pid = result.current.participations[0].id;
 
     await act(async () => {
@@ -427,13 +427,13 @@ describe('GuestScreen — confirm dialog', () => {
     expect(result.current.isDirty).toBe(true);
 
     // After re-init (simulating discard), isDirty resets
-    act(() => { result.current.init([]); });
+    act(() => { result.current.init(1, 40); });
     expect(result.current.isDirty).toBe(false);
   });
 
   it('stays on tracker when Cancel is pressed in confirm dialog', async () => {
     const { result } = renderHook(() => useGuestTracker());
-    act(() => { result.current.init(['Alice']); });
+    act(() => { result.current.init(1, 40); });
     const pid = result.current.participations[0].id;
 
     await act(async () => {

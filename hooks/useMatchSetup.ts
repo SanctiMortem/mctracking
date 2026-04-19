@@ -21,6 +21,7 @@ import type { Match, Participation } from '@/db/index';
  * the player toward the centre of the device.
  */
 export const LAYOUT_VARIANTS: Record<number, string[]> = {
+  1: ['1p-solo'],
   2: ['2p-stack', '2p-side'],
   3: ['3p-top1-bot2', '3p-left1-right2', '3p-top2-bot1'],
   4: ['4p-grid', '4p-pod'],
@@ -40,6 +41,10 @@ export const LAYOUT_VARIANTS: Record<number, string[]> = {
  * Index = slot position (matches selectedPlayerIds order).
  */
 export const DEFAULT_SLOT_ROTATIONS: Record<string, number[]> = {
+  // ── 1 player ──
+  // Solo: full-screen NS axis, facing North (sits on South edge).
+  '1p-solo':         [0],
+
   // ── 2 players ──
   // NS axis: top faces South, bottom faces North.
   '2p-stack':        [180, 0],
