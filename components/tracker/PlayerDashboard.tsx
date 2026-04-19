@@ -390,7 +390,7 @@ const createStyles = (t: AppTheme) => ({
     bottom: 0,
     width: '100%' as const,
     height: '100%' as const,
-    opacity: 0.15,
+    opacity: 0.35,
   },
   artScrim: {
     position: 'absolute' as const,
@@ -398,7 +398,7 @@ const createStyles = (t: AppTheme) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: t.colors.background.primary + 'AA',
+    backgroundColor: t.colors.background.primary + '44',
   },
 
   // ── Sidebar (20 %, minWidth 75, flexShrink 0) ──
