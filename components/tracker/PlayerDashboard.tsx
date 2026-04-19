@@ -390,7 +390,7 @@ const createStyles = (t: AppTheme) => ({
     bottom: 0,
     width: '100%' as const,
     height: '100%' as const,
-    opacity: 0.35,
+    opacity: 0.20,
   },
   artScrim: {
     position: 'absolute' as const,
@@ -398,7 +398,9 @@ const createStyles = (t: AppTheme) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: t.colors.background.primary + '44',
+    // Mid-tone grey-blue scrim (rather than dark background) so the wash
+    // softens the art instead of darkening it. ~40% alpha.
+    backgroundColor: t.colors.onSurfaceVariant + '66',
   },
 
   // ── Sidebar (20 %, minWidth 75, flexShrink 0) ──

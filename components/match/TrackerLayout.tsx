@@ -23,7 +23,7 @@ import { View } from 'react-native';
 
 import { PlayerSection } from './PlayerSection';
 
-const GAP = 2;
+const GAP = 4;
 
 export interface SectionData {
   id: string;
