@@ -48,6 +48,7 @@ function flipWithinAxis(rotation: number): 0 | 90 | 180 | 270 {
 
 /** Human-readable labels for layout variants */
 const VARIANT_LABELS: Record<string, string> = {
+  '1p-solo': 'Solo',
   '2p-stack': 'Stacked',
   '2p-side': 'Side by Side',
   '3p-top1-bot2': '1 Top + 2 Bottom',
@@ -83,6 +84,8 @@ function VariantThumb({ variant, isSelected, onPress }: {
 
   const renderThumbSlots = () => {
     switch (variant) {
+      case '1p-solo':
+        return <View style={thumbStyles.full} />;
       case '2p-stack':
         return (
           <>
@@ -308,6 +311,8 @@ export function LayoutPreview({
   // Render the preview grid for the selected layout variant
   const renderPreviewGrid = () => {
     switch (layoutVariant) {
+      case '1p-solo':
+        return <View style={styles.fullRow}>{renderSlot(0)}</View>;
       case '2p-stack':
         return (
           <>
@@ -382,7 +387,7 @@ export function LayoutPreview({
     }
   };
 
-  if (count < 2) return null;
+  if (count < 1) return null;
 
   return (
     <View style={styles.container}>

@@ -2,17 +2,18 @@
  * SCR-019 — Guest Tracker
  *
  * Three-phase screen:
- *  1. Home: minimal entry — "New Match" + "Sign In" only.
- *  2. Setup: player count (1-4) + starting HP (25/30/40) + layout (when ≥ 2).
- *     No name inputs — players are auto-labeled P1..P4.
- *  3. Tracking: TrackerLayout with LifeCounter, PoisonCounter, CommanderDamagePanel.
+ *  1. Home: minimal entry — "New Match" + "Sign In".
+ *  2. Setup: player count (1-4) + starting HP (25/30/40) + LayoutPreview.
+ *     No name inputs — players are auto-labeled P1..P4. Visual design mirrors
+ *     the canonical MatchSetupForm (section labels, lifeChip picker, LayoutPreview).
+ *  3. Tracking: PlayerDashboard-based frames inside TrackerLayout, no commander art.
  *     All in-memory, zero API calls (BR-AUTH-01).
  *
  * Exit with unsaved changes shows a confirmation dialog (BR-AUTH-01).
  *
  * PLAT-004 (EPIC-05)
  */
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -26,8 +27,10 @@ import { useTranslation } from 'react-i18next';
 
 import { CommanderDamagePanel } from '@/components/tracker/CommanderDamagePanel';
 import { LifeCounter } from '@/components/tracker/LifeCounter';
+import { PlayerDashboard } from '@/components/tracker/PlayerDashboard';
 import { PoisonCounter } from '@/components/tracker/PoisonCounter';
 import { TrackerLayout } from '@/components/match/TrackerLayout';
+import { LayoutPreview } from '@/components/match/LayoutPreview';
 import { useGuest } from '@/contexts/GuestContext';
 import { useGuestTracker } from '@/hooks/useGuestTracker';
 import { DEFAULT_SLOT_ROTATIONS, LAYOUT_VARIANTS } from '@/hooks/useMatchSetup';
@@ -59,7 +62,7 @@ function GuestHome({ onNewMatch, onSignIn }: HomeProps) {
       <View style={styles.homeContainer}>
         <Pressable
           onPress={onNewMatch}
-          style={styles.newMatchBtn}
+          style={({ pressed }) => [styles.newMatchBtn, pressed && { opacity: 0.85 }]}
           accessibilityRole="button"
           accessibilityLabel={t('guest.newMatch')}
         >
@@ -82,8 +85,21 @@ function GuestHome({ onNewMatch, onSignIn }: HomeProps) {
 // ─── Setup Phase ─────────────────────────────────────────────────────────────
 
 interface SetupProps {
-  onStart: (count: PlayerCount, startingLife: StartingLife, layoutVariant: string) => void;
+  onStart: (
+    count: PlayerCount,
+    startingLife: StartingLife,
+    layoutVariant: string,
+    slotRotations: number[],
+  ) => void;
   onBack: () => void;
+}
+
+/**
+ * Build default rotations array for a given layout variant.
+ * Returns a copy so downstream mutations don't leak into the shared constant.
+ */
+function defaultRotationsFor(variant: string): number[] {
+  return [...(DEFAULT_SLOT_ROTATIONS[variant] ?? [])];
 }
 
 function GuestSetup({ onStart, onBack }: SetupProps) {
@@ -93,112 +109,220 @@ function GuestSetup({ onStart, onBack }: SetupProps) {
   const [count, setCount] = useState<PlayerCount>(4);
   const [startingLife, setStartingLife] = useState<StartingLife>(40);
 
-  const variants = LAYOUT_VARIANTS[count] ?? [];
-  const [layoutVariant, setLayoutVariant] = useState<string>(variants[0] ?? '');
+  const initialVariant = LAYOUT_VARIANTS[4]?.[0] ?? '';
+  const [layoutVariant, setLayoutVariant] = useState<string>(initialVariant);
+  const [slotRotations, setSlotRotations] = useState<number[]>(() =>
+    defaultRotationsFor(initialVariant),
+  );
 
-  // When count changes, reset layout variant to that count's first option.
+  // Synthetic "players" for LayoutPreview — positional slots labeled P1..PN.
+  const previewPlayers = useMemo(
+    () =>
+      Array.from({ length: count }, (_, i) => ({
+        id: `slot-${i}`,
+        name: `P${i + 1}`,
+      })),
+    [count],
+  );
+
+  const rotationsById = useMemo(() => {
+    const map: Record<string, number> = {};
+    previewPlayers.forEach((p, i) => {
+      map[p.id] = slotRotations[i] ?? 0;
+    });
+    return map;
+  }, [previewPlayers, slotRotations]);
+
   function handleCountChange(n: PlayerCount) {
     setCount(n);
-    const next = LAYOUT_VARIANTS[n] ?? [];
-    setLayoutVariant(next[0] ?? '');
+    const nextVariant = LAYOUT_VARIANTS[n]?.[0] ?? '';
+    setLayoutVariant(nextVariant);
+    setSlotRotations(defaultRotationsFor(nextVariant));
   }
 
+  const handleLayoutChange = useCallback((variant: string) => {
+    setLayoutVariant(variant);
+    setSlotRotations(defaultRotationsFor(variant));
+  }, []);
+
+  const handleRotate = useCallback((playerId: string, degrees: number) => {
+    const idx = Number.parseInt(playerId.replace('slot-', ''), 10);
+    if (Number.isNaN(idx)) return;
+    setSlotRotations((prev) => {
+      const next = [...prev];
+      next[idx] = degrees;
+      return next;
+    });
+  }, []);
+
+  const handleReorder = useCallback(
+    (reordered: { id: string; name: string }[]) => {
+      // Move the rotation attached to each slot so the seat's orientation stays put.
+      setSlotRotations((prev) => {
+        const next = [...prev];
+        reordered.forEach((p, newIdx) => {
+          const oldIdx = Number.parseInt(p.id.replace('slot-', ''), 10);
+          if (!Number.isNaN(oldIdx)) next[newIdx] = prev[oldIdx] ?? 0;
+        });
+        return next;
+      });
+    },
+    [],
+  );
+
   function handleStart() {
-    onStart(count, startingLife, layoutVariant);
+    onStart(count, startingLife, layoutVariant, slotRotations);
   }
 
   return (
     <SafeAreaView style={styles.root}>
       {/* Header */}
       <View style={styles.setupHeader}>
-        <Pressable onPress={onBack} style={styles.cancelBtn} accessibilityRole="button" accessibilityLabel={t('common.back')}>
+        <Pressable
+          onPress={onBack}
+          style={styles.cancelBtn}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
+        >
           <Text style={styles.cancelText}>‹</Text>
         </Pressable>
         <Text style={styles.setupTitle}>{t('guest.newMatch')}</Text>
         <View style={styles.cancelBtn} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.setupContent} keyboardShouldPersistTaps="handled">
-        {/* Player count */}
+      <ScrollView
+        style={styles.setupScroll}
+        contentContainerStyle={styles.setupContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Section 1: Player count ── */}
         <Text style={styles.sectionLabel}>{t('guest.players')}</Text>
-        <View style={styles.countRow}>
-          {PLAYER_COUNT_OPTIONS.map((n) => (
-            <Pressable
-              key={n}
-              onPress={() => handleCountChange(n)}
-              style={[styles.countBtn, count === n && styles.countBtnActive]}
-              accessibilityRole="button"
-              accessibilityLabel={`${n} players`}
-              accessibilityState={{ selected: count === n }}
-            >
-              <Text style={[styles.countBtnText, count === n && styles.countBtnTextActive]}>
-                {n}
-              </Text>
-            </Pressable>
-          ))}
+        <View style={styles.pickerRow}>
+          {PLAYER_COUNT_OPTIONS.map((n) => {
+            const selected = count === n;
+            return (
+              <Pressable
+                key={n}
+                onPress={() => handleCountChange(n)}
+                style={[styles.pickerChip, selected && styles.pickerChipSelected]}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                accessibilityLabel={`${n} players`}
+              >
+                <Text style={[styles.pickerChipText, selected && styles.pickerChipTextSelected]}>
+                  {n}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
-        {/* Starting HP */}
+        {/* ── Section 2: Starting life ── */}
+        <View style={styles.divider} />
         <Text style={styles.sectionLabel}>{t('guest.startingHp')}</Text>
-        <View style={styles.countRow}>
-          {STARTING_LIFE_OPTIONS.map((hp) => (
-            <Pressable
-              key={hp}
-              onPress={() => setStartingLife(hp)}
-              style={[styles.lifeChip, startingLife === hp && styles.lifeChipActive]}
-              accessibilityRole="button"
-              accessibilityLabel={`${hp} life`}
-              accessibilityState={{ selected: startingLife === hp }}
-            >
-              <Text style={[styles.lifeChipText, startingLife === hp && styles.lifeChipTextActive]}>
-                {hp}
-              </Text>
-            </Pressable>
-          ))}
+        <View style={styles.pickerRow}>
+          {STARTING_LIFE_OPTIONS.map((value) => {
+            const selected = startingLife === value;
+            return (
+              <Pressable
+                key={value}
+                onPress={() => setStartingLife(value)}
+                style={[styles.pickerChip, selected && styles.pickerChipSelected]}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                accessibilityLabel={`${value} life`}
+              >
+                <Text style={[styles.pickerChipText, selected && styles.pickerChipTextSelected]}>
+                  {value}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
-        {/* Layout — only when count ≥ 2 */}
-        {count >= 2 && variants.length > 1 && (
-          <>
-            <Text style={styles.sectionLabel}>{t('guest.layout')}</Text>
-            <View style={styles.layoutRow}>
-              {variants.map((v) => (
-                <Pressable
-                  key={v}
-                  onPress={() => setLayoutVariant(v)}
-                  style={[styles.layoutBtn, layoutVariant === v && styles.layoutBtnActive]}
-                  accessibilityRole="button"
-                  accessibilityLabel={v}
-                  accessibilityState={{ selected: layoutVariant === v }}
-                >
-                  <Text style={[styles.layoutBtnText, layoutVariant === v && styles.layoutBtnTextActive]}>
-                    {v}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </>
-        )}
+        {/* ── Section 3: Layout arrangement ── */}
+        <View style={styles.divider} />
+        <Text style={styles.sectionLabel}>{t('guest.layout')}</Text>
+        <LayoutPreview
+          players={previewPlayers}
+          rotations={rotationsById}
+          layoutVariant={layoutVariant}
+          onReorder={handleReorder}
+          onRotate={handleRotate}
+          onLayoutChange={handleLayoutChange}
+        />
 
-        {/* Start button */}
+        <View style={styles.scrollSpacer} />
+      </ScrollView>
+
+      {/* ── Footer: Start ── */}
+      <View style={styles.footer}>
         <Pressable
           onPress={handleStart}
-          style={styles.startBtn}
+          style={styles.submitBtn}
           accessibilityRole="button"
           accessibilityLabel={t('guest.startTrackerLabel')}
         >
-          <Text style={styles.startBtnText}>{t('guest.startTracking')}</Text>
+          <Text style={styles.submitBtnText}>{t('guest.startTracking')}</Text>
         </Pressable>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
-// ─── Tracking Phase ───────────────────────────────────────────────────────────
+// ─── Guest Turn Timers ───────────────────────────────────────────────────────
+
+/**
+ * Lightweight per-player turn timer for guest mode.
+ * Mirrors useTurnTimers from the regular tracker but skips event recording.
+ */
+function useGuestTurnTimers(participationIds: string[]) {
+  const [elapsed, setElapsed] = useState<Record<string, number>>({});
+  const [turnCounts, setTurnCounts] = useState<Record<string, number>>({});
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const lastNonNullActiveIdRef = useRef<string | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (!activeId) return;
+    intervalRef.current = setInterval(() => {
+      setElapsed((prev) => ({ ...prev, [activeId]: (prev[activeId] ?? 0) + 1 }));
+    }, 1000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [activeId]);
+
+  // Reset when the participant roster changes (new match).
+  useEffect(() => {
+    setElapsed({});
+    setTurnCounts({});
+    setActiveId(null);
+    lastNonNullActiveIdRef.current = null;
+  }, [participationIds.join('|')]);
+
+  const toggle = useCallback((id: string) => {
+    setActiveId((prev) => {
+      if (prev === id) return null;
+      if (lastNonNullActiveIdRef.current !== id) {
+        setTurnCounts((counts) => ({ ...counts, [id]: (counts[id] ?? 0) + 1 }));
+        lastNonNullActiveIdRef.current = id;
+      }
+      return id;
+    });
+  }, []);
+
+  return { elapsed, activeId, toggle, turnCounts };
+}
+
+// ─── Tracking Phase ──────────────────────────────────────────────────────────
 
 interface TrackerProps {
   participations: ReturnType<typeof useGuestTracker>['participations'];
   layoutVariant: string;
+  slotRotations: number[];
   applyLifeChange: ReturnType<typeof useGuestTracker>['applyLifeChange'];
   applyPoisonChange: ReturnType<typeof useGuestTracker>['applyPoisonChange'];
   applyCommanderDamage: ReturnType<typeof useGuestTracker>['applyCommanderDamage'];
@@ -209,6 +333,7 @@ interface TrackerProps {
 function GuestTrackerView({
   participations,
   layoutVariant,
+  slotRotations,
   applyLifeChange,
   applyPoisonChange,
   applyCommanderDamage,
@@ -218,36 +343,60 @@ function GuestTrackerView({
   const styles = useThemedStyles(createStyles);
   const { t } = useTranslation();
 
-  const slotRotations = DEFAULT_SLOT_ROTATIONS[layoutVariant] ?? [];
+  const participationIds = useMemo(() => participations.map((p) => p.id), [participations]);
+  const turnTimers = useGuestTurnTimers(participationIds);
+  const [deadIds, setDeadIds] = useState<Set<string>>(new Set());
 
   const sections = participations.map((p, idx) => {
-    // Enemy commanders in guest mode = other participants (by id + name)
+    // Enemy "commanders" in guest mode = other participants (id + name).
     const enemyCommanders = participations
       .filter((other) => other.id !== p.id)
       .map((other) => ({ id: other.id, name: other.name }));
 
+    const cmdDamageTotal = Object.values(p.commanderDamage ?? {}).reduce(
+      (sum, v) => sum + (typeof v === 'number' ? v : 0),
+      0,
+    );
+
     return {
       id: p.id,
       rotation: slotRotations[idx] ?? 0,
+      isActive: turnTimers.activeId === p.id,
       content: (
-        <View style={styles.sectionContent}>
-          <LifeCounter
-            lifeTotal={p.lifeTotal}
-            participationId={p.id}
-            onDelta={applyLifeChange}
-          />
-          <PoisonCounter
-            poisonCounters={p.poisonCounters}
-            participationId={p.id}
-            onDelta={applyPoisonChange}
-          />
-          <CommanderDamagePanel
-            commanderDamage={p.commanderDamage}
-            enemyCommanders={enemyCommanders}
-            participationId={p.id}
-            onDelta={applyCommanderDamage}
-          />
-        </View>
+        <PlayerDashboard
+          playerName={p.name}
+          artCrop={null}
+          timerSeconds={turnTimers.elapsed[p.id] ?? 0}
+          timerActive={turnTimers.activeId === p.id}
+          turnCount={turnTimers.turnCounts[p.id] ?? 0}
+          onToggleTimer={() => turnTimers.toggle(p.id)}
+          isDead={deadIds.has(p.id)}
+          onMarkDead={() => setDeadIds((prev) => new Set(prev).add(p.id))}
+          lifeCounter={
+            <LifeCounter
+              lifeTotal={p.lifeTotal}
+              participationId={p.id}
+              onDelta={applyLifeChange}
+            />
+          }
+          poisonOverlay={
+            <PoisonCounter
+              poisonCounters={p.poisonCounters}
+              participationId={p.id}
+              onDelta={applyPoisonChange}
+            />
+          }
+          cmdDamageOverlay={
+            <CommanderDamagePanel
+              commanderDamage={p.commanderDamage}
+              enemyCommanders={enemyCommanders}
+              participationId={p.id}
+              onDelta={applyCommanderDamage}
+            />
+          }
+          poisonCount={p.poisonCounters}
+          cmdDamageTotal={cmdDamageTotal}
+        />
       ),
     };
   });
@@ -275,7 +424,6 @@ function GuestTrackerView({
         </Pressable>
       </View>
 
-      {/* Tracker layout */}
       <View style={styles.trackerBody}>
         <TrackerLayout sections={sections} layoutVariant={layoutVariant} />
       </View>
@@ -283,7 +431,7 @@ function GuestTrackerView({
   );
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
+// ─── Screen ──────────────────────────────────────────────────────────────────
 
 type Phase = 'home' | 'setup' | 'tracking';
 
@@ -302,6 +450,7 @@ export default function GuestScreen() {
 
   const [phase, setPhase] = useState<Phase>('home');
   const [layoutVariant, setLayoutVariant] = useState<string>('');
+  const [slotRotations, setSlotRotations] = useState<number[]>([]);
 
   const navigateToAuth = useCallback(() => {
     exitGuestMode();
@@ -309,9 +458,10 @@ export default function GuestScreen() {
   }, [exitGuestMode, router]);
 
   const handleStart = useCallback(
-    (count: PlayerCount, startingLife: StartingLife, variant: string) => {
+    (count: PlayerCount, startingLife: StartingLife, variant: string, rotations: number[]) => {
       init(count, startingLife);
       setLayoutVariant(variant);
+      setSlotRotations(rotations);
       setPhase('tracking');
     },
     [init],
@@ -327,11 +477,7 @@ export default function GuestScreen() {
       'All tracking data will be lost.',
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Discard',
-          style: 'destructive',
-          onPress: () => setPhase('home'),
-        },
+        { text: 'Discard', style: 'destructive', onPress: () => setPhase('home') },
       ],
     );
   }, [isDirty]);
@@ -348,6 +494,7 @@ export default function GuestScreen() {
     <GuestTrackerView
       participations={participations}
       layoutVariant={layoutVariant}
+      slotRotations={slotRotations}
       applyLifeChange={applyLifeChange}
       applyPoisonChange={applyPoisonChange}
       applyCommanderDamage={applyCommanderDamage}
@@ -357,7 +504,9 @@ export default function GuestScreen() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// ─── Styles ──────────────────────────────────────────────────────────────────
+
+const FOOTER_HEIGHT = 88;
 
 const createStyles = (t: AppTheme) => ({
   root: {
@@ -373,20 +522,19 @@ const createStyles = (t: AppTheme) => ({
     paddingTop: spacing[16],
     paddingBottom: spacing[8],
   },
+  // Mirrors `newMatchButton` on the authed home screen: padding-based, radius lg, body-lg text.
   newMatchBtn: {
-    height: 96,
-    borderRadius: t.radius.lg,
     backgroundColor: t.colors.accent.primary,
+    borderRadius: t.radius.lg,
+    padding: spacing[4],
     alignItems: 'center',
-    justifyContent: 'center',
   },
   newMatchText: {
-    color: t.colors.text.primary,
+    color: t.colors.accent.onPrimary,
     fontFamily: t.typography.fontFamily.headline,
-    fontSize: t.typography.size['heading-lg'],
+    fontSize: t.typography.size['body-lg'],
     fontWeight: t.typography.weight.bold,
-    letterSpacing: t.typography.letterSpacing.wide,
-    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   signInBtn: {
     height: 52,
@@ -433,115 +581,90 @@ const createStyles = (t: AppTheme) => ({
     color: t.colors.text.secondary,
     fontSize: t.typography.size['heading-lg'],
   },
+  setupScroll: {
+    flex: 1,
+  },
   setupContent: {
-    paddingHorizontal: spacing[6],
-    paddingVertical: spacing[6],
-    gap: spacing[3],
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[4],
   },
+  scrollSpacer: {
+    height: FOOTER_HEIGHT + spacing[4],
+  },
+
+  // Section label — matches MatchSetupForm.
   sectionLabel: {
-    color: t.colors.text.muted,
+    color: t.colors.text.tertiary,
     fontFamily: t.typography.fontFamily.headline,
-    fontSize: t.typography.size.caption,
+    fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.semibold,
-    letterSpacing: t.typography.letterSpacing.wider,
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
-    marginBottom: spacing[1],
-    marginTop: spacing[2],
+    marginBottom: spacing[3],
   },
-  countRow: {
-    flexDirection: 'row',
-    gap: spacing[3],
-    flexWrap: 'wrap',
+  divider: {
+    height: 1,
+    backgroundColor: t.colors.border.subtle,
+    marginVertical: spacing[6],
   },
-  countBtn: {
-    width: 64,
-    height: 64,
-    borderRadius: t.radius.md,
-    backgroundColor: t.colors.background.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: t.colors.border.default,
-  },
-  countBtnActive: {
-    backgroundColor: t.colors.accent.primary + '22',
-    borderColor: t.colors.accent.primary,
-  },
-  countBtnText: {
-    color: t.colors.text.secondary,
-    fontFamily: t.typography.fontFamily.lifeTotalBold,
-    fontSize: t.typography.size['heading-xl'],
-    fontWeight: t.typography.weight.bold,
-  },
-  countBtnTextActive: {
-    color: t.colors.accent.primary,
-  },
-  lifeChip: {
-    minWidth: 64,
-    height: 48,
-    paddingHorizontal: spacing[3],
-    borderRadius: t.radius.md,
-    backgroundColor: t.colors.background.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: t.colors.border.default,
-  },
-  lifeChipActive: {
-    backgroundColor: t.colors.accent.primary + '22',
-    borderColor: t.colors.accent.primary,
-  },
-  lifeChipText: {
-    color: t.colors.text.secondary,
-    fontFamily: t.typography.fontFamily.lifeTotalBold,
-    fontSize: t.typography.size['heading-md'],
-    fontWeight: t.typography.weight.bold,
-  },
-  lifeChipTextActive: {
-    color: t.colors.accent.primary,
-  },
-  layoutRow: {
+
+  // Picker row — shared by player-count and life-total chips.
+  pickerRow: {
     flexDirection: 'row',
     gap: spacing[2],
-    flexWrap: 'wrap',
+    marginBottom: spacing[2],
   },
-  layoutBtn: {
-    paddingHorizontal: spacing[3],
-    height: 40,
-    borderRadius: t.radius.md,
+  pickerChip: {
+    flex: 1,
     backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.lg,
+    borderWidth: 1,
+    borderColor: t.colors.border?.default ?? '#2A2A45',
+    paddingVertical: spacing[3],
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: t.colors.border.default,
+    minHeight: 52,
   },
-  layoutBtnActive: {
-    backgroundColor: t.colors.accent.primary + '22',
+  pickerChipSelected: {
+    backgroundColor: t.colors.accent.primary,
     borderColor: t.colors.accent.primary,
   },
-  layoutBtnText: {
-    color: t.colors.text.secondary,
-    fontFamily: t.typography.fontFamily.body,
-    fontSize: t.typography.size['body-sm'],
-    fontWeight: t.typography.weight.medium,
-  },
-  layoutBtnTextActive: {
-    color: t.colors.accent.primary,
-  },
-  startBtn: {
-    height: 52,
-    borderRadius: t.radius.md,
-    backgroundColor: t.colors.accent.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing[4],
-  },
-  startBtnText: {
+  pickerChipText: {
     color: t.colors.text.primary,
     fontFamily: t.typography.fontFamily.headline,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.semibold,
+  },
+  pickerChipTextSelected: {
+    color: t.colors.accent.onPrimary,
+  },
+
+  // Footer submit.
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: spacing[4],
+    paddingBottom: spacing[8],
+    paddingTop: spacing[3],
+    backgroundColor: t.colors.background.primary,
+    borderTopWidth: 1,
+    borderTopColor: t.colors.border.subtle,
+  },
+  submitBtn: {
+    backgroundColor: t.colors.accent.primary,
+    borderRadius: t.radius.xl,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitBtnText: {
+    color: t.colors.accent.onPrimary,
+    fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['body-lg'],
-    fontWeight: t.typography.weight.bold,
-    letterSpacing: t.typography.letterSpacing.wide,
+    fontWeight: t.typography.weight.semibold,
+    letterSpacing: 0.5,
   },
 
   // ── Tracker ────────────────────────────────────────────────────────────────
@@ -585,12 +708,4 @@ const createStyles = (t: AppTheme) => ({
   trackerBody: {
     flex: 1,
   },
-  sectionContent: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    paddingVertical: spacing[2],
-  },
-})
+});

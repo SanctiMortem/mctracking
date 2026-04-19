@@ -42,8 +42,8 @@ export const LAYOUT_VARIANTS: Record<number, string[]> = {
  */
 export const DEFAULT_SLOT_ROTATIONS: Record<string, number[]> = {
   // ── 1 player ──
-  // Solo: full-screen NS axis, facing North (sits on South edge).
-  '1p-solo':         [0],
+  // Solo: full-screen EW axis, facing East (sits on West edge).
+  '1p-solo':         [90],
 
   // ── 2 players ──
   // NS axis: top faces South, bottom faces North.
