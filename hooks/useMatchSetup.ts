@@ -121,8 +121,26 @@ export function useMatchSetup(groupId?: string | null): UseMatchSetupReturn {
     setApiError(null);
   }, []);
 
+  // Rotation belongs to the *frame* (slot), not to the player. When the user
+  // swaps two players via the Setup layout preview, only the player identity
+  // should move — the frame's cardinal orientation stays pinned to its seat.
+  // Since rotations are stored keyed by playerId, we rebind them on reorder
+  // so that the rotation previously at slot i is now attached to whichever
+  // playerId now occupies slot i.
   const reorderPlayers = useCallback((orderedIds: string[]) => {
-    setSelectedPlayerIds(orderedIds);
+    setSelectedPlayerIds((prevIds) => {
+      setRotations((prevRotations) => {
+        const next: Record<string, number> = {};
+        orderedIds.forEach((newId, idx) => {
+          const prevIdAtSlot = prevIds[idx];
+          next[newId] = prevIdAtSlot != null
+            ? (prevRotations[prevIdAtSlot] ?? 0)
+            : (prevRotations[newId] ?? 0);
+        });
+        return next;
+      });
+      return orderedIds;
+    });
   }, []);
 
   const setRotation = useCallback((playerId: string, degrees: number) => {
