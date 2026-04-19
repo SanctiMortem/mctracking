@@ -68,6 +68,8 @@ function computeLifeAfterMap(
 }
 
 // ── Random death messages — only triggered by the Dead button ──
+// Pool includes both log-native variants and the badge phrases shown on the
+// PlayerDashboard dead badge, so the log and the badge share voice.
 const DEATH_MESSAGES = [
   (name: string) => `☠ ${name} has died`,
   (name: string) => `☠ ${name} has perished`,
@@ -84,6 +86,41 @@ const DEATH_MESSAGES = [
   (name: string) => `☠ ${name} has been exiled from existence`,
   (name: string) => `☠ ${name} took a dirt nap`,
   (name: string) => `☠ ${name} just got wrecked`,
+  // Badge phrases mirrored from PlayerDashboard.
+  (name: string) => `☠ ${name} has fallen`,
+  (name: string) => `☠ ${name} is no more`,
+  (name: string) => `☠ ${name} was no more`,
+  (name: string) => `☠ ${name} conceded to the void`,
+  (name: string) => `☠ ${name} returned to the command zone`,
+  (name: string) => `☠ ${name} lost the will to fight`,
+  (name: string) => `☠ ${name} faded into legend`,
+  (name: string) => `☠ ${name} was consumed by shadow`,
+  (name: string) => `☠ ${name} shuffled into oblivion`,
+  (name: string) => `☠ ${name} took a permanent mulligan`,
+  (name: string) => `☠ ${name} left the battlefield`,
+  (name: string) => `☠ ${name} ascended beyond this plane`,
+  (name: string) => `☠ ${name} met their end here`,
+  (name: string) => `☠ ${name} perished gloriously`,
+  (name: string) => `☠ ${name} was outpaced`,
+  (name: string) => `☠ ${name} fell to the last sword`,
+  (name: string) => `☠ ${name} answered the final call`,
+  (name: string) => `☠ ${name} passed into history`,
+  (name: string) => `☠ ${name} couldn't withstand the storm`,
+  (name: string) => `☠ ${name} exited stage left, permanently`,
+  (name: string) => `☠ ${name} became part of the lore`,
+  (name: string) => `☠ ${name} was outplayed`,
+  (name: string) => `☠ ${name} rested… forever`,
+  (name: string) => `☠ ${name} ran out of resources`,
+  (name: string) => `☠ ${name} got bolted to zero`,
+  (name: string) => `☠ ${name} could not weather the tide`,
+  (name: string) => `☠ ${name} left for Phyrexia`,
+  (name: string) => `☠ ${name} was compleated`,
+  (name: string) => `☠ ${name} suffered lethal damage`,
+  (name: string) => `☠ ${name} walked into the blind eternities`,
+  (name: string) => `☠ ${name} conceded like a champ`,
+  (name: string) => `☠ ${name} couldn't stop the combo`,
+  (name: string) => `☠ ${name} was answered by the game state`,
+  (name: string) => `☠ ${name} is now merely a memory`,
 ];
 
 // Use event ID as a stable seed so the message doesn't change on re-render

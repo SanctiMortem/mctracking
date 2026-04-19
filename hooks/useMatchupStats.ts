@@ -52,7 +52,10 @@ export function useMatchupStats(
 
     async function load() {
       try {
-        const token = await getToken();
+        // Hold via ref — Clerk's getToken identity is unstable and would
+        // otherwise rerun this effect on every render, causing the result
+        // card to flash through its loading state.
+        const token = await getTokenRef.current();
         const params = new URLSearchParams({
           entity_type: entityType,
           entity_a_id: entityAId!,
@@ -78,7 +81,7 @@ export function useMatchupStats(
 
     load();
     return () => { cancelled = true; };
-  }, [entityType, entityAId, entityBId, scope, getToken]);
+  }, [entityType, entityAId, entityBId, scope]);
 
   return { data, loading, error };
 }
