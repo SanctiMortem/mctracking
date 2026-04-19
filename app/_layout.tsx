@@ -251,12 +251,17 @@ function AuthGate() {
     if (!isLoaded) return;
 
     const inAuthScreen = segments[0] === 'auth';
+    const inGuestScreen = segments[0] === 'guest';
 
     if (!isSignedIn && !isGuest && !inAuthScreen) {
       // Unauthenticated and not in guest mode → go to auth screen.
       router.replace('/auth');
-    } else if ((isSignedIn || isGuest) && inAuthScreen) {
-      // Authenticated or guest but still on auth screen → go to home.
+    } else if (isGuest && !inGuestScreen) {
+      // Guest mode is sandboxed to /guest — anywhere else (auth screen,
+      // tabs, deep links) bounces back to the guest tracker.
+      router.replace('/guest');
+    } else if (isSignedIn && !isGuest && inAuthScreen) {
+      // Authenticated user but still on auth screen → go to home.
       router.replace('/(tabs)/');
     }
   }, [isLoaded, isSignedIn, isGuest, segments]);
