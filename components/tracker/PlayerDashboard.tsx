@@ -93,10 +93,6 @@ const DEAD_BTN_SIZE = 44;
 /** Sidebar hard minimum so it stays usable even on narrow frames. */
 const SIDEBAR_MIN_WIDTH = 75;
 
-/** Scryfall's official Poison Counter token art (TNPH #5). */
-const POISON_LOGO_URI =
-  'https://cards.scryfall.io/art_crop/front/4/7/470618f6-f67f-44c6-a086-285632508915.jpg?1561757039';
-
 /** Frame-height buckets for responsive sidebar typography. */
 const COMPACT_THRESHOLD = 120;
 const ULTRA_COMPACT_THRESHOLD = 80;
@@ -312,19 +308,12 @@ export function PlayerDashboard({
                 onPress={() => switchMode('poison')}
                 style={styles.footerCounter}
               >
-                <View style={styles.footerCounterInner}>
-                  <Image
-                    source={{ uri: POISON_LOGO_URI }}
-                    style={styles.poisonLogo}
-                    resizeMode="cover"
-                  />
-                  <Text
-                    style={[styles.footerCounterText, poisonCount >= 10 && styles.footerCounterTextAlert]}
-                    numberOfLines={1}
-                  >
-                    {t('tracker.poison', { defaultValue: 'Poison' })} {poisonCount}
-                  </Text>
-                </View>
+                <Text
+                  style={[styles.footerCounterText, poisonCount >= 10 && styles.footerCounterTextAlert]}
+                  numberOfLines={1}
+                >
+                  ☣ {t('tracker.poison', { defaultValue: 'Poison' })} {poisonCount}
+                </Text>
               </GHPressable>
               <GHPressable
                 onPress={() => switchMode('cmd')}
@@ -542,16 +531,6 @@ const createStyles = (t: AppTheme) => ({
     justifyContent: 'center' as const,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: t.colors.border.subtle,
-  },
-  footerCounterInner: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 6,
-  },
-  poisonLogo: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
   },
   footerCounterText: {
     color: t.colors.accent.primaryAlt,

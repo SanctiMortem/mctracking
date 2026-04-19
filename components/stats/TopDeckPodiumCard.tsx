@@ -73,6 +73,15 @@ export function TopDeckPodiumCard({
             ) : (
               <View style={styles.artPlaceholder} />
             )}
+            {/* Saturation overlay — RN lacks CSS `filter: saturate`, so mix the
+                art with a neutral gray to approximate reduced saturation.
+                Tier 2 → ~50% sat, Tier 3 → ~20% sat. */}
+            {tier === 2 && (
+              <View style={styles.desatOverlayT2} pointerEvents="none" />
+            )}
+            {tier === 3 && (
+              <View style={styles.desatOverlayT3} pointerEvents="none" />
+            )}
             {/* Vignette — circular radial fade: 80% at the outer edge → 0% toward the center */}
             <Svg
               style={StyleSheet.absoluteFill}
@@ -195,12 +204,12 @@ const createStyles = (t: AppTheme) => ({
 
   // Tier 2 / 3 — pill overlapping the top edge
   rankChip: {
-    backgroundColor: t.colors.background.elevated,
+    backgroundColor: '#A8B2C1',
     borderRadius: t.radius.md,
     paddingHorizontal: spacing[3] + 2,
     paddingVertical: spacing[1] + 2,
     borderWidth: 1,
-    borderColor: t.colors.accent.primaryAlt + '99',
+    borderColor: '#A8B2C1',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -208,7 +217,7 @@ const createStyles = (t: AppTheme) => ({
     elevation: 3,
   },
   rankChipText: {
-    color: t.colors.accent.primaryAlt,
+    color: t.colors.background.primary,
     fontSize: t.typography.size['body-sm'],
     fontFamily: t.typography.fontFamily.display,
     fontWeight: t.typography.weight.bold,
@@ -238,6 +247,19 @@ const createStyles = (t: AppTheme) => ({
   artPlaceholder: {
     flex: 1,
     backgroundColor: t.colors.background.elevated,
+  },
+  // Gray layers that mix with the art underneath. Opacity chosen so the
+  // final color is roughly (1 − a) * art + a * gray, giving a visible but
+  // not total desaturation at each rank.
+  desatOverlayT2: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#808080',
+    opacity: 0.35,
+  },
+  desatOverlayT3: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#808080',
+    opacity: 0.65,
   },
 
   // Gold divider under the art on tier 1

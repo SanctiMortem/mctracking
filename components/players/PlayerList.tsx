@@ -172,8 +172,8 @@ const createStyles = (t: AppTheme) => ({
     fontWeight: t.typography.weight.medium,
   },
   separator: {
-    height: 1,
-    backgroundColor: t.colors.border.subtle,
+    height: 2,
+    backgroundColor: t.colors.border.default,
     marginLeft: spacing[4] + 40 + spacing[3], // align with name text
   },
   empty: { alignItems: 'center', gap: spacing[2] },
