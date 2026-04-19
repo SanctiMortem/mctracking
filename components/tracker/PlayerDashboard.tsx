@@ -400,7 +400,7 @@ const createStyles = (t: AppTheme) => ({
     bottom: 0,
     // Mid-tone grey-blue (vs dark background) so the wash softens the art
     // instead of darkening it. Sits above the image, below the UI chrome.
-    backgroundColor: t.colors.onSurfaceVariant + '33',
+    backgroundColor: t.colors.onSurfaceVariant + '26',
   },
 
   // ── Sidebar (20 %, minWidth 75, flexShrink 0) ──
@@ -516,7 +516,7 @@ const createStyles = (t: AppTheme) => ({
   // ── Divider ──
   divider: {
     width: 1.5,
-    backgroundColor: t.colors.border.strong + 'AA',
+    backgroundColor: '#A8B2C1',
     marginVertical: 6,
   },
 

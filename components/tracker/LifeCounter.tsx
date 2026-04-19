@@ -282,6 +282,9 @@ const createStyles = (t: AppTheme) => ({
     textAlign: 'center' as const,
     includeFontPadding: false,
     fontVariant: ['tabular-nums'] as const,
+    textShadowColor: 'rgba(0, 0, 0, 0.45)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   deltaBadge: {
     position: 'absolute' as const,
