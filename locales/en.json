@@ -232,7 +232,11 @@
     "filterAll": "All",
     "commanderSection": "Commander",
     "partnerSection": "Partner Commanders",
-    "descriptionSection": "Description"
+    "descriptionSection": "Description",
+    "bestMatchupsTitle": "Where its power has shined",
+    "bestMatchupsFlavor": "Foes laid low by this deck's hand.",
+    "worstMatchupsTitle": "Where shadows fall heaviest",
+    "worstMatchupsFlavor": "Trials yet unwon — nemeses still standing."
   },
   "commanders": {
     "title": "Commanders",

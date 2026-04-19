@@ -9,17 +9,20 @@
  */
 import {
   ActivityIndicator,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
+import { CircularWinRate } from '@/components/ui/CircularWinRate';
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { useCommanderStats } from '@/hooks/useCommanderStats';
 import { spacing } from '@/styles/tokens';
@@ -65,10 +68,30 @@ export default function CommanderDetailScreen() {
 
   const { commander, total_matches, wins, win_rate_pct, decks_using, players_using } = data;
   const hasMatches = total_matches > 0;
-  const winRateDisplay = win_rate_pct !== null ? `${win_rate_pct}%` : '—';
+  const bgArt = commander.artCrop ?? null;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
+      {/* ── Faded commander background ── */}
+      {bgArt && (
+        <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+          <Image
+            source={{ uri: bgArt }}
+            style={[StyleSheet.absoluteFillObject, styles.bgImage]}
+            resizeMode="cover"
+          />
+          <Svg style={StyleSheet.absoluteFill} preserveAspectRatio="none">
+            <Defs>
+              <RadialGradient id="commanderBgVignette" cx="50%" cy="40%" rx="75%" ry="75%" fx="50%" fy="40%">
+                <Stop offset="0" stopColor={theme.colors.background.primary} stopOpacity="0.55" />
+                <Stop offset="1" stopColor={theme.colors.background.primary} stopOpacity="1" />
+              </RadialGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#commanderBgVignette)" />
+          </Svg>
+        </View>
+      )}
+
       {/* ── Nav header ── */}
       <View style={styles.navHeader}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} hitSlop={8}>
@@ -102,18 +125,17 @@ export default function CommanderDetailScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('commanders.stats')}</Text>
           {hasMatches ? (
-            <View style={styles.statsRow}>
-              <View style={styles.statPill}>
-                <Text style={[styles.statValue, styles.statValueHighlight]}>{winRateDisplay}</Text>
-                <Text style={styles.statLabel}>{t('common.winRate')}</Text>
-              </View>
-              <View style={styles.statPill}>
-                <Text style={styles.statValue}>{total_matches}</Text>
-                <Text style={styles.statLabel}>{t('common.matches')}</Text>
-              </View>
-              <View style={styles.statPill}>
-                <Text style={styles.statValue}>{wins}</Text>
-                <Text style={styles.statLabel}>{t('common.wins')}</Text>
+            <View style={styles.statsCard}>
+              <CircularWinRate winRate={win_rate_pct} label={t('common.winRate')} />
+              <View style={styles.statsSide}>
+                <View style={styles.statSideItem}>
+                  <Text style={styles.statValue}>{total_matches}</Text>
+                  <Text style={styles.statLabel}>{t('common.matches')}</Text>
+                </View>
+                <View style={styles.statSideItem}>
+                  <Text style={styles.statValue}>{wins}</Text>
+                  <Text style={styles.statLabel}>{t('common.wins')}</Text>
+                </View>
               </View>
             </View>
           ) : (
@@ -185,6 +207,9 @@ const createStyles = (t: AppTheme) => ({
   root: {
     flex: 1,
     backgroundColor: t.colors.background.primary,
+  },
+  bgImage: {
+    opacity: 0.35,
   },
   center: {
     flex: 1,
@@ -275,25 +300,30 @@ const createStyles = (t: AppTheme) => ({
   list: { gap: spacing[2] },
 
   // Stats
-  statsRow: { flexDirection: 'row', gap: spacing[3] },
-  statPill: {
-    flex: 1,
-    backgroundColor: t.colors.background.surface,
-    borderRadius: t.radius.md,
-    paddingVertical: spacing[4],
-    paddingHorizontal: spacing[2],
+  statsCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[1],
+    gap: spacing[4],
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.lg,
+    paddingVertical: spacing[4],
+    paddingHorizontal: spacing[4],
     borderWidth: 1,
     borderColor: t.colors.border.default,
   },
+  statsSide: { flex: 1, gap: spacing[3] },
+  statSideItem: { gap: 2 },
   statValue: {
     color: t.colors.text.primary,
     fontSize: t.typography.size['heading-md'],
     fontWeight: t.typography.weight.bold,
   },
-  statValueHighlight: { color: t.colors.accent.primary },
-  statLabel: { color: t.colors.text.muted, fontSize: t.typography.size.caption },
+  statLabel: {
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
   emptyCard: {
     backgroundColor: t.colors.background.surface,
     borderRadius: t.radius.md,

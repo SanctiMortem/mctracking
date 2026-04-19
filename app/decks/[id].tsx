@@ -22,6 +22,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
+import { CircularWinRate } from '@/components/ui/CircularWinRate';
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { useDeckStats } from '@/hooks/useDeckStats';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -46,19 +47,6 @@ function CommanderCard({ name, cardColors, isPartner }: { name: string; cardColo
         )}
       </View>
       <ManaIdentityRow colors={cardColors} size="sm" />
-    </View>
-  );
-}
-
-// ─── Stat pill ────────────────────────────────────────────────────────────────
-
-function StatPill({ value, label, highlight }: { value: string; label: string; highlight?: boolean }) {
-  const styles = useThemedStyles(createStyles);
-
-  return (
-    <View style={styles.statPill}>
-      <Text style={[styles.statValue, highlight && styles.statValueHighlight]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
@@ -100,9 +88,8 @@ export default function DeckDetailScreen() {
     );
   }
 
-  const { deck, total_matches, wins, win_rate_pct, players_used_by } = data;
+  const { deck, total_matches, wins, win_rate_pct, players_used_by, best_matchups, worst_matchups } = data;
   const hasMatches = total_matches > 0;
-  const winRateDisplay = win_rate_pct !== null ? `${win_rate_pct}%` : '—';
   const bgArt = deck.commander.artCrop ?? deck.commander2?.artCrop ?? null;
 
   return (
@@ -178,10 +165,18 @@ export default function DeckDetailScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('commanders.stats')}</Text>
           {hasMatches ? (
-            <View style={styles.statsRow}>
-              <StatPill value={winRateDisplay} label={t('common.winRate')} highlight={win_rate_pct !== null} />
-              <StatPill value={String(total_matches)} label={t('common.matches')} />
-              <StatPill value={String(wins)} label={t('common.wins')} />
+            <View style={styles.statsCard}>
+              <CircularWinRate winRate={win_rate_pct} label={t('common.winRate')} />
+              <View style={styles.statsSide}>
+                <View style={styles.statSideItem}>
+                  <Text style={styles.statValue}>{total_matches}</Text>
+                  <Text style={styles.statLabel}>{t('common.matches')}</Text>
+                </View>
+                <View style={styles.statSideItem}>
+                  <Text style={styles.statValue}>{wins}</Text>
+                  <Text style={styles.statLabel}>{t('common.wins')}</Text>
+                </View>
+              </View>
             </View>
           ) : (
             <View style={styles.emptyStats}>
@@ -189,6 +184,66 @@ export default function DeckDetailScreen() {
             </View>
           )}
         </View>
+
+        {/* ── Best matchups ── */}
+        {best_matchups.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('deck.bestMatchupsTitle')}</Text>
+            <Text style={styles.flavorText}>{t('deck.bestMatchupsFlavor')}</Text>
+            <View style={styles.matchupList}>
+              {best_matchups.map((m) => (
+                <TouchableOpacity
+                  key={`best-${m.deck.id}`}
+                  style={styles.matchupRow}
+                  onPress={() => router.push(`/decks/${m.deck.id}`)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.matchupInfo}>
+                    <Text style={styles.matchupDeckName} numberOfLines={1}>{m.deck.name}</Text>
+                    <Text style={styles.matchupMeta}>
+                      {m.wins}–{m.matches - m.wins} · {m.matches}p
+                    </Text>
+                  </View>
+                  <View style={[styles.wrBadge, styles.wrBadgeWin]}>
+                    <Text style={[styles.wrText, styles.wrTextWin]}>
+                      {m.win_rate_pct !== null ? `${m.win_rate_pct}%` : '—'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* ── Worst matchups ── */}
+        {worst_matchups.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('deck.worstMatchupsTitle')}</Text>
+            <Text style={styles.flavorText}>{t('deck.worstMatchupsFlavor')}</Text>
+            <View style={styles.matchupList}>
+              {worst_matchups.map((m) => (
+                <TouchableOpacity
+                  key={`worst-${m.deck.id}`}
+                  style={styles.matchupRow}
+                  onPress={() => router.push(`/decks/${m.deck.id}`)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.matchupInfo}>
+                    <Text style={styles.matchupDeckName} numberOfLines={1}>{m.deck.name}</Text>
+                    <Text style={styles.matchupMeta}>
+                      {m.wins}–{m.matches - m.wins} · {m.matches}p
+                    </Text>
+                  </View>
+                  <View style={[styles.wrBadge, styles.wrBadgeLose]}>
+                    <Text style={[styles.wrText, styles.wrTextLose]}>
+                      {m.win_rate_pct !== null ? `${m.win_rate_pct}%` : '—'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* ── Players who used it ── */}
         {players_used_by.length > 0 && (
@@ -355,32 +410,63 @@ const createStyles = (t: AppTheme) => ({
     padding: spacing[4],
   },
 
-  // Stats row
-  statsRow: {
+  // Stats card
+  statsCard: {
     flexDirection: 'row',
-    gap: spacing[3],
-  },
-  statPill: {
-    flex: 1,
-    backgroundColor: t.colors.background.surface,
-    borderRadius: t.radius.md,
-    paddingVertical: spacing[4],
-    paddingHorizontal: spacing[2],
     alignItems: 'center',
-    gap: spacing[1],
+    gap: spacing[4],
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.lg,
+    paddingVertical: spacing[4],
+    paddingHorizontal: spacing[4],
     borderWidth: 1,
     borderColor: t.colors.border.default,
   },
+  statsSide: { flex: 1, gap: spacing[3] },
+  statSideItem: { gap: 2 },
   statValue: {
     color: t.colors.text.primary,
     fontSize: t.typography.size['heading-md'],
     fontWeight: t.typography.weight.bold,
   },
-  statValueHighlight: { color: t.colors.accent.primary },
   statLabel: {
     color: t.colors.text.muted,
     fontSize: t.typography.size.caption,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
+
+  // Matchups
+  flavorText: {
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontStyle: 'italic',
+    marginTop: -spacing[1],
+  },
+  matchupList: { gap: spacing[2] },
+  matchupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.md,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[3],
+    gap: spacing[3],
+  },
+  matchupInfo: { flex: 1, gap: 2 },
+  matchupDeckName: {
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
+  },
+  matchupMeta: {
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
+  },
+  wrBadgeWin: { backgroundColor: t.colors.status.success + '22' },
+  wrTextWin: { color: t.colors.status.success },
+  wrBadgeLose: { backgroundColor: t.colors.status.error + '22' },
+  wrTextLose: { color: t.colors.status.error },
   emptyStats: {
     backgroundColor: t.colors.background.surface,
     borderRadius: t.radius.md,

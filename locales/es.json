@@ -232,7 +232,11 @@
     "filterAll": "Todos",
     "commanderSection": "Commander",
     "partnerSection": "Commanders Partner",
-    "descriptionSection": "Descripción"
+    "descriptionSection": "Descripción",
+    "bestMatchupsTitle": "Donde su poder ha brillado",
+    "bestMatchupsFlavor": "Enemigos abatidos por este mazo.",
+    "worstMatchupsTitle": "Donde las sombras pesan más",
+    "worstMatchupsFlavor": "Pruebas sin vencer — némesis aún en pie."
   },
   "commanders": {
     "title": "Commanders",

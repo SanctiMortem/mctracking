@@ -225,13 +225,27 @@ export type PlayerUsage = {
   win_rate_pct: number | null;
 };
 
+export type MatchupBreakdown = {
+  deck: Deck;
+  matches: number;
+  wins: number;
+  win_rate_pct: number | null;
+};
+
 export type DeckStats = {
   deck: DeckWithCommanders;
   total_matches: number;
   wins: number;
   win_rate_pct: number | null;
   players_used_by: PlayerUsage[];
+  /** Top 3 opposing decks by highest win rate, min 2 matches against each */
+  best_matchups: MatchupBreakdown[];
+  /** Top 3 opposing decks by lowest win rate, min 2 matches against each */
+  worst_matchups: MatchupBreakdown[];
 };
+
+/** Min number of matches against a single opposing deck for it to qualify as a matchup */
+const MATCHUP_MIN_MATCHES = 2;
 
 export type GetDeckStatsResult =
   | { data: DeckStats }
@@ -255,7 +269,7 @@ export async function getDeckStats(
   // 2. Fetch commander(s) + aggregate stats in parallel
   const commanderIds = [deck.commanderId, deck.commanderId2].filter(Boolean) as string[];
 
-  const [deckCommanderObjects, statsRows, perPlayerRows] = await Promise.all([
+  const [deckCommanderObjects, statsRows, perPlayerRows, ownMatchRows] = await Promise.all([
     // Commander objects (1 or 2 for partner decks)
     db.select().from(commanders).where(inArray(commanders.id, commanderIds)),
 
@@ -281,6 +295,13 @@ export async function getDeckStats(
       .where(and(eq(participations.deckId, deckId), eq(matches.status, 'completed')))
       .groupBy(participations.playerId)
       .orderBy(desc(count(participations.id))),
+
+    // This deck's participations (matchId + result) — used to derive matchups
+    db
+      .select({ matchId: participations.matchId, result: participations.result })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .where(and(eq(participations.deckId, deckId), eq(matches.status, 'completed'))),
   ]);
 
   // 3. Build DeckWithCommanders
@@ -323,6 +344,63 @@ export async function getDeckStats(
       .filter((x): x is PlayerUsage => x !== null);
   }
 
+  // 6. Deck-vs-deck matchups
+  //    For each match this deck played, every other distinct opposing deckId in
+  //    that match counts as one head-to-head row. A multi-player win counts as
+  //    a win against each opponent present.
+  const ownResultByMatch = new Map<string, 'win' | 'lose' | 'draw' | null>();
+  for (const r of ownMatchRows) ownResultByMatch.set(r.matchId, r.result);
+
+  const matchIds = [...ownResultByMatch.keys()];
+  const matchupTotals = new Map<string, { matches: number; wins: number }>();
+
+  if (matchIds.length > 0) {
+    const otherParts = await db
+      .select({ matchId: participations.matchId, deckId: participations.deckId })
+      .from(participations)
+      .where(inArray(participations.matchId, matchIds));
+
+    for (const p of otherParts) {
+      if (p.deckId === deckId) continue;
+      const own = ownResultByMatch.get(p.matchId);
+      const entry = matchupTotals.get(p.deckId) ?? { matches: 0, wins: 0 };
+      entry.matches += 1;
+      if (own === 'win') entry.wins += 1;
+      matchupTotals.set(p.deckId, entry);
+    }
+  }
+
+  let bestMatchups: MatchupBreakdown[] = [];
+  let worstMatchups: MatchupBreakdown[] = [];
+  if (matchupTotals.size > 0) {
+    const qualifying = [...matchupTotals.entries()]
+      .filter(([, s]) => s.matches >= MATCHUP_MIN_MATCHES)
+      .map(([id, s]) => ({ deckId: id, matches: s.matches, wins: s.wins, wr: calcWinRate(s.wins, s.matches) }));
+
+    if (qualifying.length > 0) {
+      const opponentDeckIds = qualifying.map((q) => q.deckId);
+      const opponentDecks = await db.select().from(decks).where(inArray(decks.id, opponentDeckIds));
+      const opponentMap = new Map(opponentDecks.map((d) => [d.id, d]));
+
+      // Sort: WR DESC, then matches DESC for tiebreak (more samples = more confidence)
+      const sortedDesc = [...qualifying].sort((a, b) =>
+        (b.wr ?? -1) - (a.wr ?? -1) || b.matches - a.matches,
+      );
+      const sortedAsc = [...qualifying].sort((a, b) =>
+        (a.wr ?? 101) - (b.wr ?? 101) || b.matches - a.matches,
+      );
+
+      const toBreakdown = (q: typeof qualifying[number]): MatchupBreakdown | null => {
+        const d = opponentMap.get(q.deckId);
+        if (!d) return null;
+        return { deck: d, matches: q.matches, wins: q.wins, win_rate_pct: q.wr };
+      };
+
+      bestMatchups = sortedDesc.slice(0, 3).map(toBreakdown).filter((x): x is MatchupBreakdown => x !== null);
+      worstMatchups = sortedAsc.slice(0, 3).map(toBreakdown).filter((x): x is MatchupBreakdown => x !== null);
+    }
+  }
+
   return {
     data: {
       deck: deckWithCommanders,
@@ -330,6 +408,8 @@ export async function getDeckStats(
       wins,
       win_rate_pct: calcWinRate(wins, total),
       players_used_by: playersUsedBy,
+      best_matchups: bestMatchups,
+      worst_matchups: worstMatchups,
     },
   };
 }

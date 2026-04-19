@@ -10,17 +10,20 @@
  */
 import {
   ActivityIndicator,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
+import { CircularWinRate } from '@/components/ui/CircularWinRate';
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { DeckStatRow } from '@/components/match/DeckStatRow';
 import { usePlayerStats } from '@/hooks/usePlayerStats';
@@ -92,9 +95,30 @@ export default function PlayerProfileScreen() {
     .toUpperCase();
 
   const hasMatches = total_matches > 0;
+  const bgArt = favorite_decks[0]?.commanders[0]?.artCrop ?? null;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
+      {/* ── Faded commander background (most-used deck) ── */}
+      {bgArt && (
+        <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+          <Image
+            source={{ uri: bgArt }}
+            style={[StyleSheet.absoluteFillObject, styles.bgImage]}
+            resizeMode="cover"
+          />
+          <Svg style={StyleSheet.absoluteFill} preserveAspectRatio="none">
+            <Defs>
+              <RadialGradient id="playerBgVignette" cx="50%" cy="40%" rx="75%" ry="75%" fx="50%" fy="40%">
+                <Stop offset="0" stopColor={theme.colors.background.primary} stopOpacity="0.55" />
+                <Stop offset="1" stopColor={theme.colors.background.primary} stopOpacity="1" />
+              </RadialGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#playerBgVignette)" />
+          </Svg>
+        </View>
+      )}
+
       {/* ── Navigation header ── */}
       <View style={styles.navHeader}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} hitSlop={8}>
@@ -119,12 +143,7 @@ export default function PlayerProfileScreen() {
         {/* ── Win rate hero ── */}
         <View style={styles.winRateCard}>
           {hasMatches ? (
-            <View style={styles.winRateContent}>
-              <Text style={styles.winRateNumber}>
-                {win_rate_pct !== null ? `${win_rate_pct}%` : '—'}
-              </Text>
-              <Text style={styles.winRateLabel}>{t('common.winRate')}</Text>
-            </View>
+            <CircularWinRate winRate={win_rate_pct} label={t('common.winRate')} />
           ) : (
             <Text style={styles.noMatchesText}>{t('common.noMatchesYet')}</Text>
           )}
@@ -223,6 +242,9 @@ const createStyles = (t: AppTheme) => ({
     flex: 1,
     backgroundColor: t.colors.background.primary,
   },
+  bgImage: {
+    opacity: 0.35,
+  },
   center: {
     flex: 1,
     alignItems: 'center',
@@ -299,19 +321,6 @@ const createStyles = (t: AppTheme) => ({
     paddingHorizontal: spacing[4],
     gap: spacing[4],
     alignItems: 'center',
-  },
-  winRateContent: { alignItems: 'center', gap: spacing[1] },
-  winRateNumber: {
-    color: t.colors.accent.primary,
-    fontSize: 48,
-    fontWeight: t.typography.weight.bold,
-    lineHeight: 56,
-  },
-  winRateLabel: {
-    color: t.colors.text.muted,
-    fontSize: t.typography.size['body-sm'],
-    textTransform: 'uppercase',
-    letterSpacing: 1,
   },
   noMatchesText: {
     color: t.colors.text.muted,
