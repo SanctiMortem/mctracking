@@ -123,6 +123,8 @@
     "selectPlayersLabel": "Select players (2–4)",
     "startMatch": "✦  Start Match",
     "arrangePositions": "Arrange player positions",
+    "startingLifeSection": "Starting life total",
+    "startingLifeHint": "Default for this match — change in Settings to adjust the global default.",
     "randomize": "Randomize",
     "goesFirst": "goes first!",
     "randomStarterResult": "{{name}} goes first!",

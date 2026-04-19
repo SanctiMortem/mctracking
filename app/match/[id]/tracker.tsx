@@ -62,12 +62,22 @@ function useMatchTimer() {
 
 // ─── Per-Player Turn Timers ─────────────────────
 
-function useTurnTimers(participationIds: string[]) {
+function useTurnTimers(
+  participationIds: string[],
+  onTurnPassed?: (participationId: string) => void,
+) {
   // Elapsed seconds per player (persists across start/stop)
   const [elapsed, setElapsed] = useState<Record<string, number>>({});
+  // Per-player turn counts. A turn only counts when the active player rotates
+  // to a *different* player — pausing/resuming yourself does not increment.
+  const [turnCounts, setTurnCounts] = useState<Record<string, number>>({});
   // Which player's timer is currently running (null = none)
   const [activeId, setActiveId] = useState<string | null>(null);
+  // Last non-null active player; toggling self off→on does not change this.
+  const lastNonNullActiveIdRef = useRef<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const onTurnPassedRef = useRef(onTurnPassed);
+  onTurnPassedRef.current = onTurnPassed;
 
   // Tick the active player's timer every second
   useEffect(() => {
@@ -84,10 +94,23 @@ function useTurnTimers(participationIds: string[]) {
   }, [activeId]);
 
   const toggle = useCallback((id: string) => {
-    setActiveId((prev) => (prev === id ? null : id));
+    setActiveId((prev) => {
+      if (prev === id) {
+        // Pause self — no turn counted.
+        return null;
+      }
+      // Becoming active. Only count as a new turn if the previously active
+      // (non-null) player was someone else — i.e. rotation, not resume-self.
+      if (lastNonNullActiveIdRef.current !== id) {
+        setTurnCounts((counts) => ({ ...counts, [id]: (counts[id] ?? 0) + 1 }));
+        onTurnPassedRef.current?.(id);
+        lastNonNullActiveIdRef.current = id;
+      }
+      return id;
+    });
   }, []);
 
-  return { elapsed, activeId, toggle };
+  return { elapsed, activeId, toggle, turnCounts };
 }
 
 // ─── Screen ─────────────────────────────────────
@@ -177,8 +200,15 @@ export default function MatchTrackerScreen() {
     addLocalEvent,
   } = useTracker(id);
 
-  // Turn timers — initialized once participations load
-  const turnTimers = useTurnTimers(participations.map((p) => p.id));
+  // Turn timers — initialized once participations load.
+  // When a *different* player becomes active, persist a turn_passed marker.
+  const recordTurnPassed = useCallback(
+    (participationId: string) => {
+      void recordEvent({ participationId, eventType: 'turn_passed', delta: 0 });
+    },
+    [recordEvent],
+  );
+  const turnTimers = useTurnTimers(participations.map((p) => p.id), recordTurnPassed);
 
   // Dead players — tracked as local state, only set via the Dead button
   const [deadPlayerIds, setDeadPlayerIds] = useState<Set<string>>(new Set());
@@ -288,6 +318,7 @@ export default function MatchTrackerScreen() {
           artCrop={p.commander.artCrop ?? p.commander2?.artCrop ?? null}
           timerSeconds={turnTimers.elapsed[p.id] ?? 0}
           timerActive={turnTimers.activeId === p.id}
+          turnCount={turnTimers.turnCounts[p.id] ?? 0}
           onToggleTimer={() => turnTimers.toggle(p.id)}
           isDead={deadPlayerIds.has(p.id)}
           onMarkDead={() => {

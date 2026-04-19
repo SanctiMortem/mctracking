@@ -93,6 +93,7 @@ export async function createMatch(
   userId: string,
   participants: ParticipantInput[],
   groupId?: string | null,
+  startingLifeTotal: number = 40,
 ): Promise<CreateMatchResult> {
   // 1. Count
   if (participants.length < 2 || participants.length > 4) {
@@ -159,7 +160,7 @@ export async function createMatch(
         matchId: match.id,
         playerId: p.player_id,
         deckId: p.deck_id,
-        lifeTotal: 40,
+        lifeTotal: startingLifeTotal,
         poisonCounters: 0,
         commanderDamage: {},
       })),

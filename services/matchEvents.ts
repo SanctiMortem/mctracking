@@ -19,7 +19,7 @@ import type { MatchEvent } from '@/db/index';
 // Types
 // ─────────────────────────────────────────────
 
-export type EventType = 'life_change' | 'poison_change' | 'commander_damage' | 'player_died';
+export type EventType = 'life_change' | 'poison_change' | 'commander_damage' | 'player_died' | 'turn_passed';
 
 export type RecordEventInput = {
   matchId: string;
@@ -92,9 +92,9 @@ export async function recordEvent(input: RecordEventInput): Promise<RecordEventR
     })
     .returning();
 
-  // 2. Update participation snapshot (player_died has no snapshot effect)
-  if (eventType === 'player_died') {
-    // No snapshot update — death is a marker event only
+  // 2. Update participation snapshot (player_died and turn_passed have no snapshot effect)
+  if (eventType === 'player_died' || eventType === 'turn_passed') {
+    // No snapshot update — marker events only
   } else if (eventType === 'life_change') {
     await db
       .update(participations)

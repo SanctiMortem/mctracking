@@ -30,6 +30,8 @@ export type MatchDetailData = {
   winner: ParticipationDetail | null;
   winConditionDisplay: string | null;
   duration: string;
+  /** participationId → number of turn_passed events recorded for that player. */
+  turnCounts: Record<string, number>;
 };
 
 export type UseMatchDetailReturn = {
@@ -59,6 +61,10 @@ function formatEventReadOnly(
 
   if (event.eventType === 'player_died') {
     return `☠ ${playerName} has died`;
+  }
+
+  if (event.eventType === 'turn_passed') {
+    return `↻ ${playerName} starts their turn`;
   }
 
   if (event.eventType === 'life_change') {
@@ -134,7 +140,15 @@ export function useMatchDetail(matchId: string): UseMatchDetailReturn {
             createdAt: new Date(e.createdAt),
           }));
 
-        setData({ match, participations, result, events, formattedEvents, outcome, winner, winConditionDisplay, duration });
+        // Per-player turn counts derived from non-undone turn_passed events.
+        const turnCounts: Record<string, number> = {};
+        for (const e of events) {
+          if (e.eventType === 'turn_passed' && !e.isUndone) {
+            turnCounts[e.participationId] = (turnCounts[e.participationId] ?? 0) + 1;
+          }
+        }
+
+        setData({ match, participations, result, events, formattedEvents, outcome, winner, winConditionDisplay, duration, turnCounts });
         setError(null);
       } catch (e) {
         if (!cancelled) setError((e as Error).message ?? 'Failed to load match detail.');

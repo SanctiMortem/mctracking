@@ -68,6 +68,8 @@ export type UseMatchSetupReturn = {
   deckAssignments: Record<string, string>; // playerId → deckId
   rotations: Record<string, number>; // playerId → degrees (0, 90, 180, 270)
   layoutVariant: string;
+  startingLife: number;
+  setStartingLife: (value: number) => void;
   togglePlayer: (playerId: string) => void;
   setDeck: (playerId: string, deckId: string) => void;
   /** Replace selectedPlayerIds with a new order (same IDs, different positions). */
@@ -84,15 +86,30 @@ export type UseMatchSetupReturn = {
   submit: () => Promise<string | null>;
 };
 
-export function useMatchSetup(groupId?: string | null): UseMatchSetupReturn {
+export function useMatchSetup(
+  groupId?: string | null,
+  defaultStartingLife: number = 40,
+): UseMatchSetupReturn {
   const { getToken } = useAuth();
 
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [deckAssignments, setDeckAssignments] = useState<Record<string, string>>({});
   const [rotations, setRotations] = useState<Record<string, number>>({});
   const [layoutVariant, setLayoutVariant] = useState<string>('');
+  const [startingLife, setStartingLifeState] = useState<number>(defaultStartingLife);
+  const [startingLifeTouched, setStartingLifeTouched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  // Sync startingLife with the user's default until they touch the picker.
+  useEffect(() => {
+    if (!startingLifeTouched) setStartingLifeState(defaultStartingLife);
+  }, [defaultStartingLife, startingLifeTouched]);
+
+  const setStartingLife = useCallback((value: number) => {
+    setStartingLifeTouched(true);
+    setStartingLifeState(value);
+  }, []);
 
   const togglePlayer = useCallback((playerId: string) => {
     setApiError(null);
@@ -177,6 +194,7 @@ export function useMatchSetup(groupId?: string | null): UseMatchSetupReturn {
       }));
       const body: Record<string, unknown> = { participants };
       if (groupId) body.group_id = groupId;
+      body.starting_life_total = startingLife;
       const res = await apiFetch<{ success: true; data: { match: Match; participations: Participation[] } }>(
         '/api/matches',
         'POST',
@@ -197,7 +215,7 @@ export function useMatchSetup(groupId?: string | null): UseMatchSetupReturn {
     } finally {
       setIsSubmitting(false);
     }
-  }, [isValid, isSubmitting, getToken, selectedPlayerIds, deckAssignments, groupId]);
+  }, [isValid, isSubmitting, getToken, selectedPlayerIds, deckAssignments, groupId, startingLife]);
 
   // Auto-select default layout variant when player count changes
   const playerCount = selectedPlayerIds.length;
@@ -226,6 +244,8 @@ export function useMatchSetup(groupId?: string | null): UseMatchSetupReturn {
     deckAssignments,
     rotations,
     layoutVariant: effectiveLayout,
+    startingLife,
+    setStartingLife,
     togglePlayer,
     setDeck,
     reorderPlayers,

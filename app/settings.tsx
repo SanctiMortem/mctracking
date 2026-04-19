@@ -128,7 +128,7 @@ const LANGUAGE_OPTIONS: { label: string; value: 'auto' | 'en' | 'es' }[] = [
 ];
 
 const LIFE_TOTAL_OPTIONS: { label: string; value: number }[] = [
-  { label: '20', value: 20 },
+  { label: '25', value: 25 },
   { label: '30', value: 30 },
   { label: '40', value: 40 },
 ];

@@ -123,6 +123,8 @@
     "selectPlayersLabel": "Seleccionar jugadores (2–4)",
     "startMatch": "✦  Iniciar Partida",
     "arrangePositions": "Posición de los jugadores",
+    "startingLifeSection": "Vida inicial",
+    "startingLifeHint": "Predeterminado para esta partida — cámbialo en Ajustes para el valor global.",
     "randomize": "Aleatorio",
     "goesFirst": "empieza!",
     "randomStarterResult": "¡{{name}} empieza!",

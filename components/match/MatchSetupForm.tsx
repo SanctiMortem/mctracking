@@ -28,6 +28,7 @@ import { usePlayers } from '@/hooks/usePlayers';
 import { usePodMembers } from '@/hooks/usePodMembers';
 import { usePodDecks } from '@/hooks/usePodDecks';
 import { useMatchSetup } from '@/hooks/useMatchSetup';
+import { useSettings } from '@/hooks/useSettings';
 import { useGroupContext } from '@/contexts/GroupContext';
 import type { DeckWithCommanders } from '@/services/decks';
 import type { PodDeck } from '@/services/pods';
@@ -42,6 +43,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 
 /** Unified deck type for the picker — works for both personal and pod decks */
 type PickerDeck = DeckWithCommanders & { ownerName?: string };
+
+const STARTING_LIFE_OPTIONS = [25, 30, 40] as const;
 
 interface MatchSetupFormProps {
   onSubmit: (matchId: string, rotations: Record<string, number>, playerOrder: string[], layoutVariant: string) => void;
@@ -61,6 +64,8 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
   const { decks: personalDecks, loading: loadingDecks } = useDecks();
   const { members: podMemberData, loading: loadingPodMembers } = usePodMembers(groupId);
   const { podDecks, loading: loadingPodDecks } = usePodDecks(groupId);
+  const { settings } = useSettings();
+  const defaultStartingLife = settings?.defaultLifeTotal ?? 40;
 
   // Build unified player list: pod members + guests (or just personal players)
   const { allPlayers, guestPlayers, podPlayers } = useMemo(() => {
@@ -92,6 +97,8 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
     deckAssignments,
     rotations,
     layoutVariant,
+    startingLife,
+    setStartingLife,
     togglePlayer,
     setDeck,
     reorderPlayers,
@@ -102,7 +109,7 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
     isSubmitting,
     apiError,
     submit,
-  } = useMatchSetup(groupId);
+  } = useMatchSetup(groupId, defaultStartingLife);
 
   // deckPickerFor: playerId currently opening the deck picker, or null.
   const [deckPickerFor, setDeckPickerFor] = useState<string | null>(null);
@@ -290,7 +297,34 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
           </>
         )}
 
-        {/* ── Section 3: Position arrangement ── */}
+        {/* ── Section 3: Starting life ── */}
+        {selectedPlayers.length >= 2 && !hasDuplicate && selectedPlayers.every((p) => deckAssignments[p.id]) && (
+          <>
+            <View style={styles.divider} />
+            <Text style={styles.sectionLabel}>{t('match.startingLifeSection')}</Text>
+            <View style={styles.lifePickerRow}>
+              {STARTING_LIFE_OPTIONS.map((value) => {
+                const selected = startingLife === value;
+                return (
+                  <Pressable
+                    key={value}
+                    onPress={() => setStartingLife(value)}
+                    style={[styles.lifeChip, selected && styles.lifeChipSelected]}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                  >
+                    <Text style={[styles.lifeChipText, selected && styles.lifeChipTextSelected]}>
+                      {value}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text style={styles.hintText}>{t('match.startingLifeHint')}</Text>
+          </>
+        )}
+
+        {/* ── Section 4: Position arrangement ── */}
         {selectedPlayers.length >= 2 && !hasDuplicate && selectedPlayers.every((p) => deckAssignments[p.id]) && (
           <>
             <View style={styles.divider} />
@@ -560,6 +594,37 @@ const createStyles = (t: AppTheme) => ({
     color: t.colors.text.muted,
     fontSize: 20,
     marginLeft: spacing[2],
+  },
+
+  // ─── Starting life picker ─────────────────────────────────────────────────
+  lifePickerRow: {
+    flexDirection: 'row',
+    gap: spacing[2],
+    marginBottom: spacing[2],
+  },
+  lifeChip: {
+    flex: 1,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.lg,
+    borderWidth: 1,
+    borderColor: t.colors.border?.default ?? '#2A2A45',
+    paddingVertical: spacing[3],
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 52,
+  },
+  lifeChipSelected: {
+    backgroundColor: t.colors.accent.primary,
+    borderColor: t.colors.accent.primary,
+  },
+  lifeChipText: {
+    color: t.colors.text.primary,
+    fontFamily: t.typography.fontFamily.headline,
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.semibold,
+  },
+  lifeChipTextSelected: {
+    color: t.colors.accent.onPrimary,
   },
 
   // ─── Errors ───────────────────────────────────────────────────────────────

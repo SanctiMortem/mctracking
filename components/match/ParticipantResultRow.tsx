@@ -16,9 +16,11 @@ import { useTheme } from '@/contexts/ThemeContext';
 interface ParticipantResultRowProps {
   participation: ParticipationDetail;
   isWinner: boolean;
+  /** Optional count of turn_passed events recorded for this player. */
+  turnCount?: number;
 }
 
-export function ParticipantResultRow({ participation, isWinner }: ParticipantResultRowProps) {
+export function ParticipantResultRow({ participation, isWinner, turnCount }: ParticipantResultRowProps) {
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
 
@@ -51,6 +53,11 @@ export function ParticipantResultRow({ participation, isWinner }: ParticipantRes
         <View style={styles.deckRow}>
           <Text style={styles.deckName} numberOfLines={1}>{deck.name}</Text>
           <ManaIdentityRow colors={commander.colorIdentity} size="xs" />
+          {turnCount !== undefined && turnCount > 0 && (
+            <View style={styles.turnChip}>
+              <Text style={styles.turnChipText}>↻ {turnCount}</Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -125,6 +132,19 @@ const createStyles = (t: AppTheme) => ({
     color: t.colors.text.tertiary,
     fontSize: t.typography.size['body-sm'],
     flexShrink: 1,
+  },
+  turnChip: {
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+    borderRadius: t.radius.sm,
+    backgroundColor: t.colors.background.elevated,
+  },
+  turnChipText: {
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size.label,
+    fontWeight: t.typography.weight.semibold,
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 0.3,
   },
 
   badge: {

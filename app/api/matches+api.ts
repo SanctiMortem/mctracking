@@ -79,10 +79,26 @@ export async function POST(req: Request) {
     }
   }
 
-  const { group_id } = body as Record<string, unknown>;
+  const { group_id, starting_life_total } = body as Record<string, unknown>;
   const groupId = typeof group_id === 'string' ? group_id : undefined;
 
-  const result = await createMatch(userId, participants as ParticipantInput[], groupId);
+  let startingLife: number | undefined;
+  if (starting_life_total !== undefined) {
+    if (
+      typeof starting_life_total !== 'number' ||
+      !Number.isInteger(starting_life_total) ||
+      starting_life_total < 1 ||
+      starting_life_total > 999
+    ) {
+      return Response.json(
+        { error: 'VALIDATION_ERROR', message: 'starting_life_total must be an integer between 1 and 999' },
+        { status: 400 },
+      );
+    }
+    startingLife = starting_life_total;
+  }
+
+  const result = await createMatch(userId, participants as ParticipantInput[], groupId, startingLife);
 
   if ('invalidPlayerCount' in result) {
     return Response.json(

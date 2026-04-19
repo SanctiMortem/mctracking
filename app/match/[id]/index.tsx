@@ -98,9 +98,16 @@ export default function MatchDetailScreen() {
     );
   }
 
-  const { match, participations, result, formattedEvents, outcome, winner, winConditionDisplay, duration } = data;
+  const { match, participations, result, formattedEvents, outcome, winner, winConditionDisplay, duration, turnCounts } = data;
   const sc = statusConfig(match.status, t, theme);
   const oc = outcomeLabelConfig(outcome, t, theme);
+
+  // 15-min edit window — mirrors backend EDIT_WINDOW_MS in services/matches.ts.
+  const canEditResult =
+    match.status === 'completed' &&
+    outcome !== 'abandoned' &&
+    !!match.endedAt &&
+    Date.now() - new Date(match.endedAt).getTime() < 15 * 60 * 1000;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -172,6 +179,15 @@ export default function MatchDetailScreen() {
                     </View>
                   </View>
                 )}
+                {canEditResult && (
+                  <TouchableOpacity
+                    style={styles.editResultBtn}
+                    onPress={() => router.push(`/match/${id}/close?edit=true` as never)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.editResultBtnText}>{t('match.editResult')}</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
 
@@ -184,6 +200,7 @@ export default function MatchDetailScreen() {
                     key={p.id}
                     participation={p}
                     isWinner={winner?.id === p.id}
+                    turnCount={turnCounts[p.id] ?? 0}
                   />
                 ))}
               </View>
@@ -395,6 +412,23 @@ const createStyles = (t: AppTheme) => ({
   conditionText: {
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.semibold,
+  },
+  editResultBtn: {
+    marginTop: spacing[2],
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    borderRadius: t.radius.md,
+    borderWidth: 1,
+    borderColor: t.colors.accent.primary + '88',
+    backgroundColor: t.colors.accent.primary + '11',
+  },
+  editResultBtnText: {
+    color: t.colors.accent.primary,
+    fontFamily: t.typography.fontFamily.headline,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
+    letterSpacing: 0.5,
   },
 
   // Participants

@@ -103,6 +103,8 @@ interface PlayerDashboardProps {
   playerName: string;
   timerSeconds: number;
   timerActive: boolean;
+  /** How many turns this player has taken (rotations to them as active). */
+  turnCount?: number;
   onToggleTimer: () => void;
   isDead?: boolean;
   onMarkDead?: () => void;
@@ -130,6 +132,7 @@ export function PlayerDashboard({
   playerName,
   timerSeconds,
   timerActive,
+  turnCount = 0,
   onToggleTimer,
   isDead = false,
   onMarkDead,
@@ -252,6 +255,16 @@ export function PlayerDashboard({
           >
             {formatTimer(timerSeconds)}
           </Text>
+          {turnCount > 0 && (
+            <Text
+              style={[styles.turnBadge, { fontSize: baseTimerSize * sidebarFontScale * 0.9 }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+            >
+              {t('tracker.turnAbbrev', { defaultValue: 'T' })}{turnCount}
+            </Text>
+          )}
           {!isCompact && (
             timerActive ? (
               <Text style={styles.turnHintActive} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
@@ -428,6 +441,16 @@ const createStyles = (t: AppTheme) => ({
   timerActive: {
     color: t.colors.accent.primary,
     fontWeight: t.typography.weight.bold,
+  },
+  turnBadge: {
+    color: t.colors.text.secondary,
+    fontFamily: t.typography.fontFamily.headline,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.bold,
+    fontVariant: ['tabular-nums'] as const,
+    letterSpacing: 0.5,
+    textAlign: 'center' as const,
+    opacity: 0.85,
   },
   turnHint: {
     color: t.colors.text.secondary,

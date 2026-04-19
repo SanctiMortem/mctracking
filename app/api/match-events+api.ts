@@ -13,7 +13,13 @@ import { getAuth } from '@/services/auth';
 import { recordEvent } from '@/services/matchEvents';
 import type { EventType } from '@/services/matchEvents';
 
-const VALID_EVENT_TYPES = new Set<EventType>(['life_change', 'poison_change', 'commander_damage', 'player_died']);
+const VALID_EVENT_TYPES = new Set<EventType>([
+  'life_change',
+  'poison_change',
+  'commander_damage',
+  'player_died',
+  'turn_passed',
+]);
 
 export async function POST(req: Request) {
   const { userId } = getAuth(req);
@@ -41,8 +47,8 @@ export async function POST(req: Request) {
   if (typeof delta !== 'number' || !Number.isInteger(delta)) {
     return Response.json({ error: 'VALIDATION_ERROR', message: 'delta must be an integer' }, { status: 400 });
   }
-  // player_died is a marker event with delta=0; other events require non-zero delta
-  if (delta === 0 && event_type !== 'player_died') {
+  // player_died and turn_passed are marker events with delta=0; other events require non-zero delta
+  if (delta === 0 && event_type !== 'player_died' && event_type !== 'turn_passed') {
     return Response.json({ error: 'VALIDATION_ERROR', message: 'delta must be non-zero for this event type' }, { status: 400 });
   }
 

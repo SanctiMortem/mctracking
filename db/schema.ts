@@ -20,6 +20,7 @@ export const eventTypeEnum = pgEnum('event_type', [
   'poison_change',
   'commander_damage',
   'player_died',
+  'turn_passed',
 ]);
 
 // ─────────────────────────────────────────────

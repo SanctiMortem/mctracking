@@ -2,7 +2,7 @@
  * ThemeContext — provides the active skin's tokens to the entire app.
  *
  * Persists the user's theme choice in SecureStore.
- * Defaults to "mystic-archive" on first launch.
+ * Defaults to "justice-of-the-light" on first launch.
  *
  * Usage:
  *   const { theme, setThemeId } = useTheme();
@@ -15,7 +15,7 @@ import type { AppTheme, ThemeId } from '@/styles/themes/types';
 import { themes } from '@/styles/themes';
 
 const STORAGE_KEY = 'mtg_theme_id';
-const DEFAULT_THEME: ThemeId = 'mystic-archive';
+const DEFAULT_THEME: ThemeId = 'justice-of-the-light';
 
 interface ThemeContextValue {
   theme: AppTheme;
