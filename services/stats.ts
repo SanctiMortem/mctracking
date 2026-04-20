@@ -307,10 +307,10 @@ export type DeckStats = {
   best_matchups: MatchupBreakdown[];
   /** Top 3 opposing decks by lowest win rate, min 2 matches against each */
   worst_matchups: MatchupBreakdown[];
-  /** Opposing deck color identity this deck has the most wins against. */
-  strong_against_color: ColorMatchup | null;
-  /** Opposing deck color identity this deck has the most losses against. */
-  weak_against_color: ColorMatchup | null;
+  /** Colors this deck has the highest positive score against. Empty when none. */
+  strong_against_colors: ColorMatchup[];
+  /** Colors this deck has the lowest negative score against. Empty when none. */
+  weak_against_colors: ColorMatchup[];
 };
 
 /** Min number of matches against a single opposing deck for it to qualify as a matchup */
@@ -443,8 +443,8 @@ export async function getDeckStats(
 
   let bestMatchups: MatchupBreakdown[] = [];
   let worstMatchups: MatchupBreakdown[] = [];
-  let strongAgainstColor: ColorMatchup | null = null;
-  let weakAgainstColor: ColorMatchup | null = null;
+  let strongAgainstColors: ColorMatchup[] = [];
+  let weakAgainstColors: ColorMatchup[] = [];
   if (matchupTotals.size > 0) {
     const allOpponentIds = [...matchupTotals.keys()];
     const opponentDeckObjects = await db.select().from(decks).where(inArray(decks.id, allOpponentIds));
@@ -479,16 +479,22 @@ export async function getDeckStats(
     const tallyList: ColorMatchup[] = [...colorTally.entries()].map(
       ([color, v]) => ({ color, wins: v.wins, losses: v.losses, score: v.wins - v.losses }),
     );
-    // Strong = highest positive score (tiebreak: more wins first).
-    const strongCandidate = [...tallyList]
-      .filter((x) => x.score > 0)
-      .sort((a, b) => b.score - a.score || b.wins - a.wins)[0];
-    if (strongCandidate) strongAgainstColor = strongCandidate;
-    // Weak = lowest negative score (tiebreak: more losses first).
-    const weakCandidate = [...tallyList]
-      .filter((x) => x.score < 0)
-      .sort((a, b) => a.score - b.score || b.losses - a.losses)[0];
-    if (weakCandidate) weakAgainstColor = weakCandidate;
+    // Strong = colors tied for the highest positive score (WUBRG-sorted).
+    const positives = tallyList.filter((x) => x.score > 0);
+    if (positives.length > 0) {
+      const top = Math.max(...positives.map((x) => x.score));
+      strongAgainstColors = positives
+        .filter((x) => x.score === top)
+        .sort((a, b) => (WUBRG_ORDER[a.color] ?? 99) - (WUBRG_ORDER[b.color] ?? 99));
+    }
+    // Weak = colors tied for the lowest negative score.
+    const negatives = tallyList.filter((x) => x.score < 0);
+    if (negatives.length > 0) {
+      const bottom = Math.min(...negatives.map((x) => x.score));
+      weakAgainstColors = negatives
+        .filter((x) => x.score === bottom)
+        .sort((a, b) => (WUBRG_ORDER[a.color] ?? 99) - (WUBRG_ORDER[b.color] ?? 99));
+    }
 
     const qualifying = [...matchupTotals.entries()]
       .filter(([, s]) => s.matches >= MATCHUP_MIN_MATCHES)
@@ -523,8 +529,8 @@ export async function getDeckStats(
       players_used_by: playersUsedBy,
       best_matchups: bestMatchups,
       worst_matchups: worstMatchups,
-      strong_against_color: strongAgainstColor,
-      weak_against_color: weakAgainstColor,
+      strong_against_colors: strongAgainstColors,
+      weak_against_colors: weakAgainstColors,
     },
   };
 }

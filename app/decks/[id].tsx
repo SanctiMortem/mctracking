@@ -96,8 +96,8 @@ export default function DeckDetailScreen() {
     players_used_by,
     best_matchups,
     worst_matchups,
-    strong_against_color,
-    weak_against_color,
+    strong_against_colors,
+    weak_against_colors,
   } = data;
   const hasMatches = total_matches > 0;
   const bgArt = deck.commander.artCrop ?? deck.commander2?.artCrop ?? null;
@@ -196,25 +196,23 @@ export default function DeckDetailScreen() {
         </View>
 
         {/* ── Color matchups ── */}
-        {(strong_against_color || weak_against_color) && (
+        {(strong_against_colors.length > 0 || weak_against_colors.length > 0) && (
           <View style={styles.section}>
             <View style={styles.colorMatchupRow}>
-              {strong_against_color && (
+              {strong_against_colors.length > 0 && (
                 <View style={styles.colorMatchupCard}>
-                  <Text style={styles.colorMatchupLabel}>{t('deck.strongAgainstTitle')}</Text>
-                  <ManaIdentityRow colors={[strong_against_color.color]} size="md" />
-                  <Text style={styles.colorMatchupMeta}>
-                    {strong_against_color.wins} {t('common.wins')}
-                  </Text>
+                  <View style={styles.colorMatchupLabelWrap}>
+                    <Text style={styles.colorMatchupLabel}>{t('deck.strongAgainstTitle')}</Text>
+                  </View>
+                  <ManaIdentityRow colors={strong_against_colors.map((c) => c.color)} size="md" />
                 </View>
               )}
-              {weak_against_color && (
+              {weak_against_colors.length > 0 && (
                 <View style={styles.colorMatchupCard}>
-                  <Text style={styles.colorMatchupLabel}>{t('deck.weakAgainstTitle')}</Text>
-                  <ManaIdentityRow colors={[weak_against_color.color]} size="md" />
-                  <Text style={styles.colorMatchupMeta}>
-                    {weak_against_color.losses} {t('common.losses')}
-                  </Text>
+                  <View style={styles.colorMatchupLabelWrap}>
+                    <Text style={styles.colorMatchupLabel}>{t('deck.weakAgainstTitle')}</Text>
+                  </View>
+                  <ManaIdentityRow colors={weak_against_colors.map((c) => c.color)} size="md" />
                 </View>
               )}
             </View>
@@ -486,7 +484,17 @@ const createStyles = (t: AppTheme) => ({
     borderWidth: 1,
     borderColor: t.colors.border.default,
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: spacing[2],
+  },
+  // Wrapping the label in a flex-1 view lets both cards stretch to the same
+  // height (parent row defaults to alignItems: stretch) and pushes the mana
+  // pip to the bottom edge — so pips align horizontally even when one label
+  // wraps to two lines and the other is single-line.
+  colorMatchupLabelWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
   },
   colorMatchupLabel: {
     color: t.colors.text.muted,
@@ -495,11 +503,6 @@ const createStyles = (t: AppTheme) => ({
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     textAlign: 'center',
-  },
-  colorMatchupMeta: {
-    color: t.colors.text.secondary,
-    fontSize: t.typography.size['body-sm'],
-    fontWeight: t.typography.weight.medium,
   },
 
   // Matchups
