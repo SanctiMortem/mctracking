@@ -153,7 +153,28 @@
       "mill_short": "Mill",
       "concede_short": "Concede",
       "other_short": "Other"
-    }
+    },
+    "winnerFlavor": [
+      "Stood unbowed amidst the tempest.",
+      "The fire did not consume them; it forged them anew.",
+      "Tempered in the crucible of the challenge and found unbreakable.",
+      "Wrestled destiny to the earth and claimed the crown.",
+      "Carved their name into the silence of the heavens.",
+      "A soul deep enough to swallow the tide.",
+      "Found the measure of the abyss, and did not blink.",
+      "Remained whole while the world around them shattered.",
+      "The shadows recoiled, for they found no purchase in their light."
+    ],
+    "loserFlavor": [
+      "The moment called for a titan; it found only a shadow.",
+      "Found wanting beneath the weight of the crown.",
+      "Proved hollow when the hammer fell.",
+      "Their spirit withered before the trial.",
+      "A flame too dim to light the abyss.",
+      "Judged, and found insufficient.",
+      "The trial has consumed them.",
+      "Their legacy ends where the challenge began."
+    ]
   },
   "tracker": {
     "closeMatch": "Close Match",
@@ -239,8 +260,8 @@
     "bestMatchupsFlavor": "Foes laid low by this deck's hand.",
     "worstMatchupsTitle": "Where shadows fall heaviest",
     "worstMatchupsFlavor": "Trials yet unwon — nemeses still standing.",
-    "strongAgainstTitle": "Strong against",
-    "weakAgainstTitle": "Weak against"
+    "strongAgainstTitle": "Proven worthy against",
+    "weakAgainstTitle": "Crumbled where greatness was demanded"
   },
   "commanders": {
     "title": "Commanders",

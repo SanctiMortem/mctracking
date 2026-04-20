@@ -202,7 +202,7 @@ export default function DeckDetailScreen() {
               {strong_against_color && (
                 <View style={styles.colorMatchupCard}>
                   <Text style={styles.colorMatchupLabel}>{t('deck.strongAgainstTitle')}</Text>
-                  <ManaIdentityRow colors={strong_against_color.colors} size="md" />
+                  <ManaIdentityRow colors={[strong_against_color.color]} size="md" />
                   <Text style={styles.colorMatchupMeta}>
                     {strong_against_color.wins} {t('common.wins')}
                   </Text>
@@ -211,9 +211,9 @@ export default function DeckDetailScreen() {
               {weak_against_color && (
                 <View style={styles.colorMatchupCard}>
                   <Text style={styles.colorMatchupLabel}>{t('deck.weakAgainstTitle')}</Text>
-                  <ManaIdentityRow colors={weak_against_color.colors} size="md" />
+                  <ManaIdentityRow colors={[weak_against_color.color]} size="md" />
                   <Text style={styles.colorMatchupMeta}>
-                    {weak_against_color.matches - weak_against_color.wins} {t('common.losses')}
+                    {weak_against_color.losses} {t('common.losses')}
                   </Text>
                 </View>
               )}

@@ -153,7 +153,28 @@
       "mill_short": "Mill",
       "concede_short": "Concede",
       "other_short": "Otro"
-    }
+    },
+    "winnerFlavor": [
+      "Permaneció firme en medio de la tempestad.",
+      "El fuego no lo consumió; lo forjó de nuevo.",
+      "Templado en el crisol del desafío y hallado irrompible.",
+      "Derribó al destino y reclamó la corona.",
+      "Grabó su nombre en el silencio de los cielos.",
+      "Un alma lo bastante honda para tragarse la marea.",
+      "Midió el abismo sin parpadear.",
+      "Permaneció entero mientras el mundo a su alrededor se quebraba.",
+      "Las sombras retrocedieron al no hallar refugio en su luz."
+    ],
+    "loserFlavor": [
+      "El momento pedía un titán; sólo halló una sombra.",
+      "Hallado falto bajo el peso de la corona.",
+      "Demostró ser hueco cuando cayó el martillo.",
+      "Su espíritu se marchitó ante la prueba.",
+      "Una llama muy tenue para alumbrar el abismo.",
+      "Juzgado, y hallado insuficiente.",
+      "La prueba los ha consumido.",
+      "Su legado termina donde comenzó el desafío."
+    ]
   },
   "tracker": {
     "closeMatch": "Cerrar Partida",
@@ -239,8 +260,8 @@
     "bestMatchupsFlavor": "Enemigos abatidos por este mazo.",
     "worstMatchupsTitle": "Donde las sombras pesan más",
     "worstMatchupsFlavor": "Pruebas sin vencer — némesis aún en pie.",
-    "strongAgainstTitle": "Fuerte contra",
-    "weakAgainstTitle": "Débil contra"
+    "strongAgainstTitle": "Se alzó digno contra",
+    "weakAgainstTitle": "Se quebró donde la grandeza lo exigía"
   },
   "commanders": {
     "title": "Commanders",

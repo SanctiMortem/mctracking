@@ -287,10 +287,14 @@ export type MatchupBreakdown = {
 };
 
 export type ColorMatchup = {
-  /** WUBRG-sorted color identity of the opposing deck (e.g. ["W","U","B"]). [] = colorless. */
-  colors: string[];
-  matches: number;
+  /** Single color: 'W' | 'U' | 'B' | 'R' | 'G' | 'C' (colorless). */
+  color: string;
+  /** Matches won vs decks that include this color. */
   wins: number;
+  /** Matches lost vs decks that include this color. */
+  losses: number;
+  /** wins − losses; used as the ranking score. */
+  score: number;
 };
 
 export type DeckStats = {
@@ -455,25 +459,36 @@ export async function getDeckStats(
       : [];
     const cmdColorMap = new Map(opponentCommanders.map((c) => [c.id, c.colorIdentity]));
 
-    const colorBuckets = new Map<string, ColorMatchup>();
+    // Per-color tally: every color in the opponent's identity picks up the
+    // match's win/loss independently. A UBR deck contributes to U, B, and R
+    // buckets. Colorless decks go into the 'C' bucket.
+    const colorTally = new Map<string, { wins: number; losses: number }>();
     for (const [oppDeckId, totals] of matchupTotals) {
       const oppDeck = opponentMap.get(oppDeckId);
       if (!oppDeck) continue;
       const colors = colorIdentityForDeck(oppDeck, cmdColorMap);
-      const key = colors.join('') || 'C';
-      const bucket = colorBuckets.get(key) ?? { colors, matches: 0, wins: 0 };
-      bucket.matches += totals.matches;
-      bucket.wins += totals.wins;
-      colorBuckets.set(key, bucket);
+      const keys = colors.length > 0 ? colors : ['C'];
+      const losses = totals.matches - totals.wins;
+      for (const c of keys) {
+        const cur = colorTally.get(c) ?? { wins: 0, losses: 0 };
+        cur.wins += totals.wins;
+        cur.losses += losses;
+        colorTally.set(c, cur);
+      }
     }
-    const colorBucketList = [...colorBuckets.values()];
-    const strongCandidate = [...colorBucketList].sort((a, b) => b.wins - a.wins)[0];
-    if (strongCandidate && strongCandidate.wins > 0) strongAgainstColor = strongCandidate;
-    const weakCandidate = [...colorBucketList].sort(
-      (a, b) => (b.matches - b.wins) - (a.matches - a.wins),
-    )[0];
-    const weakLosses = weakCandidate ? weakCandidate.matches - weakCandidate.wins : 0;
-    if (weakCandidate && weakLosses > 0) weakAgainstColor = weakCandidate;
+    const tallyList: ColorMatchup[] = [...colorTally.entries()].map(
+      ([color, v]) => ({ color, wins: v.wins, losses: v.losses, score: v.wins - v.losses }),
+    );
+    // Strong = highest positive score (tiebreak: more wins first).
+    const strongCandidate = [...tallyList]
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score || b.wins - a.wins)[0];
+    if (strongCandidate) strongAgainstColor = strongCandidate;
+    // Weak = lowest negative score (tiebreak: more losses first).
+    const weakCandidate = [...tallyList]
+      .filter((x) => x.score < 0)
+      .sort((a, b) => a.score - b.score || b.losses - a.losses)[0];
+    if (weakCandidate) weakAgainstColor = weakCandidate;
 
     const qualifying = [...matchupTotals.entries()]
       .filter(([, s]) => s.matches >= MATCHUP_MIN_MATCHES)
@@ -1056,7 +1071,7 @@ export async function getGlobalStats(
 
   // Bucket rows by deck (rows arrive sorted most-recent first), then count
   // leading wins per deck to get the current undefeated streak.
-  const recentByDeck = new Map<string, string[]>();
+  const recentByDeck = new Map<string, (string | null)[]>();
   for (const row of recentResultRows) {
     const arr = recentByDeck.get(row.deckId) ?? [];
     arr.push(row.result);

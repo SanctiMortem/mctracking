@@ -288,9 +288,9 @@ const createStyles = (t: AppTheme) => ({
     paddingHorizontal: spacing[4],
   },
   infoRowTop: {
-    paddingTop: spacing[5],
+    paddingTop: spacing[4],
     paddingBottom: spacing[6],
-    paddingHorizontal: spacing[5],
+    paddingHorizontal: spacing[6],
   },
 
   infoLeft: { flex: 1, gap: 4 },

@@ -5,6 +5,7 @@
  * MATCH-007 (EPIC-02)
  */
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import type { ParticipationDetail } from '@/services/matches';
@@ -23,6 +24,7 @@ interface ParticipantResultRowProps {
 export function ParticipantResultRow({ participation, isWinner, turnCount }: ParticipantResultRowProps) {
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   const { player, deck, commander } = participation;
 
@@ -34,6 +36,7 @@ export function ParticipantResultRow({ participation, isWinner, turnCount }: Par
     .toUpperCase();
 
   const badge = resolveBadge(participation.result, isWinner, theme);
+  const flavor = pickFlavor(participation, isWinner, t);
 
   return (
     <View style={[styles.row, isWinner && styles.rowWinner]}>
@@ -50,6 +53,11 @@ export function ParticipantResultRow({ participation, isWinner, turnCount }: Par
           </Text>
           {isWinner && <Text style={styles.crownIcon}>👑</Text>}
         </View>
+        {flavor && (
+          <Text style={[styles.flavorLine, isWinner && styles.flavorLineWinner]} numberOfLines={2}>
+            {flavor}
+          </Text>
+        )}
         <View style={styles.deckRow}>
           <Text style={styles.deckName} numberOfLines={1}>{deck.name}</Text>
           <ManaIdentityRow colors={commander.colorIdentity} size="xs" />
@@ -67,6 +75,26 @@ export function ParticipantResultRow({ participation, isWinner, turnCount }: Par
       </View>
     </View>
   );
+}
+
+// ─── Flavor picker ────────────────────────────────────────────────────────────
+// Pulls one phrase from match.winnerFlavor / match.loserFlavor. Index is
+// derived from the participation id so the line is stable across re-renders
+// but varies across players in the same match.
+
+function pickFlavor(
+  participation: ParticipationDetail,
+  isWinner: boolean,
+  t: ReturnType<typeof useTranslation>['t'],
+): string | null {
+  const isLoser = !isWinner && participation.result === 'lose';
+  if (!isWinner && !isLoser) return null;
+  const key = isWinner ? 'match.winnerFlavor' : 'match.loserFlavor';
+  const phrases = t(key, { returnObjects: true }) as unknown;
+  if (!Array.isArray(phrases) || phrases.length === 0) return null;
+  let h = 0;
+  for (const ch of participation.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return phrases[h % phrases.length] as string;
 }
 
 // ─── Badge helper ─────────────────────────────────────────────────────────────
@@ -126,6 +154,19 @@ const createStyles = (t: AppTheme) => ({
   },
   playerNameWinner: { fontWeight: t.typography.weight.semibold },
   crownIcon: { fontSize: 14 },
+
+  flavorLine: {
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
+    fontFamily: t.typography.fontFamily.body,
+    fontStyle: 'italic',
+    lineHeight: t.typography.size['body-sm'] * 1.3,
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  flavorLineWinner: {
+    color: t.colors.accent.primary,
+  },
 
   deckRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
   deckName: {

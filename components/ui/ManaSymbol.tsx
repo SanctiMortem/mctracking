@@ -73,5 +73,5 @@ export function ManaIdentityRow({ colors, size = 'sm', gap = 4 }: ManaIdentityRo
 }
 
 function isManaColor(c: string): c is ManaColor {
-  return c === 'W' || c === 'U' || c === 'B' || c === 'R' || c === 'G';
+  return c === 'W' || c === 'U' || c === 'B' || c === 'R' || c === 'G' || c === 'C';
 }
