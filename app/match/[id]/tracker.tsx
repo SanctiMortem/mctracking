@@ -32,6 +32,7 @@ import { PoisonCounter } from '@/components/tracker/PoisonCounter';
 import { TrackerLayout } from '@/components/match/TrackerLayout';
 import { useTracker } from '@/hooks/useTracker';
 import { loadMatchLayout, saveMatchLayout } from '@/services/matchLayout';
+import { clockwiseParticipationIds, nextAliveClockwise } from '@/services/clockwiseOrder';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
@@ -63,21 +64,28 @@ function useMatchTimer() {
 // ─── Per-Player Turn Timers ─────────────────────
 
 function useTurnTimers(
-  participationIds: string[],
+  clockwiseOrder: string[],
+  deadIds: ReadonlySet<string>,
   onTurnPassed?: (participationId: string) => void,
 ) {
   // Elapsed seconds per player (persists across start/stop)
   const [elapsed, setElapsed] = useState<Record<string, number>>({});
-  // Per-player turn counts. A turn only counts when the active player rotates
-  // to a *different* player — pausing/resuming yourself does not increment.
+  // Per-player turn counts. A turn only counts when the new active player is
+  // the legitimate clockwise successor (skipping dead) of the last player
+  // who legitimately took a turn.
   const [turnCounts, setTurnCounts] = useState<Record<string, number>>({});
-  // Which player's timer is currently running (null = none)
+  // Which player's timer is currently running (null = paused)
   const [activeId, setActiveId] = useState<string | null>(null);
-  // Last non-null active player; toggling self off→on does not change this.
-  const lastNonNullActiveIdRef = useRef<string | null>(null);
+  // Last player who took a *legitimate* turn. Out-of-order taps don't move it,
+  // so the rotation can pick up where it left off once corrected.
+  const lastCorrectActorRef = useRef<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onTurnPassedRef = useRef(onTurnPassed);
   onTurnPassedRef.current = onTurnPassed;
+  const orderRef = useRef(clockwiseOrder);
+  orderRef.current = clockwiseOrder;
+  const deadRef = useRef(deadIds);
+  deadRef.current = deadIds;
 
   // Tick the active player's timer every second
   useEffect(() => {
@@ -93,24 +101,47 @@ function useTurnTimers(
     };
   }, [activeId]);
 
+  const incrementTurn = useCallback((id: string) => {
+    setTurnCounts((counts) => ({ ...counts, [id]: (counts[id] ?? 0) + 1 }));
+    onTurnPassedRef.current?.(id);
+    lastCorrectActorRef.current = id;
+  }, []);
+
   const toggle = useCallback((id: string) => {
     setActiveId((prev) => {
-      if (prev === id) {
-        // Pause self — no turn counted.
-        return null;
+      // Re-tap currently active player → pause; the timer stops but no
+      // counters move. Tapping again resumes (handled by the next branch).
+      if (prev === id) return null;
+      // Resuming the same player who last took a legitimate turn → no count.
+      if (prev === null && lastCorrectActorRef.current === id) return id;
+
+      const last = lastCorrectActorRef.current;
+      const order = orderRef.current;
+      const dead = deadRef.current;
+
+      // First activation of the match → that player owns turn 1.
+      if (last === null) {
+        incrementTurn(id);
+        return id;
       }
-      // Becoming active. Only count as a new turn if the previously active
-      // (non-null) player was someone else — i.e. rotation, not resume-self.
-      if (lastNonNullActiveIdRef.current !== id) {
-        setTurnCounts((counts) => ({ ...counts, [id]: (counts[id] ?? 0) + 1 }));
-        onTurnPassedRef.current?.(id);
-        lastNonNullActiveIdRef.current = id;
+      // Out-of-order tap → just hand the timer over, no count, rotation
+      // pointer stays where it was so a corrective tap still works.
+      const expected = nextAliveClockwise(last, order, dead);
+      if (expected !== null && expected === id) {
+        incrementTurn(id);
       }
       return id;
     });
-  }, []);
+  }, [incrementTurn]);
 
-  return { elapsed, activeId, toggle, turnCounts };
+  // Force-set the starting player (used by the dice roll). Bypasses the
+  // rotation check so the chosen player anchors a fresh sequence.
+  const seedActivePlayer = useCallback((id: string) => {
+    incrementTurn(id);
+    setActiveId(id);
+  }, [incrementTurn]);
+
+  return { elapsed, activeId, toggle, turnCounts, seedActivePlayer };
 }
 
 // ─── Screen ─────────────────────────────────────
@@ -201,17 +232,32 @@ export default function MatchTrackerScreen() {
   } = useTracker(id);
 
   // Turn timers — initialized once participations load.
-  // When a *different* player becomes active, persist a turn_passed marker.
+  // When a *legitimate* clockwise rotation happens, persist a turn_passed marker.
   const recordTurnPassed = useCallback(
     (participationId: string) => {
       void recordEvent({ participationId, eventType: 'turn_passed', delta: 0 });
     },
     [recordEvent],
   );
-  const turnTimers = useTurnTimers(participations.map((p) => p.id), recordTurnPassed);
 
-  // Dead players — tracked as local state, only set via the Dead button
+  // Dead players — tracked as local state, only set via the Dead button.
+  // Declared before useTurnTimers so the rotation can skip them.
   const [deadPlayerIds, setDeadPlayerIds] = useState<Set<string>>(new Set());
+
+  // Clockwise participation order — derived from seat order + layout variant.
+  // Sortedness comes from playerOrder (set during match setup); clockwise
+  // sequencing then maps section indices to ids.
+  const sortedParticipationIds = playerOrder.length > 0
+    ? [...participations]
+        .sort((a, b) => {
+          const idxA = playerOrder.indexOf(a.playerId);
+          const idxB = playerOrder.indexOf(b.playerId);
+          return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+        })
+        .map((p) => p.id)
+    : participations.map((p) => p.id);
+  const clockwiseIds = clockwiseParticipationIds(resolvedLayoutVariant, sortedParticipationIds);
+  const turnTimers = useTurnTimers(clockwiseIds, deadPlayerIds, recordTurnPassed);
 
   // Clear toast after 3s
   useEffect(() => {
@@ -266,28 +312,21 @@ export default function MatchTrackerScreen() {
     );
   }
 
-  // Sort participations into the seat order from setup (if available).
-  // Without this, all participations share the same createdAt and DB order is random.
-  const sortedParticipations = playerOrder.length > 0
-    ? [...participations].sort((a, b) => {
-        const idxA = playerOrder.indexOf(a.playerId);
-        const idxB = playerOrder.indexOf(b.playerId);
-        return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
-      })
-    : participations;
+  // Reuse the seat-sorted ids resolved before useTurnTimers to keep one
+  // canonical order between the rotation engine and the rendered grid.
+  const partById = new Map(participations.map((p) => [p.id, p]));
+  const sortedParticipations = sortedParticipationIds
+    .map((id) => partById.get(id))
+    .filter((p): p is NonNullable<typeof p> => p !== undefined);
 
   // ── Random starting player (dice roll) ────────
   const handleRandomStart = () => {
     if (sortedParticipations.length < 2) return;
     const idx = Math.floor(Math.random() * sortedParticipations.length);
     const chosen = sortedParticipations[idx];
-    // If someone is already active, stop them first
-    if (turnTimers.activeId && turnTimers.activeId !== chosen.id) {
-      turnTimers.toggle(turnTimers.activeId);
-    }
-    if (turnTimers.activeId !== chosen.id) {
-      turnTimers.toggle(chosen.id);
-    }
+    // Seed the rotation: anchor on the dice-picked player, bypassing the
+    // clockwise-successor check so the chosen seat owns turn 1.
+    turnTimers.seedActivePlayer(chosen.id);
     setHasRolled(true);
     Alert.alert('🎲', t('match.randomStarterResult', { name: chosen.player.name }));
   };
