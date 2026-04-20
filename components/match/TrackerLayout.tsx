@@ -93,13 +93,15 @@ function renderVariant(variant: string | undefined, sections: SectionData[]): Re
 
   if (count === 3) {
     if (v === '3p-top2-bot1') {
+      // Two top frames span 2/3 height (one row each in the 3-row grid),
+      // bottom singleton spans 1/3.
       return (
         <Col>
-          <Row>
+          <Row flex={2}>
             <Cell s={sections[0]} />
             <Cell s={sections[1]} />
           </Row>
-          <Row>
+          <Row flex={1}>
             <Cell s={sections[2]} />
           </Row>
         </Col>
@@ -117,13 +119,13 @@ function renderVariant(variant: string | undefined, sections: SectionData[]): Re
         </Row>
       );
     }
-    // 3p-top1-bot2: Row 1 (full) + Row 2 (split horizontally)
+    // 3p-top1-bot2: top singleton spans 1/3 height, bottom pair spans 2/3.
     return (
       <Col>
-        <Row>
+        <Row flex={1}>
           <Cell s={sections[0]} />
         </Row>
-        <Row>
+        <Row flex={2}>
           <Cell s={sections[1]} />
           <Cell s={sections[2]} />
         </Row>
