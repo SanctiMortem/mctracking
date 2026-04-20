@@ -28,7 +28,7 @@ import { NotoSerif_400Regular, NotoSerif_600SemiBold, NotoSerif_700Bold } from '
 import { WorkSans_400Regular, WorkSans_500Medium } from '@expo-google-fonts/work-sans';
 
 // i18n init (SETUP-006)
-import '../constants/i18n';
+import i18n, { resolveLanguage } from '../constants/i18n';
 import { GuestProvider, useGuest } from '@/contexts/GuestContext';
 import { GroupProvider } from '@/contexts/GroupContext';
 import { AccountPlayerProvider, useAccountPlayer } from '@/contexts/AccountPlayerContext';
@@ -246,6 +246,32 @@ function AuthGate() {
       if (retryTimer.current) clearTimeout(retryTimer.current);
     };
   }, [isLoaded, isSignedIn, accountPlayer]);
+
+  // Apply the user's saved language preference once per sign-in. The i18n
+  // module initialises to the device language; this overrides with the
+  // stored choice (or keeps device language when set to 'auto').
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await getToken();
+        if (cancelled || !token) return;
+        const res = await apiFetch<{ success: boolean; data: { language: string } }>(
+          '/api/settings',
+          'GET',
+          undefined,
+          token,
+        );
+        if (cancelled) return;
+        const target = resolveLanguage(res.data?.language);
+        if (i18n.language !== target) void i18n.changeLanguage(target);
+      } catch {
+        // Silent — keep device-language fallback already applied at init.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isLoaded, isSignedIn]);
 
   useEffect(() => {
     if (!isLoaded) return;

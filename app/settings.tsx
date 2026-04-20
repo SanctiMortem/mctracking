@@ -29,7 +29,7 @@ import type { ThemeId } from '@/styles/themes/types';
 import type { AppTheme } from '@/styles/themes/types';
 import { apiFetch } from '@/services/api';
 import { spacing } from '@/styles/tokens';
-import i18n from '@/constants/i18n';
+import i18n, { resolveLanguage } from '@/constants/i18n';
 
 // ─────────────────────────────────────────────
 // SegmentedPicker — language + life total + theme
@@ -154,8 +154,7 @@ export default function SettingsScreen() {
   const handleLanguage = useCallback(
     (lang: 'auto' | 'en' | 'es') => {
       patchSetting({ language: lang });
-      const target = lang === 'auto' ? 'en' : lang;
-      void i18n.changeLanguage(target);
+      void i18n.changeLanguage(resolveLanguage(lang));
     },
     [patchSetting],
   );
