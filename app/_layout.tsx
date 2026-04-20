@@ -306,6 +306,7 @@ function AuthGate() {
         headerTintColor: theme.colors.text.primary,
         headerTitleStyle: { color: theme.colors.text.primary, fontFamily: theme.typography.fontFamily.headline },
         headerBackTitleVisible: false,
+        headerBackTitle: '',
         contentStyle: { backgroundColor: theme.colors.background.primary },
         animation: 'slide_from_right',
         gestureResponseDistance: { start: 30 } as any,
@@ -326,11 +327,13 @@ function AuthGate() {
         }}
       />
       <Stack.Screen name="match/[id]/results" options={{ title: t('match.results'), gestureEnabled: false }} />
-      <Stack.Screen name="match/[id]/index" options={{ title: t('match.detail') }} />
-      <Stack.Screen name="players/[id]" options={{ title: t('player.players') }} />
-      <Stack.Screen name="decks/[id]" options={{ title: t('deck.decks') }} />
+      {/* Detail screens render their own in-body nav header — hide the stack one
+          to avoid the doubled title + back arrow. */}
+      <Stack.Screen name="match/[id]/index" options={{ headerShown: false }} />
+      <Stack.Screen name="players/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="decks/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="commanders/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="commanders/index" options={{ title: t('commanders.title') }} />
-      <Stack.Screen name="commanders/[id]" options={{ title: t('game.commander') }} />
       <Stack.Screen name="stats/matchup" options={{ title: t('stats.viewMatchup') }} />
       <Stack.Screen name="groups/index" options={{ title: t('groups.title') }} />
       <Stack.Screen name="groups/[id]" options={{ title: t('groups.podDetail') }} />

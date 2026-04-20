@@ -11,6 +11,7 @@
  */
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import type { Commander, Deck } from '@/db/index';
@@ -18,7 +19,7 @@ import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
 
-const ART_HEIGHT = { 1: 260, 2: 190, 3: 150 } as const;
+const ART_HEIGHT = { 1: 300, 2: 190, 3: 150 } as const;
 
 export type PodiumTier = 1 | 2 | 3;
 
@@ -28,6 +29,7 @@ interface TopDeckPodiumCardProps {
   commanders: Commander[];
   matches: number;
   win_rate_pct: number | null;
+  current_streak?: number;
   onPress?: () => void;
 }
 
@@ -37,9 +39,11 @@ export function TopDeckPodiumCard({
   commanders,
   matches,
   win_rate_pct,
+  current_streak = 0,
   onPress,
 }: TopDeckPodiumCardProps) {
   const styles = useThemedStyles(createStyles);
+  const { t } = useTranslation();
 
   const artCrop = commanders.find((c) => c.artCrop)?.artCrop ?? null;
   const allColors = Array.from(new Set(commanders.flatMap((c) => c.colorIdentity ?? [])));
@@ -48,6 +52,7 @@ export function TopDeckPodiumCard({
   const isPartner = commanders.length > 1;
   const winRateText = win_rate_pct !== null ? `${win_rate_pct}%` : '—';
   const rankLabel = tier === 1 ? '#1 DECK' : `RANK 0${tier}`;
+  const showStreak = isTop && current_streak > 0;
 
   return (
     // Outer wrapper has no overflow — lets the rank badge float above the top edge.
@@ -126,12 +131,17 @@ export function TopDeckPodiumCard({
                 </View>
               )}
             </View>
-            <Text style={styles.metaLine}>{matches} total games</Text>
+            <Text style={styles.metaLine}>{matches} {t('stats.totalGames')}</Text>
+            {showStreak && (
+              <Text style={styles.streakLine}>
+                {t('stats.undefeatedStreak', { count: current_streak })}
+              </Text>
+            )}
             <ManaIdentityRow colors={allColors} size="xs" />
           </View>
 
           <View style={styles.infoRight}>
-            <Text style={styles.wrLabel}>WIN RATE</Text>
+            <Text style={[styles.wrLabel, isTop && styles.wrLabelTop]}>WIN RATE</Text>
             <Text
               style={[
                 styles.wrValue,
@@ -183,23 +193,23 @@ const createStyles = (t: AppTheme) => ({
   // Tier 1 — large gold banner
   topBadge: {
     backgroundColor: t.colors.accent.primary,
-    paddingHorizontal: spacing[4] + 4,
-    paddingVertical: spacing[2] + 2,
+    paddingHorizontal: spacing[6],
+    paddingVertical: spacing[3],
     borderRadius: t.radius.md,
     borderWidth: 1.5,
     borderColor: t.colors.accent.primary,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowColor: t.colors.accent.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.45,
+    shadowRadius: 8,
+    elevation: 6,
   },
   topBadgeText: {
     color: t.colors.background.primary,
-    fontSize: t.typography.size['body-md'],
+    fontSize: t.typography.size['body-lg'],
     fontFamily: t.typography.fontFamily.display,
     fontWeight: t.typography.weight.black,
-    letterSpacing: 1.8,
+    letterSpacing: 2.2,
   },
 
   // Tier 2 / 3 — pill overlapping the top edge
@@ -278,7 +288,9 @@ const createStyles = (t: AppTheme) => ({
     paddingHorizontal: spacing[4],
   },
   infoRowTop: {
-    paddingVertical: spacing[4],
+    paddingTop: spacing[5],
+    paddingBottom: spacing[6],
+    paddingHorizontal: spacing[5],
   },
 
   infoLeft: { flex: 1, gap: 4 },
@@ -292,9 +304,13 @@ const createStyles = (t: AppTheme) => ({
   },
   deckNameTop: {
     color: t.colors.accent.primary,
-    fontSize: t.typography.size['heading-md'],
+    fontSize: t.typography.size['heading-xl'],
     fontFamily: t.typography.fontFamily.display,
     fontWeight: t.typography.weight.black,
+    textShadowColor: t.colors.accent.primary + '55',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 6,
+    lineHeight: t.typography.size['heading-xl'] * 1.05,
   },
   partnerBadge: {
     backgroundColor: t.colors.accent.primary + '33',
@@ -314,6 +330,13 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size['body-sm'],
     fontFamily: t.typography.fontFamily.body,
   },
+  streakLine: {
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontFamily: t.typography.fontFamily.bodyMedium,
+    fontWeight: t.typography.weight.semibold,
+    letterSpacing: 0.3,
+  },
 
   // Win rate block
   infoRight: { alignItems: 'flex-end' as const, gap: 2, flexShrink: 0 },
@@ -323,6 +346,13 @@ const createStyles = (t: AppTheme) => ({
     fontFamily: t.typography.fontFamily.bodyMedium,
     fontWeight: t.typography.weight.semibold,
     letterSpacing: 1,
+  },
+  wrLabelTop: {
+    color: t.colors.accent.primary,
+    letterSpacing: 1.4,
+    textShadowColor: t.colors.accent.primary + '66',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4,
   },
   wrValue: {
     color: t.colors.text.primary,
@@ -336,5 +366,8 @@ const createStyles = (t: AppTheme) => ({
   },
   wrValueTop: {
     fontSize: t.typography.size['heading-xl'],
+    textShadowColor: t.colors.accent.primary + '66',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
 });

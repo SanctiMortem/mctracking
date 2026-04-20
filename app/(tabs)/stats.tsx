@@ -188,6 +188,7 @@ export default function StatsScreen() {
                 commanders={entry.commanders}
                 matches={entry.total_matches}
                 win_rate_pct={entry.win_rate_pct}
+                current_streak={entry.current_streak}
                 onPress={() => router.push(`/decks/${entry.deck.id}`)}
               />
             ))}

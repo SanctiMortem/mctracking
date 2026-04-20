@@ -8,28 +8,64 @@
  *
  * HIST-004, HIST-006, HIST-008 (EPIC-04)
  */
-import { and, count, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNotNull, isNull, or, sql } from 'drizzle-orm';
 
 import { db } from '@/services/db';
 import { commanders, decks, groupMembers, matchEvents, matchResults, matches, participations, players } from '@/db/schema';
 import type { Commander, Deck, Player } from '@/db/index';
 
-// Pod members may view each other's deck and commander stats — anything tied
-// to the same group is treated as shared. Returns true iff `userId` is the
-// owner OR a member of `groupId` (when the entity is group-scoped).
-async function userCanViewGroupEntity(
-  userId: string,
-  ownerId: string,
-  groupId: string | null,
-): Promise<boolean> {
-  if (ownerId === userId) return true;
-  if (!groupId) return false;
-  const [member] = await db
-    .select({ id: groupMembers.id })
-    .from(groupMembers)
-    .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
+// Pod members may view each other's deck + commander stats whenever those
+// entities show up in a match the viewer also has access to. "Access" here
+// means either the viewer created the match or the match is scoped to a group
+// the viewer belongs to — this covers the common case of a pod member bringing
+// a *personal* (group_id = null) deck to a group match.
+async function userCanViewDeck(userId: string, deck: Deck): Promise<boolean> {
+  if (deck.createdBy === userId) return true;
+  if (deck.groupId) {
+    const [member] = await db
+      .select({ id: groupMembers.id })
+      .from(groupMembers)
+      .where(and(eq(groupMembers.groupId, deck.groupId), eq(groupMembers.userId, userId)))
+      .limit(1);
+    if (member) return true;
+  }
+  const [hit] = await db
+    .select({ id: matches.id })
+    .from(participations)
+    .innerJoin(matches, eq(participations.matchId, matches.id))
+    .leftJoin(
+      groupMembers,
+      and(eq(groupMembers.groupId, matches.groupId), eq(groupMembers.userId, userId)),
+    )
+    .where(
+      and(
+        eq(participations.deckId, deck.id),
+        or(eq(matches.createdBy, userId), isNotNull(groupMembers.id)),
+      ),
+    )
     .limit(1);
-  return !!member;
+  return !!hit;
+}
+
+async function userCanViewCommander(userId: string, commanderId: string, ownerId: string): Promise<boolean> {
+  if (ownerId === userId) return true;
+  const [hit] = await db
+    .select({ id: matches.id })
+    .from(participations)
+    .innerJoin(decks, eq(participations.deckId, decks.id))
+    .innerJoin(matches, eq(participations.matchId, matches.id))
+    .leftJoin(
+      groupMembers,
+      and(eq(groupMembers.groupId, matches.groupId), eq(groupMembers.userId, userId)),
+    )
+    .where(
+      and(
+        or(eq(decks.commanderId, commanderId), eq(decks.commanderId2, commanderId)),
+        or(eq(matches.createdBy, userId), isNotNull(groupMembers.id)),
+      ),
+    )
+    .limit(1);
+  return !!hit;
 }
 
 // ─── CALC-001 ─────────────────────────────────────────────────────────────────
@@ -293,7 +329,7 @@ export async function getDeckStats(
     .limit(1);
 
   if (!deck) return { notFound: true };
-  if (!(await userCanViewGroupEntity(userId, deck.createdBy, deck.groupId))) {
+  if (!(await userCanViewDeck(userId, deck))) {
     return { forbidden: true };
   }
 
@@ -534,20 +570,8 @@ export async function getCommanderStats(
     .limit(1);
 
   if (!commander) return { notFound: true };
-  if (commander.createdBy !== userId) {
-    // Commanders aren't group-scoped — sharing happens transitively through
-    // decks. Allow view if any deck using this commander lives in a group the
-    // user belongs to.
-    const [sharedDeck] = await db
-      .select({ id: decks.id })
-      .from(decks)
-      .innerJoin(
-        groupMembers,
-        and(eq(groupMembers.groupId, decks.groupId), eq(groupMembers.userId, userId)),
-      )
-      .where(or(eq(decks.commanderId, commanderId), eq(decks.commanderId2, commanderId)))
-      .limit(1);
-    if (!sharedDeck) return { forbidden: true };
+  if (!(await userCanViewCommander(userId, commanderId, commander.createdBy))) {
+    return { forbidden: true };
   }
 
   // Filter: participation's deck uses this commander (primary or partner — BR-STATS-05)
@@ -818,6 +842,8 @@ export type TopDeck = {
   total_matches: number;
   wins: number;
   win_rate_pct: number | null;
+  /** Consecutive wins from the most recent match backward; 0 if the latest result wasn't a win. */
+  current_streak: number;
 };
 
 export type TopCommander = {
@@ -1006,9 +1032,45 @@ export async function getGlobalStats(
     .flatMap((d) => [d.commanderId, d.commanderId2])
     .filter(Boolean) as string[];
 
-  const deckCmdObjects = deckCommanderIds.length > 0
-    ? await db.select().from(commanders).where(inArray(commanders.id, deckCommanderIds))
-    : [];
+  const top5DeckIds = top5DeckEntries.map((e) => e.deckId);
+
+  const [deckCmdObjects, recentResultRows] = await Promise.all([
+    deckCommanderIds.length > 0
+      ? db.select().from(commanders).where(inArray(commanders.id, deckCommanderIds))
+      : Promise.resolve([] as Commander[]),
+
+    // Recent results per top deck — drives the undefeated-streak counter.
+    // Ordered most recent first; we walk per deck and stop at the first non-win.
+    top5DeckIds.length > 0
+      ? db
+          .select({
+            deckId: participations.deckId,
+            result: participations.result,
+          })
+          .from(participations)
+          .innerJoin(matches, eq(participations.matchId, matches.id))
+          .where(and(matchScope, inArray(participations.deckId, top5DeckIds)))
+          .orderBy(desc(matches.endedAt), desc(matches.createdAt))
+      : Promise.resolve([] as { deckId: string; result: string }[]),
+  ]);
+
+  // Bucket rows by deck (rows arrive sorted most-recent first), then count
+  // leading wins per deck to get the current undefeated streak.
+  const recentByDeck = new Map<string, string[]>();
+  for (const row of recentResultRows) {
+    const arr = recentByDeck.get(row.deckId) ?? [];
+    arr.push(row.result);
+    recentByDeck.set(row.deckId, arr);
+  }
+  const streakMap = new Map<string, number>();
+  for (const [deckId, results] of recentByDeck) {
+    let streak = 0;
+    for (const r of results) {
+      if (r === 'win') streak++;
+      else break;
+    }
+    streakMap.set(deckId, streak);
+  }
 
   // ── Assemble response ────────────────────────────────────────────────────────
 
@@ -1033,7 +1095,14 @@ export async function getGlobalStats(
         .filter(Boolean)
         .map((id) => deckCmdMap.get(id!))
         .filter(Boolean) as Commander[];
-      return { deck, commanders: deckCommanders, total_matches: e.total, wins: e.wins, win_rate_pct: e.wr };
+      return {
+        deck,
+        commanders: deckCommanders,
+        total_matches: e.total,
+        wins: e.wins,
+        win_rate_pct: e.wr,
+        current_streak: streakMap.get(e.deckId) ?? 0,
+      };
     })
     .filter((x): x is TopDeck => x !== null);
 
@@ -1200,7 +1269,9 @@ export async function getAccountHomeStats(
           inArray(matchResults.winnerParticipationId, winningParticipationIds),
         )),
 
-      // Avg turn: count non-undone turn_passed events per match.
+      // Avg turn: count non-undone turn_passed events tagged to the *winning*
+      // participation in each match (otherwise we'd sum every player's turns
+      // and inflate the average by the player count).
       db
         .select({
           matchId: matchEvents.matchId,
@@ -1209,6 +1280,7 @@ export async function getAccountHomeStats(
         .from(matchEvents)
         .where(and(
           inArray(matchEvents.matchId, winningMatchIds),
+          inArray(matchEvents.participationId, winningParticipationIds),
           eq(matchEvents.eventType, 'turn_passed'),
           eq(matchEvents.isUndone, false),
         ))

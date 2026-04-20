@@ -84,7 +84,7 @@ const createStyles = (t: AppTheme) => ({
     color: t.colors.border.subtle,
   },
   fgStroke: {
-    color: t.colors.status.success,
+    color: t.colors.accent.primary,
   },
   centre: {
     position: 'absolute' as const,
