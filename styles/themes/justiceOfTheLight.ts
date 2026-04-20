@@ -41,7 +41,7 @@ export const justiceOfTheLight: AppTheme = {
       colorless: mtgColors.colorless,
     },
     lifeTotal: {
-      high: '#4a9e6a',            // safe — cooler green on navy
+      high: '#A2FFAE',            // safe — bright mint
       medium: '#e9c400',          // caution — primary gold
       low: '#d4a020',             // danger — warm amber
       critical: '#d96070',        // critical — rosy steel

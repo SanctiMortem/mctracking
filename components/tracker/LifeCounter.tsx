@@ -90,6 +90,19 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
   // Single source of truth for what the user sees.
   const displayValue = lifeTotal;
 
+  // Tap-zone feedback flashes — one per side. Each tap pulses the matching
+  // overlay opacity from 0 → peak → 0 so the player gets a visual confirmation
+  // of which half their finger landed on.
+  const minusFlash = useSharedValue(0);
+  const plusFlash = useSharedValue(0);
+  const flashSide = useCallback((d: number) => {
+    const sv = d < 0 ? minusFlash : plusFlash;
+    sv.value = 0.35;
+    sv.value = withTiming(0, { duration: 280 });
+  }, [minusFlash, plusFlash]);
+  const minusFlashStyle = useAnimatedStyle(() => ({ opacity: minusFlash.value }));
+  const plusFlashStyle = useAnimatedStyle(() => ({ opacity: plusFlash.value }));
+
   const lifeColor = (() => {
     if (displayValue <= 0) return theme.colors.lifeTotal.zero;
     if (displayValue <= 4) return theme.colors.lifeTotal.critical;
@@ -123,15 +136,17 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
   const applyDelta = useCallback((d: number) => {
     // 1. Tell the parent — it updates lifeTotal synchronously.
     onDelta(participationId, d);
-    // 2. Update the badge accumulator independently.
+    // 2. Flash the side that was tapped.
+    flashSide(d);
+    // 3. Update the badge accumulator independently.
     badgeAccumRef.current += d;
     showDeltaBadge(badgeAccumRef.current);
-    // 3. Schedule accumulator reset after idle window.
+    // 4. Schedule accumulator reset after idle window.
     if (badgeResetTimerRef.current) clearTimeout(badgeResetTimerRef.current);
     badgeResetTimerRef.current = setTimeout(() => {
       badgeAccumRef.current = 0;
     }, BADGE_RESET_MS);
-  }, [onDelta, participationId, showDeltaBadge]);
+  }, [onDelta, participationId, showDeltaBadge, flashSide]);
 
   const stopHold = useCallback(() => {
     if (holdTimerRef.current) {
@@ -231,6 +246,25 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
   return (
     <GestureDetector gesture={composed}>
       <Animated.View style={styles.container} onLayout={onContainerLayout}>
+        {/* Tap-side flash overlays — behind HP, above container background */}
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.flashHalf,
+            styles.flashLeft,
+            { backgroundColor: theme.colors.lifeTotal.critical },
+            minusFlashStyle,
+          ]}
+        />
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.flashHalf,
+            styles.flashRight,
+            { backgroundColor: theme.colors.lifeTotal.high },
+            plusFlashStyle,
+          ]}
+        />
         {/* HP number — transparent to hits (pointerEvents="none") */}
         <View style={styles.lifeTotalOverlay} pointerEvents="none">
           <Text
@@ -267,6 +301,14 @@ const createStyles = (t: AppTheme) => ({
     width: '100%',
     height: '100%',
   },
+  flashHalf: {
+    position: 'absolute' as const,
+    top: 0,
+    bottom: 0,
+    width: '50%' as const,
+  },
+  flashLeft: { left: 0 },
+  flashRight: { right: 0 },
   lifeTotalOverlay: {
     position: 'absolute' as const,
     top: 0,
