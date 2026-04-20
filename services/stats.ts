@@ -11,8 +11,26 @@
 import { and, count, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 
 import { db } from '@/services/db';
-import { commanders, decks, matchEvents, matchResults, matches, participations, players } from '@/db/schema';
+import { commanders, decks, groupMembers, matchEvents, matchResults, matches, participations, players } from '@/db/schema';
 import type { Commander, Deck, Player } from '@/db/index';
+
+// Pod members may view each other's deck and commander stats — anything tied
+// to the same group is treated as shared. Returns true iff `userId` is the
+// owner OR a member of `groupId` (when the entity is group-scoped).
+async function userCanViewGroupEntity(
+  userId: string,
+  ownerId: string,
+  groupId: string | null,
+): Promise<boolean> {
+  if (ownerId === userId) return true;
+  if (!groupId) return false;
+  const [member] = await db
+    .select({ id: groupMembers.id })
+    .from(groupMembers)
+    .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
+    .limit(1);
+  return !!member;
+}
 
 // ─── CALC-001 ─────────────────────────────────────────────────────────────────
 
@@ -232,6 +250,13 @@ export type MatchupBreakdown = {
   win_rate_pct: number | null;
 };
 
+export type ColorMatchup = {
+  /** WUBRG-sorted color identity of the opposing deck (e.g. ["W","U","B"]). [] = colorless. */
+  colors: string[];
+  matches: number;
+  wins: number;
+};
+
 export type DeckStats = {
   deck: DeckWithCommanders;
   total_matches: number;
@@ -242,6 +267,10 @@ export type DeckStats = {
   best_matchups: MatchupBreakdown[];
   /** Top 3 opposing decks by lowest win rate, min 2 matches against each */
   worst_matchups: MatchupBreakdown[];
+  /** Opposing deck color identity this deck has the most wins against. */
+  strong_against_color: ColorMatchup | null;
+  /** Opposing deck color identity this deck has the most losses against. */
+  weak_against_color: ColorMatchup | null;
 };
 
 /** Min number of matches against a single opposing deck for it to qualify as a matchup */
@@ -264,7 +293,9 @@ export async function getDeckStats(
     .limit(1);
 
   if (!deck) return { notFound: true };
-  if (deck.createdBy !== userId) return { forbidden: true };
+  if (!(await userCanViewGroupEntity(userId, deck.createdBy, deck.groupId))) {
+    return { forbidden: true };
+  }
 
   // 2. Fetch commander(s) + aggregate stats in parallel
   const commanderIds = [deck.commanderId, deck.commanderId2].filter(Boolean) as string[];
@@ -372,16 +403,47 @@ export async function getDeckStats(
 
   let bestMatchups: MatchupBreakdown[] = [];
   let worstMatchups: MatchupBreakdown[] = [];
+  let strongAgainstColor: ColorMatchup | null = null;
+  let weakAgainstColor: ColorMatchup | null = null;
   if (matchupTotals.size > 0) {
+    const allOpponentIds = [...matchupTotals.keys()];
+    const opponentDeckObjects = await db.select().from(decks).where(inArray(decks.id, allOpponentIds));
+    const opponentMap = new Map(opponentDeckObjects.map((d) => [d.id, d]));
+
+    // Color-identity bucket (per-deck color combo) needs commander data.
+    const opponentCommanderIds = [
+      ...new Set(opponentDeckObjects.flatMap((d) => [d.commanderId, d.commanderId2].filter(Boolean) as string[])),
+    ];
+    const opponentCommanders = opponentCommanderIds.length > 0
+      ? await db.select().from(commanders).where(inArray(commanders.id, opponentCommanderIds))
+      : [];
+    const cmdColorMap = new Map(opponentCommanders.map((c) => [c.id, c.colorIdentity]));
+
+    const colorBuckets = new Map<string, ColorMatchup>();
+    for (const [oppDeckId, totals] of matchupTotals) {
+      const oppDeck = opponentMap.get(oppDeckId);
+      if (!oppDeck) continue;
+      const colors = colorIdentityForDeck(oppDeck, cmdColorMap);
+      const key = colors.join('') || 'C';
+      const bucket = colorBuckets.get(key) ?? { colors, matches: 0, wins: 0 };
+      bucket.matches += totals.matches;
+      bucket.wins += totals.wins;
+      colorBuckets.set(key, bucket);
+    }
+    const colorBucketList = [...colorBuckets.values()];
+    const strongCandidate = [...colorBucketList].sort((a, b) => b.wins - a.wins)[0];
+    if (strongCandidate && strongCandidate.wins > 0) strongAgainstColor = strongCandidate;
+    const weakCandidate = [...colorBucketList].sort(
+      (a, b) => (b.matches - b.wins) - (a.matches - a.wins),
+    )[0];
+    const weakLosses = weakCandidate ? weakCandidate.matches - weakCandidate.wins : 0;
+    if (weakCandidate && weakLosses > 0) weakAgainstColor = weakCandidate;
+
     const qualifying = [...matchupTotals.entries()]
       .filter(([, s]) => s.matches >= MATCHUP_MIN_MATCHES)
       .map(([id, s]) => ({ deckId: id, matches: s.matches, wins: s.wins, wr: calcWinRate(s.wins, s.matches) }));
 
     if (qualifying.length > 0) {
-      const opponentDeckIds = qualifying.map((q) => q.deckId);
-      const opponentDecks = await db.select().from(decks).where(inArray(decks.id, opponentDeckIds));
-      const opponentMap = new Map(opponentDecks.map((d) => [d.id, d]));
-
       // Sort: WR DESC, then matches DESC for tiebreak (more samples = more confidence)
       const sortedDesc = [...qualifying].sort((a, b) =>
         (b.wr ?? -1) - (a.wr ?? -1) || b.matches - a.matches,
@@ -410,8 +472,28 @@ export async function getDeckStats(
       players_used_by: playersUsedBy,
       best_matchups: bestMatchups,
       worst_matchups: worstMatchups,
+      strong_against_color: strongAgainstColor,
+      weak_against_color: weakAgainstColor,
     },
   };
+}
+
+const WUBRG_ORDER: Record<string, number> = { W: 0, U: 1, B: 2, R: 3, G: 4 };
+
+/**
+ * A deck's effective color identity = union of its commander(s) color identities,
+ * sorted in WUBRG order. Returns [] for colorless decks.
+ */
+function colorIdentityForDeck(
+  deck: Deck,
+  commanderColors: Map<string, string[]>,
+): string[] {
+  const set = new Set<string>();
+  for (const cid of [deck.commanderId, deck.commanderId2]) {
+    if (!cid) continue;
+    for (const c of commanderColors.get(cid) ?? []) set.add(c);
+  }
+  return [...set].sort((a, b) => (WUBRG_ORDER[a] ?? 99) - (WUBRG_ORDER[b] ?? 99));
 }
 
 // ─── Commander Stats (HIST-008) ───────────────────────────────────────────────
@@ -452,7 +534,21 @@ export async function getCommanderStats(
     .limit(1);
 
   if (!commander) return { notFound: true };
-  if (commander.createdBy !== userId) return { forbidden: true };
+  if (commander.createdBy !== userId) {
+    // Commanders aren't group-scoped — sharing happens transitively through
+    // decks. Allow view if any deck using this commander lives in a group the
+    // user belongs to.
+    const [sharedDeck] = await db
+      .select({ id: decks.id })
+      .from(decks)
+      .innerJoin(
+        groupMembers,
+        and(eq(groupMembers.groupId, decks.groupId), eq(groupMembers.userId, userId)),
+      )
+      .where(or(eq(decks.commanderId, commanderId), eq(decks.commanderId2, commanderId)))
+      .limit(1);
+    if (!sharedDeck) return { forbidden: true };
+  }
 
   // Filter: participation's deck uses this commander (primary or partner — BR-STATS-05)
   const commanderFilter = and(

@@ -238,7 +238,9 @@
     "bestMatchupsTitle": "Donde su poder ha brillado",
     "bestMatchupsFlavor": "Enemigos abatidos por este mazo.",
     "worstMatchupsTitle": "Donde las sombras pesan más",
-    "worstMatchupsFlavor": "Pruebas sin vencer — némesis aún en pie."
+    "worstMatchupsFlavor": "Pruebas sin vencer — némesis aún en pie.",
+    "strongAgainstTitle": "Fuerte contra",
+    "weakAgainstTitle": "Débil contra"
   },
   "commanders": {
     "title": "Commanders",

@@ -238,7 +238,9 @@
     "bestMatchupsTitle": "Where its power has shined",
     "bestMatchupsFlavor": "Foes laid low by this deck's hand.",
     "worstMatchupsTitle": "Where shadows fall heaviest",
-    "worstMatchupsFlavor": "Trials yet unwon — nemeses still standing."
+    "worstMatchupsFlavor": "Trials yet unwon — nemeses still standing.",
+    "strongAgainstTitle": "Strong against",
+    "weakAgainstTitle": "Weak against"
   },
   "commanders": {
     "title": "Commanders",

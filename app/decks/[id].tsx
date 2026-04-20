@@ -88,7 +88,17 @@ export default function DeckDetailScreen() {
     );
   }
 
-  const { deck, total_matches, wins, win_rate_pct, players_used_by, best_matchups, worst_matchups } = data;
+  const {
+    deck,
+    total_matches,
+    wins,
+    win_rate_pct,
+    players_used_by,
+    best_matchups,
+    worst_matchups,
+    strong_against_color,
+    weak_against_color,
+  } = data;
   const hasMatches = total_matches > 0;
   const bgArt = deck.commander.artCrop ?? deck.commander2?.artCrop ?? null;
 
@@ -184,6 +194,32 @@ export default function DeckDetailScreen() {
             </View>
           )}
         </View>
+
+        {/* ── Color matchups ── */}
+        {(strong_against_color || weak_against_color) && (
+          <View style={styles.section}>
+            <View style={styles.colorMatchupRow}>
+              {strong_against_color && (
+                <View style={styles.colorMatchupCard}>
+                  <Text style={styles.colorMatchupLabel}>{t('deck.strongAgainstTitle')}</Text>
+                  <ManaIdentityRow colors={strong_against_color.colors} size="md" />
+                  <Text style={styles.colorMatchupMeta}>
+                    {strong_against_color.wins} {t('common.wins')}
+                  </Text>
+                </View>
+              )}
+              {weak_against_color && (
+                <View style={styles.colorMatchupCard}>
+                  <Text style={styles.colorMatchupLabel}>{t('deck.weakAgainstTitle')}</Text>
+                  <ManaIdentityRow colors={weak_against_color.colors} size="md" />
+                  <Text style={styles.colorMatchupMeta}>
+                    {weak_against_color.matches - weak_against_color.wins} {t('common.losses')}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* ── Best matchups ── */}
         {best_matchups.length > 0 && (
@@ -434,6 +470,36 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size.caption,
     textTransform: 'uppercase',
     letterSpacing: 1,
+  },
+
+  // Color matchups (strong/weak against)
+  colorMatchupRow: {
+    flexDirection: 'row',
+    gap: spacing[3],
+  },
+  colorMatchupCard: {
+    flex: 1,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.md,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[3],
+    borderWidth: 1,
+    borderColor: t.colors.border.default,
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  colorMatchupLabel: {
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.label,
+    fontWeight: t.typography.weight.semibold,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+  },
+  colorMatchupMeta: {
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
 
   // Matchups
