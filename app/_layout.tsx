@@ -5,7 +5,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  StyleSheet as RNStyleSheet,
   Text,
   TextInput,
   View,
@@ -33,8 +32,10 @@ import { GuestProvider, useGuest } from '@/contexts/GuestContext';
 import { GroupProvider } from '@/contexts/GroupContext';
 import { AccountPlayerProvider, useAccountPlayer } from '@/contexts/AccountPlayerContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { apiFetch } from '@/services/api';
-import { colors, radius, spacing, typography } from '@/styles/tokens';
+import { colors, spacing } from '@/styles/tokens';
+import type { AppTheme } from '@/styles/themes/types';
 
 // Keep splash visible while fonts load
 SplashScreen.preventAutoHideAsync();
@@ -59,6 +60,8 @@ function AccountPlayerSetupModal() {
   const { t } = useTranslation();
   const { getToken } = useAuth();
   const { needsSetup, setNeedsSetup, setAccountPlayer } = useAccountPlayer();
+  const { theme } = useTheme();
+  const setupStyles = useThemedStyles(createSetupStyles);
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +103,7 @@ function AccountPlayerSetupModal() {
             value={name}
             onChangeText={setName}
             placeholder={t('account.namePlaceholder')}
-            placeholderTextColor={colors.text.muted}
+            placeholderTextColor={theme.colors.text.muted}
             autoFocus
             maxLength={50}
             returnKeyType="done"
@@ -113,7 +116,7 @@ function AccountPlayerSetupModal() {
             style={[setupStyles.btn, (!name.trim() || submitting) && setupStyles.btnDisabled]}
           >
             {submitting ? (
-              <ActivityIndicator color={colors.text.inverse} size="small" />
+              <ActivityIndicator color={theme.colors.accent.onPrimary} size="small" />
             ) : (
               <Text style={[setupStyles.btnText, (!name.trim() || submitting) && setupStyles.btnTextDisabled]}>
                 {t('common.save')}
@@ -126,64 +129,64 @@ function AccountPlayerSetupModal() {
   );
 }
 
-const setupStyles = RNStyleSheet.create({
+const createSetupStyles = (t: AppTheme) => ({
   backdrop: {
-    flex: 1,
-    backgroundColor: colors.background.overlay,
-    justifyContent: 'center',
+    flex: 1 as const,
+    backgroundColor: t.colors.background.overlay,
+    justifyContent: 'center' as const,
     paddingHorizontal: spacing[6],
   },
   card: {
-    backgroundColor: colors.background.elevated,
-    borderRadius: radius.xl,
+    backgroundColor: t.colors.background.elevated,
+    borderRadius: t.radius.xl,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: t.colors.border.default,
     padding: spacing[6],
     gap: spacing[4],
   },
   title: {
-    color: colors.text.primary,
-    fontSize: typography.size['heading-md'],
-    fontFamily: typography.fontFamily.headline,
-    fontWeight: typography.weight.bold,
-    textAlign: 'center',
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontFamily: t.typography.fontFamily.headline,
+    fontWeight: t.typography.weight.bold,
+    textAlign: 'center' as const,
   },
   subtitle: {
-    color: colors.text.secondary,
-    fontSize: typography.size['body-sm'],
-    textAlign: 'center',
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    textAlign: 'center' as const,
   },
   input: {
-    backgroundColor: colors.background.surface,
-    borderRadius: radius.md,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: colors.border.default,
-    color: colors.text.primary,
-    fontSize: typography.size['body-md'],
+    borderColor: t.colors.border.default,
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-md'],
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
   },
   error: {
-    color: colors.status.error,
-    fontSize: typography.size['body-sm'],
-    textAlign: 'center',
+    color: t.colors.status.error,
+    fontSize: t.typography.size['body-sm'],
+    textAlign: 'center' as const,
   },
   btn: {
-    backgroundColor: colors.accent.primary,
-    borderRadius: radius.lg,
+    backgroundColor: t.colors.accent.primary,
+    borderRadius: t.radius.lg,
     paddingVertical: spacing[3],
-    alignItems: 'center',
+    alignItems: 'center' as const,
   },
   btnDisabled: {
-    backgroundColor: colors.background.surface,
+    backgroundColor: t.colors.background.surface,
   },
   btnText: {
-    color: colors.accent.onPrimary,
-    fontSize: typography.size['body-md'],
-    fontWeight: typography.weight.semibold,
+    color: t.colors.accent.onPrimary,
+    fontSize: t.typography.size['body-md'],
+    fontWeight: t.typography.weight.semibold,
   },
   btnTextDisabled: {
-    color: colors.text.muted,
+    color: t.colors.text.muted,
   },
 });
 
