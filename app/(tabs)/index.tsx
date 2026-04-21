@@ -269,6 +269,11 @@ export default function HomeScreen() {
           <AccountStatsCard stats={accountStats} />
         )}
 
+        {/* ── Global Stats ── */}
+        {!loading && globalAggregates && (
+          <GlobalStatsCard stats={globalAggregates} />
+        )}
+
         {/* ── Recent Matches ── */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -305,11 +310,6 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
-
-        {/* ── Global Stats ── */}
-        {!loading && globalAggregates && (
-          <GlobalStatsCard stats={globalAggregates} />
-        )}
       </ScrollView>
     </SafeAreaView>
   );

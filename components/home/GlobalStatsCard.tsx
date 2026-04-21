@@ -16,7 +16,7 @@ import { Text, View } from 'react-native';
 
 import { useTranslation } from 'react-i18next';
 
-import { ColorChips } from '@/components/ui/ColorChips';
+import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
 import { spacing } from '@/styles/tokens';
@@ -116,22 +116,16 @@ function StatRow({ label, value, sub }: { label: string; value: string; sub: str
 
 function ColorStatRow({ label, colors, sub }: { label: string; colors: string[] | null; sub: string | null }) {
   const styles = useThemedStyles(createStyles);
-  const { t } = useTranslation();
-  const chipSelection = colors && colors.length > 0 ? colors : colors ? ['C'] : [];
   return (
     <View style={styles.row}>
       <Text style={styles.rowLabel} numberOfLines={1}>{label}</Text>
       <View style={styles.rowValueBlock}>
-        {chipSelection.length > 0 ? (
-          <ColorChips selected={chipSelection} readonly />
+        {colors !== null ? (
+          <ManaIdentityRow colors={colors} size="sm" />
         ) : (
           <Text style={styles.rowValue}>—</Text>
         )}
-        {sub ? (
-          <Text style={styles.rowSub} numberOfLines={1}>{sub}</Text>
-        ) : (
-          colors === null && <Text style={styles.rowSub} numberOfLines={1}>{t('home.globalStatsNoData')}</Text>
-        )}
+        {sub && <Text style={styles.rowSub} numberOfLines={1}>{sub}</Text>}
       </View>
     </View>
   );
