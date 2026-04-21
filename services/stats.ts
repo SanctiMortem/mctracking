@@ -541,7 +541,7 @@ const WUBRG_ORDER: Record<string, number> = { W: 0, U: 1, B: 2, R: 3, G: 4 };
  * A deck's effective color identity = union of its commander(s) color identities,
  * sorted in WUBRG order. Returns [] for colorless decks.
  */
-function colorIdentityForDeck(
+export function colorIdentityForDeck(
   deck: Deck,
   commanderColors: Map<string, string[]>,
 ): string[] {
@@ -1336,6 +1336,277 @@ export async function getAccountHomeStats(
       most_played_deck: mostPlayedDeck,
       most_common_wincon: mostCommonWincon,
       avg_win_turn: avgWinTurn,
+    },
+  };
+}
+
+// ─── Global Aggregates (home screen) ─────────────────────────────────────────
+//
+// Cross-match aggregates for the home dashboard: which wincon dominates, which
+// commander shows up most, which commander has dealt the most commander damage
+// in total, which commander wins the fastest on average, and the most popular
+// color identity across decks that have actually been played. Scope follows
+// getGlobalStats: personal = matches created by the user, group = matches
+// scoped to that pod (membership checked at the route layer).
+
+export type GlobalAggregateCommander = {
+  commander: Commander;
+  /** Plays for top_commander, total damage for top_damage_commander, wins for fastest_commander. */
+  value: number;
+};
+
+export type GlobalAggregates = {
+  total_matches: number;
+  /** winConditionEnum value + count of wins that used it. Null if no completed wins. */
+  top_wincon: { value: string; count: number } | null;
+  /** Commander that shows up most across decks-in-matches (partners counted separately). */
+  top_commander: GlobalAggregateCommander | null;
+  /** Commander with the highest total commander-damage dealt (sum of non-undone events). */
+  top_damage_commander: GlobalAggregateCommander | null;
+  /** Commander with the lowest average winning-turn count. Requires ≥2 wins. */
+  fastest_commander: (GlobalAggregateCommander & { avg_turns: number }) | null;
+  /** Most popular color identity across decks played, e.g. ['U','B']. 'C' = colorless. */
+  top_color_identity: { colors: string[]; count: number } | null;
+};
+
+export async function getGlobalAggregates(
+  userId: string,
+  groupId?: string | null,
+): Promise<{ data: GlobalAggregates }> {
+  const matchScope = groupId
+    ? and(eq(matches.groupId, groupId), eq(matches.status, 'completed'))
+    : and(eq(matches.createdBy, userId), eq(matches.status, 'completed'));
+
+  const [
+    totalMatchRows,
+    winconRows,
+    deckCommanderRows,
+    damageRows,
+    winningRows,
+  ] = await Promise.all([
+    db
+      .select({ total: count(matches.id) })
+      .from(matches)
+      .where(matchScope),
+
+    // Wincons from completed matches (draws have is_draw=true; exclude them).
+    db
+      .select({ winCondition: matchResults.winCondition })
+      .from(matchResults)
+      .innerJoin(matches, eq(matchResults.matchId, matches.id))
+      .where(and(matchScope, eq(matchResults.isDraw, false))),
+
+    // Every (deck → commander ids) pair touched by a participation, for commander
+    // plays + color identity aggregation.
+    db
+      .select({
+        deckId: participations.deckId,
+        commanderId1: decks.commanderId,
+        commanderId2: decks.commanderId2,
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .innerJoin(decks, eq(participations.deckId, decks.id))
+      .where(matchScope),
+
+    // Commander damage events tagged to a source commander (sum of non-undone deltas).
+    db
+      .select({
+        commanderIdSource: matchEvents.commanderIdSource,
+        totalDamage: sql<number>`sum(${matchEvents.delta})`,
+      })
+      .from(matchEvents)
+      .innerJoin(matches, eq(matchEvents.matchId, matches.id))
+      .where(and(
+        matchScope,
+        eq(matchEvents.eventType, 'commander_damage'),
+        eq(matchEvents.isUndone, false),
+        isNotNull(matchEvents.commanderIdSource),
+      ))
+      .groupBy(matchEvents.commanderIdSource),
+
+    // Winning participations with their match + deck (for fastest-commander avg turns).
+    db
+      .select({
+        participationId: participations.id,
+        matchId: participations.matchId,
+        commanderId1: decks.commanderId,
+        commanderId2: decks.commanderId2,
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .innerJoin(decks, eq(participations.deckId, decks.id))
+      .where(and(matchScope, eq(participations.result, 'win'))),
+  ]);
+
+  const totalMatchCount = Number(totalMatchRows[0]?.total ?? 0);
+
+  // ── Top wincon ───────────────────────────────────────────────────────────
+  let topWincon: { value: string; count: number } | null = null;
+  if (winconRows.length > 0) {
+    const wcMap = new Map<string, number>();
+    for (const r of winconRows) {
+      wcMap.set(r.winCondition, (wcMap.get(r.winCondition) ?? 0) + 1);
+    }
+    for (const [value, c] of wcMap) {
+      if (!topWincon || c > topWincon.count) topWincon = { value, count: c };
+    }
+  }
+
+  // ── Top commander (plays) + color identity tally ─────────────────────────
+  const cmdPlayMap = new Map<string, number>();
+  const colorTally = new Map<string, number>();
+
+  // Pre-fetch commander color identities for the decks we touched.
+  const touchedCmdIds = Array.from(
+    new Set(
+      deckCommanderRows.flatMap((r) => [r.commanderId1, r.commanderId2]).filter(Boolean) as string[],
+    ),
+  );
+  const touchedCmdObjects = touchedCmdIds.length > 0
+    ? await db.select().from(commanders).where(inArray(commanders.id, touchedCmdIds))
+    : [];
+  const cmdColorMap = new Map(touchedCmdObjects.map((c) => [c.id, c.colorIdentity]));
+  const cmdObjectMap = new Map(touchedCmdObjects.map((c) => [c.id, c]));
+
+  for (const r of deckCommanderRows) {
+    for (const cid of [r.commanderId1, r.commanderId2]) {
+      if (!cid) continue;
+      cmdPlayMap.set(cid, (cmdPlayMap.get(cid) ?? 0) + 1);
+    }
+    // Color identity for this participation's deck (partners unioned).
+    const set = new Set<string>();
+    for (const cid of [r.commanderId1, r.commanderId2]) {
+      if (!cid) continue;
+      for (const c of cmdColorMap.get(cid) ?? []) set.add(c);
+    }
+    const sorted = [...set].sort(
+      (a, b) => (WUBRG_ORDER[a] ?? 99) - (WUBRG_ORDER[b] ?? 99),
+    );
+    const key = sorted.length > 0 ? sorted.join('') : 'C';
+    colorTally.set(key, (colorTally.get(key) ?? 0) + 1);
+  }
+
+  let topCommanderEntry: { commanderId: string; count: number } | null = null;
+  for (const [commanderId, c] of cmdPlayMap) {
+    if (!topCommanderEntry || c > topCommanderEntry.count) {
+      topCommanderEntry = { commanderId, count: c };
+    }
+  }
+
+  // ── Top damage commander ────────────────────────────────────────────────
+  let topDamageEntry: { commanderId: string; total: number } | null = null;
+  for (const r of damageRows) {
+    const cid = r.commanderIdSource;
+    if (!cid) continue;
+    const total = Number(r.totalDamage ?? 0);
+    if (total <= 0) continue;
+    if (!topDamageEntry || total > topDamageEntry.total) {
+      topDamageEntry = { commanderId: cid, total };
+    }
+  }
+
+  // ── Fastest commander (by avg winning-turn count) ───────────────────────
+  let fastestEntry: { commanderId: string; avgTurns: number; wins: number } | null = null;
+  if (winningRows.length > 0) {
+    const winningPIds = winningRows.map((r) => r.participationId);
+    const winningMatchIds = Array.from(new Set(winningRows.map((r) => r.matchId)));
+
+    const turnRows = winningPIds.length > 0
+      ? await db
+          .select({
+            matchId: matchEvents.matchId,
+            turns: count(matchEvents.id),
+          })
+          .from(matchEvents)
+          .where(and(
+            inArray(matchEvents.matchId, winningMatchIds),
+            inArray(matchEvents.participationId, winningPIds),
+            eq(matchEvents.eventType, 'turn_passed'),
+            eq(matchEvents.isUndone, false),
+          ))
+          .groupBy(matchEvents.matchId)
+      : [];
+
+    const turnsByMatch = new Map<string, number>();
+    for (const r of turnRows) {
+      turnsByMatch.set(r.matchId, Number(r.turns ?? 0));
+    }
+
+    // Group winning matches by primary commander (partners counted separately).
+    const perCmd = new Map<string, { total: number; wins: number }>();
+    for (const r of winningRows) {
+      const t = turnsByMatch.get(r.matchId);
+      if (t == null || t <= 0) continue; // skip wins with no recorded turns
+      for (const cid of [r.commanderId1, r.commanderId2]) {
+        if (!cid) continue;
+        const cur = perCmd.get(cid) ?? { total: 0, wins: 0 };
+        cur.total += t;
+        cur.wins += 1;
+        perCmd.set(cid, cur);
+      }
+    }
+
+    for (const [commanderId, { total, wins }] of perCmd) {
+      if (wins < 2) continue; // noise filter
+      const avg = total / wins;
+      if (!fastestEntry || avg < fastestEntry.avgTurns) {
+        fastestEntry = { commanderId, avgTurns: avg, wins };
+      }
+    }
+  }
+
+  // ── Resolve missing commander objects (damage/fastest may reference cmds
+  //    outside the plays set if they were tagged mid-match but deck changed)
+  const missingCmdIds = [
+    topDamageEntry?.commanderId,
+    fastestEntry?.commanderId,
+  ].filter((id): id is string => !!id && !cmdObjectMap.has(id));
+
+  if (missingCmdIds.length > 0) {
+    const extra = await db
+      .select()
+      .from(commanders)
+      .where(inArray(commanders.id, missingCmdIds));
+    for (const c of extra) cmdObjectMap.set(c.id, c);
+  }
+
+  // ── Top color identity ──────────────────────────────────────────────────
+  let topColor: { colors: string[]; count: number } | null = null;
+  for (const [key, c] of colorTally) {
+    if (!topColor || c > topColor.count) {
+      topColor = { colors: key === 'C' ? [] : key.split(''), count: c };
+    }
+  }
+
+  // ── Assemble ────────────────────────────────────────────────────────────
+  const topCommander: GlobalAggregateCommander | null =
+    topCommanderEntry && cmdObjectMap.get(topCommanderEntry.commanderId)
+      ? { commander: cmdObjectMap.get(topCommanderEntry.commanderId)!, value: topCommanderEntry.count }
+      : null;
+
+  const topDamageCommander: GlobalAggregateCommander | null =
+    topDamageEntry && cmdObjectMap.get(topDamageEntry.commanderId)
+      ? { commander: cmdObjectMap.get(topDamageEntry.commanderId)!, value: topDamageEntry.total }
+      : null;
+
+  const fastestCommander: (GlobalAggregateCommander & { avg_turns: number }) | null =
+    fastestEntry && cmdObjectMap.get(fastestEntry.commanderId)
+      ? {
+          commander: cmdObjectMap.get(fastestEntry.commanderId)!,
+          value: fastestEntry.wins,
+          avg_turns: Math.round(fastestEntry.avgTurns * 10) / 10,
+        }
+      : null;
+
+  return {
+    data: {
+      total_matches: totalMatchCount,
+      top_wincon: topWincon,
+      top_commander: topCommander,
+      top_damage_commander: topDamageCommander,
+      fastest_commander: fastestCommander,
+      top_color_identity: topColor,
     },
   };
 }

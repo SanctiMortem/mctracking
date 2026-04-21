@@ -27,6 +27,7 @@ import { useTranslation } from 'react-i18next';
 
 import { AccountStatsCard } from '@/components/home/AccountStatsCard';
 import { ActiveMatchBanner } from '@/components/home/ActiveMatchBanner';
+import { GlobalStatsCard } from '@/components/home/GlobalStatsCard';
 import { MatchCard, MatchCardSkeleton } from '@/components/match/MatchCard';
 import { useGroupContext } from '@/contexts/GroupContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -161,6 +162,7 @@ export default function HomeScreen() {
     recentMatches,
     totalMatches,
     accountStats,
+    globalAggregates,
     loading,
     error,
     refresh,
@@ -303,6 +305,11 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
+
+        {/* ── Global Stats ── */}
+        {!loading && globalAggregates && (
+          <GlobalStatsCard stats={globalAggregates} />
+        )}
       </ScrollView>
     </SafeAreaView>
   );

@@ -17,7 +17,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@clerk/clerk-expo';
 
 import { apiFetch } from '@/services/api';
-import type { AccountHomeStats, GlobalStats } from '@/services/stats';
+import type { AccountHomeStats, GlobalAggregates, GlobalStats } from '@/services/stats';
 import type { MatchSummary } from '@/services/matches';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -46,6 +46,7 @@ type HistoryPage = {
 type HistoryResponse = { success: true; data: HistoryPage };
 type GlobalStatsResponse = { success: true; data: GlobalStats };
 type AccountHomeStatsResponse = { success: true; data: AccountHomeStats };
+type GlobalAggregatesResponse = { success: true; data: GlobalAggregates };
 
 export type UseHomeReturn = {
   activeMatch: ActiveMatch | null;
@@ -54,6 +55,8 @@ export type UseHomeReturn = {
   winRatePct: number | null;
   /** Account-player-scoped stats for the home dashboard card. */
   accountStats: AccountHomeStats | null;
+  /** Cross-match aggregates for the Global Stats card. */
+  globalAggregates: GlobalAggregates | null;
   loading: boolean;
   error: string | null;
   refresh: () => void;
@@ -83,6 +86,7 @@ export function useHome(activeContext: 'personal' | string): UseHomeReturn {
   const [totalMatches, setTotalMatches] = useState(0);
   const [winRatePct, setWinRatePct] = useState<number | null>(null);
   const [accountStats, setAccountStats] = useState<AccountHomeStats | null>(null);
+  const [globalAggregates, setGlobalAggregates] = useState<GlobalAggregates | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,12 +108,16 @@ export function useHome(activeContext: 'personal' | string): UseHomeReturn {
       const historyUrl = ctx !== 'personal'
         ? `/api/matches?limit=3&group_id=${ctx}`
         : '/api/matches?limit=3';
+      const aggregateUrl = ctx !== 'personal'
+        ? `/api/stats/global-aggregate?group_id=${ctx}`
+        : '/api/stats/global-aggregate';
 
-      const [sessionRes, historyRes, statsRes, accountRes] = await Promise.all([
+      const [sessionRes, historyRes, statsRes, accountRes, aggregateRes] = await Promise.all([
         apiFetch<SessionResponse>('/api/auth/session', 'GET', undefined, authHeader),
         apiFetch<HistoryResponse>(historyUrl, 'GET', undefined, authHeader),
         apiFetch<GlobalStatsResponse>('/api/stats/global', 'GET', undefined, authHeader),
         apiFetch<AccountHomeStatsResponse>('/api/stats/account-home', 'GET', undefined, authHeader),
+        apiFetch<GlobalAggregatesResponse>(aggregateUrl, 'GET', undefined, authHeader),
       ]);
 
       // Active match — filter by active context (ADR-004)
@@ -128,6 +136,7 @@ export function useHome(activeContext: 'personal' | string): UseHomeReturn {
       setTotalMatches(historyRes.data.total);
       setWinRatePct(computeWinRate(statsRes.data));
       setAccountStats(accountRes.data);
+      setGlobalAggregates(aggregateRes.data);
     } catch (e) {
       setError((e as Error).message ?? 'Failed to load home data.');
     } finally {
@@ -145,6 +154,7 @@ export function useHome(activeContext: 'personal' | string): UseHomeReturn {
     totalMatches,
     winRatePct,
     accountStats,
+    globalAggregates,
     loading,
     error,
     refresh: load,
