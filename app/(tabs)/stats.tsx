@@ -308,7 +308,8 @@ const createStyles = (t: AppTheme) => ({
     flexGrow: 0,
   },
   scopeRow: {
-    paddingVertical: spacing[3],
+    paddingTop: spacing[3],
+    paddingBottom: spacing[6],
     gap: spacing[2],
     alignItems: 'center' as const,
   },
