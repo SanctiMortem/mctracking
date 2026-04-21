@@ -270,7 +270,12 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
           <Text
             style={[
               styles.lifeTotal,
-              { color: lifeColor, fontSize: dynamicFontSize, lineHeight: dynamicFontSize * 1.05 },
+              {
+                color: lifeColor,
+                fontSize: dynamicFontSize,
+                lineHeight: dynamicFontSize * 1.05,
+                transform: [{ translateY: dynamicFontSize * 0.04 }],
+              },
             ]}
             numberOfLines={1}
           >
