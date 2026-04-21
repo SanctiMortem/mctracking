@@ -1342,12 +1342,13 @@ export async function getAccountHomeStats(
 
 // ─── Global Aggregates (home screen) ─────────────────────────────────────────
 //
-// Cross-match aggregates for the home dashboard: which wincon dominates, which
-// commander shows up most, which commander has dealt the most commander damage
-// in total, which commander wins the fastest on average, and the most popular
-// color identity across decks that have actually been played. Scope follows
-// getGlobalStats: personal = matches created by the user, group = matches
-// scoped to that pod (membership checked at the route layer).
+// World-wide cross-match aggregates for the home dashboard: which wincon
+// dominates, which commander shows up most, which commander has dealt the most
+// commander damage in total, which commander wins the fastest on average, and
+// the most popular color identity across distinct decks that have been played.
+// Every user sees the same numbers — these are not scoped to the viewer.
+// Only the commander objects and color enum/identity values are returned, so
+// no private user data (deck names, player names) leaves the aggregation.
 
 export type GlobalAggregateCommander = {
   commander: Commander;
@@ -1369,13 +1370,10 @@ export type GlobalAggregates = {
   top_color_identity: { colors: string[]; count: number } | null;
 };
 
-export async function getGlobalAggregates(
-  userId: string,
-  groupId?: string | null,
-): Promise<{ data: GlobalAggregates }> {
-  const matchScope = groupId
-    ? and(eq(matches.groupId, groupId), eq(matches.status, 'completed'))
-    : and(eq(matches.createdBy, userId), eq(matches.status, 'completed'));
+export async function getGlobalAggregates(): Promise<{ data: GlobalAggregates }> {
+  // World-wide scope: every completed match in the database, regardless of
+  // owner or group.
+  const matchScope = eq(matches.status, 'completed');
 
   const [
     totalMatchRows,
@@ -1453,9 +1451,8 @@ export async function getGlobalAggregates(
     }
   }
 
-  // ── Top commander (plays) + color identity tally ─────────────────────────
+  // ── Top commander (plays across all participations) ──────────────────────
   const cmdPlayMap = new Map<string, number>();
-  const colorTally = new Map<string, number>();
 
   // Pre-fetch commander color identities for the decks we touched.
   const touchedCmdIds = Array.from(
@@ -1474,9 +1471,25 @@ export async function getGlobalAggregates(
       if (!cid) continue;
       cmdPlayMap.set(cid, (cmdPlayMap.get(cid) ?? 0) + 1);
     }
-    // Color identity for this participation's deck (partners unioned).
+  }
+
+  // ── Color identity tally — count each distinct deck once ─────────────────
+  // A deck's color identity = union of its commander(s) identities (so a
+  // mono-U deck contributes to "U", a Kraum+Tymna partner deck to "WUB", etc.).
+  // A commander whose identity is BG contributes 1 to "BG"; a separate
+  // commander whose identity is BGR contributes 1 to "BGR" — BG is NOT
+  // bumped by the BGR deck, they're independent buckets.
+  const seenDecks = new Map<string, [string, string | null]>();
+  for (const r of deckCommanderRows) {
+    if (!seenDecks.has(r.deckId)) {
+      seenDecks.set(r.deckId, [r.commanderId1, r.commanderId2]);
+    }
+  }
+
+  const colorTally = new Map<string, number>();
+  for (const [, [c1, c2]] of seenDecks) {
     const set = new Set<string>();
-    for (const cid of [r.commanderId1, r.commanderId2]) {
+    for (const cid of [c1, c2]) {
       if (!cid) continue;
       for (const c of cmdColorMap.get(cid) ?? []) set.add(c);
     }

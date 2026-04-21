@@ -108,16 +108,15 @@ export function useHome(activeContext: 'personal' | string): UseHomeReturn {
       const historyUrl = ctx !== 'personal'
         ? `/api/matches?limit=3&group_id=${ctx}`
         : '/api/matches?limit=3';
-      const aggregateUrl = ctx !== 'personal'
-        ? `/api/stats/global-aggregate?group_id=${ctx}`
-        : '/api/stats/global-aggregate';
 
+      // Global aggregates are world-wide — same result for every user/context,
+      // never scoped by the active group.
       const [sessionRes, historyRes, statsRes, accountRes, aggregateRes] = await Promise.all([
         apiFetch<SessionResponse>('/api/auth/session', 'GET', undefined, authHeader),
         apiFetch<HistoryResponse>(historyUrl, 'GET', undefined, authHeader),
         apiFetch<GlobalStatsResponse>('/api/stats/global', 'GET', undefined, authHeader),
         apiFetch<AccountHomeStatsResponse>('/api/stats/account-home', 'GET', undefined, authHeader),
-        apiFetch<GlobalAggregatesResponse>(aggregateUrl, 'GET', undefined, authHeader),
+        apiFetch<GlobalAggregatesResponse>('/api/stats/global-aggregate', 'GET', undefined, authHeader),
       ]);
 
       // Active match — filter by active context (ADR-004)

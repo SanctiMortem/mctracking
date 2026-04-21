@@ -210,7 +210,7 @@ const createStyles = (t: AppTheme) => ({
     alignItems: 'center',
   },
   ctaPrimaryText: {
-    color: t.colors.text.primary,
+    color: t.colors.accent.onPrimary,
     fontSize: t.typography.size['body-lg'],
     fontWeight: t.typography.weight.semibold,
   },

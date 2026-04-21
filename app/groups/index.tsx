@@ -417,7 +417,7 @@ const createStyles = (t: AppTheme) => ({
     alignItems: 'center',
   },
   btnPrimaryText: {
-    color: t.colors.text.primary,
+    color: t.colors.accent.onPrimary,
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.semibold,
   },

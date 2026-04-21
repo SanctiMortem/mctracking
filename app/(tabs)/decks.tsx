@@ -168,7 +168,7 @@ const createStyles = (t: AppTheme) => ({
     paddingVertical: spacing[2],
   },
   fabLabel: {
-    color: t.colors.text.primary,
+    color: t.colors.accent.onPrimary,
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.semibold,
   },

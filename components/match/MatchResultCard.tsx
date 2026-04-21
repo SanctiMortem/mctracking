@@ -122,16 +122,16 @@ const createStyles = (t: AppTheme) => ({
 
   banner: {
     alignItems: 'center',
-    paddingVertical: spacing[8],
+    paddingVertical: spacing[4],
     paddingHorizontal: spacing[4],
-    gap: spacing[2],
+    gap: spacing[1],
   },
   icon: {
     fontSize: 28,
     lineHeight: 32,
   },
   label: {
-    fontSize: t.typography.size['heading-xl'],
+    fontSize: t.typography.size['heading-lg'],
     fontWeight: t.typography.weight.black,
     letterSpacing: 4,
   },

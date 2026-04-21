@@ -662,7 +662,7 @@ function createStyles(t: AppTheme) {
       fontWeight: t.typography.weight.medium,
     },
     segmentedTextActive: {
-      color: t.colors.text.primary,
+      color: t.colors.accent.onPrimary,
       fontWeight: t.typography.weight.semibold,
     },
   };
