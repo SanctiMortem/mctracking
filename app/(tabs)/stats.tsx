@@ -93,7 +93,7 @@ export default function StatsScreen() {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={[styles.scopeRow, { paddingHorizontal: contentPadding }]}
+      contentContainerStyle={styles.scopeRow}
       style={styles.scopeScroll}
     >
       {scopeOptions.map((opt) => {
@@ -307,7 +307,10 @@ const createStyles = (t: AppTheme) => ({
   scopeScroll: {
     flexGrow: 0,
   },
+  // Padding hardcoded (not driven by useResponsive's contentPadding) so the
+  // chip strip's metrics never change when the page below it loads/reflows.
   scopeRow: {
+    paddingHorizontal: spacing[4],
     paddingTop: spacing[3],
     paddingBottom: spacing[6],
     gap: spacing[2],
