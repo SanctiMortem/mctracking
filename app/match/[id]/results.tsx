@@ -10,6 +10,8 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+// Note: the native Stack header already handles the top safe-area inset on
+// this screen, so we only use `insets.bottom` here.
 
 import { MatchResultCard } from '@/components/match/MatchResultCard';
 import { ParticipantResultRow } from '@/components/match/ParticipantResultRow';
@@ -58,7 +60,7 @@ export default function MatchResultsScreen() {
     (Date.now() - new Date(match.endedAt).getTime()) < 15 * 60 * 1000;
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={styles.root}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing[4] }]}
