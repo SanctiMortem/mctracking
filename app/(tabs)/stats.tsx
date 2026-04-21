@@ -154,7 +154,7 @@ export default function StatsScreen() {
     <SafeAreaView style={styles.screen}>
       {header}
       {scopePicker}
-      <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.mainScroll} contentContainerStyle={[styles.content, { paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]} showsVerticalScrollIndicator={false}>
       {/* Hero — total matches */}
       <View style={styles.hero}>
         <Text style={styles.heroNumber}>{data.total_matches}</Text>
@@ -304,8 +304,18 @@ const createStyles = (t: AppTheme) => ({
     letterSpacing: 0.2,
   },
 
+  // flexShrink: 0 prevents the strip from being squeezed by the main
+  // ScrollView below once it fills with content. flexGrow: 0 stops it from
+  // expanding to fill remaining vertical space.
   scopeScroll: {
     flexGrow: 0,
+    flexShrink: 0,
+  },
+  // The main scroll view explicitly takes the remaining space and scrolls
+  // internally — without flex: 1 it sizes to its content height, which causes
+  // the column to overflow and forces sibling shrink.
+  mainScroll: {
+    flex: 1,
   },
   // Padding hardcoded (not driven by useResponsive's contentPadding) so the
   // chip strip's metrics never change when the page below it loads/reflows.
