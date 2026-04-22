@@ -1,4 +1,4 @@
-# MTG Commander Tracker
+# MTG Sliver Tracker
 
 Mobile app for tracking Magic: The Gathering Commander matches. Supports 2–4 players on a single device with live life total, poison counter, and commander damage tracking. Persists full match history with win-rate stats per player, deck, and commander.
 
@@ -47,7 +47,7 @@ Copy `.env.example` → `.env` and provide values:
 | `ADMOB_INTERSTITIAL_UNIT_ID` | AdMob interstitial unit ID |
 | `APPLE_SHARED_SECRET` | App Store shared secret for IAP receipt validation |
 | `GOOGLE_PLAY_SERVICE_ACCOUNT_KEY` | Base64-encoded Google service account JSON for Play Billing |
-| `ANDROID_PACKAGE_NAME` | Android package name (e.g. `com.mtgtracker`) |
+| `ANDROID_PACKAGE_NAME` | Android package name (e.g. `com.aboutagency.mtgtracker`) |
 
 ---
 

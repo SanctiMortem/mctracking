@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "MTG Commander Tracker",
+    "name": "MTG Sliver Tracker",
     "slug": "mtg-commander-tracker",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mtgtracker",
+    "scheme": "mtgslivertracker",
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
@@ -30,7 +30,7 @@
       },
       "package": "com.aboutagency.mtgtracker",
       "versionCode": 3,
-      "softwareKeyboardLayoutMode": "pan"
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "bundler": "metro",
@@ -42,7 +42,7 @@
       [
         "expo-secure-store",
         {
-          "faceIDPermission": "Allow MTG Commander Tracker to use Face ID."
+          "faceIDPermission": "Allow MTG Sliver Tracker to use Face ID."
         }
       ]
     ],

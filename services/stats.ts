@@ -880,6 +880,11 @@ export type TopPlayerDeck = {
   total_matches: number;
 };
 
+export type TopPlayerDeckEntry = TopPlayerDeck & {
+  /** The player whose most-played deck this is. */
+  playerId: string;
+};
+
 export type GlobalStats = {
   total_matches: number;
   total_players: number;
@@ -888,6 +893,8 @@ export type GlobalStats = {
   top_commanders: TopCommander[];
   /** Rank-1 player's most-used deck — drives the hero image in the ranking list. */
   top_player_deck: TopPlayerDeck | null;
+  /** Most-played deck per ranking for the top-3 players, keyed by playerId. */
+  top_player_decks: TopPlayerDeckEntry[];
 };
 
 export async function getGlobalStats(
@@ -1009,21 +1016,25 @@ export async function getGlobalStats(
     .sort((a, b) => (b.wr ?? -1) - (a.wr ?? -1))
     .slice(0, 5);
 
-  // ── Top player's most-used deck (for the ranking list hero thumbnail) ────────
+  // ── Top-3 players' most-used decks (hero thumbnails in the ranking list) ────
 
-  const topPlayerId = ranked.find((r) => r.rank === 1)?.playerId ?? null;
-  let topPlayerDeckId: string | null = null;
-  let topPlayerDeckPlays = 0;
-  if (topPlayerId) {
+  const topPlayerIds = ranked
+    .filter((r) => r.rank >= 1 && r.rank <= 3)
+    .map((r) => r.playerId);
+  /** Map<playerId, { deckId, plays }>. Highest-plays deck for each top-3 player. */
+  const topPlayerDeckMap = new Map<string, { deckId: string; plays: number }>();
+  if (topPlayerIds.length > 0) {
+    const topSet = new Set(topPlayerIds);
     for (const r of perPlayerDeckRows) {
-      if (r.playerId !== topPlayerId) continue;
+      if (!topSet.has(r.playerId)) continue;
       const total = Number(r.total ?? 0);
-      if (total > topPlayerDeckPlays) {
-        topPlayerDeckPlays = total;
-        topPlayerDeckId = r.deckId;
+      const current = topPlayerDeckMap.get(r.playerId);
+      if (!current || total > current.plays) {
+        topPlayerDeckMap.set(r.playerId, { deckId: r.deckId, plays: total });
       }
     }
   }
+  const topPlayerDeckIds = [...topPlayerDeckMap.values()].map((v) => v.deckId);
 
   // ── Phase 2: Resolve objects in parallel ─────────────────────────────────────
 
@@ -1031,7 +1042,7 @@ export async function getGlobalStats(
   const deckIds = Array.from(
     new Set([
       ...top5DeckEntries.map((e) => e.deckId),
-      ...(topPlayerDeckId ? [topPlayerDeckId] : []),
+      ...topPlayerDeckIds,
     ]),
   );
   const topCmdIds = top5CmdEntries.map((e) => e.commanderId);
@@ -1135,19 +1146,23 @@ export async function getGlobalStats(
     })
     .filter((x): x is TopCommander => x !== null);
 
-  // ── Top player's most-used deck — resolve into a TopPlayerDeck payload ──────
+  // ── Top-3 players' most-used decks — resolve into TopPlayerDeckEntry[] ──────
 
-  let topPlayerDeck: TopPlayerDeck | null = null;
-  if (topPlayerDeckId) {
-    const deck = deckMap.get(topPlayerDeckId);
-    if (deck) {
-      const tpdCommanders = [deck.commanderId, deck.commanderId2]
-        .filter(Boolean)
-        .map((id) => deckCmdMap.get(id!))
-        .filter(Boolean) as Commander[];
-      topPlayerDeck = { deck, commanders: tpdCommanders, total_matches: topPlayerDeckPlays };
-    }
+  const topPlayerDecks: TopPlayerDeckEntry[] = [];
+  for (const [playerId, { deckId, plays }] of topPlayerDeckMap) {
+    const deck = deckMap.get(deckId);
+    if (!deck) continue;
+    const tpdCommanders = [deck.commanderId, deck.commanderId2]
+      .filter(Boolean)
+      .map((id) => deckCmdMap.get(id!))
+      .filter(Boolean) as Commander[];
+    topPlayerDecks.push({ playerId, deck, commanders: tpdCommanders, total_matches: plays });
   }
+
+  const rank1PlayerId = ranked.find((r) => r.rank === 1)?.playerId ?? null;
+  const topPlayerDeck: TopPlayerDeck | null = rank1PlayerId
+    ? topPlayerDecks.find((e) => e.playerId === rank1PlayerId) ?? null
+    : null;
 
   return {
     data: {
@@ -1157,6 +1172,7 @@ export async function getGlobalStats(
       top_decks: topDecks,
       top_commanders: topCommanders,
       top_player_deck: topPlayerDeck,
+      top_player_decks: topPlayerDecks,
     },
   };
 }

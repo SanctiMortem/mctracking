@@ -185,7 +185,7 @@ export default function AuthScreen() {
       await signIn!.create({
         strategy: 'email_link',
         identifier: email,
-        redirectUrl: 'mtgtracker://auth/callback',
+        redirectUrl: 'mtgslivertracker://auth/callback',
       });
       setMagicSent(true);
     } catch (e: unknown) {

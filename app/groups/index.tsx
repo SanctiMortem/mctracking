@@ -237,7 +237,7 @@ export default function GroupsScreen() {
       )}
 
       {/* Create group modal */}
-      <Modal visible={createVisible} transparent animationType="slide" onRequestClose={() => setCreateVisible(false)}>
+      <Modal visible={createVisible} transparent animationType="slide" onRequestClose={() => setCreateVisible(false)} statusBarTranslucent>
         <Pressable style={styles.backdrop} onPress={() => setCreateVisible(false)} />
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.sheet}>
           <View style={styles.handle} />
@@ -273,7 +273,7 @@ export default function GroupsScreen() {
       </Modal>
 
       {/* Join group modal */}
-      <Modal visible={joinVisible} transparent animationType="slide" onRequestClose={closeJoin}>
+      <Modal visible={joinVisible} transparent animationType="slide" onRequestClose={closeJoin} statusBarTranslucent>
         <Pressable style={styles.backdrop} onPress={closeJoin} />
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.sheet}>
           <View style={styles.handle} />

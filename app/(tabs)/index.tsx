@@ -264,6 +264,17 @@ export default function HomeScreen() {
           <Text style={styles.newMatchText}>{t('match.newMatch')}</Text>
         </Pressable>
 
+        {/* ── My Pods ── */}
+        <Pressable
+          onPress={() => router.push('/groups')}
+          style={({ pressed }) => [styles.podsButton, pressed && { opacity: 0.85 }]}
+          accessibilityRole="button"
+          accessibilityLabel={t('groups.title')}
+        >
+          <Text style={styles.podsButtonText}>{t('settings.myGroups')}</Text>
+          <Text style={styles.podsButtonCaret}>›</Text>
+        </Pressable>
+
         {/* ── Account Stats ── */}
         {!loading && accountStats && (
           <AccountStatsCard stats={accountStats} />
@@ -482,6 +493,28 @@ const createStyles = (t: AppTheme) => ({
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.bold,
     letterSpacing: 0.3,
+  },
+
+  // My Pods button
+  podsButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.lg,
+    borderWidth: 1,
+    borderColor: t.colors.border.default,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+  },
+  podsButtonText: {
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-md'],
+    fontWeight: t.typography.weight.semibold,
+  },
+  podsButtonCaret: {
+    color: t.colors.text.muted,
+    fontSize: 20,
   },
 
   // Section

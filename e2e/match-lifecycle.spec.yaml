@@ -10,7 +10,7 @@
 # MATCH-009 (EPIC-02)
 
 ---
-appId: com.mtgtracker.app
+appId: com.aboutagency.mtgtracker
 
 # ─── Scenario 1: Full lifecycle — Setup → Close with winner → Results ──────────
 

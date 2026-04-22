@@ -1,5 +1,5 @@
 /**
- * Shared TypeScript interfaces — MTG Commander Tracker
+ * Shared TypeScript interfaces — MTG Sliver Tracker
  * Domain entities defined here match docs/planning/06_DATA_MODEL.md
  * Full schema implementation: EPIC-01 (Data Foundation)
  */

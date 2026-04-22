@@ -2,12 +2,12 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: 'MTG Commander Tracker',
+  name: 'MTG Sliver Tracker',
   slug: 'mtg-commander-tracker',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
-  scheme: 'mtgtracker',
+  scheme: 'mtgslivertracker',
   userInterfaceStyle: 'dark',
   ios: {
     supportsTablet: true,
@@ -24,6 +24,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     package: 'com.aboutagency.mtgtracker',
     versionCode: 3,
+    softwareKeyboardLayoutMode: 'resize',
   },
   plugins: [
     'expo-router',
@@ -31,7 +32,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-secure-store',
       {
-        faceIDPermission: 'Allow MTG Commander Tracker to use Face ID.',
+        faceIDPermission: 'Allow MTG Sliver Tracker to use Face ID.',
       },
     ],
     'expo-web-browser',

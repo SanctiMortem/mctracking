@@ -261,6 +261,7 @@ export default function SettingsScreen() {
     | { key: 'player_name' }
     | { key: 'groups' }
     | { key: 'clear_history' }
+    | { key: 'about' }
     | { key: 'signout' };
 
   type Section = { title: string; data: SectionItem[] };
@@ -284,11 +285,15 @@ export default function SettingsScreen() {
     },
     {
       title: t('settings.account'),
-      data: [{ key: 'player_name' }, { key: 'groups' }, { key: 'signout' }],
+      data: [{ key: 'player_name' }, { key: 'signout' }],
     },
     {
       title: t('settings.data'),
       data: [{ key: 'clear_history' }],
+    },
+    {
+      title: t('settings.aboutSection'),
+      data: [{ key: 'about' }],
     },
   ];
 
@@ -409,6 +414,14 @@ export default function SettingsScreen() {
               label={clearingHistory ? t('settings.clearing') : t('settings.clearHistory')}
               onPress={handleClearHistory}
               danger
+            />
+          );
+
+        case 'about':
+          return (
+            <LinkRow
+              label={t('settings.aboutAndLegal')}
+              onPress={() => router.push('/about')}
             />
           );
 

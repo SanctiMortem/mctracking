@@ -62,6 +62,7 @@ export function AccountStatsCard({ stats }: AccountStatsCardProps) {
         <WinRateRing winRatePct={stats.win_rate_pct} size={132} strokeWidth={12} />
         <View style={styles.grid}>
           <StatTile label={t('home.statTotalMatches')} value={String(stats.total_matches)} />
+          <StatTile label={t('home.statWins')} value={String(stats.wins)} />
           <StatTile label={t('home.statMostPlayedDeck')} value={topDeckLabel} />
           <StatTile label={t('home.statMostCommonWincon')} value={wincon} />
           <StatTile label={t('home.statAvgWinTurn')} value={avgTurnLabel} />
@@ -106,12 +107,12 @@ const createStyles = (t: AppTheme) => ({
     textTransform: 'uppercase' as const,
   },
   body: {
-    flexDirection: 'row' as const,
+    flexDirection: 'column' as const,
     alignItems: 'center' as const,
     gap: spacing[4],
   },
   grid: {
-    flex: 1 as const,
+    alignSelf: 'stretch' as const,
     flexDirection: 'row' as const,
     flexWrap: 'wrap' as const,
     gap: spacing[2],

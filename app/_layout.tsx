@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import * as SecureStore from 'expo-secure-store';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -90,7 +91,7 @@ function AccountPlayerSetupModal() {
   };
 
   return (
-    <Modal visible transparent animationType="fade">
+    <Modal visible transparent animationType="fade" statusBarTranslucent>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={setupStyles.backdrop}
@@ -341,6 +342,7 @@ function AuthGate() {
       <Stack.Screen name="groups/index" options={{ title: t('groups.title') }} />
       <Stack.Screen name="groups/[id]" options={{ title: t('groups.podDetail') }} />
       <Stack.Screen name="settings" options={{ title: t('settings.title') }} />
+      <Stack.Screen name="about" options={{ title: t('about.title') }} />
     </Stack>
     </GroupProvider>
   );
@@ -402,16 +404,22 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <ThemeProvider>
-        <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-          <GuestProvider>
-            <AccountPlayerProvider>
-              <StatusBar style="light" />
-              <AuthGate />
-            </AccountPlayerProvider>
-          </GuestProvider>
-        </ClerkProvider>
-      </ThemeProvider>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+            <GuestProvider>
+              <AccountPlayerProvider>
+                <StatusBar
+                  style="light"
+                  translucent={Platform.OS !== 'android'}
+                  backgroundColor={Platform.OS === 'android' ? colors.background.primary : undefined}
+                />
+                <AuthGate />
+              </AccountPlayerProvider>
+            </GuestProvider>
+          </ClerkProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

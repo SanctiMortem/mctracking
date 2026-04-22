@@ -353,7 +353,7 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
   const partnerHint = useMemo(() => cmd1?.hasPartner ?? false, [cmd1]);
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <Pressable style={styles.backdrop} onPress={onClose} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

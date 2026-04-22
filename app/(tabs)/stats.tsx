@@ -206,21 +206,22 @@ export default function StatsScreen() {
         </View>
       )}
 
-      {/* Player Rankings — rank #1 gets a commander art thumbnail of their most-used deck */}
+      {/* Player Rankings — ranks #1–3 get a commander art thumbnail of their most-used deck */}
       {data.player_rankings.length > 0 && (
         <View style={styles.section}>
           <SectionHeader title={t('stats.playerRanking')} />
           <View style={styles.list}>
             {data.player_rankings.map((ranking) => {
-              const isTop = ranking.rank === 1;
+              const isPodium = ranking.rank >= 1 && ranking.rank <= 3;
+              const podiumDeck = isPodium
+                ? data.top_player_decks?.find((e) => e.playerId === ranking.player.id) ?? null
+                : null;
               return (
                 <PlayerRankingRow
                   key={ranking.player.id}
                   ranking={ranking}
-                  topDeckArtCrop={
-                    isTop ? data.top_player_deck?.commanders[0]?.artCrop ?? null : null
-                  }
-                  topDeckLabel={isTop ? data.top_player_deck?.deck.name ?? null : null}
+                  topDeckArtCrop={podiumDeck?.commanders[0]?.artCrop ?? null}
+                  topDeckLabel={ranking.rank === 1 ? podiumDeck?.deck.name ?? null : null}
                 />
               );
             })}
@@ -350,7 +351,8 @@ const createStyles = (t: AppTheme) => ({
 
   hero: {
     alignItems: 'center',
-    paddingVertical: spacing[6],
+    paddingTop: spacing[3],
+    paddingBottom: spacing[6],
     gap: spacing[1],
   },
   heroNumber: {

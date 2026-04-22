@@ -10,7 +10,7 @@
 # HIST-012 (EPIC-04)
 
 ---
-appId: com.mtgtracker.app
+appId: com.aboutagency.mtgtracker
 
 # ─── Scenario 1: Match appears in history after close ────────────────────────
 # (Full flow: create → play → close → verify in SCR-005)

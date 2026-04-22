@@ -15,7 +15,7 @@
  */
 
 const SCRYFALL_BASE = 'https://api.scryfall.com';
-const USER_AGENT = 'MTGCommanderTracker/0.1 (+https://example.com)';
+const USER_AGENT = 'MTGSliverTracker/1.0 (+mailto:support@aboutagency.com)';
 const ACCEPT = 'application/json';
 
 // Small LRU caches keyed by lowercased input

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Status
 
-**MTG Commander Tracker** is in the **planning phase** — all technical documentation is complete but source code has not yet been scaffolded. The next step is scaffolding the Expo project and beginning Batch 1 implementation.
+**MTG Sliver Tracker** is in the **planning phase** — all technical documentation is complete but source code has not yet been scaffolded. The next step is scaffolding the Expo project and beginning Batch 1 implementation.
 
 ## Development Commands
 

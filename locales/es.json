@@ -372,7 +372,28 @@
     "clearHistoryAction": "Borrar historial",
     "clearing": "Borrando…",
     "clearHistoryDone": "Historial borrado.",
-    "clearHistoryError": "No se pudo borrar el historial."
+    "clearHistoryError": "No se pudo borrar el historial.",
+    "aboutSection": "Acerca de",
+    "aboutAndLegal": "Acerca de y legal"
+  },
+  "about": {
+    "title": "Acerca de y legal",
+    "appName": "MTG Sliver Tracker",
+    "tagline": "Compañero no oficial para jugadores de Commander",
+    "versionLabel": "Versión",
+    "buildLabel": "Build",
+    "legal": "Legal y soporte",
+    "privacyPolicy": "Política de privacidad",
+    "contentRights": "Derechos de contenido y créditos",
+    "support": "Contactar soporte",
+    "fanContent": "Magic: The Gathering",
+    "fanContentBody": "MTG Sliver Tracker es contenido no oficial de fans permitido bajo la Política de Contenido de Fans de Wizards of the Coast. No aprobado ni respaldado por Wizards of the Coast. Partes de los materiales usados son propiedad de Wizards of the Coast. © Wizards of the Coast LLC.",
+    "fanContentLink": "Leer la Política de Contenido de Fans →",
+    "cardData": "Datos de cartas",
+    "scryfallBody": "Los nombres, identidad de color y URLs de imagen de las cartas provienen de la API de Scryfall. El conjunto de datos compilado de Scryfall se distribuye bajo Creative Commons Atribución-NoComercial 4.0 Internacional.",
+    "openSource": "Código abierto",
+    "openSourceBody": "Construido con el siguiente software de código abierto, cada uno usado bajo su licencia correspondiente:",
+    "copyright": "© 2026 About Agency. Datos de cartas © Scryfall, LLC."
   },
   "history": {
     "noMatchesFound": "Sin partidas encontradas",
@@ -476,6 +497,7 @@
     "statNoMatches": "Sin partidas aún",
     "accountStatsTitle": "Tus estadísticas",
     "statTotalMatches": "Partidas",
+    "statWins": "Victorias",
     "statMostPlayedDeck": "Mazo top",
     "statMostCommonWincon": "Wincon top",
     "statAvgWinTurn": "Turno medio",

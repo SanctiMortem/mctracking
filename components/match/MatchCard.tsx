@@ -15,6 +15,18 @@ import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAccountPlayer } from '@/contexts/AccountPlayerContext';
+
+const LEFT_STRIPE_NEUTRAL = '#A8B2C1';
+const LEFT_STRIPE_WIDTH = 4;
+
+function didAccountPlayerWin(summary: MatchSummary, accountPlayerId: string | null): boolean {
+  if (!accountPlayerId) return false;
+  const winnerId = summary.result && !summary.result.isDraw ? summary.result.winnerParticipationId : null;
+  if (!winnerId) return false;
+  const winner = summary.participations.find((p) => p.id === winnerId);
+  return winner?.playerId === accountPlayerId;
+}
 
 // ─── Outcome helpers ──────────────────────────────────────────────────────────
 
@@ -87,10 +99,14 @@ interface MatchCardProps {
 export function MatchCard({ summary, onPress, onDelete }: MatchCardProps) {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const { accountPlayer } = useAccountPlayer();
 
   const outcome = deriveOutcome(summary);
   const OUTCOME_STYLES = getOutcomeStyles(theme.colors.accent.primary);
   const style = OUTCOME_STYLES[outcome];
+  const stripeColor = didAccountPlayerWin(summary, accountPlayer?.id ?? null)
+    ? theme.colors.accent.primary
+    : LEFT_STRIPE_NEUTRAL;
   const duration = formatMatchDuration(summary.match.createdAt, summary.match.endedAt);
   const dateTime = formatDateTime(summary.match.endedAt ?? summary.match.createdAt);
   const subject = headerSubject(summary);
@@ -104,7 +120,11 @@ export function MatchCard({ summary, onPress, onDelete }: MatchCardProps) {
       onPress={onPress}
       onLongPress={onDelete}
       delayLongPress={600}
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      style={({ pressed }) => [
+        styles.card,
+        pressed && styles.cardPressed,
+        { borderLeftWidth: LEFT_STRIPE_WIDTH, borderLeftColor: stripeColor },
+      ]}
       accessibilityRole="button"
       accessibilityLabel={`Match ${dateTime} — ${style.label}`}
     >

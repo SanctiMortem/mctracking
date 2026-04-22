@@ -264,12 +264,12 @@ const createStyles = (t: AppTheme) => ({
   desatOverlayT2: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#808080',
-    opacity: 0.35,
+    opacity: 0.50,
   },
   desatOverlayT3: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#808080',
-    opacity: 0.65,
+    opacity: 0.80,
   },
 
   // Gold divider under the art on tier 1
