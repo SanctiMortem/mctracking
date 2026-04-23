@@ -134,7 +134,7 @@ Search and replace across both stores:
 | Placeholder | Replace with |
 |-------------|--------------|
 | `mtg.aboutagency.mx` | Your public domain (e.g. `mtgslivertracker.com` or `aboutagency.com/mtgsliver`) |
-| `support@aboutagency.com` | `feedback@aboutagency.mx` |
+| `support@aboutagency.com` | `support@aboutagency.mx` |
 
 ---
 
