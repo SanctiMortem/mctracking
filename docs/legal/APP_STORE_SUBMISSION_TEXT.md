@@ -31,10 +31,10 @@ UI iconography uses Ionicons under the MIT License. Typography uses Google Fonts
 
 All user-generated content (player names, deck names, match data) is owned by the user who entered it.
 
-Full attribution and licensing details: https://YOUR-DOMAIN/content-rights
+Full attribution and licensing details: https://mtg.aboutagency.mx/content-rights
 ```
 
-> **Replace `https://YOUR-DOMAIN/content-rights`** with the public URL where you host CONTENT_RIGHTS.md.
+> **Replace `https://mtg.aboutagency.mx/content-rights`** with the public URL where you host CONTENT_RIGHTS.md.
 
 ### Copyright field
 
@@ -51,13 +51,13 @@ Already shared — continue using the same URL.
 ### Support URL
 
 ```
-https://YOUR-DOMAIN/support
+https://mtg.aboutagency.mx/support
 ```
 
 ### Marketing URL (optional)
 
 ```
-https://YOUR-DOMAIN
+https://mtg.aboutagency.mx
 ```
 
 ### Trade Representative Contact Information
@@ -114,7 +114,7 @@ Unofficial Fan Content permitted under the Wizards of the Coast Fan Content Poli
 If asked to describe third-party content or data sources in free-text, paste:
 
 ```
-Card data (names, color identity, art-crop image URLs) is fetched from the public Scryfall API (scryfall.com) under Creative Commons Attribution-NonCommercial 4.0 International. UI icons use Ionicons (MIT). Typography uses Google Fonts (SIL Open Font License 1.1). Full attribution at https://YOUR-DOMAIN/content-rights.
+Card data (names, color identity, art-crop image URLs) is fetched from the public Scryfall API (scryfall.com) under Creative Commons Attribution-NonCommercial 4.0 International. UI icons use Ionicons (MIT). Typography uses Google Fonts (SIL Open Font License 1.1). Full attribution at https://mtg.aboutagency.mx/content-rights.
 ```
 
 ### Copyright / ownership declaration
@@ -133,8 +133,8 @@ Search and replace across both stores:
 
 | Placeholder | Replace with |
 |-------------|--------------|
-| `YOUR-DOMAIN` | Your public domain (e.g. `mtgslivertracker.com` or `aboutagency.com/mtgsliver`) |
-| `support@aboutagency.com` | Real support email (confirm this is the inbox you'll monitor) |
+| `mtg.aboutagency.mx` | Your public domain (e.g. `mtgslivertracker.com` or `aboutagency.com/mtgsliver`) |
+| `support@aboutagency.com` | `feedback@aboutagency.mx` |
 
 ---
 
