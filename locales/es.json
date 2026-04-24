@@ -373,6 +373,12 @@
     "clearing": "Borrando…",
     "clearHistoryDone": "Historial borrado.",
     "clearHistoryError": "No se pudo borrar el historial.",
+    "deleteAccount": "Eliminar cuenta",
+    "deletingAccount": "Eliminando cuenta…",
+    "deleteAccountTitle": "¿Eliminar cuenta?",
+    "deleteAccountConfirm": "Esto elimina permanentemente tu cuenta, credenciales de acceso, mazos, jugadores y el historial de partidas personales. Los datos compartidos en pods pueden seguir visibles para otros miembros. No se puede deshacer.",
+    "deleteAccountAction": "Eliminar cuenta",
+    "deleteAccountError": "No se pudo eliminar la cuenta.",
     "aboutSection": "Acerca de",
     "aboutAndLegal": "Acerca de y legal"
   },

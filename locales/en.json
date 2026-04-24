@@ -373,6 +373,12 @@
     "clearing": "Clearing…",
     "clearHistoryDone": "Match history cleared.",
     "clearHistoryError": "Could not clear history.",
+    "deleteAccount": "Delete account",
+    "deletingAccount": "Deleting account…",
+    "deleteAccountTitle": "Delete account?",
+    "deleteAccountConfirm": "This permanently deletes your account, sign-in credentials, decks, players, and personal match history. Pod data may remain visible to other members. This cannot be undone.",
+    "deleteAccountAction": "Delete account",
+    "deleteAccountError": "Could not delete account.",
     "aboutSection": "About",
     "aboutAndLegal": "About & Legal"
   },

@@ -148,6 +148,7 @@ export default function SettingsScreen() {
   const [nameInput, setNameInput] = useState('');
   const [savingName, setSavingName] = useState(false);
   const [clearingHistory, setClearingHistory] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   // ── Handlers ──────────────────────────────
 
@@ -231,6 +232,38 @@ export default function SettingsScreen() {
     );
   }, [clearingHistory, getToken, t]);
 
+  const handleDeleteAccount = useCallback(() => {
+    Alert.alert(
+      t('settings.deleteAccountTitle'),
+      t('settings.deleteAccountConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('settings.deleteAccountAction'),
+          style: 'destructive',
+          onPress: async () => {
+            if (deletingAccount) return;
+            setDeletingAccount(true);
+            try {
+              const token = await getToken();
+              await apiFetch<{ success: boolean }>(
+                '/api/auth/account',
+                'DELETE',
+                undefined,
+                token ?? undefined,
+              );
+              await signOut();
+              router.replace('/auth');
+            } catch (e) {
+              setDeletingAccount(false);
+              Alert.alert(t('settings.deleteAccountError'), (e as Error).message);
+            }
+          },
+        },
+      ],
+    );
+  }, [deletingAccount, getToken, signOut, router, t]);
+
   const handleSignOut = useCallback(() => {
     Alert.alert(t('settings.signOutTitle'), t('settings.signOutConfirm'), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -262,7 +295,8 @@ export default function SettingsScreen() {
     | { key: 'groups' }
     | { key: 'clear_history' }
     | { key: 'about' }
-    | { key: 'signout' };
+    | { key: 'signout' }
+    | { key: 'delete_account' };
 
   type Section = { title: string; data: SectionItem[] };
 
@@ -285,7 +319,11 @@ export default function SettingsScreen() {
     },
     {
       title: t('settings.account'),
-      data: [{ key: 'player_name' }, { key: 'signout' }],
+      data: [
+        { key: 'player_name' },
+        { key: 'signout' },
+        { key: 'delete_account' },
+      ],
     },
     {
       title: t('settings.data'),
@@ -434,6 +472,20 @@ export default function SettingsScreen() {
             />
           );
 
+        case 'delete_account':
+          if (!accountPlayer) return null;
+          return (
+            <LinkRow
+              label={
+                deletingAccount
+                  ? t('settings.deletingAccount')
+                  : t('settings.deleteAccount')
+              }
+              onPress={handleDeleteAccount}
+              danger
+            />
+          );
+
         default:
           return null;
       }
@@ -454,8 +506,10 @@ export default function SettingsScreen() {
       handleLanguage,
       handleSignOut,
       handleClearHistory,
+      handleDeleteAccount,
       clearingHistory,
       signingOut,
+      deletingAccount,
       router,
       themeId,
       setThemeId,
