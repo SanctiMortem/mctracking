@@ -13,6 +13,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: true,
     bundleIdentifier: 'com.aboutagency.mtgtracker',
     buildNumber: '6',
+    usesAppleSignIn: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
     },
