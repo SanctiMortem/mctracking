@@ -67,7 +67,7 @@ export function PlayerForm({ visible, player, onSave, onClose }: PlayerFormProps
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.sheet}>
+      <KeyboardAvoidingView behavior="padding" style={styles.sheet}>
         <View style={styles.handle} />
 
         <Text style={styles.title}>{player ? t('player.editPlayer') : t('player.newPlayer')}</Text>

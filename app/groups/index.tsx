@@ -13,7 +13,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  SafeAreaView,
   SectionList,
   Share,
   StyleSheet,
@@ -21,6 +20,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
@@ -239,7 +239,7 @@ export default function GroupsScreen() {
       {/* Create group modal */}
       <Modal visible={createVisible} transparent animationType="slide" onRequestClose={() => setCreateVisible(false)} statusBarTranslucent>
         <Pressable style={styles.backdrop} onPress={() => setCreateVisible(false)} />
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.sheet}>
+        <KeyboardAvoidingView behavior="padding" style={styles.sheet}>
           <View style={styles.handle} />
           <Text style={styles.sheetTitle}>{t('groups.newGroup')}</Text>
           <Text style={styles.inputLabel}>{t('groups.groupName')}</Text>
@@ -275,7 +275,7 @@ export default function GroupsScreen() {
       {/* Join group modal */}
       <Modal visible={joinVisible} transparent animationType="slide" onRequestClose={closeJoin} statusBarTranslucent>
         <Pressable style={styles.backdrop} onPress={closeJoin} />
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.sheet}>
+        <KeyboardAvoidingView behavior="padding" style={styles.sheet}>
           <View style={styles.handle} />
           <Text style={styles.sheetTitle}>{t('groups.joinGroup')}</Text>
           <Text style={styles.inputLabel}>{t('groups.inviteCode')}</Text>

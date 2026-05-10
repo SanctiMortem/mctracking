@@ -7,7 +7,8 @@
  *
  * HIST-002 (EPIC-04)
  */
-import { Alert, FlatList, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useRouter } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';

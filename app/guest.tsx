@@ -17,11 +17,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 

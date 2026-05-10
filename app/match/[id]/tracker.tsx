@@ -16,11 +16,11 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
@@ -396,7 +396,7 @@ export default function MatchTrackerScreen() {
   const hasUndoableEvents = events.some((e) => !e.isUndone);
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <Pressable

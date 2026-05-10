@@ -7,11 +7,11 @@ import { useCallback } from 'react';
 import {
   Linking,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 import { useTranslation } from 'react-i18next';
 

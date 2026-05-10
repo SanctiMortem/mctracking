@@ -8,13 +8,13 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
-  SafeAreaView,
   SectionList,
   Switch,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 import { useTranslation } from 'react-i18next';

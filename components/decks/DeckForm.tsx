@@ -356,7 +356,7 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <Pressable style={styles.backdrop} onPress={onClose} />
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
         style={styles.sheet}
       >
         <View style={styles.handle} />
@@ -378,7 +378,10 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
           <CommanderPicker
             label={t('game.commander')}
             selected={cmd1}
-            onSelect={setCmd1}
+            onSelect={(c) => {
+              setCmd1(c);
+              if (c && !deckName.trim()) setDeckName(c.name);
+            }}
             placeholder="e.g. Atraxa, Praetors' Voice"
           />
 

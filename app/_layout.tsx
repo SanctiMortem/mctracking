@@ -93,7 +93,7 @@ function AccountPlayerSetupModal() {
   return (
     <Modal visible transparent animationType="fade" statusBarTranslucent>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
         style={setupStyles.backdrop}
       >
         <View style={setupStyles.card}>
