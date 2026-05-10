@@ -34,7 +34,8 @@
       "env": {
         "APP_ENV": "production",
         "EXPO_PUBLIC_API_URL": "https://mctracker-about-agency.vercel.app",
-        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsubXRnLmFib3V0YWdlbmN5Lm14JA"
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsubXRnLmFib3V0YWdlbmN5Lm14JA",
+        "EXPO_NO_CAPABILITY_SYNC": "1"
       },
       "channel": "production"
     }
