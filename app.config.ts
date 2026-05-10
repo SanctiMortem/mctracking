@@ -37,6 +37,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     'expo-web-browser',
+    './plugins/withAdiRegistration',
   ],
   web: {
     output: 'server',
