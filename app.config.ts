@@ -4,7 +4,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'MTG Sliver Tracker',
   slug: 'mtg-commander-tracker',
-  version: '1.0.1',
+  version: '1.0.2',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'mtgslivertracker',
@@ -12,7 +12,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.aboutagency.mtgtracker',
-    buildNumber: '5',
+    buildNumber: '6',
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
     },
@@ -23,7 +23,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundColor: '#1c1102',
     },
     package: 'com.aboutagency.mtgtracker',
-    versionCode: 3,
+    versionCode: 4,
     softwareKeyboardLayoutMode: 'resize',
   },
   plugins: [
