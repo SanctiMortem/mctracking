@@ -58,8 +58,16 @@ async function scryfallFetch(path: string, init?: RequestInit): Promise<Response
 }
 
 /**
- * Autocomplete a partial card name.
- * Scryfall already filters to unique names, no need to dedupe on our side.
+ * Autocomplete a partial card name, scoped to legal commanders only.
+ *
+ * Uses /cards/search with the `is:commander` filter — Scryfall's authoritative
+ * answer for "can this card be a commander?" This covers legendary creatures,
+ * Backgrounds, planeswalkers with "can be your commander" text, and newer cases
+ * like Spacecraft (e.g. Inspirit, Flagship Vessel) that the previous type_line
+ * heuristic rejected.
+ *
+ * We also warm the commanderCache with full card data, so the subsequent
+ * findCommander() call after the user picks a suggestion is a cache hit.
  */
 export async function autocomplete(q: string): Promise<string[]> {
   const key = q.trim().toLowerCase();
@@ -68,23 +76,39 @@ export async function autocomplete(q: string): Promise<string[]> {
   if (cached) return cached;
 
   try {
+    const query = `is:commander name:"${key.replace(/"/g, '\\"')}"`;
     const res = await scryfallFetch(
-      `/cards/autocomplete?q=${encodeURIComponent(key)}&include_extras=false`,
+      `/cards/search?q=${encodeURIComponent(query)}&unique=cards&order=name`,
     );
-    if (!res.ok) return [];
-    const data = (await res.json()) as { data?: string[] };
-    const list = Array.isArray(data.data) ? data.data : [];
-    lruSet(autocompleteCache, key, list);
-    return list;
+    if (!res.ok) {
+      lruSet(autocompleteCache, key, []);
+      return [];
+    }
+    const data = (await res.json()) as { data?: ScryfallCard[] };
+    const cards = Array.isArray(data.data) ? data.data : [];
+
+    // Warm the commander cache so the next findCommander() is instant.
+    for (const card of cards) {
+      const nameKey = card.name.toLowerCase();
+      if (!commanderCache.has(nameKey)) {
+        lruSet(commanderCache, nameKey, cardToCommander(card));
+      }
+    }
+
+    const names = cards.slice(0, 15).map((c) => c.name);
+    lruSet(autocompleteCache, key, names);
+    return names;
   } catch {
     return [];
   }
 }
 
 /**
- * Find the full commander record by exact name.
- * Uses /cards/named?exact= which returns a single card or 404.
- * Filters: must be a legendary creature OR have `can_be_commander` typeline hint.
+ * Find the full commander record by exact name, validated by Scryfall's
+ * `is:commander` filter (single source of truth).
+ *
+ * The previous version used a type_line heuristic that rejected non-creature
+ * commanders introduced after the rule was added (e.g. legendary Spacecraft).
  */
 export async function findCommander(name: string): Promise<ScryfallCommander | null> {
   const key = name.trim().toLowerCase();
@@ -92,48 +116,45 @@ export async function findCommander(name: string): Promise<ScryfallCommander | n
   if (commanderCache.has(key)) return commanderCache.get(key) ?? null;
 
   try {
+    const query = `is:commander !"${name.replace(/"/g, '\\"')}"`;
     const res = await scryfallFetch(
-      `/cards/named?exact=${encodeURIComponent(key)}`,
+      `/cards/search?q=${encodeURIComponent(query)}&unique=cards`,
     );
     if (!res.ok) {
       lruSet(commanderCache, key, null);
       return null;
     }
-    const card = (await res.json()) as ScryfallCard;
-
-    // Basic commander-legality check: either a legendary creature OR the
-    // card's type_line includes 'Background'/'Planeswalker can be your commander'.
-    // We trust Scryfall's type_line for this.
-    const typeLine = (card.type_line ?? '').toLowerCase();
-    const isLegendaryCreature =
-      typeLine.includes('legendary') && typeLine.includes('creature');
-    const isBackground = typeLine.includes('background');
-    const canBeCommander =
-      isLegendaryCreature ||
-      isBackground ||
-      (card.oracle_text ?? '').toLowerCase().includes('can be your commander');
-
-    if (!canBeCommander) {
+    const data = (await res.json()) as { data?: ScryfallCard[] };
+    const card = data.data?.[0];
+    if (!card) {
       lruSet(commanderCache, key, null);
       return null;
     }
 
-    const artCrop = extractArtCrop(card);
-    const hasPartner = /\bpartner\b/i.test(card.oracle_text ?? '') ||
-      /\bpartner with\b/i.test(card.oracle_text ?? '');
-
-    const result: ScryfallCommander = {
-      id: card.id,
-      name: card.name,
-      colorIdentity: Array.isArray(card.color_identity) ? card.color_identity : [],
-      artCrop,
-      hasPartner,
-    };
+    const result = cardToCommander(card);
     lruSet(commanderCache, key, result);
     return result;
   } catch {
     return null;
   }
+}
+
+function cardToCommander(card: ScryfallCard): ScryfallCommander {
+  const oracle = card.oracle_text ?? '';
+  const hasPartner =
+    /\bpartner\b/i.test(oracle) ||
+    /\bpartner with\b/i.test(oracle) ||
+    /\bfriends forever\b/i.test(oracle) ||
+    /\bdoctor's companion\b/i.test(oracle) ||
+    /\bchoose a background\b/i.test(oracle);
+
+  return {
+    id: card.id,
+    name: card.name,
+    colorIdentity: Array.isArray(card.color_identity) ? card.color_identity : [],
+    artCrop: extractArtCrop(card),
+    hasPartner,
+  };
 }
 
 function extractArtCrop(card: ScryfallCard): string | null {
