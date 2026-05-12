@@ -89,6 +89,7 @@ export async function listPodDecks(groupId: string): Promise<PodDeck[]> {
       groupId: decks.groupId,
       description: decks.description,
       createdBy: decks.createdBy,
+      archivedAt: decks.archivedAt,
       deletedAt: decks.deletedAt,
       createdAt: decks.createdAt,
       // Commander 1
@@ -129,6 +130,7 @@ export async function listPodDecks(groupId: string): Promise<PodDeck[]> {
       and(
         inArray(decks.createdBy, memberUserIds),
         isNull(decks.deletedAt),
+        isNull(decks.archivedAt),
       ),
     )
     .orderBy(players.name, decks.name);
@@ -141,6 +143,7 @@ export async function listPodDecks(groupId: string): Promise<PodDeck[]> {
     groupId: row.groupId,
     description: row.description,
     createdBy: row.createdBy,
+    archivedAt: row.archivedAt,
     deletedAt: row.deletedAt,
     createdAt: row.createdAt,
     commander: {

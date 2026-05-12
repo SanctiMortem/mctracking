@@ -261,7 +261,19 @@
     "worstMatchupsTitle": "Donde las sombras pesan más",
     "worstMatchupsFlavor": "Pruebas sin vencer — némesis aún en pie.",
     "strongAgainstTitle": "Se alzó digno contra",
-    "weakAgainstTitle": "Se quebró donde la grandeza lo exigía"
+    "weakAgainstTitle": "Se quebró donde la grandeza lo exigía",
+    "archive": "Archivar",
+    "unarchive": "Desarchivar",
+    "archivedBadge": "Archivado",
+    "showArchived": "Ver archivados",
+    "hideArchived": "Ocultar archivados",
+    "archiveDeckTitle": "Archivar mazo",
+    "archiveDeckMessage": "¿Archivar \"{{name}}\"? Se ocultará de tus mazos y del setup de partidas, pero su historial y estadísticas se conservan.",
+    "unarchiveDeckTitle": "Desarchivar mazo",
+    "unarchiveDeckMessage": "¿Desarchivar \"{{name}}\"? Volverá a aparecer en tus mazos y estará disponible para nuevas partidas.",
+    "archiveError": "No se pudo archivar el mazo",
+    "archivedEmpty": "Sin mazos archivados",
+    "archivedEmptyBody": "Los mazos archivados aparecen aquí. Su historial se conserva, pero quedan ocultos del setup de partidas."
   },
   "commanders": {
     "title": "Commanders",

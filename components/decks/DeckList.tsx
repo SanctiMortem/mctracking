@@ -26,6 +26,8 @@ interface DeckListProps {
   onTap: (deck: DeckWithCommanders) => void;
   onEdit: (deck: DeckWithCommanders) => void;
   onDelete: (deck: DeckWithCommanders) => void;
+  onArchiveToggle?: (deck: DeckWithCommanders) => void;
+  showArchivedEmpty?: boolean;
 }
 
 function DeckRow({
@@ -33,15 +35,19 @@ function DeckRow({
   onTap,
   onEdit,
   onDelete,
+  onArchiveToggle,
 }: {
   deck: DeckWithCommanders;
   onTap: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onArchiveToggle?: () => void;
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
+
+  const isArchived = !!deck.archivedAt;
 
   function confirmDelete() {
     Alert.alert(
@@ -54,6 +60,23 @@ function DeckRow({
     );
   }
 
+  function confirmArchiveToggle() {
+    if (!onArchiveToggle) return;
+    Alert.alert(
+      isArchived ? t('deck.unarchiveDeckTitle') : t('deck.archiveDeckTitle'),
+      isArchived
+        ? t('deck.unarchiveDeckMessage', { name: deck.name })
+        : t('deck.archiveDeckMessage', { name: deck.name }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: isArchived ? t('deck.unarchive') : t('deck.archive'),
+          onPress: onArchiveToggle,
+        },
+      ],
+    );
+  }
+
   const hasPartner = !!deck.commander2;
   const allColors = hasPartner
     ? [...new Set([...(deck.commander.colorIdentity ?? []), ...(deck.commander2?.colorIdentity ?? [])])]
@@ -61,9 +84,13 @@ function DeckRow({
   const artSrc = deck.commander.artCrop ?? deck.commander2?.artCrop ?? null;
 
   return (
-    <Pressable style={styles.row} onPress={onTap} android_ripple={{ color: theme.colors.border.subtle }}>
+    <Pressable
+      style={[styles.row, isArchived && styles.rowArchived]}
+      onPress={onTap}
+      android_ripple={{ color: theme.colors.border.subtle }}
+    >
       {/* Commander art thumbnail */}
-      <View style={styles.thumb}>
+      <View style={[styles.thumb, isArchived && styles.thumbArchived]}>
         {artSrc ? (
           <Image source={{ uri: artSrc }} style={styles.thumbImg} />
         ) : (
@@ -72,8 +99,20 @@ function DeckRow({
       </View>
 
       <View style={styles.rowInfo}>
-        {/* Deck name */}
-        <Text style={styles.deckName} numberOfLines={1}>{deck.name}</Text>
+        {/* Deck name + archived badge */}
+        <View style={styles.deckNameRow}>
+          <Text
+            style={[styles.deckName, isArchived && styles.deckNameArchived]}
+            numberOfLines={1}
+          >
+            {deck.name}
+          </Text>
+          {isArchived && (
+            <View style={styles.archivedBadge}>
+              <Text style={styles.archivedBadgeText}>{t('deck.archivedBadge')}</Text>
+            </View>
+          )}
+        </View>
 
         {/* Commander(s) */}
         <Text style={styles.commanderName} numberOfLines={1}>
@@ -89,6 +128,17 @@ function DeckRow({
         <Pressable onPress={onEdit} style={styles.actionBtn} accessibilityLabel={`${t('common.edit')} ${deck.name}`}>
           <Text style={styles.actionEdit}>{t('common.edit')}</Text>
         </Pressable>
+        {onArchiveToggle && (
+          <Pressable
+            onPress={confirmArchiveToggle}
+            style={styles.actionBtn}
+            accessibilityLabel={`${isArchived ? t('deck.unarchive') : t('deck.archive')} ${deck.name}`}
+          >
+            <Text style={styles.actionArchive}>
+              {isArchived ? t('deck.unarchive') : t('deck.archive')}
+            </Text>
+          </Pressable>
+        )}
         <Pressable onPress={confirmDelete} style={styles.actionBtn} accessibilityLabel={`${t('common.remove')} ${deck.name}`}>
           <Text style={styles.actionDelete}>{t('common.remove')}</Text>
         </Pressable>
@@ -97,19 +147,23 @@ function DeckRow({
   );
 }
 
-function EmptyState() {
+function EmptyState({ archived }: { archived?: boolean }) {
   const styles = useThemedStyles(createStyles);
 
   const { t } = useTranslation();
   return (
     <View style={styles.empty}>
-      <Text style={styles.emptyTitle}>{t('deck.noDecksYet')}</Text>
-      <Text style={styles.emptySubtitle}>{t('deck.noDecksBody')}</Text>
+      <Text style={styles.emptyTitle}>
+        {archived ? t('deck.archivedEmpty') : t('deck.noDecksYet')}
+      </Text>
+      <Text style={styles.emptySubtitle}>
+        {archived ? t('deck.archivedEmptyBody') : t('deck.noDecksBody')}
+      </Text>
     </View>
   );
 }
 
-export function DeckList({ decks, onTap, onEdit, onDelete }: DeckListProps) {
+export function DeckList({ decks, onTap, onEdit, onDelete, onArchiveToggle, showArchivedEmpty }: DeckListProps) {
   const styles = useThemedStyles(createStyles);
 
   const { contentMaxWidth } = useResponsive();
@@ -124,10 +178,11 @@ export function DeckList({ decks, onTap, onEdit, onDelete }: DeckListProps) {
           onTap={() => onTap(item)}
           onEdit={() => onEdit(item)}
           onDelete={() => onDelete(item)}
+          onArchiveToggle={onArchiveToggle ? () => onArchiveToggle(item) : undefined}
         />
       )}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
-      ListEmptyComponent={<EmptyState />}
+      ListEmptyComponent={<EmptyState archived={showArchivedEmpty} />}
       contentContainerStyle={[
         decks.length === 0 ? styles.emptyContainer : undefined,
         contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined,
@@ -146,12 +201,18 @@ const createStyles = (t: AppTheme) => ({
     backgroundColor: t.colors.background.secondary,
     gap: spacing[3],
   },
+  rowArchived: {
+    opacity: 0.6,
+  },
   thumb: {
     width: 52,
     height: 52,
     borderRadius: t.radius.sm,
     overflow: 'hidden',
     backgroundColor: t.colors.border.subtle,
+  },
+  thumbArchived: {
+    opacity: 0.7,
   },
   thumbImg: {
     width: '100%',
@@ -161,10 +222,34 @@ const createStyles = (t: AppTheme) => ({
     backgroundColor: t.colors.border.subtle,
   },
   rowInfo: { flex: 1, gap: spacing[1] },
+  deckNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
   deckName: {
     color: t.colors.text.primary,
     fontSize: t.typography.size['body-lg'],
     fontWeight: t.typography.weight.semibold,
+    flexShrink: 1,
+  },
+  deckNameArchived: {
+    fontStyle: 'italic' as const,
+  },
+  archivedBadge: {
+    backgroundColor: t.colors.background.elevated,
+    borderRadius: t.radius.sm,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 1,
+    borderWidth: 1,
+    borderColor: t.colors.border.default,
+  },
+  archivedBadgeText: {
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase' as const,
   },
   commanderName: {
     color: t.colors.text.secondary,
@@ -174,6 +259,11 @@ const createStyles = (t: AppTheme) => ({
   actionBtn: { padding: spacing[2] },
   actionEdit: {
     color: t.colors.text.link,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
+  },
+  actionArchive: {
+    color: t.colors.text.secondary,
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.medium,
   },

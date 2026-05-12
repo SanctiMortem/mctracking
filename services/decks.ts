@@ -38,6 +38,7 @@ function buildDeckSelect() {
       groupId: decks.groupId,
       description: decks.description,
       createdBy: decks.createdBy,
+      archivedAt: decks.archivedAt,
       deletedAt: decks.deletedAt,
       createdAt: decks.createdAt,
       // Primary commander
@@ -84,9 +85,12 @@ function toResponse(row: Awaited<ReturnType<typeof buildDeckSelect>>[number]): D
 
 export async function listDecks(
   userId: string,
-  filter?: { commanderId?: string },
+  filter?: { commanderId?: string; includeArchived?: boolean },
 ): Promise<DeckWithCommanders[]> {
   const conditions = [eq(decks.createdBy, userId), isNull(decks.deletedAt)];
+  if (!filter?.includeArchived) {
+    conditions.push(isNull(decks.archivedAt));
+  }
   if (filter?.commanderId) {
     conditions.push(
       sql`(${decks.commanderId} = ${filter.commanderId} OR ${decks.commanderId2} = ${filter.commanderId})`,
@@ -253,4 +257,22 @@ export async function softDeleteDeck(
 
   await db.update(decks).set({ deletedAt: new Date() }).where(eq(decks.id, id));
   return { ok: true };
+}
+
+export async function setDeckArchived(
+  userId: string,
+  id: string,
+  archived: boolean,
+): Promise<{ data: DeckWithCommanders } | { notFound: true } | { forbidden: true }> {
+  const row = await getDeckRaw(id);
+  if (!row) return { notFound: true };
+  if (row.createdBy !== userId) return { forbidden: true };
+
+  await db
+    .update(decks)
+    .set({ archivedAt: archived ? new Date() : null })
+    .where(eq(decks.id, id));
+
+  const deck = await getDeckById(id);
+  return { data: deck! };
 }

@@ -6,17 +6,19 @@
  *
  * HIST-007 (EPIC-04)
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@clerk/clerk-expo';
 
 import { apiFetch } from '@/services/api';
-import type { DeckStats } from '@/services/stats';
+import type { DeckWithCommanders as DeckApiResponse } from '@/services/decks';
+import type { DeckStats, DeckWithCommanders } from '@/services/stats';
 
 export type UseDeckStatsReturn = {
   data: DeckStats | null;
   loading: boolean;
   error: string | null;
+  setArchived: (archived: boolean) => Promise<void>;
 };
 
 type ApiResponse = {
@@ -26,6 +28,8 @@ type ApiResponse = {
 
 export function useDeckStats(deckId: string): UseDeckStatsReturn {
   const { getToken } = useAuth();
+  const getTokenRef = useRef(getToken);
+  getTokenRef.current = getToken;
   const [data, setData] = useState<DeckStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +39,7 @@ export function useDeckStats(deckId: string): UseDeckStatsReturn {
 
     async function load() {
       try {
-        const token = await getToken();
+        const token = await getTokenRef.current();
         const res = await apiFetch<ApiResponse>(
           `/api/stats/decks/${deckId}`,
           'GET',
@@ -55,7 +59,22 @@ export function useDeckStats(deckId: string): UseDeckStatsReturn {
 
     load();
     return () => { cancelled = true; };
-  }, [deckId, getToken]);
+  }, [deckId]);
 
-  return { data, loading, error };
+  const setArchived = useCallback(async (archived: boolean) => {
+    const token = await getTokenRef.current();
+    const updated = await apiFetch<DeckApiResponse>(
+      `/api/decks/${deckId}`,
+      'PATCH',
+      { archived },
+      token ?? undefined,
+    );
+    const normalized: DeckWithCommanders = {
+      ...updated,
+      commander2: updated.commander2 ?? undefined,
+    };
+    setData((prev) => (prev ? { ...prev, deck: normalized } : prev));
+  }, [deckId]);
+
+  return { data, loading, error, setArchived };
 }

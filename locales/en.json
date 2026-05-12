@@ -261,7 +261,19 @@
     "worstMatchupsTitle": "Where shadows fall heaviest",
     "worstMatchupsFlavor": "Trials yet unwon — nemeses still standing.",
     "strongAgainstTitle": "Proven worthy against",
-    "weakAgainstTitle": "Crumbled where greatness was demanded"
+    "weakAgainstTitle": "Crumbled where greatness was demanded",
+    "archive": "Archive",
+    "unarchive": "Unarchive",
+    "archivedBadge": "Archived",
+    "showArchived": "Show archived",
+    "hideArchived": "Hide archived",
+    "archiveDeckTitle": "Archive deck",
+    "archiveDeckMessage": "Archive \"{{name}}\"? It will be hidden from your decks and match setup, but its history and stats are preserved.",
+    "unarchiveDeckTitle": "Unarchive deck",
+    "unarchiveDeckMessage": "Unarchive \"{{name}}\"? It will reappear in your decks and be available for new matches.",
+    "archiveError": "Could not archive deck",
+    "archivedEmpty": "No archived decks",
+    "archivedEmptyBody": "Archived decks appear here. Their history is kept, but they are hidden from match setup."
   },
   "commanders": {
     "title": "Commanders",

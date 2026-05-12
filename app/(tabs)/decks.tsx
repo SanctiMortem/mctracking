@@ -37,7 +37,11 @@ export default function DecksScreen() {
   const { t } = useTranslation();
   const { contentPadding, contentMaxWidth } = useResponsive();
   const { create: createCommander } = useCommanders();
-  const { decks, loading, error, refresh, create, update, remove } = useDecks();
+  const [showArchived, setShowArchived] = useState(false);
+  const { decks, loading, error, refresh, create, update, remove, setArchived } = useDecks(
+    undefined,
+    { includeArchived: showArchived },
+  );
 
   const [formVisible, setFormVisible] = useState(false);
   const [editing, setEditing] = useState<DeckWithCommanders | null>(null);
@@ -84,6 +88,17 @@ export default function DecksScreen() {
     }
   }
 
+  async function handleArchiveToggle(deck: DeckWithCommanders) {
+    try {
+      await setArchived(deck.id, !deck.archivedAt);
+    } catch (e: unknown) {
+      Alert.alert(
+        t('common.error'),
+        e instanceof Error ? e.message : t('deck.archiveError'),
+      );
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       {/* Header */}
@@ -96,6 +111,20 @@ export default function DecksScreen() {
         </View>
         <Pressable style={styles.fab} onPress={openCreate} accessibilityLabel={t('deck.addDeckLabel')}>
           <Text style={styles.fabLabel}>{t('deck.addDeck')}</Text>
+        </Pressable>
+      </View>
+
+      {/* Show archived toggle */}
+      <View style={[styles.toolbar, { paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]}>
+        <Pressable
+          onPress={() => setShowArchived((v) => !v)}
+          style={[styles.toolbarChip, showArchived && styles.toolbarChipActive]}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: showArchived }}
+        >
+          <Text style={[styles.toolbarChipText, showArchived && styles.toolbarChipTextActive]}>
+            {showArchived ? t('deck.hideArchived') : t('deck.showArchived')}
+          </Text>
         </Pressable>
       </View>
 
@@ -117,6 +146,8 @@ export default function DecksScreen() {
           onTap={(deck) => router.push(`/decks/${deck.id}`)}
           onEdit={openEdit}
           onDelete={handleDelete}
+          onArchiveToggle={handleArchiveToggle}
+          showArchivedEmpty={showArchived}
         />
       )}
 
@@ -170,6 +201,34 @@ const createStyles = (t: AppTheme) => ({
   fabLabel: {
     color: t.colors.accent.onPrimary,
     fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
+  },
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+  },
+  toolbarChip: {
+    borderWidth: 1,
+    borderColor: t.colors.border.default,
+    borderRadius: t.radius.round,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[1],
+    backgroundColor: t.colors.background.secondary,
+  },
+  toolbarChipActive: {
+    backgroundColor: t.colors.accent.primary + '22',
+    borderColor: t.colors.accent.primary,
+  },
+  toolbarChipText: {
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
+  },
+  toolbarChipTextActive: {
+    color: t.colors.accent.primary,
     fontWeight: t.typography.weight.semibold,
   },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing[4] },

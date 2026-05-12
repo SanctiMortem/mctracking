@@ -8,7 +8,7 @@
 import { getAuth } from '@/services/auth';
 import { getRouteParam } from '@/services/route-params';
 
-import { getDeckById, softDeleteDeck, updateDeck } from '@/services/decks';
+import { getDeckById, setDeckArchived, softDeleteDeck, updateDeck } from '@/services/decks';
 
 export async function GET(req: Request) {
   const { userId } = getAuth(req);
@@ -36,7 +36,22 @@ export async function PATCH(req: Request) {
     return Response.json({ error: 'VALIDATION_ERROR', message: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { name, commander_id, commander_id_2, description } = body as Record<string, unknown>;
+  const { name, commander_id, commander_id_2, description, archived } = body as Record<string, unknown>;
+
+  // Archive / unarchive is a dedicated action — handle it separately
+  if (archived !== undefined) {
+    if (typeof archived !== 'boolean') {
+      return Response.json(
+        { error: 'VALIDATION_ERROR', field: 'archived', message: 'archived must be a boolean' },
+        { status: 400 },
+      );
+    }
+    const r = await setDeckArchived(userId, id, archived);
+    if ('notFound' in r) return Response.json({ error: 'NOT_FOUND' }, { status: 404 });
+    if ('forbidden' in r) return Response.json({ error: 'Forbidden' }, { status: 403 });
+    return Response.json(r.data);
+  }
+
   const update: Record<string, unknown> = {};
 
   if (name !== undefined) {

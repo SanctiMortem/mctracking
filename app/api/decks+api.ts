@@ -15,8 +15,9 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const commanderId = searchParams.get('commander_id') ?? undefined;
+  const includeArchived = searchParams.get('include_archived') === 'true';
 
-  const data = await listDecks(userId, { commanderId });
+  const data = await listDecks(userId, { commanderId, includeArchived });
   return Response.json(data);
 }
 

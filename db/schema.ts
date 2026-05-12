@@ -155,6 +155,8 @@ export const decks = pgTable(
     // null = personal deck (not group-owned)
     groupId: uuid('group_id').references(() => groups.id),
     createdBy: text('created_by').notNull(), // Clerk user ID
+    // null = active; non-null = archived (hidden from pickers, history preserved)
+    archivedAt: timestamp('archived_at'),
     deletedAt: timestamp('deleted_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },

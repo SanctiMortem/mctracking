@@ -9,6 +9,7 @@
  */
 import {
   ActivityIndicator,
+  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -63,7 +64,7 @@ export default function DeckDetailScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { contentMaxWidth, contentPadding } = useResponsive();
-  const { data, loading, error } = useDeckStats(id);
+  const { data, loading, error, setArchived } = useDeckStats(id);
 
   if (loading) {
     return (
@@ -100,7 +101,33 @@ export default function DeckDetailScreen() {
     weak_against_colors,
   } = data;
   const hasMatches = total_matches > 0;
+  const isArchived = !!deck.archivedAt;
   const bgArt = deck.commander.artCrop ?? deck.commander2?.artCrop ?? null;
+
+  function confirmArchiveToggle() {
+    Alert.alert(
+      isArchived ? t('deck.unarchiveDeckTitle') : t('deck.archiveDeckTitle'),
+      isArchived
+        ? t('deck.unarchiveDeckMessage', { name: deck.name })
+        : t('deck.archiveDeckMessage', { name: deck.name }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: isArchived ? t('deck.unarchive') : t('deck.archive'),
+          onPress: async () => {
+            try {
+              await setArchived(!isArchived);
+            } catch (e) {
+              Alert.alert(
+                t('common.error'),
+                e instanceof Error ? e.message : t('deck.archiveError'),
+              );
+            }
+          },
+        },
+      ],
+    );
+  }
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -129,7 +156,14 @@ export default function DeckDetailScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} hitSlop={8}>
           <Text style={styles.backIcon}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.navTitle} numberOfLines={1}>{deck.name}</Text>
+        <View style={styles.navTitleWrap}>
+          <Text style={styles.navTitle} numberOfLines={1}>{deck.name}</Text>
+          {isArchived && (
+            <View style={styles.navArchivedBadge}>
+              <Text style={styles.navArchivedBadgeText}>{t('deck.archivedBadge')}</Text>
+            </View>
+          )}
+        </View>
         <View style={styles.backBtn} />
       </View>
 
@@ -279,6 +313,19 @@ export default function DeckDetailScreen() {
           </View>
         )}
 
+        {/* ── Archive action ── */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.archiveBtn}
+            onPress={confirmArchiveToggle}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.archiveBtnText}>
+              {isArchived ? t('deck.unarchive') : t('deck.archive')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* ── Players who used it ── */}
         {players_used_by.length > 0 && (
           <View style={styles.section}>
@@ -361,12 +408,48 @@ const createStyles = (t: AppTheme) => ({
     fontSize: 28,
     lineHeight: 32,
   },
+  navTitleWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+  },
   navTitle: {
     color: t.colors.text.primary,
     fontSize: t.typography.size['body-lg'],
     fontWeight: t.typography.weight.semibold,
-    flex: 1,
+    flexShrink: 1,
     textAlign: 'center',
+  },
+  navArchivedBadge: {
+    backgroundColor: t.colors.background.elevated,
+    borderRadius: t.radius.sm,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 1,
+    borderWidth: 1,
+    borderColor: t.colors.border.default,
+  },
+  navArchivedBadgeText: {
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase' as const,
+  },
+  archiveBtn: {
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.md,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: t.colors.border.default,
+  },
+  archiveBtnText: {
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.medium,
   },
 
   // Content

@@ -17,7 +17,11 @@ type CreateInput = {
 
 type UpdateInput = Partial<CreateInput>;
 
-export function useDecks(commanderFilter?: string) {
+export function useDecks(
+  commanderFilter?: string,
+  options?: { includeArchived?: boolean },
+) {
+  const includeArchived = !!options?.includeArchived;
   const { getToken } = useAuth();
   const getTokenRef = useRef(getToken);
   getTokenRef.current = getToken;
@@ -30,7 +34,10 @@ export function useDecks(commanderFilter?: string) {
     setError(null);
     try {
       const token = await getTokenRef.current();
-      const qs = commanderFilter ? `?commander_id=${commanderFilter}` : '';
+      const params = new URLSearchParams();
+      if (commanderFilter) params.set('commander_id', commanderFilter);
+      if (includeArchived) params.set('include_archived', 'true');
+      const qs = params.toString() ? `?${params.toString()}` : '';
       const data = await apiFetch<DeckWithCommanders[]>(
         `/api/decks${qs}`,
         'GET',
@@ -43,7 +50,7 @@ export function useDecks(commanderFilter?: string) {
     } finally {
       setLoading(false);
     }
-  }, [commanderFilter]);
+  }, [commanderFilter, includeArchived]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -67,5 +74,21 @@ export function useDecks(commanderFilter?: string) {
     setDecks((prev) => prev.filter((d) => d.id !== id));
   }, []);
 
-  return { decks, loading, error, refresh, create, update, remove };
+  const setArchived = useCallback(async (id: string, archived: boolean): Promise<DeckWithCommanders> => {
+    const token = await getTokenRef.current();
+    const updated = await apiFetch<DeckWithCommanders>(
+      `/api/decks/${id}`,
+      'PATCH',
+      { archived },
+      token ?? undefined,
+    );
+    setDecks((prev) => {
+      // If we're hiding archived, drop the row; otherwise update in place
+      if (!includeArchived && archived) return prev.filter((d) => d.id !== id);
+      return prev.map((d) => (d.id === id ? updated : d));
+    });
+    return updated;
+  }, [includeArchived]);
+
+  return { decks, loading, error, refresh, create, update, remove, setArchived };
 }
