@@ -12,6 +12,7 @@ import { and, count, desc, eq, inArray, isNotNull, isNull, or, sql } from 'drizz
 
 import { db } from '@/services/db';
 import { commanders, decks, groupMembers, matchEvents, matchResults, matches, participations, players } from '@/db/schema';
+import { getPodMemberUserIds } from '@/services/pods';
 import type { Commander, Deck, Player } from '@/db/index';
 
 // Pod members may view each other's deck + commander stats whenever those
@@ -699,6 +700,87 @@ export async function getCommanderStats(
   };
 }
 
+// ─── Matchup Selector Options ─────────────────────────────────────────────────
+
+export type MatchupOptions = {
+  players: Player[];
+  decks: Deck[];
+  commanders: Commander[];
+};
+
+/**
+ * Returns the players / decks / commanders selectable on the head-to-head
+ * matchup screen for a given scope.
+ *
+ *  - Personal scope (no scopeGroupId): the user's own active rows.
+ *  - Pod scope: the union across every pod member — pod members' active
+ *    players (account + guests they created), every deck owned by any pod
+ *    member, and every commander referenced by those decks.
+ *
+ *  Archived decks are excluded; archived/soft-deleted commanders/players
+ *  follow the same filters used on the personal endpoints.
+ */
+export async function getMatchupOptions(
+  userId: string,
+  scopeGroupId?: string | null,
+): Promise<MatchupOptions> {
+  // Resolve the set of "owners" whose entities are visible. In personal scope
+  // that's just the caller; in pod scope, it's every pod member (plus the
+  // caller, defensively, in case they're a member without an account player).
+  let ownerIds: string[];
+  if (scopeGroupId) {
+    const memberIds = await getPodMemberUserIds(scopeGroupId);
+    ownerIds = Array.from(new Set([...memberIds, userId]));
+  } else {
+    ownerIds = [userId];
+  }
+
+  if (ownerIds.length === 0) {
+    return { players: [], decks: [], commanders: [] };
+  }
+
+  const [playerRows, deckRows] = await Promise.all([
+    db
+      .select()
+      .from(players)
+      .where(and(inArray(players.createdBy, ownerIds), isNull(players.deletedAt)))
+      .orderBy(players.name),
+    db
+      .select()
+      .from(decks)
+      .where(
+        and(
+          inArray(decks.createdBy, ownerIds),
+          isNull(decks.deletedAt),
+          isNull(decks.archivedAt),
+        ),
+      )
+      .orderBy(decks.name),
+  ]);
+
+  // Commanders referenced by any visible deck (primary or partner). Falling
+  // back to the per-user list when no decks exist yet keeps the picker usable.
+  const commanderIds = new Set<string>();
+  for (const d of deckRows) {
+    if (d.commanderId) commanderIds.add(d.commanderId);
+    if (d.commanderId2) commanderIds.add(d.commanderId2);
+  }
+
+  const commanderRows = commanderIds.size
+    ? await db
+        .select()
+        .from(commanders)
+        .where(and(inArray(commanders.id, [...commanderIds]), isNull(commanders.deletedAt)))
+        .orderBy(commanders.name)
+    : [];
+
+  return {
+    players: playerRows,
+    decks: deckRows,
+    commanders: commanderRows,
+  };
+}
+
 // ─── Matchup Stats (HIST-010) ─────────────────────────────────────────────────
 
 export type MatchupResult = {
@@ -719,8 +801,28 @@ export async function getMatchupStats(
   entityAId: string,
   entityBId: string,
   scope: 'all' | '1v1',
+  scopeGroupId?: string | null,
 ): Promise<GetMatchupStatsResult> {
-  // 1. Validate both entities exist and belong to the user
+  // When scopeGroupId is set, entities can be owned by any pod member and the
+  // match search is restricted to matches in that pod. The API route already
+  // validated the caller's membership; we treat ANY pod member's entity as
+  // visible inside the pod scope.
+  let allowedOwnerIds: Set<string> | null = null;
+  if (scopeGroupId) {
+    const memberIds = await getPodMemberUserIds(scopeGroupId);
+    allowedOwnerIds = new Set(memberIds);
+    // Also let the caller see their own entities — useful if they belong to
+    // the pod but haven't created an account player yet.
+    allowedOwnerIds.add(userId);
+  }
+
+  function entityOwnerAllowed(ownerId: string): boolean {
+    if (allowedOwnerIds) return allowedOwnerIds.has(ownerId);
+    return ownerId === userId;
+  }
+
+  // 1. Validate both entities exist and (in personal scope) belong to the user,
+  //    or (in pod scope) belong to any pod member.
   if (entityType === 'player') {
     const [aRows, bRows] = await Promise.all([
       db.select().from(players).where(and(eq(players.id, entityAId), isNull(players.deletedAt))).limit(1),
@@ -728,7 +830,9 @@ export async function getMatchupStats(
     ]);
     if (!aRows[0]) return { notFound: 'entity_a' };
     if (!bRows[0]) return { notFound: 'entity_b' };
-    if (aRows[0].createdBy !== userId || bRows[0].createdBy !== userId) return { forbidden: true };
+    if (!entityOwnerAllowed(aRows[0].createdBy) || !entityOwnerAllowed(bRows[0].createdBy)) {
+      return { forbidden: true };
+    }
   } else if (entityType === 'deck') {
     const [aRows, bRows] = await Promise.all([
       db.select().from(decks).where(and(eq(decks.id, entityAId), isNull(decks.deletedAt))).limit(1),
@@ -736,7 +840,9 @@ export async function getMatchupStats(
     ]);
     if (!aRows[0]) return { notFound: 'entity_a' };
     if (!bRows[0]) return { notFound: 'entity_b' };
-    if (aRows[0].createdBy !== userId || bRows[0].createdBy !== userId) return { forbidden: true };
+    if (!entityOwnerAllowed(aRows[0].createdBy) || !entityOwnerAllowed(bRows[0].createdBy)) {
+      return { forbidden: true };
+    }
   } else {
     const [aRows, bRows] = await Promise.all([
       db.select().from(commanders).where(and(eq(commanders.id, entityAId), isNull(commanders.deletedAt))).limit(1),
@@ -744,10 +850,16 @@ export async function getMatchupStats(
     ]);
     if (!aRows[0]) return { notFound: 'entity_a' };
     if (!bRows[0]) return { notFound: 'entity_b' };
-    if (aRows[0].createdBy !== userId || bRows[0].createdBy !== userId) return { forbidden: true };
+    if (!entityOwnerAllowed(aRows[0].createdBy) || !entityOwnerAllowed(bRows[0].createdBy)) {
+      return { forbidden: true };
+    }
   }
 
-  // 2. Fetch match IDs where entity A participated in completed matches
+  // 2. Fetch match IDs where entity A participated in completed matches.
+  //    In pod scope, restrict to matches owned by that pod.
+  const matchScopeFilter = scopeGroupId
+    ? and(eq(matches.status, 'completed'), eq(matches.groupId, scopeGroupId))
+    : eq(matches.status, 'completed');
   let matchIdsForA: string[];
 
   if (entityType === 'player') {
@@ -755,14 +867,14 @@ export async function getMatchupStats(
       .select({ matchId: participations.matchId })
       .from(participations)
       .innerJoin(matches, eq(participations.matchId, matches.id))
-      .where(and(eq(participations.playerId, entityAId), eq(matches.status, 'completed')));
+      .where(and(eq(participations.playerId, entityAId), matchScopeFilter));
     matchIdsForA = rows.map((r) => r.matchId);
   } else if (entityType === 'deck') {
     const rows = await db
       .select({ matchId: participations.matchId })
       .from(participations)
       .innerJoin(matches, eq(participations.matchId, matches.id))
-      .where(and(eq(participations.deckId, entityAId), eq(matches.status, 'completed')));
+      .where(and(eq(participations.deckId, entityAId), matchScopeFilter));
     matchIdsForA = rows.map((r) => r.matchId);
   } else {
     const rows = await db
@@ -772,7 +884,7 @@ export async function getMatchupStats(
       .innerJoin(decks, eq(participations.deckId, decks.id))
       .where(and(
         or(eq(decks.commanderId, entityAId), eq(decks.commanderId2, entityAId)),
-        eq(matches.status, 'completed'),
+        matchScopeFilter,
       ));
     // Deduplicate — a match with 2 decks using the same commander would appear twice
     matchIdsForA = [...new Set(rows.map((r) => r.matchId))];

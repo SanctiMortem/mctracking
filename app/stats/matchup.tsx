@@ -18,11 +18,9 @@ import { useTranslation } from 'react-i18next';
 
 import { EntitySelector } from '@/components/stats/EntitySelector';
 import { MatchupCard } from '@/components/stats/MatchupCard';
-import { useCommanders } from '@/hooks/useCommanders';
-import { useDecks } from '@/hooks/useDecks';
+import { useGroups } from '@/hooks/useGroups';
+import { useMatchupOptions } from '@/hooks/useMatchupOptions';
 import { useMatchupStats } from '@/hooks/useMatchupStats';
-import { usePlayers } from '@/hooks/usePlayers';
-import type { Commander, Deck, Player } from '@/db/index';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
@@ -99,10 +97,16 @@ export default function MatchupStatsScreen() {
   const [entityAId, setEntityAId] = useState<string | null>(null);
   const [entityBId, setEntityBId] = useState<string | null>(null);
   const [scope, setScope] = useState<Scope>('all');
+  const [scopeGroupId, setScopeGroupId] = useState<string | null>(null);
 
-  const { players } = usePlayers();
-  const { decks } = useDecks();
-  const { commanders } = useCommanders();
+  const { groups } = useGroups();
+  const { data: optionsData } = useMatchupOptions(scopeGroupId);
+  const { players, decks, commanders } = optionsData;
+
+  const scopeOptions: Array<{ id: string | null; label: string }> = [
+    { id: null, label: t('stats.scopePersonal') },
+    ...groups.map((g) => ({ id: g.group.id, label: g.group.name })),
+  ];
 
   const ENTITY_TYPE_TABS: { key: EntityType; label: string }[] = [
     { key: 'player', label: t('stats.entityPlayer') },
@@ -122,15 +126,23 @@ export default function MatchupStatsScreen() {
     setEntityBId(null);
   }
 
+  // Reset selections when the scope changes — entity IDs may not exist in the
+  // new scope, so the picker would render a stale "selected" state.
+  function handleScopeChange(id: string | null) {
+    setScopeGroupId(id);
+    setEntityAId(null);
+    setEntityBId(null);
+  }
+
   // Build entity options for the selector
   function buildOptions(): { id: string; label: string }[] {
     if (entityType === 'player') {
-      return (players as Player[]).map((p) => ({ id: p.id, label: p.name }));
+      return players.map((p) => ({ id: p.id, label: p.name }));
     }
     if (entityType === 'deck') {
-      return (decks as Deck[]).map((d) => ({ id: d.id, label: d.name }));
+      return decks.map((d) => ({ id: d.id, label: d.name }));
     }
-    return (commanders as Commander[]).map((c) => ({ id: c.id, label: c.name }));
+    return commanders.map((c) => ({ id: c.id, label: c.name }));
   }
 
   const options = buildOptions();
@@ -144,6 +156,7 @@ export default function MatchupStatsScreen() {
     entityAId,
     entityBId,
     scope,
+    scopeGroupId,
   );
 
   return (
@@ -154,6 +167,37 @@ export default function MatchupStatsScreen() {
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled
       >
+        {/* Scope picker — Personal / each pod */}
+        {scopeOptions.length > 1 && (
+          <View style={styles.section}>
+            <Text style={styles.label}>{t('stats.scopeLabel')}</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.scopeRow}
+            >
+              {scopeOptions.map((opt) => {
+                const selected = opt.id === scopeGroupId;
+                return (
+                  <TouchableOpacity
+                    key={opt.id ?? 'personal'}
+                    style={[styles.scopeChip, selected && styles.scopeChipActive]}
+                    onPress={() => handleScopeChange(opt.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[styles.scopeChipText, selected && styles.scopeChipTextActive]}
+                      numberOfLines={1}
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
         {/* Entity type selector */}
         <View style={styles.section}>
           <Text style={styles.label}>{t('stats.entityType')}</Text>
@@ -228,6 +272,31 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.4,
-    textTransform: 'uppercase',
+    textTransform: 'uppercase' as const,
+  },
+  scopeRow: {
+    flexDirection: 'row' as const,
+    gap: spacing[2],
+    paddingVertical: spacing[1],
+  },
+  scopeChip: {
+    paddingHorizontal: spacing[3],
+    paddingVertical: 6,
+    borderRadius: t.radius.round,
+    borderWidth: 1,
+    borderColor: t.colors.border.default,
+    backgroundColor: t.colors.background.surface,
+  },
+  scopeChipActive: {
+    backgroundColor: t.colors.accent.primary + '22',
+    borderColor: t.colors.accent.primary + '99',
+  },
+  scopeChipText: {
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size.caption,
+    fontWeight: t.typography.weight.semibold,
+  },
+  scopeChipTextActive: {
+    color: t.colors.accent.primary,
   },
 })

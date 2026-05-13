@@ -29,6 +29,7 @@ export function useMatchupStats(
   entityAId: string | null,
   entityBId: string | null,
   scope: 'all' | '1v1',
+  scopeGroupId?: string | null,
 ): UseMatchupStatsReturn {
   const { getToken } = useAuth();
   const getTokenRef = useRef(getToken);
@@ -62,6 +63,7 @@ export function useMatchupStats(
           entity_b_id: entityBId!,
           scope,
         });
+        if (scopeGroupId) params.set('scope_group_id', scopeGroupId);
         const res = await apiFetch<ApiResponse>(
           `/api/stats/matchup?${params.toString()}`,
           'GET',
@@ -81,7 +83,7 @@ export function useMatchupStats(
 
     load();
     return () => { cancelled = true; };
-  }, [entityType, entityAId, entityBId, scope]);
+  }, [entityType, entityAId, entityBId, scope, scopeGroupId]);
 
   return { data, loading, error };
 }

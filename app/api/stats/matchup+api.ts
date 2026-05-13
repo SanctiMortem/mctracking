@@ -10,8 +10,11 @@
  * BR-STATS-01: only completed matches counted.
  * BR-STATS-06: scope=1v1 restricts to matches with exactly 2 participants.
  */
-import { getAuth } from '@/services/auth';
+import { and, eq } from 'drizzle-orm';
 
+import { getAuth } from '@/services/auth';
+import { db } from '@/services/db';
+import { groupMembers } from '@/db/schema';
 import { getMatchupStats } from '@/services/stats';
 
 const VALID_ENTITY_TYPES = new Set(['player', 'deck', 'commander']);
@@ -26,6 +29,7 @@ export async function GET(req: Request) {
   const entityAId = searchParams.get('entity_a_id');
   const entityBId = searchParams.get('entity_b_id');
   const scope = searchParams.get('scope') ?? 'all';
+  const scopeGroupId = searchParams.get('scope_group_id');
 
   if (!entityType || !entityAId || !entityBId) {
     return Response.json(
@@ -52,12 +56,28 @@ export async function GET(req: Request) {
     );
   }
 
+  // When pod scope is requested, validate the caller is a member.
+  if (scopeGroupId) {
+    const [member] = await db
+      .select({ id: groupMembers.id })
+      .from(groupMembers)
+      .where(and(eq(groupMembers.groupId, scopeGroupId), eq(groupMembers.userId, userId)))
+      .limit(1);
+    if (!member) {
+      return Response.json(
+        { error: 'FORBIDDEN', message: 'Not a member of this pod' },
+        { status: 403 },
+      );
+    }
+  }
+
   const result = await getMatchupStats(
     userId,
     entityType as 'player' | 'deck' | 'commander',
     entityAId,
     entityBId,
     scope as 'all' | '1v1',
+    scopeGroupId,
   );
 
   if ('notFound' in result) {
