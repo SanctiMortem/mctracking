@@ -30,7 +30,14 @@ export default function MatchSetupScreen() {
   }
 
   function handleCancel() {
-    router.dismiss();
+    // When setup is reached via router.replace (e.g. "New match" on the
+    // results screen), there is no modal to dismiss back to — fall back to
+    // home so the X always works.
+    if (router.canDismiss()) {
+      router.dismiss();
+    } else {
+      router.replace('/(tabs)');
+    }
   }
 
   return (
