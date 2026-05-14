@@ -67,6 +67,8 @@
   },
   "match": {
     "newMatch": "New Match",
+    "casualMatch": "Casual Match",
+    "casualMatchSubtitle": "Quick game — not saved to history",
     "title": "New Match",
     "setup": "Match Setup",
     "tracker": "Match Tracker",

@@ -264,6 +264,17 @@ export default function HomeScreen() {
           <Text style={styles.newMatchText}>{t('match.newMatch')}</Text>
         </Pressable>
 
+        {/* ── Casual / untracked match (in-memory, not saved) ── */}
+        <Pressable
+          onPress={() => router.push('/match/casual')}
+          style={({ pressed }) => [styles.casualMatchButton, pressed && { opacity: 0.85 }]}
+          accessibilityRole="button"
+          accessibilityLabel={t('match.casualMatch')}
+        >
+          <Text style={styles.casualMatchText}>{t('match.casualMatch')}</Text>
+          <Text style={styles.casualMatchSubtext}>{t('match.casualMatchSubtitle')}</Text>
+        </Pressable>
+
         {/* ── My Pods ── */}
         <Pressable
           onPress={() => router.push('/groups')}
@@ -493,6 +504,30 @@ const createStyles = (t: AppTheme) => ({
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.bold,
     letterSpacing: 0.3,
+  },
+
+  // Casual Match — secondary outlined button under the primary CTA.
+  casualMatchButton: {
+    backgroundColor: t.colors.background.surface,
+    borderRadius: t.radius.lg,
+    borderWidth: 1,
+    borderColor: t.colors.border.default,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+    alignItems: 'center' as const,
+    gap: 2,
+  },
+  casualMatchText: {
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-md'],
+    fontFamily: t.typography.fontFamily.headline,
+    fontWeight: t.typography.weight.semibold,
+    letterSpacing: 0.3,
+  },
+  casualMatchSubtext: {
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+    fontStyle: 'italic' as const,
   },
 
   // My Pods button

@@ -320,6 +320,7 @@ function AuthGate() {
       <Stack.Screen name="auth" options={{ headerShown: false, animation: 'none' }} />
       <Stack.Screen name="guest" options={{ headerShown: false, presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="match/setup" options={{ title: t('match.setup'), presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="match/casual" options={{ headerShown: false, presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
       <Stack.Screen name="match/[id]/tracker" options={{ headerShown: false, presentation: 'fullScreenModal', animation: 'fade' }} />
       <Stack.Screen
         name="match/[id]/close"

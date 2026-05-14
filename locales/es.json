@@ -67,6 +67,8 @@
   },
   "match": {
     "newMatch": "Nueva Partida",
+    "casualMatch": "Partida Casual",
+    "casualMatchSubtitle": "Partida rápida — no se guarda en el historial",
     "title": "Nueva Partida",
     "setup": "Configurar Partida",
     "tracker": "Tracker de Partida",
