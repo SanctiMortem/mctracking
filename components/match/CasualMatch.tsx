@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  BackHandler,
   Pressable,
   ScrollView,
   Text,
@@ -133,7 +134,8 @@ function CasualSetup({ onStart, onBack }: SetupProps) {
       <View style={styles.setupHeader}>
         <Pressable
           onPress={onBack}
-          style={styles.cancelBtn}
+          style={({ pressed }) => [styles.cancelBtn, pressed && { opacity: 0.5 }]}
+          hitSlop={16}
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
         >
@@ -349,7 +351,8 @@ function CasualTrackerView({
       <View style={styles.trackerHeader}>
         <Pressable
           onPress={onExit}
-          style={styles.exitBtn}
+          style={({ pressed }) => [styles.exitBtn, pressed && { opacity: 0.5 }]}
+          hitSlop={16}
           accessibilityRole="button"
           accessibilityLabel={t('guest.exitLabel')}
         >
@@ -421,6 +424,22 @@ export function CasualMatch({ onExit }: CasualMatchProps) {
       ],
     );
   }, [isDirty, onExit]);
+
+  // Android hardware back. In setup we exit straight to the host's onExit;
+  // in tracking we re-use handleTrackerExit so the user gets the discard
+  // confirmation if there's unsaved state.
+  useEffect(() => {
+    const handler = () => {
+      if (phase === 'tracking') {
+        handleTrackerExit();
+      } else {
+        onExit();
+      }
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', handler);
+    return () => sub.remove();
+  }, [phase, onExit, handleTrackerExit]);
 
   if (phase === 'setup') {
     return <CasualSetup onStart={handleStart} onBack={onExit} />;

@@ -7,6 +7,7 @@
  *
  * Hosted as a fullScreenModal in the root Stack.
  */
+import { useCallback } from 'react';
 import { useRouter } from 'expo-router';
 
 import { CasualMatch } from '@/components/match/CasualMatch';
@@ -14,8 +15,16 @@ import { CasualMatch } from '@/components/match/CasualMatch';
 export default function CasualMatchScreen() {
   const router = useRouter();
 
-  // Pop the modal back to wherever the user opened it from. router.back()
-  // (rather than replace('/(tabs)/')) keeps the navigation stack clean for
-  // the case where the user opened the casual match from a non-Home tab.
-  return <CasualMatch onExit={() => router.back()} />;
+  // fullScreenModal needs dismiss(), not back(). When there's nothing on the
+  // stack to dismiss (deep link, etc.) fall through to /(tabs) so the exit
+  // always lands somewhere. Mirrors the X-button fix in app/match/setup.tsx.
+  const handleExit = useCallback(() => {
+    if (router.canDismiss()) {
+      router.dismiss();
+    } else {
+      router.replace('/(tabs)');
+    }
+  }, [router]);
+
+  return <CasualMatch onExit={handleExit} />;
 }
