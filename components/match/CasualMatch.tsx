@@ -19,7 +19,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 import { CommanderDamagePanel } from '@/components/tracker/CommanderDamagePanel';
@@ -61,6 +61,7 @@ function defaultRotationsFor(variant: string): number[] {
 function CasualSetup({ onStart, onBack }: SetupProps) {
   const styles = useThemedStyles(createStyles);
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   const [count, setCount] = useState<PlayerCount>(4);
   const [startingLife, setStartingLife] = useState<StartingLife>(40);
@@ -130,16 +131,16 @@ function CasualSetup({ onStart, onBack }: SetupProps) {
   }
 
   return (
-    <SafeAreaView style={styles.root}>
-      <View style={styles.setupHeader}>
+    <SafeAreaView style={styles.root} edges={['left', 'right', 'bottom']}>
+      <View style={[styles.setupHeader, { paddingTop: insets.top + spacing[2] }]}>
         <Pressable
           onPress={onBack}
           style={({ pressed }) => [styles.cancelBtn, pressed && { opacity: 0.5 }]}
           hitSlop={16}
           accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
+          accessibilityLabel={t('common.close')}
         >
-          <Text style={styles.cancelText}>‹</Text>
+          <Text style={styles.cancelText}>✕</Text>
         </Pressable>
         <Text style={styles.setupTitle}>{t('guest.newMatch')}</Text>
         <View style={styles.cancelBtn} />
@@ -288,6 +289,7 @@ function CasualTrackerView({
 }: TrackerProps) {
   const styles = useThemedStyles(createStyles);
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   const participationIds = useMemo(() => participations.map((p) => p.id), [participations]);
   const turnTimers = useCasualTurnTimers(participationIds);
@@ -347,8 +349,8 @@ function CasualTrackerView({
   });
 
   return (
-    <SafeAreaView style={styles.root}>
-      <View style={styles.trackerHeader}>
+    <SafeAreaView style={styles.root} edges={['left', 'right', 'bottom']}>
+      <View style={[styles.trackerHeader, { paddingTop: insets.top + spacing[1] }]}>
         <Pressable
           onPress={onExit}
           style={({ pressed }) => [styles.exitBtn, pressed && { opacity: 0.5 }]}
@@ -493,7 +495,8 @@ const createStyles = (t: AppTheme) => ({
   },
   cancelText: {
     color: t.colors.text.secondary,
-    fontSize: t.typography.size['heading-lg'],
+    fontSize: t.typography.size['heading-md'],
+    fontWeight: t.typography.weight.semibold,
   },
   setupScroll: {
     flex: 1,
