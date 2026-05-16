@@ -20,7 +20,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
@@ -155,6 +155,7 @@ export default function MatchTrackerScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const timer = useMatchTimer();
+  const insets = useSafeAreaInsets();
   const [logVisible, setLogVisible] = useState(false);
 
   // Parse rotation map from setup screen (playerId → degrees). If the URL
@@ -396,9 +397,11 @@ export default function MatchTrackerScreen() {
   const hasUndoableEvents = events.some((e) => !e.isUndone);
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      {/* Header */}
-      <View style={styles.header}>
+    <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
+      {/* Header — explicit insets.top so it sits below the notch on
+          fullScreenModal presentations where SafeAreaView's top inset
+          doesn't reliably apply. */}
+      <View style={[styles.header, { paddingTop: insets.top + spacing[2] }]}>
         <Pressable
           onPress={() => {
             // Go back to home — match stays in_progress and can be resumed from detail
