@@ -6,7 +6,7 @@
  *
  * HIST-011 (EPIC-04)
  */
-import { Image, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 
 import type { PlayerRanking } from '@/services/stats';
 import { spacing } from '@/styles/tokens';
@@ -19,6 +19,8 @@ interface PlayerRankingRowProps {
   topDeckArtCrop?: string | null;
   /** Commander/deck label — shown underneath the player name when present. */
   topDeckLabel?: string | null;
+  /** Tap handler — when set, the whole row becomes pressable. */
+  onPress?: () => void;
 }
 
 function getInitials(name: string): string {
@@ -29,7 +31,7 @@ function getInitials(name: string): string {
     .join('');
 }
 
-export function PlayerRankingRow({ ranking, topDeckArtCrop, topDeckLabel }: PlayerRankingRowProps) {
+export function PlayerRankingRow({ ranking, topDeckArtCrop, topDeckLabel, onPress }: PlayerRankingRowProps) {
   const styles = useThemedStyles(createStyles);
 
   const { player, total_matches, win_rate_pct, rank } = ranking;
@@ -39,12 +41,17 @@ export function PlayerRankingRow({ ranking, topDeckArtCrop, topDeckLabel }: Play
   const showArt = isPodium && !!topDeckArtCrop;
 
   return (
-    <View
-      style={[
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={onPress ? player.name : undefined}
+      style={({ pressed }) => [
         styles.row,
         isTop && styles.rowTop,
         rank === 2 && styles.rowRank2,
         rank === 3 && styles.rowRank3,
+        pressed && onPress && { opacity: 0.85 },
       ]}
     >
       {/* Rank badge */}
@@ -93,7 +100,7 @@ export function PlayerRankingRow({ ranking, topDeckArtCrop, topDeckLabel }: Play
           </Text>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 

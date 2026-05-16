@@ -111,7 +111,12 @@ export default function PodDetailScreen() {
     const isYou = accountPlayer?.id === item.player.id;
     const isMemberOwner = item.member.role === 'owner';
     return (
-      <View style={styles.memberRow}>
+      <Pressable
+        onPress={() => router.push(`/players/${item.player.id}`)}
+        style={({ pressed }) => [styles.memberRow, pressed && { opacity: 0.85 }]}
+        accessibilityRole="button"
+        accessibilityLabel={item.player.name}
+      >
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
             {item.player.name.charAt(0).toUpperCase()}
@@ -132,7 +137,7 @@ export default function PodDetailScreen() {
             {isMemberOwner ? t('groups.owner') : t('groups.member')}
           </Text>
         </View>
-      </View>
+      </Pressable>
     );
   }
 

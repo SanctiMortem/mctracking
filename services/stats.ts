@@ -48,6 +48,53 @@ async function userCanViewDeck(userId: string, deck: Deck): Promise<boolean> {
   return !!hit;
 }
 
+// Mirrors userCanViewDeck: a viewer can see a player they share a pod or a
+// match with. Account-linked players (account_user_id set) are also visible
+// to any pod-mate of that account user — so tapping Peter on the Stats screen
+// drills into his profile if you're in the same pod.
+async function userCanViewPlayer(userId: string, player: Player): Promise<boolean> {
+  if (player.createdBy === userId) return true;
+
+  // Same pod as the player's account user.
+  if (player.accountUserId) {
+    const [shared] = await db
+      .select({ id: groupMembers.id })
+      .from(groupMembers)
+      .where(
+        and(
+          eq(groupMembers.userId, userId),
+          inArray(
+            groupMembers.groupId,
+            db
+              .select({ id: groupMembers.groupId })
+              .from(groupMembers)
+              .where(eq(groupMembers.userId, player.accountUserId)),
+          ),
+        ),
+      )
+      .limit(1);
+    if (shared) return true;
+  }
+
+  // Shared a match (viewer is match owner, or viewer belongs to the match's pod).
+  const [hit] = await db
+    .select({ id: matches.id })
+    .from(participations)
+    .innerJoin(matches, eq(participations.matchId, matches.id))
+    .leftJoin(
+      groupMembers,
+      and(eq(groupMembers.groupId, matches.groupId), eq(groupMembers.userId, userId)),
+    )
+    .where(
+      and(
+        eq(participations.playerId, player.id),
+        or(eq(matches.createdBy, userId), isNotNull(groupMembers.id)),
+      ),
+    )
+    .limit(1);
+  return !!hit;
+}
+
 async function userCanViewCommander(userId: string, commanderId: string, ownerId: string): Promise<boolean> {
   if (ownerId === userId) return true;
   const [hit] = await db
@@ -121,7 +168,7 @@ export async function getPlayerStats(
     .limit(1);
 
   if (!player) return { notFound: true };
-  if (player.createdBy !== userId) return { forbidden: true };
+  if (!(await userCanViewPlayer(userId, player))) return { forbidden: true };
 
   // 2. Run all aggregation queries in parallel
   const [statsRows, deckStatRows, partRows] = await Promise.all([

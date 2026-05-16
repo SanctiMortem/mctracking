@@ -223,6 +223,7 @@ export default function StatsScreen() {
                   ranking={ranking}
                   topDeckArtCrop={podiumDeck?.commanders[0]?.artCrop ?? null}
                   topDeckLabel={ranking.rank === 1 ? podiumDeck?.deck.name ?? null : null}
+                  onPress={() => router.push(`/players/${ranking.player.id}`)}
                 />
               );
             })}
