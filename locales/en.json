@@ -476,7 +476,25 @@
     "scope1v1": "1v1 only",
     "scopeLabel": "Scope",
     "scopePersonal": "All my matches",
-    "scopePod": "Pod"
+    "scopePod": "Pod",
+    "podHighlights": {
+      "loading": "Loading pod highlights…",
+      "paused": "Paused",
+      "mostActivePlayer": "Most Active Player",
+      "matchesPlayed_one": "{{count}} match played",
+      "matchesPlayed_other": "{{count}} matches played",
+      "topWinner": "Top Winner",
+      "totalPlayTime": "Total Pod Play Time",
+      "totalPlayTimeSub": "of Commander, all-time",
+      "deckTurnRecords": "Deck Speed Records",
+      "fastestWin": "Fastest Win",
+      "longestWin": "Longest Win",
+      "turns_one": "{{count}} turn",
+      "turns_other": "{{count}} turns",
+      "longestLossStreak": "Longest Loss Streak",
+      "lossesInARow_one": "{{count}} loss in a row",
+      "lossesInARow_other": "{{count}} losses in a row"
+    }
   },
   "guest": {
     "title": "Guest Tracker",

@@ -1798,3 +1798,240 @@ export async function getGlobalAggregates(): Promise<{ data: GlobalAggregates }>
     },
   };
 }
+
+// ─── Pod Highlights (PLAT-XYZ — carousel on Stats screen pod view) ────────────
+
+export type PodHighlightPlayer = {
+  player: Player;
+  value: number; // matches played, win rate %, etc.
+};
+
+export type PodHighlightDeckTurn = {
+  deck: Deck;
+  commanders: Commander[];
+  turns: number;
+  player_name: string | null;
+};
+
+export type PodHighlightLossStreak = {
+  player: Player;
+  streak: number;
+};
+
+export type PodHighlights = {
+  most_active_player: PodHighlightPlayer | null;
+  top_winner: (PodHighlightPlayer & { wins: number; total: number }) | null;
+  total_play_time_seconds: number;
+  fastest_turn_win_deck: PodHighlightDeckTurn | null;
+  longest_turn_win_deck: PodHighlightDeckTurn | null;
+  longest_loss_streak: PodHighlightLossStreak | null;
+};
+
+export type GetPodHighlightsResult = { data: PodHighlights };
+
+const TOP_WINNER_MIN_MATCHES = 3;
+
+/**
+ * Compute the home-page Stats highlights for a pod. Returns nulls for any
+ * highlight that doesn't have enough data yet (e.g. top_winner needs ≥3
+ * matches per player, deck records need at least one tracked turn_passed
+ * event). The caller can show / skip slides accordingly.
+ *
+ * The route layer must already have validated that `userId` is a member of
+ * `groupId` before invoking this.
+ */
+export async function getPodHighlights(
+  userId: string,
+  groupId: string,
+): Promise<GetPodHighlightsResult> {
+  void userId; // membership check happens in the API route; we only need groupId
+
+  const matchScope = and(eq(matches.groupId, groupId), eq(matches.status, 'completed'));
+
+  // Fan-out the independent aggregations in parallel.
+  const [playerCountRows, totalTimeRows, turnRows, lossOrderRows] = await Promise.all([
+    // Player → match count + wins (for both "most active" and "top winner").
+    db
+      .select({
+        playerId: participations.playerId,
+        total: count(participations.id),
+        wins: sql<number>`sum(case when ${participations.result} = 'win' then 1 else 0 end)`,
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .where(matchScope)
+      .groupBy(participations.playerId),
+
+    // Sum of completed-match durations (seconds).
+    db
+      .select({
+        seconds: sql<number>`coalesce(sum(extract(epoch from (${matches.endedAt} - ${matches.createdAt}))), 0)`,
+      })
+      .from(matches)
+      .where(and(matchScope, isNotNull(matches.endedAt))),
+
+    // For each winning participation, count its non-undone turn_passed events.
+    // We tag turns by participation so the winner's actual turn count comes out,
+    // not the sum across players. Decks tie-break by player_name for stable order.
+    db
+      .select({
+        deckId: participations.deckId,
+        playerId: participations.playerId,
+        turns: count(matchEvents.id),
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .innerJoin(
+        matchEvents,
+        and(
+          eq(matchEvents.matchId, participations.matchId),
+          eq(matchEvents.participationId, participations.id),
+          eq(matchEvents.eventType, 'turn_passed'),
+          eq(matchEvents.isUndone, false),
+        ),
+      )
+      .where(and(matchScope, eq(participations.result, 'win')))
+      .groupBy(participations.deckId, participations.playerId, participations.id),
+
+    // All participations in pod-completed matches, ordered for streak computation.
+    db
+      .select({
+        playerId: participations.playerId,
+        result: participations.result,
+        createdAt: matches.createdAt,
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .where(matchScope)
+      .orderBy(matches.createdAt),
+  ]);
+
+  // ── Most active + top winner ───────────────────────────────────────────────
+  let mostActiveRow: { playerId: string; total: number } | null = null;
+  let topWinnerRow: { playerId: string; wins: number; total: number; wr: number } | null = null;
+  for (const r of playerCountRows) {
+    const total = Number(r.total ?? 0);
+    const wins = Number(r.wins ?? 0);
+    if (!mostActiveRow || total > mostActiveRow.total) {
+      mostActiveRow = { playerId: r.playerId, total };
+    }
+    if (total >= TOP_WINNER_MIN_MATCHES) {
+      const wr = wins / total;
+      if (!topWinnerRow || wr > topWinnerRow.wr) {
+        topWinnerRow = { playerId: r.playerId, wins, total, wr };
+      }
+    }
+  }
+
+  // ── Deck speed records ─────────────────────────────────────────────────────
+  let fastestRow: { deckId: string; playerId: string; turns: number } | null = null;
+  let longestRow: { deckId: string; playerId: string; turns: number } | null = null;
+  for (const r of turnRows) {
+    const turns = Number(r.turns ?? 0);
+    if (turns <= 0) continue;
+    if (!fastestRow || turns < fastestRow.turns) {
+      fastestRow = { deckId: r.deckId, playerId: r.playerId, turns };
+    }
+    if (!longestRow || turns > longestRow.turns) {
+      longestRow = { deckId: r.deckId, playerId: r.playerId, turns };
+    }
+  }
+
+  // ── Longest loss streak (per-player consecutive runs across pod matches) ──
+  const runsByPlayer = new Map<string, number>(); // player → current run
+  const bestByPlayer = new Map<string, number>(); // player → best run seen
+  for (const r of lossOrderRows) {
+    if (r.result === 'lose') {
+      const next = (runsByPlayer.get(r.playerId) ?? 0) + 1;
+      runsByPlayer.set(r.playerId, next);
+      if (next > (bestByPlayer.get(r.playerId) ?? 0)) {
+        bestByPlayer.set(r.playerId, next);
+      }
+    } else {
+      runsByPlayer.set(r.playerId, 0);
+    }
+  }
+  let lossStreakRow: { playerId: string; streak: number } | null = null;
+  for (const [playerId, streak] of bestByPlayer) {
+    if (!lossStreakRow || streak > lossStreakRow.streak) {
+      lossStreakRow = { playerId, streak };
+    }
+  }
+
+  // ── Resolve player + deck objects in one pass each ─────────────────────────
+  const playerIdsNeeded = new Set<string>();
+  if (mostActiveRow) playerIdsNeeded.add(mostActiveRow.playerId);
+  if (topWinnerRow) playerIdsNeeded.add(topWinnerRow.playerId);
+  if (lossStreakRow) playerIdsNeeded.add(lossStreakRow.playerId);
+  if (fastestRow) playerIdsNeeded.add(fastestRow.playerId);
+  if (longestRow) playerIdsNeeded.add(longestRow.playerId);
+
+  const deckIdsNeeded = new Set<string>();
+  if (fastestRow) deckIdsNeeded.add(fastestRow.deckId);
+  if (longestRow) deckIdsNeeded.add(longestRow.deckId);
+
+  const [playerRows, deckRows] = await Promise.all([
+    playerIdsNeeded.size
+      ? db.select().from(players).where(inArray(players.id, [...playerIdsNeeded]))
+      : Promise.resolve([] as Player[]),
+    deckIdsNeeded.size
+      ? db.select().from(decks).where(inArray(decks.id, [...deckIdsNeeded]))
+      : Promise.resolve([] as Deck[]),
+  ]);
+  const playerMap = new Map(playerRows.map((p) => [p.id, p]));
+  const deckMap = new Map(deckRows.map((d) => [d.id, d]));
+
+  // Commanders referenced by the deck-record decks (primary + partner).
+  const cmdIds = new Set<string>();
+  for (const d of deckRows) {
+    if (d.commanderId) cmdIds.add(d.commanderId);
+    if (d.commanderId2) cmdIds.add(d.commanderId2);
+  }
+  const cmdRows = cmdIds.size
+    ? await db.select().from(commanders).where(inArray(commanders.id, [...cmdIds]))
+    : [];
+  const cmdMap = new Map(cmdRows.map((c) => [c.id, c]));
+
+  function deckHighlight(row: { deckId: string; playerId: string; turns: number } | null): PodHighlightDeckTurn | null {
+    if (!row) return null;
+    const deck = deckMap.get(row.deckId);
+    if (!deck) return null;
+    const deckCommanders: Commander[] = [];
+    if (deck.commanderId) {
+      const c = cmdMap.get(deck.commanderId);
+      if (c) deckCommanders.push(c);
+    }
+    if (deck.commanderId2) {
+      const c = cmdMap.get(deck.commanderId2);
+      if (c) deckCommanders.push(c);
+    }
+    return {
+      deck,
+      commanders: deckCommanders,
+      turns: row.turns,
+      player_name: playerMap.get(row.playerId)?.name ?? null,
+    };
+  }
+
+  return {
+    data: {
+      most_active_player: mostActiveRow && playerMap.get(mostActiveRow.playerId)
+        ? { player: playerMap.get(mostActiveRow.playerId)!, value: mostActiveRow.total }
+        : null,
+      top_winner: topWinnerRow && playerMap.get(topWinnerRow.playerId)
+        ? {
+            player: playerMap.get(topWinnerRow.playerId)!,
+            value: Math.round(topWinnerRow.wr * 1000) / 10,
+            wins: topWinnerRow.wins,
+            total: topWinnerRow.total,
+          }
+        : null,
+      total_play_time_seconds: Number(totalTimeRows[0]?.seconds ?? 0),
+      fastest_turn_win_deck: deckHighlight(fastestRow),
+      longest_turn_win_deck: deckHighlight(longestRow),
+      longest_loss_streak: lossStreakRow && playerMap.get(lossStreakRow.playerId)
+        ? { player: playerMap.get(lossStreakRow.playerId)!, streak: lossStreakRow.streak }
+        : null,
+    },
+  };
+}

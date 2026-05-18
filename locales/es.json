@@ -476,7 +476,25 @@
     "scope1v1": "Solo 1v1",
     "scopeLabel": "Ámbito",
     "scopePersonal": "Todas mis partidas",
-    "scopePod": "Pod"
+    "scopePod": "Pod",
+    "podHighlights": {
+      "loading": "Cargando destacados del pod…",
+      "paused": "Pausado",
+      "mostActivePlayer": "Jugador más activo",
+      "matchesPlayed_one": "{{count}} partida jugada",
+      "matchesPlayed_other": "{{count}} partidas jugadas",
+      "topWinner": "Mejor ganador",
+      "totalPlayTime": "Tiempo total jugado",
+      "totalPlayTimeSub": "de Commander, histórico",
+      "deckTurnRecords": "Récords de turnos por mazo",
+      "fastestWin": "Victoria más rápida",
+      "longestWin": "Victoria más larga",
+      "turns_one": "{{count}} turno",
+      "turns_other": "{{count}} turnos",
+      "longestLossStreak": "Racha de derrotas más larga",
+      "lossesInARow_one": "{{count}} derrota seguida",
+      "lossesInARow_other": "{{count}} derrotas seguidas"
+    }
   },
   "guest": {
     "title": "Tracker Invitado",

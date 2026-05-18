@@ -21,10 +21,12 @@ import { useTranslation } from 'react-i18next';
 
 import { DeckStatRow } from '@/components/match/DeckStatRow';
 import { PlayerRankingRow } from '@/components/stats/PlayerRankingRow';
+import { PodHighlightsCarousel } from '@/components/stats/PodHighlightsCarousel';
 import { TopDeckPodiumCard, type PodiumTier } from '@/components/stats/TopDeckPodiumCard';
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { useGlobalStats } from '@/hooks/useGlobalStats';
 import { useGroups } from '@/hooks/useGroups';
+import { usePodHighlights } from '@/hooks/usePodHighlights';
 import { useResponsive } from '@/hooks/useResponsive';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -67,6 +69,7 @@ export default function StatsScreen() {
   const [scopeGroupId, setScopeGroupId] = useState<string | null>(null);
   const { groups } = useGroups();
   const { data, loading, error } = useGlobalStats(scopeGroupId);
+  const { data: podHighlightsData, loading: podHighlightsLoading } = usePodHighlights(scopeGroupId);
 
   const scopeOptions: Array<{ id: string | null; label: string }> = [
     { id: null, label: t('stats.scopePersonal') },
@@ -156,6 +159,11 @@ export default function StatsScreen() {
       {header}
       {scopePicker}
       <ScrollView style={styles.mainScroll} contentContainerStyle={[styles.content, { paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]} showsVerticalScrollIndicator={false}>
+      {/* Pod highlights carousel — only visible in pod scope */}
+      {scopeGroupId && (
+        <PodHighlightsCarousel data={podHighlightsData} loading={podHighlightsLoading} />
+      )}
+
       {/* Hero — total matches */}
       <View style={styles.hero}>
         <Text style={styles.heroNumber}>{data.total_matches}</Text>
