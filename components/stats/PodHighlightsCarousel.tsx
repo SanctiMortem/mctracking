@@ -1,25 +1,27 @@
 /**
- * PodHighlightsCarousel — auto-rotating slide deck at the top of the
- * Stats screen when a pod is selected.
+ * PodHighlightsCarousel — compact auto-rotating highlight slide at the top
+ * of the Stats screen. Used in both pod and personal scope.
  *
- * Each slide is a small "highlight" card: Most Active Player, Top Winner,
- * Total Pod Play Time, Deck Speed Records, Longest Loss Streak. Nulls in
- * the source data are skipped (a brand-new pod with zero matches shows
- * nothing). When only one slide qualifies, no auto-rotate and no dots.
+ * Visual: amber-tinted frame (mirrors the previous Head-to-Head CTA look)
+ * with a thin brighter top edge for a subtle "shine," all text centered.
+ * Half the height of the previous version.
  *
  * UX:
- *  - 6s auto-advance, looping
- *  - Horizontal swipe to skip (native FlatList pagingEnabled)
- *  - Tap to pause/resume (with a small "paused" indicator)
- *  - Dot row at the bottom
+ *  - 6s auto-advance, loops.
+ *  - Native FlatList horizontal paging for swipe (no outer Pressable so
+ *    horizontal gestures aren't eaten by an ancestor).
+ *  - When the user swipes, auto-rotate is paused for 8 seconds, then
+ *    resumes on its own.
+ *  - Dots when there's >1 slide.
  *
- * No native deps — just FlatList + setInterval + state.
+ * Slides (any that lack data are silently skipped):
+ *   Total Matches → Most Active → Top Winner → Total Play Time
+ *   → Win-Turn Records (fewest + most turns in one frame) → Longest Loss Streak
  */
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Image,
-  Pressable,
   Text,
   View,
   type NativeScrollEvent,
@@ -36,6 +38,7 @@ import type { AppTheme } from '@/styles/themes/types';
 import type { PodHighlights } from '@/services/stats';
 
 const ROTATE_INTERVAL_MS = 6000;
+const PAUSE_AFTER_SWIPE_MS = 8000;
 
 interface Slide {
   key: string;
@@ -66,15 +69,13 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
   const { contentMaxWidth } = useResponsive();
   const listRef = useRef<FlatList<Slide>>(null);
   const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
   const [width, setWidth] = useState(0);
+  const pauseUntilRef = useRef<number>(0);
 
   const slides = useMemo<Slide[]>(() => {
     if (!data) return [];
     const out: Slide[] = [];
 
-    // Always lead with the headline pod number — replaces the old hero block
-    // on the Stats screen, so the carousel is the single home of pod totals.
     if (data.total_matches > 0) {
       out.push({
         key: 'total-matches',
@@ -162,10 +163,12 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
     return out;
   }, [data, t]);
 
-  // Auto-rotate
+  // Auto-rotate. Honours the pauseUntil timestamp so a swipe gets the user
+  // a moment to read the slide they landed on before we move on again.
   useEffect(() => {
-    if (paused || slides.length <= 1) return;
+    if (slides.length <= 1 || width === 0) return;
     const id = setInterval(() => {
+      if (Date.now() < pauseUntilRef.current) return;
       setIndex((prev) => {
         const next = (prev + 1) % slides.length;
         listRef.current?.scrollToOffset({
@@ -176,9 +179,9 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
       });
     }, ROTATE_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [paused, slides.length, width]);
+  }, [slides.length, width]);
 
-  // Keep index in range if slides shrink (e.g. data refreshed and a highlight became null)
+  // Snap to a valid index if the slide set shrinks.
   useEffect(() => {
     if (slides.length === 0) {
       setIndex(0);
@@ -195,6 +198,10 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
     const x = e.nativeEvent.contentOffset.x;
     const next = Math.round(x / width);
     if (next !== index) setIndex(next);
+  }
+
+  function pauseFromInteraction() {
+    pauseUntilRef.current = Date.now() + PAUSE_AFTER_SWIPE_MS;
   }
 
   if (loading && (!data || slides.length === 0)) {
@@ -215,27 +222,25 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
       ]}
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
     >
-      <Pressable onPress={() => setPaused((p) => !p)}>
-        <FlatList
-          ref={listRef}
-          data={slides}
-          keyExtractor={(s) => s.key}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={handleScrollEnd}
-          renderItem={({ item }) => (
-            <View style={[styles.slide, { width }]}>
-              {item.render()}
-              {paused && (
-                <Text style={styles.pausedTag}>
-                  {t('stats.podHighlights.paused')}
-                </Text>
-              )}
-            </View>
-          )}
-        />
-      </Pressable>
+      {/* Subtle "shine" — a thin brighter line along the top edge. */}
+      <View style={styles.shine} pointerEvents="none" />
+
+      <FlatList
+        ref={listRef}
+        data={slides}
+        keyExtractor={(s) => s.key}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScrollBeginDrag={pauseFromInteraction}
+        onMomentumScrollEnd={handleScrollEnd}
+        decelerationRate="fast"
+        renderItem={({ item }) => (
+          <View style={[styles.slide, { width }]}>
+            {item.render()}
+          </View>
+        )}
+      />
 
       {slides.length > 1 && (
         <View style={styles.dotsRow}>
@@ -266,7 +271,9 @@ function SlideBody({
   return (
     <View style={styles.slideBody}>
       <Text style={styles.slideLabel}>{label}</Text>
-      <Text style={styles.slidePrimary} numberOfLines={2}>{primary}</Text>
+      <Text style={styles.slidePrimary} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+        {primary}
+      </Text>
       {secondary ? (
         <Text style={styles.slideSecondary} numberOfLines={1}>{secondary}</Text>
       ) : null}
@@ -291,10 +298,7 @@ function DeckRecordsBody({
 }) {
   const styles = useThemedStyles(createStyles);
 
-  function row(
-    sublabel: string,
-    record: PodHighlights['fastest_turn_win_deck'],
-  ) {
+  function row(sublabel: string, record: PodHighlights['fastest_turn_win_deck']) {
     if (!record) return null;
     const colors = Array.from(
       new Set(record.commanders.flatMap((c) => c.colorIdentity ?? [])),
@@ -317,7 +321,9 @@ function DeckRecordsBody({
             {record.player_name ? `  ·  ${record.player_name}` : ''}
           </Text>
           {colors.length > 0 && (
-            <ManaIdentityRow colors={colors} size="xs" />
+            <View style={styles.deckRecordManaWrap}>
+              <ManaIdentityRow colors={colors} size="xs" />
+            </View>
           )}
         </View>
       </View>
@@ -327,8 +333,10 @@ function DeckRecordsBody({
   return (
     <View style={styles.deckRecordsContainer}>
       <Text style={styles.slideLabel}>{label}</Text>
-      {row(fastestLabel, fastest)}
-      {row(longestLabel, longest)}
+      <View style={styles.deckRecordsRows}>
+        {row(fastestLabel, fastest)}
+        {row(longestLabel, longest)}
+      </View>
     </View>
   );
 }
@@ -337,67 +345,96 @@ function DeckRecordsBody({
 
 const createStyles = (t: AppTheme) => ({
   frame: {
-    backgroundColor: t.colors.background.surface,
-    borderRadius: t.radius.lg,
+    backgroundColor: t.colors.accent.primary + '22',
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: t.colors.border.default,
+    borderColor: t.colors.accent.primary + '44',
     overflow: 'hidden' as const,
-    marginBottom: spacing[2],
+    marginBottom: spacing[3],
+    // Mirrors the previous Head-to-Head CTA palette so the carousel feels
+    // like a featured highlight surface rather than a plain card.
+  },
+  // Brighter inset top line — reads as a thin "shine" along the upper edge.
+  shine: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: t.colors.accent.primary + '88',
   },
   skeleton: {
-    padding: spacing[4],
-    borderRadius: t.radius.lg,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+    borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: t.colors.border.default,
-    backgroundColor: t.colors.background.surface,
+    borderColor: t.colors.accent.primary + '44',
+    backgroundColor: t.colors.accent.primary + '22',
     alignItems: 'center' as const,
+    marginBottom: spacing[3],
   },
   skeletonText: {
     color: t.colors.text.muted,
     fontSize: t.typography.size.caption,
   },
 
+  // Slide — half the previous height, centered content.
   slide: {
     paddingHorizontal: spacing[4],
-    paddingVertical: spacing[4],
-    minHeight: 110,
+    paddingVertical: spacing[3],
+    minHeight: 70,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
   slideBody: {
-    gap: spacing[1],
+    alignItems: 'center' as const,
+    gap: 2,
+    width: '100%' as unknown as number,
   },
   slideLabel: {
     color: t.colors.accent.primary,
     fontSize: t.typography.size.label,
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.semibold,
-    letterSpacing: 0.6,
+    letterSpacing: 0.8,
     textTransform: 'uppercase' as const,
+    textAlign: 'center' as const,
   },
   slidePrimary: {
-    color: t.colors.text.primary,
+    color: t.colors.accent.primary,
     fontSize: t.typography.size['heading-md'],
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.bold,
-    marginTop: spacing[1],
+    textAlign: 'center' as const,
+    width: '100%' as unknown as number,
   },
   slideSecondary: {
     color: t.colors.text.secondary,
     fontSize: t.typography.size['body-sm'],
-    marginTop: 2,
+    textAlign: 'center' as const,
   },
 
-  // Deck records slide (two stacked rows)
+  // Deck records slide — compact, two centered rows.
   deckRecordsContainer: {
+    alignItems: 'center' as const,
+    gap: spacing[2],
+    width: '100%' as unknown as number,
+  },
+  deckRecordsRows: {
+    flexDirection: 'row' as const,
     gap: spacing[3],
+    width: '100%' as unknown as number,
+    justifyContent: 'center' as const,
   },
   deckRecordRow: {
+    flex: 1,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    gap: spacing[3],
+    gap: spacing[2],
   },
   deckRecordThumb: {
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
     borderRadius: t.radius.sm,
     overflow: 'hidden' as const,
     backgroundColor: t.colors.border.subtle,
@@ -416,29 +453,22 @@ const createStyles = (t: AppTheme) => ({
   },
   deckRecordSublabel: {
     color: t.colors.text.muted,
-    fontSize: t.typography.size.caption,
+    fontSize: 10,
     fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.4,
     textTransform: 'uppercase' as const,
   },
   deckRecordName: {
     color: t.colors.text.primary,
-    fontSize: t.typography.size['body-md'],
+    fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.semibold,
   },
   deckRecordMeta: {
     color: t.colors.text.secondary,
-    fontSize: t.typography.size.caption,
+    fontSize: 11,
   },
-
-  pausedTag: {
-    position: 'absolute' as const,
-    top: spacing[2],
-    right: spacing[3],
-    color: t.colors.text.muted,
-    fontSize: t.typography.size.caption,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase' as const,
+  deckRecordManaWrap: {
+    marginTop: 2,
   },
 
   dotsRow: {
@@ -446,13 +476,13 @@ const createStyles = (t: AppTheme) => ({
     justifyContent: 'center' as const,
     paddingBottom: spacing[2],
     paddingTop: 0,
-    gap: 6,
+    gap: 5,
   },
   dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: t.colors.border.default,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: t.colors.accent.primary + '44',
   },
   dotActive: {
     backgroundColor: t.colors.accent.primary,

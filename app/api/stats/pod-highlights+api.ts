@@ -1,11 +1,16 @@
 /**
  * GET /api/stats/pod-highlights?group_id=...
  *
- * Powers the Pod Highlights carousel at the top of the Stats screen.
- * Returns: most_active_player, top_winner (min 3 matches), total play
- * time, fastest + longest turn-win decks, longest loss streak.
+ * Powers the highlights carousel at the top of the Stats screen.
  *
- * Caller must be a member of the named pod (403 otherwise).
+ *  - When `group_id` is provided, returns pod-scoped highlights and the
+ *    caller must be a member of that pod (403 otherwise).
+ *  - When `group_id` is omitted, returns personal-scope highlights
+ *    (matches created by the authenticated user).
+ *
+ * Highlights: total matches, most active player, top winner (min 3
+ * matches), total play time, fastest + longest turn-win decks,
+ * longest loss streak.
  */
 import { and, eq } from 'drizzle-orm';
 
@@ -20,23 +25,19 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const groupId = searchParams.get('group_id');
-  if (!groupId) {
-    return Response.json(
-      { error: 'VALIDATION_ERROR', message: 'group_id is required' },
-      { status: 400 },
-    );
-  }
 
-  const [member] = await db
-    .select({ id: groupMembers.id })
-    .from(groupMembers)
-    .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
-    .limit(1);
-  if (!member) {
-    return Response.json(
-      { error: 'FORBIDDEN', message: 'Not a member of this pod' },
-      { status: 403 },
-    );
+  if (groupId) {
+    const [member] = await db
+      .select({ id: groupMembers.id })
+      .from(groupMembers)
+      .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
+      .limit(1);
+    if (!member) {
+      return Response.json(
+        { error: 'FORBIDDEN', message: 'Not a member of this pod' },
+        { status: 403 },
+      );
+    }
   }
 
   const result = await getPodHighlights(userId, groupId);

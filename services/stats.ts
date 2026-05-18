@@ -1836,21 +1836,24 @@ export type GetPodHighlightsResult = { data: PodHighlights };
 const TOP_WINNER_MIN_MATCHES = 3;
 
 /**
- * Compute the home-page Stats highlights for a pod. Returns nulls for any
- * highlight that doesn't have enough data yet (e.g. top_winner needs ≥3
- * matches per player, deck records need at least one tracked turn_passed
- * event). The caller can show / skip slides accordingly.
+ * Compute Stats-screen highlights for either a pod or the caller's personal
+ * scope. Returns nulls for any highlight that doesn't have enough data yet
+ * (e.g. top_winner needs ≥3 matches per player, deck records need at least
+ * one tracked turn_passed event). The caller can show / skip slides
+ * accordingly.
  *
- * The route layer must already have validated that `userId` is a member of
- * `groupId` before invoking this.
+ *  - Pod scope (`groupId != null`): the route layer must have already
+ *    validated that `userId` is a member of `groupId`.
+ *  - Personal scope (`groupId == null`): matches authored by `userId`
+ *    (matches.createdBy = userId), same as the personal-scope hero.
  */
 export async function getPodHighlights(
   userId: string,
-  groupId: string,
+  groupId: string | null,
 ): Promise<GetPodHighlightsResult> {
-  void userId; // membership check happens in the API route; we only need groupId
-
-  const matchScope = and(eq(matches.groupId, groupId), eq(matches.status, 'completed'));
+  const matchScope = groupId
+    ? and(eq(matches.groupId, groupId), eq(matches.status, 'completed'))
+    : and(eq(matches.createdBy, userId), eq(matches.status, 'completed'));
 
   // Fan-out the independent aggregations in parallel.
   const [totalMatchRows, playerCountRows, totalTimeRows, turnRows, lossOrderRows] = await Promise.all([

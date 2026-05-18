@@ -12,7 +12,7 @@
  *
  * HIST-011 (EPIC-04)
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -26,7 +26,7 @@ import { TopDeckPodiumCard, type PodiumTier } from '@/components/stats/TopDeckPo
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { useGlobalStats } from '@/hooks/useGlobalStats';
 import { useGroups } from '@/hooks/useGroups';
-import { usePodHighlights } from '@/hooks/usePodHighlights';
+import { useStatsHighlights } from '@/hooks/useStatsHighlights';
 import { useResponsive } from '@/hooks/useResponsive';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -67,9 +67,22 @@ export default function StatsScreen() {
   const { t } = useTranslation();
   const { contentMaxWidth, contentPadding } = useResponsive();
   const [scopeGroupId, setScopeGroupId] = useState<string | null>(null);
+  const [scopeAutoSet, setScopeAutoSet] = useState(false);
   const { groups } = useGroups();
   const { data, loading, error } = useGlobalStats(scopeGroupId);
-  const { data: podHighlightsData, loading: podHighlightsLoading } = usePodHighlights(scopeGroupId);
+  const { data: podHighlightsData, loading: podHighlightsLoading } = useStatsHighlights(scopeGroupId);
+
+  // If the user belongs to exactly one pod and hasn't picked a scope yet,
+  // default to that pod on first render so the carousel + rankings show
+  // pod data instead of personal. Only fires once.
+  useEffect(() => {
+    if (scopeAutoSet) return;
+    if (scopeGroupId !== null) return;
+    if (groups.length === 1) {
+      setScopeGroupId(groups[0].group.id);
+      setScopeAutoSet(true);
+    }
+  }, [groups, scopeGroupId, scopeAutoSet]);
 
   const scopeOptions: Array<{ id: string | null; label: string }> = [
     { id: null, label: t('stats.scopePersonal') },
@@ -159,21 +172,11 @@ export default function StatsScreen() {
       {header}
       {scopePicker}
       <ScrollView style={styles.mainScroll} contentContainerStyle={[styles.content, { paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]} showsVerticalScrollIndicator={false}>
-      {/* Pod highlights carousel — only visible in pod scope. When it's shown
-          we hide the standalone hero block below to avoid duplicating the
-          "Total Matches" number that the carousel's first slide already carries. */}
-      {scopeGroupId && (
-        <PodHighlightsCarousel data={podHighlightsData} loading={podHighlightsLoading} />
-      )}
-
-      {/* Hero — total matches (personal scope only; pod scope shows the carousel instead) */}
-      {!scopeGroupId && (
-        <View style={styles.hero}>
-          <Text style={styles.heroNumber}>{data.total_matches}</Text>
-          <Text style={styles.heroLabel}>{t('stats.completedMatches')}</Text>
-          <Text style={styles.heroSub}>{data.total_players} {data.total_players === 1 ? t('stats.activePlayer') : t('stats.activePlayers')}</Text>
-        </View>
-      )}
+      {/* Highlights carousel — replaces the old hero block in both pod and
+          personal scope. The first slide carries the "Total Matches" number
+          so we don't lose the headline. Carousel renders nothing when there
+          are no matches to summarise, so empty accounts still degrade fine. */}
+      <PodHighlightsCarousel data={podHighlightsData} loading={podHighlightsLoading} />
 
       {/* Matchup CTA */}
       <TouchableOpacity
@@ -386,19 +389,21 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size['body-sm'],
     fontFamily: t.typography.fontFamily.body,
   },
+  // Recoloured to status.info (cool blue) so the H2H CTA no longer fights
+  // visually with the amber Highlights carousel above it.
   matchupCta: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: t.colors.accent.primary + '22',
+    backgroundColor: t.colors.status.info + '22',
     borderRadius: t.radius.md,
     borderWidth: 1,
-    borderColor: t.colors.accent.primary + '44',
+    borderColor: t.colors.status.info + '44',
     paddingVertical: spacing[4],
     paddingHorizontal: spacing[4],
   },
   matchupCtaTitle: {
-    color: t.colors.accent.primary,
+    color: t.colors.status.info,
     fontSize: t.typography.size['body-lg'],
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.semibold,
@@ -410,7 +415,7 @@ const createStyles = (t: AppTheme) => ({
     marginTop: 2,
   },
   matchupCtaArrow: {
-    color: t.colors.accent.primary,
+    color: t.colors.status.info,
     fontSize: 28,
     lineHeight: 32,
   },
