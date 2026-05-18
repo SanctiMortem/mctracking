@@ -380,13 +380,17 @@ const createStyles = (t: AppTheme) => ({
     paddingLeft: 6,
     paddingRight: 6,
     minHeight: 140,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+    alignItems: 'stretch' as const,
+    // No vertical centering — slideBody fills the slide and pushes title
+    // to the top, stat row to the bottom (handled by space-between below).
   },
+  // flex:1 + space-between pins the title to the top of the slide and the
+  // stat row to the bottom; the gap in the middle grows with minHeight.
   slideBody: {
+    flex: 1,
+    justifyContent: 'space-between' as const,
     alignItems: 'stretch' as const,
     width: '100%' as unknown as number,
-    gap: 6,
   },
   slideIcon: {
     color: t.colors.accent.primary,
@@ -398,6 +402,10 @@ const createStyles = (t: AppTheme) => ({
   slideLabel: {
     color: t.colors.accent.primary,
     fontSize: 17,
+    // Tight lineHeight so the Text bounding box hugs the glyph — without
+    // this the intrinsic ~22 px line height adds invisible space above
+    // the letters that makes paddingTop look much larger than it is.
+    lineHeight: 18,
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.8,
@@ -421,12 +429,12 @@ const createStyles = (t: AppTheme) => ({
   },
   slidePrimary: {
     color: t.colors.accent.primary,
-    fontSize: 56,
+    fontSize: 50,
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.bold,
     textAlign: 'center' as const,
     flexShrink: 1,
-    lineHeight: 60,
+    lineHeight: 54,
   },
   slideSecondary: {
     color: t.colors.text.secondary,
