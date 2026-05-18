@@ -390,11 +390,12 @@ const createStyles = (t: AppTheme) => ({
     // No padding; rows fill edge-to-edge inside the frame border.
   },
 
-  // ── Row 1 — title ─────────────────────────────────────────────────────────
+  // ── Row 1 — title pinned to the left with 5 px inset ──────────────────────
   titleRow: {
     height: 26,
+    flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+    paddingLeft: 5,
     width: '100%' as unknown as number,
   },
   title: {
@@ -404,10 +405,14 @@ const createStyles = (t: AppTheme) => ({
     fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.8,
     textTransform: 'uppercase' as const,
-    textAlign: 'center' as const,
+    textAlign: 'left' as const,
   },
 
   // ── Row 2 — three columns ─────────────────────────────────────────────────
+  // `minWidth: 0` on the flex cells is the critical bit: without it a flex:1
+  // child refuses to shrink below its intrinsic content width, so long
+  // strings like the context push past the 50 % slice and bleed into the
+  // next slide. With `minWidth: 0` flex:1 actually means flex:1.
   statRow: {
     height: 84,
     flexDirection: 'row' as const,
@@ -427,6 +432,7 @@ const createStyles = (t: AppTheme) => ({
   },
   valueCell: {
     flex: 1,
+    minWidth: 0,
     height: 84,
     paddingLeft: 5,
     paddingRight: 5,
@@ -443,7 +449,9 @@ const createStyles = (t: AppTheme) => ({
   },
   contextCell: {
     flex: 1,
+    minWidth: 0,
     height: 84,
+    paddingRight: 5,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
@@ -452,6 +460,7 @@ const createStyles = (t: AppTheme) => ({
     fontSize: 16,
     lineHeight: 19,
     textAlign: 'center' as const,
+    width: '100%' as unknown as number,
   },
 
   dotsRow: {
