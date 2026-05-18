@@ -308,27 +308,37 @@ function SlideBody({
 }) {
   const styles = useThemedStyles(createStyles);
   return (
-    <View style={styles.slideBody}>
-      {/* Title row — centered, full width, no icon. */}
-      <Text style={styles.slideLabel} numberOfLines={1}>{label}</Text>
+    // Explicit 2-row × 3-col grid. No flex holders, no auto-distribution.
+    // Every dimension is a number you can change in one place.
+    <View style={styles.slide}>
+      {/* Row 1 — 26 px tall, title centered (spans the full width). */}
+      <View style={styles.titleRow}>
+        <Text style={styles.title} numberOfLines={1}>{label}</Text>
+      </View>
 
-      {/* Stat row — big icon anchored left; value + secondary clustered in a
-          centered group so neither hugs the edges. */}
+      {/* Row 2 — 84 px tall, three columns:
+            col 1 → 60 px wide, icon centered
+            col 2 → flex 1 (50 % of remaining), value cell
+            col 3 → flex 1 (50 % of remaining), context cell                 */}
       <View style={styles.statRow}>
-        <Feather name={iconName} size={56} style={styles.slideIcon} />
-        <View style={styles.statValueGroup}>
+        <View style={styles.iconCell}>
+          <Feather name={iconName} size={50} style={styles.icon} />
+        </View>
+        <View style={styles.valueCell}>
           <Text
-            style={styles.slidePrimary}
+            style={styles.value}
             numberOfLines={1}
             adjustsFontSizeToFit
-            minimumFontScale={0.6}
+            minimumFontScale={0.4}
           >
             {primary}
           </Text>
+        </View>
+        <View style={styles.contextCell}>
           {secondary ? (
             <Text
-              style={styles.slideSecondary}
-              numberOfLines={1}
+              style={styles.context}
+              numberOfLines={3}
               ellipsizeMode="tail"
             >
               {secondary}
@@ -368,79 +378,80 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size.caption,
   },
 
-  // Tightened paddings + bigger fonts per latest design pass:
-  //   · paddingTop / paddingBottom 6
-  //   · paddingLeft 6 (icon hugs the left edge); paddingRight 6 for symmetry
-  //   · gap between title and stat row 6
-  //   · icon 56, value 56, context 20, title 17 (≈ +50%)
-  // minHeight grown to fit the 56-px primary line.
+  // Slide = a 2-row × 3-col grid with explicit pixel dimensions.
+  // No flex:1 + space-between, no space-evenly, no padding on the slide
+  // itself — every position is dictated by row height + column width.
+  //
+  // Total inner height = 26 (titleRow) + 84 (statRow) = 110 px.
+  // Plus the dots row (~13 px) and the 2 × 2 px borders the OUTER frame
+  // measures 110 + 13 + 4 = 127 px on screen.
   slide: {
-    paddingTop: 6,
-    paddingBottom: 6,
-    paddingLeft: 6,
-    paddingRight: 6,
-    minHeight: 140,
-    alignItems: 'stretch' as const,
-    // No vertical centering — slideBody fills the slide and pushes title
-    // to the top, stat row to the bottom (handled by space-between below).
+    width: '100%' as unknown as number,
+    // No padding; rows fill edge-to-edge inside the frame border.
   },
-  // flex:1 + space-between pins the title to the top of the slide and the
-  // stat row to the bottom; the gap in the middle grows with minHeight.
-  slideBody: {
-    flex: 1,
-    justifyContent: 'space-between' as const,
-    alignItems: 'stretch' as const,
+
+  // ── Row 1 — title ─────────────────────────────────────────────────────────
+  titleRow: {
+    height: 26,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     width: '100%' as unknown as number,
   },
-  slideIcon: {
-    color: t.colors.accent.primary,
-    textShadowColor: t.colors.accent.primary + '55',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-    flexShrink: 0,
-  },
-  slideLabel: {
+  title: {
     color: t.colors.accent.primary,
     fontSize: 17,
-    // Tight lineHeight so the Text bounding box hugs the glyph — without
-    // this the intrinsic ~22 px line height adds invisible space above
-    // the letters that makes paddingTop look much larger than it is.
-    lineHeight: 18,
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.8,
     textTransform: 'uppercase' as const,
     textAlign: 'center' as const,
   },
-  // Icon ← 6 px gap → value group (which distributes its two children
-  // space-evenly across the remaining width).
+
+  // ── Row 2 — three columns ─────────────────────────────────────────────────
   statRow: {
+    height: 84,
     flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 6,
     width: '100%' as unknown as number,
   },
-  statValueGroup: {
-    flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'baseline' as const,
-    justifyContent: 'space-evenly' as const,
-    gap: spacing[2],
+  iconCell: {
+    width: 60,
+    height: 84,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
-  slidePrimary: {
+  icon: {
     color: t.colors.accent.primary,
-    fontSize: 50,
+    textShadowColor: t.colors.accent.primary + '55',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  valueCell: {
+    flex: 1,
+    height: 84,
+    paddingLeft: 5,
+    paddingRight: 5,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  value: {
+    color: t.colors.accent.primary,
+    fontSize: 48,
+    lineHeight: 52,
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.bold,
     textAlign: 'center' as const,
-    flexShrink: 1,
-    lineHeight: 54,
   },
-  slideSecondary: {
+  contextCell: {
+    flex: 1,
+    height: 84,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  context: {
     color: t.colors.text.secondary,
-    fontSize: 20,
+    fontSize: 16,
+    lineHeight: 19,
     textAlign: 'center' as const,
-    flexShrink: 1,
   },
 
   dotsRow: {
