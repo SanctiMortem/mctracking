@@ -480,6 +480,9 @@
     "podHighlights": {
       "loading": "Cargando destacados del pod…",
       "paused": "Pausado",
+      "totalMatches": "Total de partidas del pod",
+      "totalMatchesSub_one": "entre {{count}} jugador",
+      "totalMatchesSub_other": "entre {{count}} jugadores",
       "mostActivePlayer": "Jugador más activo",
       "matchesPlayed_one": "{{count}} partida jugada",
       "matchesPlayed_other": "{{count}} partidas jugadas",

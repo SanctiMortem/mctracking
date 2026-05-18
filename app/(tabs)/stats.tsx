@@ -159,17 +159,21 @@ export default function StatsScreen() {
       {header}
       {scopePicker}
       <ScrollView style={styles.mainScroll} contentContainerStyle={[styles.content, { paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]} showsVerticalScrollIndicator={false}>
-      {/* Pod highlights carousel — only visible in pod scope */}
+      {/* Pod highlights carousel — only visible in pod scope. When it's shown
+          we hide the standalone hero block below to avoid duplicating the
+          "Total Matches" number that the carousel's first slide already carries. */}
       {scopeGroupId && (
         <PodHighlightsCarousel data={podHighlightsData} loading={podHighlightsLoading} />
       )}
 
-      {/* Hero — total matches */}
-      <View style={styles.hero}>
-        <Text style={styles.heroNumber}>{data.total_matches}</Text>
-        <Text style={styles.heroLabel}>{t('stats.completedMatches')}</Text>
-        <Text style={styles.heroSub}>{data.total_players} {data.total_players === 1 ? t('stats.activePlayer') : t('stats.activePlayers')}</Text>
-      </View>
+      {/* Hero — total matches (personal scope only; pod scope shows the carousel instead) */}
+      {!scopeGroupId && (
+        <View style={styles.hero}>
+          <Text style={styles.heroNumber}>{data.total_matches}</Text>
+          <Text style={styles.heroLabel}>{t('stats.completedMatches')}</Text>
+          <Text style={styles.heroSub}>{data.total_players} {data.total_players === 1 ? t('stats.activePlayer') : t('stats.activePlayers')}</Text>
+        </View>
+      )}
 
       {/* Matchup CTA */}
       <TouchableOpacity

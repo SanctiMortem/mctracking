@@ -73,6 +73,21 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
     if (!data) return [];
     const out: Slide[] = [];
 
+    // Always lead with the headline pod number — replaces the old hero block
+    // on the Stats screen, so the carousel is the single home of pod totals.
+    if (data.total_matches > 0) {
+      out.push({
+        key: 'total-matches',
+        render: () => (
+          <SlideBody
+            label={t('stats.podHighlights.totalMatches')}
+            primary={`${data.total_matches}`}
+            secondary={t('stats.podHighlights.totalMatchesSub', { count: data.total_players })}
+          />
+        ),
+      });
+    }
+
     if (data.most_active_player) {
       const { player, value } = data.most_active_player;
       out.push({

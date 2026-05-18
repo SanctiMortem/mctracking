@@ -1819,6 +1819,10 @@ export type PodHighlightLossStreak = {
 };
 
 export type PodHighlights = {
+  /** Completed matches in this pod. Drives the leading carousel slide. */
+  total_matches: number;
+  /** Distinct players who appear in at least one completed pod match. */
+  total_players: number;
   most_active_player: PodHighlightPlayer | null;
   top_winner: (PodHighlightPlayer & { wins: number; total: number }) | null;
   total_play_time_seconds: number;
@@ -1849,7 +1853,13 @@ export async function getPodHighlights(
   const matchScope = and(eq(matches.groupId, groupId), eq(matches.status, 'completed'));
 
   // Fan-out the independent aggregations in parallel.
-  const [playerCountRows, totalTimeRows, turnRows, lossOrderRows] = await Promise.all([
+  const [totalMatchRows, playerCountRows, totalTimeRows, turnRows, lossOrderRows] = await Promise.all([
+    // Total completed matches in the pod — drives the leading "Total Pod Matches" slide.
+    db
+      .select({ total: count(matches.id) })
+      .from(matches)
+      .where(matchScope),
+
     // Player → match count + wins (for both "most active" and "top winner").
     db
       .select({
@@ -2015,6 +2025,8 @@ export async function getPodHighlights(
 
   return {
     data: {
+      total_matches: Number(totalMatchRows[0]?.total ?? 0),
+      total_players: playerCountRows.length,
       most_active_player: mostActiveRow && playerMap.get(mostActiveRow.playerId)
         ? { player: playerMap.get(mostActiveRow.playerId)!, value: mostActiveRow.total }
         : null,

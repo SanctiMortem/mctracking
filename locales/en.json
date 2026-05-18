@@ -480,6 +480,9 @@
     "podHighlights": {
       "loading": "Loading pod highlights…",
       "paused": "Paused",
+      "totalMatches": "Total Pod Matches",
+      "totalMatchesSub_one": "across {{count}} player",
+      "totalMatchesSub_other": "across {{count}} players",
       "mostActivePlayer": "Most Active Player",
       "matchesPlayed_one": "{{count}} match played",
       "matchesPlayed_other": "{{count}} matches played",
