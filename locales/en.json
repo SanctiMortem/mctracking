@@ -506,6 +506,7 @@
   "home": {
     "activeMatchTitle": "Match in progress",
     "activeMatchResume": "Tap to resume",
+    "activeMatchStartedAgo": "Started {{time}} ago",
     "activeMatchBannerA11y": "Active match — tap to resume",
     "contextPersonal": "Personal",
     "contextSwitcherTitle": "Active context",

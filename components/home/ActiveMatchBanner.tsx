@@ -1,12 +1,13 @@
 /**
  * ActiveMatchBanner — banner for an in_progress match in the active context.
  *
- * Only renders when a match is provided (context filtering done in useHome).
- * Tap → navigates to /match/[id]/tracker.
+ * Renders for each in-progress match the user can see (filtering done in
+ * useHome). Tap → navigates to /match/[id]/tracker. Shows a "started X ago"
+ * subtitle so multiple banners in the same pod are distinguishable.
  *
  * CMP-015 (design doc) · PLAT-010 (EPIC-05)
  */
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { useTranslation } from 'react-i18next';
 
@@ -18,15 +19,39 @@ import type { AppTheme } from '@/styles/themes/types';
 
 interface ActiveMatchBannerProps {
   matchId: string;
+  /** ISO string. When present, subtitle becomes "Started X ago". */
+  startedAt?: string;
   onPress: () => void;
+}
+
+// ─── Relative-time helper ─────────────────────────────────────────────────────
+
+/** Returns a short human-readable elapsed time: "2m", "1h", "3d". */
+function elapsedSince(isoOrDate: string | Date): string {
+  const startMs = typeof isoOrDate === 'string'
+    ? new Date(isoOrDate).getTime()
+    : isoOrDate.getTime();
+  if (Number.isNaN(startMs)) return '';
+  const deltaSec = Math.max(0, Math.floor((Date.now() - startMs) / 1000));
+  if (deltaSec < 60) return `${deltaSec}s`;
+  const minutes = Math.floor(deltaSec / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `${days}d`;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function ActiveMatchBanner({ matchId: _matchId, onPress }: ActiveMatchBannerProps) {
+export function ActiveMatchBanner({ matchId: _matchId, startedAt, onPress }: ActiveMatchBannerProps) {
   const styles = useThemedStyles(createStyles);
 
   const { t } = useTranslation();
+
+  const subtitle = startedAt
+    ? t('home.activeMatchStartedAgo', { time: elapsedSince(startedAt) })
+    : t('home.activeMatchResume');
 
   return (
     <Pressable
@@ -38,7 +63,7 @@ export function ActiveMatchBanner({ matchId: _matchId, onPress }: ActiveMatchBan
       <View style={styles.pulseIndicator} />
       <View style={styles.content}>
         <Text style={styles.title}>{t('home.activeMatchTitle')}</Text>
-        <Text style={styles.subtitle}>{t('home.activeMatchResume')}</Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
       </View>
       <Text style={styles.chevron}>›</Text>
     </Pressable>
@@ -47,11 +72,10 @@ export function ActiveMatchBanner({ matchId: _matchId, onPress }: ActiveMatchBan
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-
 const createStyles = (t: AppTheme) => ({
   banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     backgroundColor: t.colors.accent.primary + '18',
     borderRadius: t.radius.lg,
     borderWidth: 1,

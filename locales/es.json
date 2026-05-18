@@ -506,6 +506,7 @@
   "home": {
     "activeMatchTitle": "Partida en curso",
     "activeMatchResume": "Toca para retomar",
+    "activeMatchStartedAgo": "Iniciada hace {{time}}",
     "activeMatchBannerA11y": "Partida activa — toca para retomar",
     "contextPersonal": "Personal",
     "contextSwitcherTitle": "Contexto activo",

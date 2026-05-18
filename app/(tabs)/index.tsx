@@ -158,7 +158,7 @@ export default function HomeScreen() {
   const { activeContext, setActiveContext, userGroups } = useGroupContext();
   const { groups, loading: loadingGroups } = useGroups();
   const {
-    activeMatch,
+    activeMatches,
     recentMatches,
     totalMatches,
     accountStats,
@@ -247,12 +247,18 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* ── Active Match Banner ── */}
-        {activeMatch && (
-          <ActiveMatchBanner
-            matchId={activeMatch.id}
-            onPress={() => router.push(`/match/${activeMatch.id}/tracker`)}
-          />
+        {/* ── Active Match Banner(s) — one per in-progress match in this context ── */}
+        {activeMatches.length > 0 && (
+          <View style={styles.activeMatchList}>
+            {activeMatches.map((match) => (
+              <ActiveMatchBanner
+                key={match.id}
+                matchId={match.id}
+                startedAt={match.started_at}
+                onPress={() => router.push(`/match/${match.id}/tracker`)}
+              />
+            ))}
+          </View>
         )}
 
         {/* ── Primary CTA ── */}
@@ -489,6 +495,11 @@ const createStyles = (t: AppTheme) => ({
     color: t.colors.status.error,
     fontSize: t.typography.size['body-sm'],
     textAlign: 'center' as const,
+  },
+
+  // Vertical stack of one ActiveMatchBanner per in-progress match.
+  activeMatchList: {
+    gap: spacing[2],
   },
 
   // New Match CTA

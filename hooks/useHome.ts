@@ -33,7 +33,10 @@ type SessionResponse = {
   data: {
     authenticated: boolean;
     user_id?: string;
+    /** Newest in-progress match for back-compat with older clients. */
     active_match?: ActiveMatch | null;
+    /** Full list of in-progress matches visible to the user, newest-first. */
+    active_matches?: ActiveMatch[];
   };
 };
 
@@ -49,7 +52,8 @@ type AccountHomeStatsResponse = { success: true; data: AccountHomeStats };
 type GlobalAggregatesResponse = { success: true; data: GlobalAggregates };
 
 export type UseHomeReturn = {
-  activeMatch: ActiveMatch | null;
+  /** Every in-progress match in the active context, newest-first. */
+  activeMatches: ActiveMatch[];
   recentMatches: MatchSummary[];
   totalMatches: number;
   winRatePct: number | null;
@@ -81,7 +85,7 @@ function computeWinRate(stats: GlobalStats): number | null {
 export function useHome(activeContext: 'personal' | string): UseHomeReturn {
   const { getToken } = useAuth();
 
-  const [activeMatch, setActiveMatch] = useState<ActiveMatch | null>(null);
+  const [activeMatches, setActiveMatches] = useState<ActiveMatch[]>([]);
   const [recentMatches, setRecentMatches] = useState<MatchSummary[]>([]);
   const [totalMatches, setTotalMatches] = useState(0);
   const [winRatePct, setWinRatePct] = useState<number | null>(null);
@@ -119,17 +123,16 @@ export function useHome(activeContext: 'personal' | string): UseHomeReturn {
         apiFetch<GlobalAggregatesResponse>('/api/stats/global-aggregate', 'GET', undefined, authHeader),
       ]);
 
-      // Active match — filter by active context (ADR-004)
-      const rawMatch = sessionRes.data.active_match ?? null;
-      if (rawMatch) {
-        const matchInContext =
-          ctx === 'personal'
-            ? rawMatch.group_id === null
-            : rawMatch.group_id === ctx;
-        setActiveMatch(matchInContext ? rawMatch : null);
-      } else {
-        setActiveMatch(null);
-      }
+      // Active matches — filter by active context (ADR-004). Use the new
+      // active_matches array when present; fall back to the legacy singular
+      // active_match for clients/responses that haven't been updated yet.
+      const rawList =
+        sessionRes.data.active_matches
+        ?? (sessionRes.data.active_match ? [sessionRes.data.active_match] : []);
+      const matchesInContext = rawList.filter((m) =>
+        ctx === 'personal' ? m.group_id === null : m.group_id === ctx,
+      );
+      setActiveMatches(matchesInContext);
 
       setRecentMatches(historyRes.data.matches);
       setTotalMatches(historyRes.data.total);
@@ -148,7 +151,7 @@ export function useHome(activeContext: 'personal' | string): UseHomeReturn {
   }, [load, activeContext]);
 
   return {
-    activeMatch,
+    activeMatches,
     recentMatches,
     totalMatches,
     winRatePct,

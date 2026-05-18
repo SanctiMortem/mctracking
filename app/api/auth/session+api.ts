@@ -11,7 +11,7 @@
  * PLAT-002 (EPIC-05)
  */
 import { getAuth } from '@/services/auth';
-import { and, eq, inArray, isNull, or } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, or } from 'drizzle-orm';
 
 import { db } from '@/services/db';
 import { groupMembers, matches, participations, players } from '@/db/schema';
@@ -63,18 +63,28 @@ export async function GET(req: Request) {
     }
   }
 
-  const [activeMatchRow] = await db
+  // Return every in-progress match the user can see — pod members frequently
+  // have multiple matches running simultaneously and the Home tab needs to
+  // show all of them so they can resume the right one. Newest-first so the
+  // most recently created surfaces at the top of the list.
+  const activeMatchRows = await db
     .select({ id: matches.id, groupId: matches.groupId, createdAt: matches.createdAt })
     .from(matches)
     .where(and(eq(matches.status, 'in_progress'), or(...orConditions)))
-    .limit(1);
+    .orderBy(desc(matches.createdAt));
 
-  const active_match = activeMatchRow
-    ? { id: activeMatchRow.id, group_id: activeMatchRow.groupId, started_at: activeMatchRow.createdAt }
-    : null;
+  const active_matches = activeMatchRows.map((row) => ({
+    id: row.id,
+    group_id: row.groupId,
+    started_at: row.createdAt,
+  }));
+
+  // Back-compat: older clients still read `active_match` (singular). Keep it
+  // populated with the newest match so they get the previous behaviour.
+  const active_match = active_matches[0] ?? null;
 
   return Response.json({
     success: true,
-    data: { authenticated: true, user_id: userId, settings, active_match },
+    data: { authenticated: true, user_id: userId, settings, active_match, active_matches },
   });
 }
