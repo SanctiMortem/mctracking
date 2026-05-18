@@ -313,26 +313,29 @@ function SlideBody({
       {/* Title row — centered, full width, no icon. */}
       <Text style={styles.slideLabel} numberOfLines={1}>{label}</Text>
 
-      {/* Stat row — big icon left, value (flex-grow), secondary anchored right. */}
+      {/* Stat row — big icon anchored left; value + secondary clustered in a
+          centered group so neither hugs the edges. */}
       <View style={styles.statRow}>
         <Feather name={iconName} size={32} style={styles.slideIcon} />
-        <Text
-          style={styles.slidePrimary}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.6}
-        >
-          {primary}
-        </Text>
-        {secondary ? (
+        <View style={styles.statValueGroup}>
           <Text
-            style={styles.slideSecondary}
+            style={styles.slidePrimary}
             numberOfLines={1}
-            ellipsizeMode="tail"
+            adjustsFontSizeToFit
+            minimumFontScale={0.6}
           >
-            {secondary}
+            {primary}
           </Text>
-        ) : null}
+          {secondary ? (
+            <Text
+              style={styles.slideSecondary}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {secondary}
+            </Text>
+          ) : null}
+        </View>
       </View>
     </View>
   );
@@ -406,29 +409,38 @@ const createStyles = (t: AppTheme) => ({
     textTransform: 'uppercase' as const,
     textAlign: 'center' as const,
   },
-  // Big-icon | value | context row. justifyContent stretches the value to
-  // soak the middle while the icon and context anchor to the edges.
+  // Big-icon left, value + context clustered in the centered group below.
   statRow: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     gap: spacing[3],
     width: '100%' as unknown as number,
   },
-  slidePrimary: {
+  // Wraps value + secondary; takes the remaining width after the icon and
+  // centers its children inside that — pulls both the stat and the context
+  // a bit inward instead of pinning them to opposite edges.
+  statValueGroup: {
     flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'baseline' as const,
+    justifyContent: 'center' as const,
+    gap: spacing[3],
+  },
+  slidePrimary: {
     color: t.colors.accent.primary,
     fontSize: t.typography.size['heading-lg'],
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.bold,
-    textAlign: 'left' as const,
+    textAlign: 'right' as const,
+    flexShrink: 1,
     lineHeight: t.typography.size['heading-lg'] * 1.1,
   },
   slideSecondary: {
     color: t.colors.text.secondary,
     fontSize: t.typography.size['body-sm'],
-    textAlign: 'right' as const,
+    textAlign: 'left' as const,
     flexShrink: 1,
-    maxWidth: '45%' as unknown as number,
+    maxWidth: '50%' as unknown as number,
   },
 
   dotsRow: {
