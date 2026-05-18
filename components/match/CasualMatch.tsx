@@ -20,6 +20,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useKeepAwake } from 'expo-keep-awake';
 import { useTranslation } from 'react-i18next';
 
 import { CommanderDamagePanel } from '@/components/tracker/CommanderDamagePanel';
@@ -287,6 +288,11 @@ function CasualTrackerView({
   undoLastEvent,
   onExit,
 }: TrackerProps) {
+  // Keep the device awake while the casual / guest tracker is live. Mounted
+  // only in the 'tracking' phase, so this releases automatically when the
+  // user exits back to setup / home.
+  useKeepAwake();
+
   const styles = useThemedStyles(createStyles);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();

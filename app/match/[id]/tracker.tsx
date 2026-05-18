@@ -21,6 +21,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
@@ -147,6 +148,11 @@ function useTurnTimers(
 // ─── Screen ─────────────────────────────────────
 
 export default function MatchTrackerScreen() {
+  // Prevent device auto-lock (incl. Low Power Mode) while a match is live.
+  // expo-keep-awake calls UIApplication.isIdleTimerDisabled on iOS and
+  // FLAG_KEEP_SCREEN_ON on Android. Scoped to this screen only — releases on unmount.
+  useKeepAwake();
+
   const { theme } = useTheme();
 
   const styles = useThemedStyles(createStyles);
