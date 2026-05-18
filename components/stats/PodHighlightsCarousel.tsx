@@ -310,21 +310,30 @@ function SlideBody({
   const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.slideBody}>
-      <View style={styles.slideHeader}>
-        <Feather name={iconName} size={16} style={styles.slideIcon} />
-        <Text style={styles.slideLabel}>{label}</Text>
+      {/* Title row — centered, full width, no icon. */}
+      <Text style={styles.slideLabel} numberOfLines={1}>{label}</Text>
+
+      {/* Stat row — big icon left, value (flex-grow), secondary anchored right. */}
+      <View style={styles.statRow}>
+        <Feather name={iconName} size={32} style={styles.slideIcon} />
+        <Text
+          style={styles.slidePrimary}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+        >
+          {primary}
+        </Text>
+        {secondary ? (
+          <Text
+            style={styles.slideSecondary}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {secondary}
+          </Text>
+        ) : null}
       </View>
-      <Text
-        style={styles.slidePrimary}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.65}
-      >
-        {primary}
-      </Text>
-      {secondary ? (
-        <Text style={styles.slideSecondary} numberOfLines={1}>{secondary}</Text>
-      ) : null}
     </View>
   );
 }
@@ -364,30 +373,29 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size.caption,
   },
 
-  // Slide — compact frame, centered content. Bigger primary text per the
-  // latest design pass: heading-lg instead of heading-md.
+  // Slide — denser frame, less negative space. Title row sits centered up
+  // top; the stat row below packs icon + value + context horizontally so
+  // the surface reads as one chunky highlight instead of stacked text.
   slide: {
-    paddingHorizontal: spacing[4],
+    paddingHorizontal: spacing[3],
     paddingVertical: spacing[3],
-    minHeight: 96,
+    minHeight: 92,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
   slideBody: {
-    alignItems: 'center' as const,
-    gap: 3,
+    alignItems: 'stretch' as const,
     width: '100%' as unknown as number,
-  },
-  // Icon + label row above the primary stat. Centered, tight gap so it
-  // reads as a single unit rather than two stacked elements.
-  slideHeader: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: spacing[1],
+    gap: spacing[2],
   },
   slideIcon: {
     color: t.colors.accent.primary,
+    // Subtle drop-shadow so the line icon reads as part of the
+    // highlight surface, not a pasted-on element.
+    textShadowColor: t.colors.accent.primary + '55',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+    flexShrink: 0,
   },
   slideLabel: {
     color: t.colors.accent.primary,
@@ -398,19 +406,29 @@ const createStyles = (t: AppTheme) => ({
     textTransform: 'uppercase' as const,
     textAlign: 'center' as const,
   },
+  // Big-icon | value | context row. justifyContent stretches the value to
+  // soak the middle while the icon and context anchor to the edges.
+  statRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: spacing[3],
+    width: '100%' as unknown as number,
+  },
   slidePrimary: {
+    flex: 1,
     color: t.colors.accent.primary,
     fontSize: t.typography.size['heading-lg'],
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.bold,
-    textAlign: 'center' as const,
-    width: '100%' as unknown as number,
+    textAlign: 'left' as const,
     lineHeight: t.typography.size['heading-lg'] * 1.1,
   },
   slideSecondary: {
     color: t.colors.text.secondary,
-    fontSize: t.typography.size['body-md'],
-    textAlign: 'center' as const,
+    fontSize: t.typography.size['body-sm'],
+    textAlign: 'right' as const,
+    flexShrink: 1,
+    maxWidth: '45%' as unknown as number,
   },
 
   dotsRow: {
