@@ -1806,16 +1806,25 @@ export type PodHighlightPlayer = {
   value: number; // matches played, win rate %, etc.
 };
 
-export type PodHighlightDeckTurn = {
-  deck: Deck;
-  commanders: Commander[];
-  turns: number;
-  player_name: string | null;
-};
-
 export type PodHighlightLossStreak = {
   player: Player;
   streak: number;
+};
+
+export type PodHighlightWinconCount = {
+  player: Player;
+  wins: number;
+};
+
+/** Biggest single commander_damage event in scope. We attribute the
+ *  dealer by joining the source commander back to the participation in
+ *  the same match whose deck used it (primary or partner). */
+export type PodHighlightBiggestHit = {
+  damage: number;
+  dealer_player: Player | null;
+  dealer_deck: Deck | null;
+  dealer_commander: Commander | null;
+  receiver_player: Player | null;
 };
 
 export type PodHighlights = {
@@ -1826,8 +1835,12 @@ export type PodHighlights = {
   most_active_player: PodHighlightPlayer | null;
   top_winner: (PodHighlightPlayer & { wins: number; total: number }) | null;
   total_play_time_seconds: number;
-  fastest_turn_win_deck: PodHighlightDeckTurn | null;
-  longest_turn_win_deck: PodHighlightDeckTurn | null;
+  /** Player with the most wins by win_condition='infect'. */
+  most_infect_wins: PodHighlightWinconCount | null;
+  /** Player with the most wins by win_condition='combo'. */
+  most_combo_wins: PodHighlightWinconCount | null;
+  /** Largest single commander_damage event with dealer + receiver attribution. */
+  biggest_hit: PodHighlightBiggestHit | null;
   longest_loss_streak: PodHighlightLossStreak | null;
 };
 
@@ -1856,7 +1869,7 @@ export async function getPodHighlights(
     : and(eq(matches.createdBy, userId), eq(matches.status, 'completed'));
 
   // Fan-out the independent aggregations in parallel.
-  const [totalMatchRows, playerCountRows, totalTimeRows, turnRows, lossOrderRows] = await Promise.all([
+  const [totalMatchRows, playerCountRows, totalTimeRows, winconRows, biggestHitRows, lossOrderRows] = await Promise.all([
     // Total completed matches in the pod — drives the leading "Total Pod Matches" slide.
     db
       .select({ total: count(matches.id) })
@@ -1883,28 +1896,43 @@ export async function getPodHighlights(
       .from(matches)
       .where(and(matchScope, isNotNull(matches.endedAt))),
 
-    // For each winning participation, count its non-undone turn_passed events.
-    // We tag turns by participation so the winner's actual turn count comes out,
-    // not the sum across players. Decks tie-break by player_name for stable order.
+    // Per-player win counts grouped by win_condition — feeds both the
+    // "Most Infect Wins" and "Most Combo Wins" slides. Joins match_results
+    // via the winner participation back to its player.
     db
       .select({
-        deckId: participations.deckId,
         playerId: participations.playerId,
-        turns: count(matchEvents.id),
+        winCondition: matchResults.winCondition,
+        wins: count(matchResults.matchId),
       })
-      .from(participations)
-      .innerJoin(matches, eq(participations.matchId, matches.id))
-      .innerJoin(
-        matchEvents,
-        and(
-          eq(matchEvents.matchId, participations.matchId),
-          eq(matchEvents.participationId, participations.id),
-          eq(matchEvents.eventType, 'turn_passed'),
-          eq(matchEvents.isUndone, false),
-        ),
-      )
-      .where(and(matchScope, eq(participations.result, 'win')))
-      .groupBy(participations.deckId, participations.playerId, participations.id),
+      .from(matchResults)
+      .innerJoin(participations, eq(participations.id, matchResults.winnerParticipationId))
+      .innerJoin(matches, eq(matches.id, matchResults.matchId))
+      .where(matchScope)
+      .groupBy(participations.playerId, matchResults.winCondition),
+
+    // Biggest single commander_damage hit in scope. The receiver lives on
+    // participations.id (linked via match_events.participationId); the
+    // dealer lives on whichever participation in the same match used the
+    // source commander on its deck. We grab the top 1 here and resolve
+    // the dealer/receiver in JS below.
+    db
+      .select({
+        matchId: matchEvents.matchId,
+        receiverPid: matchEvents.participationId,
+        delta: matchEvents.delta,
+        commanderId: matchEvents.commanderIdSource,
+      })
+      .from(matchEvents)
+      .innerJoin(matches, eq(matches.id, matchEvents.matchId))
+      .where(and(
+        matchScope,
+        eq(matchEvents.eventType, 'commander_damage'),
+        eq(matchEvents.isUndone, false),
+        isNotNull(matchEvents.commanderIdSource),
+      ))
+      .orderBy(desc(matchEvents.delta))
+      .limit(1),
 
     // All participations in pod-completed matches, ordered for streak computation.
     db
@@ -1936,18 +1964,55 @@ export async function getPodHighlights(
     }
   }
 
-  // ── Deck speed records ─────────────────────────────────────────────────────
-  let fastestRow: { deckId: string; playerId: string; turns: number } | null = null;
-  let longestRow: { deckId: string; playerId: string; turns: number } | null = null;
-  for (const r of turnRows) {
-    const turns = Number(r.turns ?? 0);
-    if (turns <= 0) continue;
-    if (!fastestRow || turns < fastestRow.turns) {
-      fastestRow = { deckId: r.deckId, playerId: r.playerId, turns };
+  // ── Most infect / combo wins (highest per-player count for each wincon) ──
+  let mostInfectRow: { playerId: string; wins: number } | null = null;
+  let mostComboRow: { playerId: string; wins: number } | null = null;
+  for (const r of winconRows) {
+    const wins = Number(r.wins ?? 0);
+    if (wins === 0) continue;
+    if (r.winCondition === 'infect') {
+      if (!mostInfectRow || wins > mostInfectRow.wins) {
+        mostInfectRow = { playerId: r.playerId, wins };
+      }
+    } else if (r.winCondition === 'combo') {
+      if (!mostComboRow || wins > mostComboRow.wins) {
+        mostComboRow = { playerId: r.playerId, wins };
+      }
     }
-    if (!longestRow || turns > longestRow.turns) {
-      longestRow = { deckId: r.deckId, playerId: r.playerId, turns };
-    }
+  }
+
+  // ── Biggest hit (single largest commander_damage event) ───────────────────
+  // We have the receiver participation id + the source commander id. To
+  // attribute the dealer we look up participations in the same match whose
+  // deck uses that commander (primary or partner). Skipped when no events.
+  const hitTop = biggestHitRows[0] ?? null;
+  let biggestHit: PodHighlightBiggestHit | null = null;
+  let hitDealerPid: string | null = null;
+  if (hitTop && hitTop.commanderId) {
+    const dealerRows = await db
+      .select({
+        participationId: participations.id,
+        playerId: participations.playerId,
+        deckId: participations.deckId,
+      })
+      .from(participations)
+      .innerJoin(decks, eq(decks.id, participations.deckId))
+      .where(
+        and(
+          eq(participations.matchId, hitTop.matchId),
+          or(eq(decks.commanderId, hitTop.commanderId), eq(decks.commanderId2, hitTop.commanderId)),
+        ),
+      )
+      .limit(1);
+    const dealer = dealerRows[0] ?? null;
+    biggestHit = {
+      damage: Number(hitTop.delta ?? 0),
+      dealer_player: null,    // resolved below from playerMap
+      dealer_deck: null,      // resolved below from deckMap
+      dealer_commander: null, // resolved below from cmdMap
+      receiver_player: null,  // resolved below
+    };
+    hitDealerPid = dealer?.participationId ?? null;
   }
 
   // ── Longest loss streak (per-player consecutive runs across pod matches) ──
@@ -1971,17 +2036,37 @@ export async function getPodHighlights(
     }
   }
 
-  // ── Resolve player + deck objects in one pass each ─────────────────────────
+  // ── Resolve player + deck + commander objects in one pass each ────────────
+  // For biggest_hit we need an extra join: receiver participation → its player,
+  // and dealer participation (from the lookup above) → its player + deck.
   const playerIdsNeeded = new Set<string>();
   if (mostActiveRow) playerIdsNeeded.add(mostActiveRow.playerId);
   if (topWinnerRow) playerIdsNeeded.add(topWinnerRow.playerId);
   if (lossStreakRow) playerIdsNeeded.add(lossStreakRow.playerId);
-  if (fastestRow) playerIdsNeeded.add(fastestRow.playerId);
-  if (longestRow) playerIdsNeeded.add(longestRow.playerId);
+  if (mostInfectRow) playerIdsNeeded.add(mostInfectRow.playerId);
+  if (mostComboRow) playerIdsNeeded.add(mostComboRow.playerId);
+
+  // For biggest hit, fetch the receiver participation (→ playerId) and the
+  // dealer participation (→ playerId + deckId). receiverPid + hitDealerPid
+  // both live on the participations table.
+  const hitParticipationIds: string[] = [];
+  if (hitTop) hitParticipationIds.push(hitTop.receiverPid);
+  if (hitDealerPid) hitParticipationIds.push(hitDealerPid);
+
+  const hitPartRows = hitParticipationIds.length
+    ? await db
+        .select({ id: participations.id, playerId: participations.playerId, deckId: participations.deckId })
+        .from(participations)
+        .where(inArray(participations.id, hitParticipationIds))
+    : [];
+  const hitPartMap = new Map(hitPartRows.map((p) => [p.id, p]));
+  for (const p of hitPartRows) playerIdsNeeded.add(p.playerId);
 
   const deckIdsNeeded = new Set<string>();
-  if (fastestRow) deckIdsNeeded.add(fastestRow.deckId);
-  if (longestRow) deckIdsNeeded.add(longestRow.deckId);
+  if (hitDealerPid) {
+    const dealerPart = hitPartMap.get(hitDealerPid);
+    if (dealerPart) deckIdsNeeded.add(dealerPart.deckId);
+  }
 
   const [playerRows, deckRows] = await Promise.all([
     playerIdsNeeded.size
@@ -1994,36 +2079,29 @@ export async function getPodHighlights(
   const playerMap = new Map(playerRows.map((p) => [p.id, p]));
   const deckMap = new Map(deckRows.map((d) => [d.id, d]));
 
-  // Commanders referenced by the deck-record decks (primary + partner).
+  // Commanders referenced by the biggest-hit dealer deck OR the source commander.
   const cmdIds = new Set<string>();
-  for (const d of deckRows) {
-    if (d.commanderId) cmdIds.add(d.commanderId);
-    if (d.commanderId2) cmdIds.add(d.commanderId2);
-  }
+  if (hitTop?.commanderId) cmdIds.add(hitTop.commanderId);
   const cmdRows = cmdIds.size
     ? await db.select().from(commanders).where(inArray(commanders.id, [...cmdIds]))
     : [];
   const cmdMap = new Map(cmdRows.map((c) => [c.id, c]));
 
-  function deckHighlight(row: { deckId: string; playerId: string; turns: number } | null): PodHighlightDeckTurn | null {
+  // Stitch biggest_hit together now that all the lookups resolved.
+  if (biggestHit && hitTop) {
+    const receiverPart = hitPartMap.get(hitTop.receiverPid);
+    const dealerPart = hitDealerPid ? hitPartMap.get(hitDealerPid) : null;
+    biggestHit.dealer_player = dealerPart ? playerMap.get(dealerPart.playerId) ?? null : null;
+    biggestHit.dealer_deck = dealerPart ? deckMap.get(dealerPart.deckId) ?? null : null;
+    biggestHit.dealer_commander = hitTop.commanderId ? cmdMap.get(hitTop.commanderId) ?? null : null;
+    biggestHit.receiver_player = receiverPart ? playerMap.get(receiverPart.playerId) ?? null : null;
+  }
+
+  function winconHighlight(row: { playerId: string; wins: number } | null): PodHighlightWinconCount | null {
     if (!row) return null;
-    const deck = deckMap.get(row.deckId);
-    if (!deck) return null;
-    const deckCommanders: Commander[] = [];
-    if (deck.commanderId) {
-      const c = cmdMap.get(deck.commanderId);
-      if (c) deckCommanders.push(c);
-    }
-    if (deck.commanderId2) {
-      const c = cmdMap.get(deck.commanderId2);
-      if (c) deckCommanders.push(c);
-    }
-    return {
-      deck,
-      commanders: deckCommanders,
-      turns: row.turns,
-      player_name: playerMap.get(row.playerId)?.name ?? null,
-    };
+    const player = playerMap.get(row.playerId);
+    if (!player) return null;
+    return { player, wins: row.wins };
   }
 
   return {
@@ -2042,8 +2120,9 @@ export async function getPodHighlights(
           }
         : null,
       total_play_time_seconds: Number(totalTimeRows[0]?.seconds ?? 0),
-      fastest_turn_win_deck: deckHighlight(fastestRow),
-      longest_turn_win_deck: deckHighlight(longestRow),
+      most_infect_wins: winconHighlight(mostInfectRow),
+      most_combo_wins: winconHighlight(mostComboRow),
+      biggest_hit: biggestHit,
       longest_loss_streak: lossStreakRow && playerMap.get(lossStreakRow.playerId)
         ? { player: playerMap.get(lossStreakRow.playerId)!, streak: lossStreakRow.streak }
         : null,

@@ -2,26 +2,22 @@
  * PodHighlightsCarousel — compact auto-rotating highlight slide at the top
  * of the Stats screen. Used in both pod and personal scope.
  *
- * Visual: amber-tinted frame (mirrors the previous Head-to-Head CTA look)
- * with a thin brighter top edge for a subtle "shine," all text centered.
- * Half the height of the previous version.
+ * Visual: amber-tinted frame (mirrors the old Head-to-Head CTA look) with
+ * a thin brighter top edge for a subtle "shine," all text centered.
  *
  * UX:
- *  - 6s auto-advance, loops.
- *  - Native FlatList horizontal paging for swipe (no outer Pressable so
- *    horizontal gestures aren't eaten by an ancestor).
- *  - When the user swipes, auto-rotate is paused for 8 seconds, then
- *    resumes on its own.
- *  - Dots when there's >1 slide.
+ *  - 6s auto-advance, loops, never pauses (user explicitly didn't want a
+ *    pause button or swipe-pause — just a continuous slideshow).
+ *  - Native FlatList horizontal paging for swipe.
+ *  - Dot indicators when there's >1 slide.
  *
  * Slides (any that lack data are silently skipped):
  *   Total Matches → Most Active → Top Winner → Total Play Time
- *   → Win-Turn Records (fewest + most turns in one frame) → Longest Loss Streak
+ *   → Most Infect Wins → Most Combo Wins → Biggest Hit → Longest Loss Streak
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
-  Image,
   Text,
   View,
   type NativeScrollEvent,
@@ -31,7 +27,6 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { useResponsive } from '@/hooks/useResponsive';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -39,7 +34,18 @@ import type { AppTheme } from '@/styles/themes/types';
 import type { PodHighlights } from '@/services/stats';
 
 const ROTATE_INTERVAL_MS = 6000;
-const PAUSE_AFTER_SWIPE_MS = 8000;
+
+// Feather names we use; constraining to a small set so a typo at the call
+// site is a compile error, not a missing glyph.
+type SlideIcon =
+  | 'layers'
+  | 'user'
+  | 'award'
+  | 'clock'
+  | 'droplet'        // infect → poison
+  | 'zap'            // combo → lightning chain
+  | 'crosshair'      // biggest hit
+  | 'trending-down';
 
 interface Slide {
   key: string;
@@ -71,20 +77,10 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
   const listRef = useRef<FlatList<Slide>>(null);
   const [index, setIndex] = useState(0);
   const [width, setWidth] = useState(0);
-  const pauseUntilRef = useRef<number>(0);
 
   const slides = useMemo<Slide[]>(() => {
     if (!data) return [];
     const out: Slide[] = [];
-
-    // Icon picks (all from Feather — outline / wireframe set):
-    //   layers      → stacked matches (Total)
-    //   user        → single player (Most Active)
-    //   award       → trophy / crown vibe (Top Winner)
-    //   clock       → time elapsed (Total Play Time)
-    //   rotate-cw   → "turns" — the looped arrow reads as a turn-counter
-    //                  (Win-Turn Records slide; turns play on both fastest and longest)
-    //   trending-down → losses dragging on (Loss Streak)
 
     if (data.total_matches > 0) {
       out.push({
@@ -144,18 +140,51 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
       });
     }
 
-    if (data.fastest_turn_win_deck || data.longest_turn_win_deck) {
+    if (data.most_infect_wins) {
+      const { player, wins } = data.most_infect_wins;
       out.push({
-        key: 'deck-records',
+        key: 'most-infect',
         render: () => (
-          <DeckRecordsBody
-            iconName="rotate-cw"
-            label={t('stats.podHighlights.deckTurnRecords')}
-            fastest={data.fastest_turn_win_deck}
-            longest={data.longest_turn_win_deck}
-            fastestLabel={t('stats.podHighlights.fastestWin')}
-            longestLabel={t('stats.podHighlights.longestWin')}
-            turnsLabel={(n: number) => t('stats.podHighlights.turns', { count: n })}
+          <SlideBody
+            iconName="droplet"
+            label={t('stats.podHighlights.mostInfectWins')}
+            primary={player.name}
+            secondary={t('stats.podHighlights.winsCount', { count: wins })}
+          />
+        ),
+      });
+    }
+
+    if (data.most_combo_wins) {
+      const { player, wins } = data.most_combo_wins;
+      out.push({
+        key: 'most-combo',
+        render: () => (
+          <SlideBody
+            iconName="zap"
+            label={t('stats.podHighlights.mostComboWins')}
+            primary={player.name}
+            secondary={t('stats.podHighlights.winsCount', { count: wins })}
+          />
+        ),
+      });
+    }
+
+    if (data.biggest_hit && data.biggest_hit.damage > 0) {
+      const { damage, dealer_player, dealer_commander } = data.biggest_hit;
+      // Headline is the damage number; subtitle attributes the dealer +
+      // their commander. Fallbacks keep the slide useful even if attribution
+      // failed (e.g. deck deleted, commander removed).
+      const dealerName = dealer_player?.name ?? t('stats.podHighlights.unknownPlayer');
+      const cmdName = dealer_commander?.name ?? t('stats.podHighlights.unknownCommander');
+      out.push({
+        key: 'biggest-hit',
+        render: () => (
+          <SlideBody
+            iconName="crosshair"
+            label={t('stats.podHighlights.biggestHit')}
+            primary={t('stats.podHighlights.damageAmount', { count: damage })}
+            secondary={`${dealerName}  ·  ${cmdName}`}
           />
         ),
       });
@@ -179,12 +208,10 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
     return out;
   }, [data, t]);
 
-  // Auto-rotate. Honours the pauseUntil timestamp so a swipe gets the user
-  // a moment to read the slide they landed on before we move on again.
+  // Auto-rotate — unconditional. User explicitly didn't want a pause.
   useEffect(() => {
     if (slides.length <= 1 || width === 0) return;
     const id = setInterval(() => {
-      if (Date.now() < pauseUntilRef.current) return;
       setIndex((prev) => {
         const next = (prev + 1) % slides.length;
         listRef.current?.scrollToOffset({
@@ -216,10 +243,6 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
     if (next !== index) setIndex(next);
   }
 
-  function pauseFromInteraction() {
-    pauseUntilRef.current = Date.now() + PAUSE_AFTER_SWIPE_MS;
-  }
-
   if (loading && (!data || slides.length === 0)) {
     return (
       <View style={styles.skeleton}>
@@ -248,7 +271,6 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onScrollBeginDrag={pauseFromInteraction}
         onMomentumScrollEnd={handleScrollEnd}
         decelerationRate="fast"
         renderItem={({ item }) => (
@@ -272,17 +294,7 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
   );
 }
 
-// ─── Slide bodies ─────────────────────────────────────────────────────────────
-
-// Feather icon names we use across the carousel. Constrained to a small
-// set so a typo at the call site is a compile error, not a missing glyph.
-type SlideIcon =
-  | 'layers'
-  | 'user'
-  | 'award'
-  | 'clock'
-  | 'rotate-cw'
-  | 'trending-down';
+// ─── Slide body ─────────────────────────────────────────────────────────────
 
 function SlideBody({
   iconName,
@@ -298,86 +310,21 @@ function SlideBody({
   const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.slideBody}>
-      <SlideIconHeader iconName={iconName} label={label} />
-      <Text style={styles.slidePrimary} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+      <View style={styles.slideHeader}>
+        <Feather name={iconName} size={16} style={styles.slideIcon} />
+        <Text style={styles.slideLabel}>{label}</Text>
+      </View>
+      <Text
+        style={styles.slidePrimary}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.65}
+      >
         {primary}
       </Text>
       {secondary ? (
         <Text style={styles.slideSecondary} numberOfLines={1}>{secondary}</Text>
       ) : null}
-    </View>
-  );
-}
-
-// Shared icon-above-label row so every slide has the same vertical rhythm.
-function SlideIconHeader({ iconName, label }: { iconName: SlideIcon; label: string }) {
-  const styles = useThemedStyles(createStyles);
-  return (
-    <View style={styles.slideHeader}>
-      <Feather name={iconName} size={16} style={styles.slideIcon} />
-      <Text style={styles.slideLabel}>{label}</Text>
-    </View>
-  );
-}
-
-function DeckRecordsBody({
-  iconName,
-  label,
-  fastest,
-  longest,
-  fastestLabel,
-  longestLabel,
-  turnsLabel,
-}: {
-  iconName: SlideIcon;
-  label: string;
-  fastest: PodHighlights['fastest_turn_win_deck'];
-  longest: PodHighlights['longest_turn_win_deck'];
-  fastestLabel: string;
-  longestLabel: string;
-  turnsLabel: (n: number) => string;
-}) {
-  const styles = useThemedStyles(createStyles);
-
-  function row(sublabel: string, record: PodHighlights['fastest_turn_win_deck']) {
-    if (!record) return null;
-    const colors = Array.from(
-      new Set(record.commanders.flatMap((c) => c.colorIdentity ?? [])),
-    );
-    const art = record.commanders[0]?.artCrop ?? null;
-    return (
-      <View style={styles.deckRecordRow}>
-        <View style={styles.deckRecordThumb}>
-          {art ? (
-            <Image source={{ uri: art }} style={styles.deckRecordThumbImg} />
-          ) : (
-            <View style={[styles.deckRecordThumbImg, styles.deckRecordThumbFallback]} />
-          )}
-        </View>
-        <View style={styles.deckRecordInfo}>
-          <Text style={styles.deckRecordSublabel}>{sublabel}</Text>
-          <Text style={styles.deckRecordName} numberOfLines={1}>{record.deck.name}</Text>
-          <Text style={styles.deckRecordMeta} numberOfLines={1}>
-            {turnsLabel(record.turns)}
-            {record.player_name ? `  ·  ${record.player_name}` : ''}
-          </Text>
-          {colors.length > 0 && (
-            <View style={styles.deckRecordManaWrap}>
-              <ManaIdentityRow colors={colors} size="xs" />
-            </View>
-          )}
-        </View>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.deckRecordsContainer}>
-      <SlideIconHeader iconName={iconName} label={label} />
-      <View style={styles.deckRecordsRows}>
-        {row(fastestLabel, fastest)}
-        {row(longestLabel, longest)}
-      </View>
     </View>
   );
 }
@@ -392,8 +339,6 @@ const createStyles = (t: AppTheme) => ({
     borderColor: t.colors.accent.primary + '44',
     overflow: 'hidden' as const,
     marginBottom: spacing[3],
-    // Mirrors the previous Head-to-Head CTA palette so the carousel feels
-    // like a featured highlight surface rather than a plain card.
   },
   // Brighter inset top line — reads as a thin "shine" along the upper edge.
   shine: {
@@ -419,21 +364,22 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size.caption,
   },
 
-  // Slide — half the previous height, centered content.
+  // Slide — compact frame, centered content. Bigger primary text per the
+  // latest design pass: heading-lg instead of heading-md.
   slide: {
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
-    minHeight: 70,
+    minHeight: 96,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
   slideBody: {
     alignItems: 'center' as const,
-    gap: 2,
+    gap: 3,
     width: '100%' as unknown as number,
   },
   // Icon + label row above the primary stat. Centered, tight gap so it
-  // reads as a single visual unit rather than two stacked elements.
+  // reads as a single unit rather than two stacked elements.
   slideHeader: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
@@ -454,73 +400,17 @@ const createStyles = (t: AppTheme) => ({
   },
   slidePrimary: {
     color: t.colors.accent.primary,
-    fontSize: t.typography.size['heading-md'],
+    fontSize: t.typography.size['heading-lg'],
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.bold,
     textAlign: 'center' as const,
     width: '100%' as unknown as number,
+    lineHeight: t.typography.size['heading-lg'] * 1.1,
   },
   slideSecondary: {
     color: t.colors.text.secondary,
-    fontSize: t.typography.size['body-sm'],
+    fontSize: t.typography.size['body-md'],
     textAlign: 'center' as const,
-  },
-
-  // Deck records slide — compact, two centered rows.
-  deckRecordsContainer: {
-    alignItems: 'center' as const,
-    gap: spacing[2],
-    width: '100%' as unknown as number,
-  },
-  deckRecordsRows: {
-    flexDirection: 'row' as const,
-    gap: spacing[3],
-    width: '100%' as unknown as number,
-    justifyContent: 'center' as const,
-  },
-  deckRecordRow: {
-    flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: spacing[2],
-  },
-  deckRecordThumb: {
-    width: 36,
-    height: 36,
-    borderRadius: t.radius.sm,
-    overflow: 'hidden' as const,
-    backgroundColor: t.colors.border.subtle,
-    flexShrink: 0,
-  },
-  deckRecordThumbImg: {
-    width: '100%' as unknown as number,
-    height: '100%' as unknown as number,
-  },
-  deckRecordThumbFallback: {
-    backgroundColor: t.colors.border.subtle,
-  },
-  deckRecordInfo: {
-    flex: 1,
-    gap: 1,
-  },
-  deckRecordSublabel: {
-    color: t.colors.text.muted,
-    fontSize: 10,
-    fontWeight: t.typography.weight.semibold,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase' as const,
-  },
-  deckRecordName: {
-    color: t.colors.text.primary,
-    fontSize: t.typography.size['body-sm'],
-    fontWeight: t.typography.weight.semibold,
-  },
-  deckRecordMeta: {
-    color: t.colors.text.secondary,
-    fontSize: 11,
-  },
-  deckRecordManaWrap: {
-    marginTop: 2,
   },
 
   dotsRow: {
