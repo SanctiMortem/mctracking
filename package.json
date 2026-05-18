@@ -33,6 +33,7 @@
     "@expo/server": "^0.7.5",
     "@neondatabase/serverless": "^1.0.2",
     "drizzle-orm": "^0.45.2",
+    "@expo/vector-icons": "^15.1.1",
     "expo": "~55.0.14",
     "expo-auth-session": "~55.0.13",
     "expo-constants": "~55.0.13",

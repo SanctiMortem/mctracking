@@ -28,6 +28,7 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 
+import { Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
@@ -76,11 +77,21 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
     if (!data) return [];
     const out: Slide[] = [];
 
+    // Icon picks (all from Feather — outline / wireframe set):
+    //   layers      → stacked matches (Total)
+    //   user        → single player (Most Active)
+    //   award       → trophy / crown vibe (Top Winner)
+    //   clock       → time elapsed (Total Play Time)
+    //   rotate-cw   → "turns" — the looped arrow reads as a turn-counter
+    //                  (Win-Turn Records slide; turns play on both fastest and longest)
+    //   trending-down → losses dragging on (Loss Streak)
+
     if (data.total_matches > 0) {
       out.push({
         key: 'total-matches',
         render: () => (
           <SlideBody
+            iconName="layers"
             label={t('stats.podHighlights.totalMatches')}
             primary={`${data.total_matches}`}
             secondary={t('stats.podHighlights.totalMatchesSub', { count: data.total_players })}
@@ -95,6 +106,7 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
         key: 'most-active',
         render: () => (
           <SlideBody
+            iconName="user"
             label={t('stats.podHighlights.mostActivePlayer')}
             primary={player.name}
             secondary={t('stats.podHighlights.matchesPlayed', { count: value })}
@@ -109,6 +121,7 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
         key: 'top-winner',
         render: () => (
           <SlideBody
+            iconName="award"
             label={t('stats.podHighlights.topWinner')}
             primary={player.name}
             secondary={`${value}%  ·  ${wins}/${total}`}
@@ -122,6 +135,7 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
         key: 'play-time',
         render: () => (
           <SlideBody
+            iconName="clock"
             label={t('stats.podHighlights.totalPlayTime')}
             primary={formatDuration(data.total_play_time_seconds)}
             secondary={t('stats.podHighlights.totalPlayTimeSub')}
@@ -135,6 +149,7 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
         key: 'deck-records',
         render: () => (
           <DeckRecordsBody
+            iconName="rotate-cw"
             label={t('stats.podHighlights.deckTurnRecords')}
             fastest={data.fastest_turn_win_deck}
             longest={data.longest_turn_win_deck}
@@ -152,6 +167,7 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
         key: 'loss-streak',
         render: () => (
           <SlideBody
+            iconName="trending-down"
             label={t('stats.podHighlights.longestLossStreak')}
             primary={player.name}
             secondary={t('stats.podHighlights.lossesInARow', { count: streak })}
@@ -258,11 +274,23 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
 
 // ─── Slide bodies ─────────────────────────────────────────────────────────────
 
+// Feather icon names we use across the carousel. Constrained to a small
+// set so a typo at the call site is a compile error, not a missing glyph.
+type SlideIcon =
+  | 'layers'
+  | 'user'
+  | 'award'
+  | 'clock'
+  | 'rotate-cw'
+  | 'trending-down';
+
 function SlideBody({
+  iconName,
   label,
   primary,
   secondary,
 }: {
+  iconName: SlideIcon;
   label: string;
   primary: string;
   secondary?: string;
@@ -270,7 +298,7 @@ function SlideBody({
   const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.slideBody}>
-      <Text style={styles.slideLabel}>{label}</Text>
+      <SlideIconHeader iconName={iconName} label={label} />
       <Text style={styles.slidePrimary} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
         {primary}
       </Text>
@@ -281,7 +309,19 @@ function SlideBody({
   );
 }
 
+// Shared icon-above-label row so every slide has the same vertical rhythm.
+function SlideIconHeader({ iconName, label }: { iconName: SlideIcon; label: string }) {
+  const styles = useThemedStyles(createStyles);
+  return (
+    <View style={styles.slideHeader}>
+      <Feather name={iconName} size={16} style={styles.slideIcon} />
+      <Text style={styles.slideLabel}>{label}</Text>
+    </View>
+  );
+}
+
 function DeckRecordsBody({
+  iconName,
   label,
   fastest,
   longest,
@@ -289,6 +329,7 @@ function DeckRecordsBody({
   longestLabel,
   turnsLabel,
 }: {
+  iconName: SlideIcon;
   label: string;
   fastest: PodHighlights['fastest_turn_win_deck'];
   longest: PodHighlights['longest_turn_win_deck'];
@@ -332,7 +373,7 @@ function DeckRecordsBody({
 
   return (
     <View style={styles.deckRecordsContainer}>
-      <Text style={styles.slideLabel}>{label}</Text>
+      <SlideIconHeader iconName={iconName} label={label} />
       <View style={styles.deckRecordsRows}>
         {row(fastestLabel, fastest)}
         {row(longestLabel, longest)}
@@ -390,6 +431,17 @@ const createStyles = (t: AppTheme) => ({
     alignItems: 'center' as const,
     gap: 2,
     width: '100%' as unknown as number,
+  },
+  // Icon + label row above the primary stat. Centered, tight gap so it
+  // reads as a single visual unit rather than two stacked elements.
+  slideHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: spacing[1],
+  },
+  slideIcon: {
+    color: t.colors.accent.primary,
   },
   slideLabel: {
     color: t.colors.accent.primary,
