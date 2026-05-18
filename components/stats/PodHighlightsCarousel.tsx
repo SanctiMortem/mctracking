@@ -379,10 +379,11 @@ const createStyles = (t: AppTheme) => ({
   // Slide — denser frame, less negative space. Title row sits centered up
   // top; the stat row below packs icon + value + context horizontally so
   // the surface reads as one chunky highlight instead of stacked text.
+  // Bumped minHeight so the larger primary text doesn't fight the frame.
   slide: {
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[3],
-    minHeight: 92,
+    minHeight: 116,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
@@ -417,30 +418,29 @@ const createStyles = (t: AppTheme) => ({
     width: '100%' as unknown as number,
   },
   // Wraps value + secondary; takes the remaining width after the icon and
-  // centers its children inside that — pulls both the stat and the context
-  // a bit inward instead of pinning them to opposite edges.
+  // distributes its two children evenly (space-evenly) so each gets
+  // matching breathing room without hugging an edge.
   statValueGroup: {
     flex: 1,
     flexDirection: 'row' as const,
     alignItems: 'baseline' as const,
-    justifyContent: 'center' as const,
-    gap: spacing[3],
+    justifyContent: 'space-evenly' as const,
+    gap: spacing[2],
   },
   slidePrimary: {
     color: t.colors.accent.primary,
-    fontSize: t.typography.size['heading-lg'],
+    fontSize: 36,
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.bold,
-    textAlign: 'right' as const,
+    textAlign: 'center' as const,
     flexShrink: 1,
-    lineHeight: t.typography.size['heading-lg'] * 1.1,
+    lineHeight: 38,
   },
   slideSecondary: {
     color: t.colors.text.secondary,
-    fontSize: t.typography.size['body-sm'],
-    textAlign: 'left' as const,
+    fontSize: 16,
+    textAlign: 'center' as const,
     flexShrink: 1,
-    maxWidth: '50%' as unknown as number,
   },
 
   dotsRow: {
