@@ -247,16 +247,24 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* ── Active Match Banner(s) — one per in-progress match in this context ── */}
+        {/* ── Active Matches — one frame, one row per in-progress match in context ── */}
         {activeMatches.length > 0 && (
-          <View style={styles.activeMatchList}>
-            {activeMatches.map((match) => (
-              <ActiveMatchBanner
-                key={match.id}
-                matchId={match.id}
-                startedAt={match.started_at}
-                onPress={() => router.push(`/match/${match.id}/tracker`)}
-              />
+          <View style={styles.activeMatchFrame}>
+            <Text style={styles.activeMatchFrameTitle}>
+              {activeMatches.length === 1
+                ? t('home.matchInProgressTitle')
+                : t('home.matchesInProgressTitle')}
+            </Text>
+            {activeMatches.map((match, idx) => (
+              <View key={match.id}>
+                {idx > 0 && <View style={styles.activeMatchDivider} />}
+                <ActiveMatchBanner
+                  matchId={match.id}
+                  startedAt={match.started_at}
+                  hostName={match.host_name}
+                  onPress={() => router.push(`/match/${match.id}/tracker`)}
+                />
+              </View>
             ))}
           </View>
         )}
@@ -497,9 +505,32 @@ const createStyles = (t: AppTheme) => ({
     textAlign: 'center' as const,
   },
 
-  // Vertical stack of one ActiveMatchBanner per in-progress match.
-  activeMatchList: {
-    gap: spacing[2],
+  // Frame wrapping all in-progress matches. One outlined container labeled
+  // "Matches in Progress" (or singular) with each banner as a row inside.
+  // Height grows naturally with the number of matches.
+  activeMatchFrame: {
+    backgroundColor: t.colors.accent.primary + '14',
+    borderWidth: 1,
+    borderColor: t.colors.accent.primary + '44',
+    borderRadius: t.radius.lg,
+    paddingHorizontal: spacing[3],
+    paddingTop: spacing[3],
+    paddingBottom: spacing[2],
+    gap: spacing[1],
+  },
+  activeMatchFrameTitle: {
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size.label,
+    fontFamily: t.typography.fontFamily.headline,
+    fontWeight: t.typography.weight.semibold,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase' as const,
+    paddingHorizontal: spacing[2],
+  },
+  activeMatchDivider: {
+    height: 1,
+    backgroundColor: t.colors.accent.primary + '22',
+    marginHorizontal: spacing[2],
   },
 
   // New Match CTA

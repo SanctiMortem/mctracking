@@ -1,9 +1,12 @@
 /**
- * ActiveMatchBanner — banner for an in_progress match in the active context.
+ * ActiveMatchBanner — one row inside the "Matches in Progress" frame.
  *
- * Renders for each in-progress match the user can see (filtering done in
- * useHome). Tap → navigates to /match/[id]/tracker. Shows a "started X ago"
- * subtitle so multiple banners in the same pod are distinguishable.
+ * Tap → /match/[id]/tracker. Shows the host's account-player name and a
+ * relative "Started X ago" so multiple banners in the same pod can be
+ * distinguished.
+ *
+ * Stripped of its own border/background — the parent frame on the Home tab
+ * provides the container chrome and the rows just sit inside.
  *
  * CMP-015 (design doc) · PLAT-010 (EPIC-05)
  */
@@ -21,6 +24,8 @@ interface ActiveMatchBannerProps {
   matchId: string;
   /** ISO string. When present, subtitle becomes "Started X ago". */
   startedAt?: string;
+  /** Display name of the host's account player. Hidden when null. */
+  hostName?: string | null;
   onPress: () => void;
 }
 
@@ -44,26 +49,29 @@ function elapsedSince(isoOrDate: string | Date): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function ActiveMatchBanner({ matchId: _matchId, startedAt, onPress }: ActiveMatchBannerProps) {
+export function ActiveMatchBanner({ matchId: _matchId, startedAt, hostName, onPress }: ActiveMatchBannerProps) {
   const styles = useThemedStyles(createStyles);
 
   const { t } = useTranslation();
 
-  const subtitle = startedAt
+  const startedLine = startedAt
     ? t('home.activeMatchStartedAgo', { time: elapsedSince(startedAt) })
     : t('home.activeMatchResume');
 
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.banner, pressed && styles.bannerPressed]}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
       accessibilityRole="button"
       accessibilityLabel={t('home.activeMatchBannerA11y')}
     >
       <View style={styles.pulseIndicator} />
       <View style={styles.content}>
         <Text style={styles.title}>{t('home.activeMatchTitle')}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
+        {hostName && (
+          <Text style={styles.host} numberOfLines={1}>{hostName}</Text>
+        )}
+        <Text style={styles.subtitle}>{startedLine}</Text>
       </View>
       <Text style={styles.chevron}>›</Text>
     </Pressable>
@@ -73,18 +81,15 @@ export function ActiveMatchBanner({ matchId: _matchId, startedAt, onPress }: Act
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const createStyles = (t: AppTheme) => ({
-  banner: {
+  row: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    backgroundColor: t.colors.accent.primary + '18',
-    borderRadius: t.radius.lg,
-    borderWidth: 1,
-    borderColor: t.colors.accent.primary + '44',
-    padding: spacing[4],
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[2],
     gap: spacing[3],
   },
-  bannerPressed: {
-    opacity: 0.75,
+  rowPressed: {
+    opacity: 0.6,
   },
 
   pulseIndicator: {
@@ -103,6 +108,11 @@ const createStyles = (t: AppTheme) => ({
     color: t.colors.accent.primary,
     fontSize: t.typography.size['body-lg'],
     fontWeight: t.typography.weight.semibold,
+  },
+  host: {
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.medium,
   },
   subtitle: {
     color: t.colors.text.secondary,

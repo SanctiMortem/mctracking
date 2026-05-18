@@ -67,16 +67,39 @@ export async function GET(req: Request) {
   // have multiple matches running simultaneously and the Home tab needs to
   // show all of them so they can resume the right one. Newest-first so the
   // most recently created surfaces at the top of the list.
+  //
+  // Left-join the host's account player so the banner can show whose match
+  // it is ("Match in progress · Peter · Started 12m ago"). createdBy is the
+  // Clerk user ID; account players are linked via players.accountUserId.
   const activeMatchRows = await db
-    .select({ id: matches.id, groupId: matches.groupId, createdAt: matches.createdAt })
+    .select({
+      id: matches.id,
+      groupId: matches.groupId,
+      createdBy: matches.createdBy,
+      createdAt: matches.createdAt,
+    })
     .from(matches)
     .where(and(eq(matches.status, 'in_progress'), or(...orConditions)))
     .orderBy(desc(matches.createdAt));
+
+  // Resolve host names in one query: account-player name keyed by Clerk user ID.
+  const hostUserIds = Array.from(new Set(activeMatchRows.map((r) => r.createdBy)));
+  const hostNameByUserId = new Map<string, string>();
+  if (hostUserIds.length > 0) {
+    const hostRows = await db
+      .select({ userId: players.accountUserId, name: players.name })
+      .from(players)
+      .where(and(inArray(players.accountUserId, hostUserIds), isNull(players.deletedAt)));
+    for (const row of hostRows) {
+      if (row.userId) hostNameByUserId.set(row.userId, row.name);
+    }
+  }
 
   const active_matches = activeMatchRows.map((row) => ({
     id: row.id,
     group_id: row.groupId,
     started_at: row.createdAt,
+    host_name: hostNameByUserId.get(row.createdBy) ?? null,
   }));
 
   // Back-compat: older clients still read `active_match` (singular). Keep it

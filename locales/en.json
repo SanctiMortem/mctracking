@@ -507,6 +507,8 @@
     "activeMatchTitle": "Match in progress",
     "activeMatchResume": "Tap to resume",
     "activeMatchStartedAgo": "Started {{time}} ago",
+    "matchInProgressTitle": "Match in Progress",
+    "matchesInProgressTitle": "Matches in Progress",
     "activeMatchBannerA11y": "Active match — tap to resume",
     "contextPersonal": "Personal",
     "contextSwitcherTitle": "Active context",

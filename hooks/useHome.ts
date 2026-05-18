@@ -26,6 +26,8 @@ type ActiveMatch = {
   id: string;
   group_id: string | null;
   started_at: string;
+  /** Display name of the host's account player. null when host hasn't created one. */
+  host_name: string | null;
 };
 
 type SessionResponse = {

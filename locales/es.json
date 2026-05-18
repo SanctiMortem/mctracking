@@ -507,6 +507,8 @@
     "activeMatchTitle": "Partida en curso",
     "activeMatchResume": "Toca para retomar",
     "activeMatchStartedAgo": "Iniciada hace {{time}}",
+    "matchInProgressTitle": "Partida en Curso",
+    "matchesInProgressTitle": "Partidas en Curso",
     "activeMatchBannerA11y": "Partida activa — toca para retomar",
     "contextPersonal": "Personal",
     "contextSwitcherTitle": "Contexto activo",
