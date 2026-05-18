@@ -261,9 +261,8 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
       ]}
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
     >
-      {/* Subtle "shine" — a thin brighter line along the top edge. */}
-      <View style={styles.shine} pointerEvents="none" />
-
+      {/* No separate top shine anymore — the full 2-px frame border carries
+          the brighter amber, so the whole outline reads as the highlight. */}
       <FlatList
         ref={listRef}
         data={slides}
@@ -316,7 +315,7 @@ function SlideBody({
       {/* Stat row — big icon anchored left; value + secondary clustered in a
           centered group so neither hugs the edges. */}
       <View style={styles.statRow}>
-        <Feather name={iconName} size={32} style={styles.slideIcon} />
+        <Feather name={iconName} size={56} style={styles.slideIcon} />
         <View style={styles.statValueGroup}>
           <Text
             style={styles.slidePrimary}
@@ -347,26 +346,19 @@ const createStyles = (t: AppTheme) => ({
   frame: {
     backgroundColor: t.colors.accent.primary + '22',
     borderRadius: t.radius.md,
-    borderWidth: 1,
-    borderColor: t.colors.accent.primary + '44',
+    // Full-perimeter 2 px line in the brighter amber that used to live only
+    // at the top — the whole outline now reads as the highlight.
+    borderWidth: 2,
+    borderColor: t.colors.accent.primary + '88',
     overflow: 'hidden' as const,
     marginBottom: spacing[3],
-  },
-  // Brighter inset top line — reads as a thin "shine" along the upper edge.
-  shine: {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: t.colors.accent.primary + '88',
   },
   skeleton: {
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
     borderRadius: t.radius.md,
-    borderWidth: 1,
-    borderColor: t.colors.accent.primary + '44',
+    borderWidth: 2,
+    borderColor: t.colors.accent.primary + '88',
     backgroundColor: t.colors.accent.primary + '22',
     alignItems: 'center' as const,
     marginBottom: spacing[3],
@@ -376,26 +368,28 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size.caption,
   },
 
-  // Slide — denser frame, less negative space. Title row sits centered up
-  // top; the stat row below packs icon + value + context horizontally so
-  // the surface reads as one chunky highlight instead of stacked text.
-  // Bumped minHeight so the larger primary text doesn't fight the frame.
+  // Tightened paddings + bigger fonts per latest design pass:
+  //   · paddingTop / paddingBottom 6
+  //   · paddingLeft 6 (icon hugs the left edge); paddingRight 6 for symmetry
+  //   · gap between title and stat row 6
+  //   · icon 56, value 56, context 20, title 17 (≈ +50%)
+  // minHeight grown to fit the 56-px primary line.
   slide: {
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[3],
-    minHeight: 116,
+    paddingTop: 6,
+    paddingBottom: 6,
+    paddingLeft: 6,
+    paddingRight: 6,
+    minHeight: 140,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
   slideBody: {
     alignItems: 'stretch' as const,
     width: '100%' as unknown as number,
-    gap: spacing[2],
+    gap: 6,
   },
   slideIcon: {
     color: t.colors.accent.primary,
-    // Subtle drop-shadow so the line icon reads as part of the
-    // highlight surface, not a pasted-on element.
     textShadowColor: t.colors.accent.primary + '55',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
@@ -403,23 +397,21 @@ const createStyles = (t: AppTheme) => ({
   },
   slideLabel: {
     color: t.colors.accent.primary,
-    fontSize: t.typography.size.label,
+    fontSize: 17,
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.8,
     textTransform: 'uppercase' as const,
     textAlign: 'center' as const,
   },
-  // Big-icon left, value + context clustered in the centered group below.
+  // Icon ← 6 px gap → value group (which distributes its two children
+  // space-evenly across the remaining width).
   statRow: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    gap: spacing[3],
+    gap: 6,
     width: '100%' as unknown as number,
   },
-  // Wraps value + secondary; takes the remaining width after the icon and
-  // distributes its two children evenly (space-evenly) so each gets
-  // matching breathing room without hugging an edge.
   statValueGroup: {
     flex: 1,
     flexDirection: 'row' as const,
@@ -429,16 +421,16 @@ const createStyles = (t: AppTheme) => ({
   },
   slidePrimary: {
     color: t.colors.accent.primary,
-    fontSize: 36,
+    fontSize: 56,
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.bold,
     textAlign: 'center' as const,
     flexShrink: 1,
-    lineHeight: 38,
+    lineHeight: 60,
   },
   slideSecondary: {
     color: t.colors.text.secondary,
-    fontSize: 16,
+    fontSize: 20,
     textAlign: 'center' as const,
     flexShrink: 1,
   },
