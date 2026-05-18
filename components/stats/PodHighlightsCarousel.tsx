@@ -34,6 +34,10 @@ import type { AppTheme } from '@/styles/themes/types';
 import type { PodHighlights } from '@/services/stats';
 
 const ROTATE_INTERVAL_MS = 6000;
+// Frame border width (per side). Kept in sync with `frame.borderWidth` in
+// the stylesheet — used to convert the frame's outer onLayout width into
+// the inner page width that the FlatList actually shows.
+const FRAME_BORDER = 2;
 
 // Feather names we use; constraining to a small set so a typo at the call
 // site is a compile error, not a missing glyph.
@@ -259,7 +263,11 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
         styles.frame,
         contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined,
       ]}
-      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+      // Frame uses border-box sizing, so layout.width is the OUTER edge.
+      // The FlatList inside only sees outer − 4 (2-px border on each side),
+      // so each slide must render at that inner width or the pages drift
+      // by 4 px per swipe and the last slide's right edge gets clipped.
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width - FRAME_BORDER * 2)}
     >
       {/* No separate top shine anymore — the full 2-px frame border carries
           the brighter amber, so the whole outline reads as the highlight. */}
