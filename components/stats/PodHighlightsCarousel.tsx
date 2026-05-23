@@ -39,10 +39,6 @@ const ROTATE_INTERVAL_MS = 6000;
 // the inner page width that the FlatList actually shows.
 const FRAME_BORDER = 2;
 
-// Total slides we'd ever show. Carousel randomly picks RANDOM_SLIDE_COUNT
-// of these per Stats screen mount, so each visit feels fresh.
-const RANDOM_SLIDE_COUNT = 5;
-
 // Feather names we use; constraining to a small set so a typo at the call
 // site is a compile error, not a missing glyph.
 type SlideIcon =
@@ -294,19 +290,11 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
     return out;
   }, [data, t]);
 
-  // Randomly pick RANDOM_SLIDE_COUNT slides per Stats screen mount so each
-  // visit feels fresh. Memoised against the slide *keys* so a re-render
-  // doesn't reshuffle and yank the slide out from under the user.
-  const slides = useMemo<Slide[]>(() => {
-    if (allSlides.length <= RANDOM_SLIDE_COUNT) return allSlides;
-    const shuffled = [...allSlides];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled.slice(0, RANDOM_SLIDE_COUNT);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allSlides.map((s) => s.key).join('|')]);
+  // Show every available slide in the carousel — no random pick. With up
+  // to ~13 highlights this gives a longer cycle but every stat eventually
+  // gets its moment. Position is signalled by a compact "n / total" tag
+  // below the slide rather than dots (which look like spam at this count).
+  const slides = allSlides;
 
   // Auto-rotate — unconditional. User explicitly didn't want a pause.
   useEffect(() => {
@@ -384,13 +372,10 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
       />
 
       {slides.length > 1 && (
-        <View style={styles.dotsRow}>
-          {slides.map((s, i) => (
-            <View
-              key={s.key}
-              style={[styles.dot, i === index && styles.dotActive]}
-            />
-          ))}
+        <View style={styles.positionRow}>
+          <Text style={styles.positionText}>
+            {`${index + 1} / ${slides.length}`}
+          </Text>
         </View>
       )}
     </View>
@@ -566,20 +551,20 @@ const createStyles = (t: AppTheme) => ({
     width: '100%' as unknown as number,
   },
 
-  dotsRow: {
-    flexDirection: 'row' as const,
-    justifyContent: 'center' as const,
-    paddingBottom: spacing[2],
-    paddingTop: 0,
-    gap: 5,
+  // Compact "n / total" tag instead of a row of dots — 13 dots reads as
+  // noise; the small text gives the same position info in a fraction of
+  // the visual weight.
+  positionRow: {
+    alignItems: 'flex-end' as const,
+    paddingRight: 8,
+    paddingBottom: 4,
+    paddingTop: 2,
   },
-  dot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: t.colors.accent.primary + '44',
-  },
-  dotActive: {
-    backgroundColor: t.colors.accent.primary,
+  positionText: {
+    color: t.colors.accent.primary + 'AA',
+    fontSize: 11,
+    fontVariant: ['tabular-nums'] as const,
+    fontWeight: t.typography.weight.semibold,
+    letterSpacing: 0.4,
   },
 });
