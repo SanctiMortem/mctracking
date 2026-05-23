@@ -361,8 +361,11 @@ export type DeckStats = {
   weak_against_colors: ColorMatchup[];
 };
 
-/** Min number of matches against a single opposing deck for it to qualify as a matchup */
-const MATCHUP_MIN_MATCHES = 2;
+/** Min number of DECISIVE matches against a single opposing deck for it
+ *  to qualify as a matchup. "Decisive" means the winner was either the
+ *  current deck or that specific opponent — matches won by a third deck
+ *  don't count, because neither side actually beat the other. */
+const MATCHUP_MIN_MATCHES = 3;
 
 export type GetDeckStatsResult =
   | { data: DeckStats }
@@ -463,28 +466,61 @@ export async function getDeckStats(
       .filter((x): x is PlayerUsage => x !== null);
   }
 
-  // 6. Deck-vs-deck matchups
-  //    For each match this deck played, every other distinct opposing deckId in
-  //    that match counts as one head-to-head row. A multi-player win counts as
-  //    a win against each opponent present.
+  // 6. Deck-vs-deck matchups — DECISIVE matches only.
+  //
+  //    A match between the current deck and an opponent deck counts as a
+  //    "decisive" matchup ONLY when the winner of the match is one of those
+  //    two decks. If a third deck won, the match doesn't count for this pair
+  //    (neither side actually beat the other). Draws also don't count.
+  //
+  //    For each qualifying opponent we also track the most recent decisive
+  //    matchup timestamp, which becomes the third sort key for break ties
+  //    at the bottom of the top-3 list (newer rivalry wins the slot).
   const ownResultByMatch = new Map<string, 'win' | 'lose' | 'draw' | null>();
   for (const r of ownMatchRows) ownResultByMatch.set(r.matchId, r.result);
 
   const matchIds = [...ownResultByMatch.keys()];
-  const matchupTotals = new Map<string, { matches: number; wins: number }>();
+  const matchupTotals = new Map<string, { matches: number; wins: number; mostRecentDecisiveAt: number }>();
 
   if (matchIds.length > 0) {
-    const otherParts = await db
-      .select({ matchId: participations.matchId, deckId: participations.deckId })
+    // Pull every participation in those matches, including result + match
+    // createdAt. We need result to find each match's winning deck, and
+    // createdAt to break sort ties on the most-recent rivalry.
+    const allParts = await db
+      .select({
+        matchId: participations.matchId,
+        deckId: participations.deckId,
+        result: participations.result,
+        matchCreatedAt: matches.createdAt,
+      })
       .from(participations)
+      .innerJoin(matches, eq(matches.id, participations.matchId))
       .where(inArray(participations.matchId, matchIds));
 
-    for (const p of otherParts) {
+    // Index each match's winning deck (null = draw / abandoned / no winner)
+    // and its creation timestamp.
+    const winnerDeckByMatch = new Map<string, string>();
+    const matchCreatedAtMs = new Map<string, number>();
+    for (const p of allParts) {
+      matchCreatedAtMs.set(p.matchId, p.matchCreatedAt.getTime());
+      if (p.result === 'win') {
+        winnerDeckByMatch.set(p.matchId, p.deckId);
+      }
+    }
+
+    // For every opponent participation, increment the pair counter only if
+    // the match's winner is current OR that opponent — i.e. one of them
+    // beat the other. Skip otherwise.
+    for (const p of allParts) {
       if (p.deckId === deckId) continue;
-      const own = ownResultByMatch.get(p.matchId);
-      const entry = matchupTotals.get(p.deckId) ?? { matches: 0, wins: 0 };
+      const winnerDeckId = winnerDeckByMatch.get(p.matchId);
+      if (!winnerDeckId) continue;                                          // draw / no winner
+      if (winnerDeckId !== deckId && winnerDeckId !== p.deckId) continue;   // third deck won
+      const entry = matchupTotals.get(p.deckId) ?? { matches: 0, wins: 0, mostRecentDecisiveAt: 0 };
       entry.matches += 1;
-      if (own === 'win') entry.wins += 1;
+      if (winnerDeckId === deckId) entry.wins += 1;
+      const at = matchCreatedAtMs.get(p.matchId) ?? 0;
+      if (at > entry.mostRecentDecisiveAt) entry.mostRecentDecisiveAt = at;
       matchupTotals.set(p.deckId, entry);
     }
   }
@@ -507,9 +543,9 @@ export async function getDeckStats(
       : [];
     const cmdColorMap = new Map(opponentCommanders.map((c) => [c.id, c.colorIdentity]));
 
-    // Per-color tally: every color in the opponent's identity picks up the
-    // match's win/loss independently. A UBR deck contributes to U, B, and R
-    // buckets. Colorless decks go into the 'C' bucket.
+    // Per-color tally derived from the same decisive-only matchupTotals, so
+    // "strong against U" / "weak against B" reflect actual head-to-head
+    // results, not matches where a third deck took the win.
     const colorTally = new Map<string, { wins: number; losses: number }>();
     for (const [oppDeckId, totals] of matchupTotals) {
       const oppDeck = opponentMap.get(oppDeckId);
@@ -544,18 +580,47 @@ export async function getDeckStats(
         .sort((a, b) => (WUBRG_ORDER[a.color] ?? 99) - (WUBRG_ORDER[b.color] ?? 99));
     }
 
+    // Qualifying opponents: at least MATCHUP_MIN_MATCHES (=3) decisive matches.
     const qualifying = [...matchupTotals.entries()]
       .filter(([, s]) => s.matches >= MATCHUP_MIN_MATCHES)
-      .map(([id, s]) => ({ deckId: id, matches: s.matches, wins: s.wins, wr: calcWinRate(s.wins, s.matches) }));
+      .map(([id, s]) => {
+        const opp = opponentMap.get(id);
+        return {
+          deckId: id,
+          matches: s.matches,
+          wins: s.wins,
+          wr: calcWinRate(s.wins, s.matches),
+          mostRecentAt: s.mostRecentDecisiveAt,
+          name: opp?.name ?? '',
+        };
+      });
 
     if (qualifying.length > 0) {
-      // Sort: WR DESC, then matches DESC for tiebreak (more samples = more confidence)
-      const sortedDesc = [...qualifying].sort((a, b) =>
-        (b.wr ?? -1) - (a.wr ?? -1) || b.matches - a.matches,
-      );
-      const sortedAsc = [...qualifying].sort((a, b) =>
-        (a.wr ?? 101) - (b.wr ?? 101) || b.matches - a.matches,
-      );
+      // Sort cascade (applied identically to both lists, just reversed on the
+      // primary key):
+      //   1. win rate   — DESC for best, ASC for worst
+      //   2. matches    — DESC (more samples = higher confidence)
+      //   3. mostRecent — DESC (newer rivalry wins ties at the bottom)
+      //   4. deck name  — ASC (stable, deterministic last-resort)
+      const best = qualifying
+        .filter((q) => q.wr !== null && q.wr > 50)
+        .sort((a, b) =>
+          (b.wr ?? -1) - (a.wr ?? -1) ||
+          b.matches - a.matches ||
+          b.mostRecentAt - a.mostRecentAt ||
+          a.name.localeCompare(b.name),
+        )
+        .slice(0, 3);
+
+      const worst = qualifying
+        .filter((q) => q.wr !== null && q.wr < 50)
+        .sort((a, b) =>
+          (a.wr ?? 101) - (b.wr ?? 101) ||
+          b.matches - a.matches ||
+          b.mostRecentAt - a.mostRecentAt ||
+          a.name.localeCompare(b.name),
+        )
+        .slice(0, 3);
 
       const toBreakdown = (q: typeof qualifying[number]): MatchupBreakdown | null => {
         const d = opponentMap.get(q.deckId);
@@ -563,8 +628,8 @@ export async function getDeckStats(
         return { deck: d, matches: q.matches, wins: q.wins, win_rate_pct: q.wr };
       };
 
-      bestMatchups = sortedDesc.slice(0, 3).map(toBreakdown).filter((x): x is MatchupBreakdown => x !== null);
-      worstMatchups = sortedAsc.slice(0, 3).map(toBreakdown).filter((x): x is MatchupBreakdown => x !== null);
+      bestMatchups = best.map(toBreakdown).filter((x): x is MatchupBreakdown => x !== null);
+      worstMatchups = worst.map(toBreakdown).filter((x): x is MatchupBreakdown => x !== null);
     }
   }
 
