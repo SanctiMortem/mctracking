@@ -170,26 +170,16 @@ export default function StatsScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       {header}
-      {scopePicker}
+      {/* scope picker now lives INSIDE the main ScrollView so it scrolls
+          off-screen naturally as the user moves down — no point keeping it
+          pinned when tapping a chip already snaps back to the top. */}
       <ScrollView style={styles.mainScroll} contentContainerStyle={[styles.content, { paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]} showsVerticalScrollIndicator={false}>
+      {scopePicker}
       {/* Highlights carousel — replaces the old hero block in both pod and
           personal scope. The first slide carries the "Total Matches" number
           so we don't lose the headline. Carousel renders nothing when there
           are no matches to summarise, so empty accounts still degrade fine. */}
       <PodHighlightsCarousel data={podHighlightsData} loading={podHighlightsLoading} />
-
-      {/* Matchup CTA */}
-      <TouchableOpacity
-        style={styles.matchupCta}
-        onPress={() => router.push('/stats/matchup')}
-        activeOpacity={0.8}
-      >
-        <View>
-          <Text style={styles.matchupCtaTitle}>{t('stats.viewMatchup')}</Text>
-          <Text style={styles.matchupCtaSub}>{t('stats.headToHead')}</Text>
-        </View>
-        <Text style={styles.matchupCtaArrow}>›</Text>
-      </TouchableOpacity>
 
       {/* Top Decks — podium: #1 big art, #2 @ 2/3, #3 @ 1/2, ranks 4–5 as plain rows */}
       {data.top_decks.length > 0 && (
@@ -221,6 +211,20 @@ export default function StatsScreen() {
           </View>
         </View>
       )}
+
+      {/* Matchup CTA — sits between Top Decks and Player Rankings as a
+          natural pivot from deck-comparison to head-to-head exploration. */}
+      <TouchableOpacity
+        style={styles.matchupCta}
+        onPress={() => router.push('/stats/matchup')}
+        activeOpacity={0.8}
+      >
+        <View>
+          <Text style={styles.matchupCtaTitle}>{t('stats.viewMatchup')}</Text>
+          <Text style={styles.matchupCtaSub}>{t('stats.headToHead')}</Text>
+        </View>
+        <Text style={styles.matchupCtaArrow}>›</Text>
+      </TouchableOpacity>
 
       {/* Player Rankings — ranks #1–3 get a commander art thumbnail of their most-used deck */}
       {data.player_rankings.length > 0 && (
