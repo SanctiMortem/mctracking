@@ -501,9 +501,11 @@
       "currentLossStreak": "Racha de derrotas actual",
       "lossesInARow_one": "{{count}} derrota seguida",
       "lossesInARow_other": "{{count}} derrotas seguidas",
+      "lossesUnit": "derrotas",
       "highestHeal": "Más vida curada",
       "lifeHealed_one": "{{count}} de vida curada",
       "lifeHealed_other": "{{count}} de vida curada",
+      "healedSub": "en todas las partidas",
       "totalLifeLost": "Vida total perdida (Pod)",
       "totalLifeLostSub": "en todas las partidas",
       "largestSwing": "Mayor cambio de vida",
@@ -512,7 +514,13 @@
       "longestMatchSub": "por tiempo de reloj",
       "avgViolentTurn": "Las partidas se ponen agresivas",
       "avgViolentTurnSub": "primer turno violento promedio",
-      "turnNumber": "T{{turn}}"
+      "turnNumber": "T{{turn}}",
+      "turnSubInline": "· turno {{turn}}",
+      "matchesUnit": "partidas",
+      "winsUnit": "victorias",
+      "dmgUnit": "dmg",
+      "lifeUnit": "vida",
+      "commanderDamage": "daño de commander"
     }
   },
   "guest": {

@@ -1,19 +1,19 @@
 /**
- * PodHighlightsCarousel — compact auto-rotating highlight slide at the top
- * of the Stats screen. Used in both pod and personal scope.
+ * PodHighlightsCarousel — featured-highlight slide deck at the top of the
+ * Stats screen (both personal and pod scope).
  *
- * Visual: amber-tinted frame (mirrors the old Head-to-Head CTA look) with
- * a thin brighter top edge for a subtle "shine," all text centered.
+ * Each slide is built from a `Highlight` shape — every renderer just declares
+ * the icon, title, big value (+ optional small unit), and optional secondary
+ * line (italic name + grey context). The presentation component handles
+ * everything else: the SVG compass-dial medallion on the left, the title
+ * row with extending underline, the value + position inline, the secondary
+ * line, and the dot row that sits below the frame.
  *
  * UX:
- *  - 6s auto-advance, loops, never pauses (user explicitly didn't want a
- *    pause button or swipe-pause — just a continuous slideshow).
+ *  - 6 s auto-advance, loops, no pause.
  *  - Native FlatList horizontal paging for swipe.
- *  - Dot indicators when there's >1 slide.
- *
- * Slides (any that lack data are silently skipped):
- *   Total Matches → Most Active → Top Winner → Total Play Time
- *   → Most Infect Wins → Most Combo Wins → Biggest Hit → Longest Loss Streak
+ *  - Dots below the frame (small enough to read clean even at ~13 slides).
+ *  - Compact "n / total" tag aligned with the value row, inside the frame.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -24,9 +24,9 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 
-import { Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
+import { HighlightMedallion } from '@/components/stats/HighlightMedallion';
 import { useResponsive } from '@/hooks/useResponsive';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -34,9 +34,8 @@ import type { AppTheme } from '@/styles/themes/types';
 import type { PodHighlights } from '@/services/stats';
 
 const ROTATE_INTERVAL_MS = 6000;
-// Frame border width (per side). Kept in sync with `frame.borderWidth` in
-// the stylesheet — used to convert the frame's outer onLayout width into
-// the inner page width that the FlatList actually shows.
+// Frame border width per side — used to convert outer onLayout width into
+// the inner page width that FlatList actually has available.
 const FRAME_BORDER = 2;
 
 // Feather names we use; constraining to a small set so a typo at the call
@@ -47,7 +46,7 @@ type SlideIcon =
   | 'award'
   | 'clock'
   | 'droplet'         // infect → poison
-  | 'zap'             // combo → lightning chain
+  | 'zap'             // combo → lightning
   | 'crosshair'       // biggest hit
   | 'trending-down'   // loss streak
   | 'heart'           // healing
@@ -56,9 +55,18 @@ type SlideIcon =
   | 'watch'           // longest match
   | 'alert-triangle'; // average violent turn → aggression warning
 
-interface Slide {
+// Declarative slide content. The carousel handles layout, icons, dots, etc.
+interface Highlight {
   key: string;
-  render: () => React.ReactElement;
+  iconName: SlideIcon;
+  title: string;
+  value: string;
+  /** Small uppercase unit next to the value (e.g. "DMG", "WINS"). Optional. */
+  valueUnit?: string;
+  /** Italic prefix on the secondary line — typically the player's name. */
+  secondaryName?: string;
+  /** Plain grey continuation of the secondary line. */
+  secondaryRest?: string;
 }
 
 interface Props {
@@ -77,31 +85,32 @@ function formatDuration(totalSeconds: number): string {
   return `${hours}h ${minutes}m`;
 }
 
+function pad2(n: number): string {
+  return n < 10 ? `0${n}` : `${n}`;
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function PodHighlightsCarousel({ data, loading }: Props) {
   const styles = useThemedStyles(createStyles);
   const { t } = useTranslation();
   const { contentMaxWidth } = useResponsive();
-  const listRef = useRef<FlatList<Slide>>(null);
+  const listRef = useRef<FlatList<Highlight>>(null);
   const [index, setIndex] = useState(0);
   const [width, setWidth] = useState(0);
 
-  const allSlides = useMemo<Slide[]>(() => {
+  const slides = useMemo<Highlight[]>(() => {
     if (!data) return [];
-    const out: Slide[] = [];
+    const out: Highlight[] = [];
 
     if (data.total_matches > 0) {
       out.push({
         key: 'total-matches',
-        render: () => (
-          <SlideBody
-            iconName="layers"
-            label={t('stats.podHighlights.totalMatches')}
-            primary={`${data.total_matches}`}
-            secondary={t('stats.podHighlights.totalMatchesSub', { count: data.total_players })}
-          />
-        ),
+        iconName: 'layers',
+        title: t('stats.podHighlights.totalMatches'),
+        value: `${data.total_matches}`,
+        valueUnit: t('stats.podHighlights.matchesUnit'),
+        secondaryRest: t('stats.podHighlights.totalMatchesSub', { count: data.total_players }),
       });
     }
 
@@ -109,14 +118,11 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
       const { player, value } = data.most_active_player;
       out.push({
         key: 'most-active',
-        render: () => (
-          <SlideBody
-            iconName="user"
-            label={t('stats.podHighlights.mostActivePlayer')}
-            primary={player.name}
-            secondary={t('stats.podHighlights.matchesPlayed', { count: value })}
-          />
-        ),
+        iconName: 'user',
+        title: t('stats.podHighlights.mostActivePlayer'),
+        value: `${value}`,
+        valueUnit: t('stats.podHighlights.matchesUnit'),
+        secondaryName: player.name,
       });
     }
 
@@ -124,28 +130,22 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
       const { player, value, wins, total } = data.top_winner;
       out.push({
         key: 'top-winner',
-        render: () => (
-          <SlideBody
-            iconName="award"
-            label={t('stats.podHighlights.topWinner')}
-            primary={player.name}
-            secondary={`${value}%  ·  ${wins}/${total}`}
-          />
-        ),
+        iconName: 'award',
+        title: t('stats.podHighlights.topWinner'),
+        value: `${value}`,
+        valueUnit: '%',
+        secondaryName: player.name,
+        secondaryRest: `· ${wins} / ${total}`,
       });
     }
 
     if (data.total_play_time_seconds > 0) {
       out.push({
         key: 'play-time',
-        render: () => (
-          <SlideBody
-            iconName="clock"
-            label={t('stats.podHighlights.totalPlayTime')}
-            primary={formatDuration(data.total_play_time_seconds)}
-            secondary={t('stats.podHighlights.totalPlayTimeSub')}
-          />
-        ),
+        iconName: 'clock',
+        title: t('stats.podHighlights.totalPlayTime'),
+        value: formatDuration(data.total_play_time_seconds),
+        secondaryRest: t('stats.podHighlights.totalPlayTimeSub'),
       });
     }
 
@@ -153,14 +153,11 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
       const { player, wins } = data.most_infect_wins;
       out.push({
         key: 'most-infect',
-        render: () => (
-          <SlideBody
-            iconName="droplet"
-            label={t('stats.podHighlights.mostInfectWins')}
-            primary={player.name}
-            secondary={t('stats.podHighlights.winsCount', { count: wins })}
-          />
-        ),
+        iconName: 'droplet',
+        title: t('stats.podHighlights.mostInfectWins'),
+        value: `${wins}`,
+        valueUnit: t('stats.podHighlights.winsUnit'),
+        secondaryName: player.name,
       });
     }
 
@@ -168,34 +165,26 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
       const { player, wins } = data.most_combo_wins;
       out.push({
         key: 'most-combo',
-        render: () => (
-          <SlideBody
-            iconName="zap"
-            label={t('stats.podHighlights.mostComboWins')}
-            primary={player.name}
-            secondary={t('stats.podHighlights.winsCount', { count: wins })}
-          />
-        ),
+        iconName: 'zap',
+        title: t('stats.podHighlights.mostComboWins'),
+        value: `${wins}`,
+        valueUnit: t('stats.podHighlights.winsUnit'),
+        secondaryName: player.name,
       });
     }
 
     if (data.biggest_hit && data.biggest_hit.damage > 0) {
       const { damage, dealer_player, dealer_commander } = data.biggest_hit;
-      // Headline is the damage number; subtitle attributes the dealer +
-      // their commander. Fallbacks keep the slide useful even if attribution
-      // failed (e.g. deck deleted, commander removed).
       const dealerName = dealer_player?.name ?? t('stats.podHighlights.unknownPlayer');
       const cmdName = dealer_commander?.name ?? t('stats.podHighlights.unknownCommander');
       out.push({
         key: 'biggest-hit',
-        render: () => (
-          <SlideBody
-            iconName="crosshair"
-            label={t('stats.podHighlights.biggestHit')}
-            primary={t('stats.podHighlights.damageAmount', { count: damage })}
-            secondary={`${dealerName}  ·  ${cmdName}`}
-          />
-        ),
+        iconName: 'crosshair',
+        title: t('stats.podHighlights.biggestHit'),
+        value: `${damage}`,
+        valueUnit: t('stats.podHighlights.dmgUnit'),
+        secondaryName: dealerName,
+        secondaryRest: `${cmdName} · ${t('stats.podHighlights.commanderDamage')}`,
       });
     }
 
@@ -203,28 +192,23 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
       const { player, healed } = data.highest_total_healed;
       out.push({
         key: 'highest-heal',
-        render: () => (
-          <SlideBody
-            iconName="heart"
-            label={t('stats.podHighlights.highestHeal')}
-            primary={player.name}
-            secondary={t('stats.podHighlights.lifeHealed', { count: healed })}
-          />
-        ),
+        iconName: 'heart',
+        title: t('stats.podHighlights.highestHeal'),
+        value: `${healed}`,
+        valueUnit: t('stats.podHighlights.lifeUnit'),
+        secondaryName: player.name,
+        secondaryRest: t('stats.podHighlights.healedSub'),
       });
     }
 
     if (data.total_life_lost_pod > 0) {
       out.push({
         key: 'total-life-lost',
-        render: () => (
-          <SlideBody
-            iconName="trending-up"
-            label={t('stats.podHighlights.totalLifeLost')}
-            primary={`${data.total_life_lost_pod}`}
-            secondary={t('stats.podHighlights.totalLifeLostSub')}
-          />
-        ),
+        iconName: 'trending-up',
+        title: t('stats.podHighlights.totalLifeLost'),
+        value: `${data.total_life_lost_pod}`,
+        valueUnit: t('stats.podHighlights.lifeUnit'),
+        secondaryRest: t('stats.podHighlights.totalLifeLostSub'),
       });
     }
 
@@ -233,42 +217,32 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
       const magnitude = Math.abs(swing);
       out.push({
         key: 'largest-swing',
-        render: () => (
-          <SlideBody
-            iconName="activity"
-            label={t('stats.podHighlights.largestSwing')}
-            primary={`${swing > 0 ? '+' : '−'}${magnitude}`}
-            secondary={t('stats.podHighlights.largestSwingSub', { name: player.name, turn })}
-          />
-        ),
+        iconName: 'activity',
+        title: t('stats.podHighlights.largestSwing'),
+        value: `${swing > 0 ? '+' : '−'}${magnitude}`,
+        valueUnit: t('stats.podHighlights.lifeUnit'),
+        secondaryName: player.name,
+        secondaryRest: t('stats.podHighlights.turnSubInline', { turn }),
       });
     }
 
     if (data.longest_match_seconds > 0) {
       out.push({
         key: 'longest-match',
-        render: () => (
-          <SlideBody
-            iconName="watch"
-            label={t('stats.podHighlights.longestMatch')}
-            primary={formatDuration(data.longest_match_seconds)}
-            secondary={t('stats.podHighlights.longestMatchSub')}
-          />
-        ),
+        iconName: 'watch',
+        title: t('stats.podHighlights.longestMatch'),
+        value: formatDuration(data.longest_match_seconds),
+        secondaryRest: t('stats.podHighlights.longestMatchSub'),
       });
     }
 
     if (data.avg_violent_turn && data.avg_violent_turn > 0) {
       out.push({
         key: 'avg-violent-turn',
-        render: () => (
-          <SlideBody
-            iconName="alert-triangle"
-            label={t('stats.podHighlights.avgViolentTurn')}
-            primary={t('stats.podHighlights.turnNumber', { turn: data.avg_violent_turn })}
-            secondary={t('stats.podHighlights.avgViolentTurnSub')}
-          />
-        ),
+        iconName: 'alert-triangle',
+        title: t('stats.podHighlights.avgViolentTurn'),
+        value: `T${data.avg_violent_turn}`,
+        secondaryRest: t('stats.podHighlights.avgViolentTurnSub'),
       });
     }
 
@@ -276,36 +250,24 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
       const { player, streak } = data.current_loss_streak;
       out.push({
         key: 'loss-streak',
-        render: () => (
-          <SlideBody
-            iconName="trending-down"
-            label={t('stats.podHighlights.currentLossStreak')}
-            primary={player.name}
-            secondary={t('stats.podHighlights.lossesInARow', { count: streak })}
-          />
-        ),
+        iconName: 'trending-down',
+        title: t('stats.podHighlights.currentLossStreak'),
+        value: `${streak}`,
+        valueUnit: t('stats.podHighlights.lossesUnit'),
+        secondaryName: player.name,
       });
     }
 
     return out;
   }, [data, t]);
 
-  // Show every available slide in the carousel — no random pick. With up
-  // to ~13 highlights this gives a longer cycle but every stat eventually
-  // gets its moment. Position is signalled by a compact "n / total" tag
-  // below the slide rather than dots (which look like spam at this count).
-  const slides = allSlides;
-
-  // Auto-rotate — unconditional. User explicitly didn't want a pause.
+  // Auto-rotate — unconditional.
   useEffect(() => {
     if (slides.length <= 1 || width === 0) return;
     const id = setInterval(() => {
       setIndex((prev) => {
         const next = (prev + 1) % slides.length;
-        listRef.current?.scrollToOffset({
-          offset: next * width,
-          animated: true,
-        });
+        listRef.current?.scrollToOffset({ offset: next * width, animated: true });
         return next;
       });
     }, ROTATE_INTERVAL_MS);
@@ -344,97 +306,115 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
   return (
     <View
       style={[
-        styles.frame,
+        styles.outer,
         contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined,
       ]}
-      // Frame uses border-box sizing, so layout.width is the OUTER edge.
-      // The FlatList inside only sees outer − 4 (2-px border on each side),
-      // so each slide must render at that inner width or the pages drift
-      // by 4 px per swipe and the last slide's right edge gets clipped.
-      onLayout={(e) => setWidth(e.nativeEvent.layout.width - FRAME_BORDER * 2)}
     >
-      {/* No separate top shine anymore — the full 2-px frame border carries
-          the brighter amber, so the whole outline reads as the highlight. */}
-      <FlatList
-        ref={listRef}
-        data={slides}
-        keyExtractor={(s) => s.key}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={handleScrollEnd}
-        decelerationRate="fast"
-        renderItem={({ item }) => (
-          <View style={[styles.slide, { width }]}>
-            {item.render()}
-          </View>
-        )}
-      />
+      <View
+        style={styles.frame}
+        onLayout={(e) => setWidth(e.nativeEvent.layout.width - FRAME_BORDER * 2)}
+      >
+        <FlatList
+          ref={listRef}
+          data={slides}
+          keyExtractor={(s) => s.key}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleScrollEnd}
+          decelerationRate="fast"
+          renderItem={({ item, index: i }) => (
+            <View style={[styles.slide, { width }]}>
+              <Slide
+                highlight={item}
+                position={{ index: i, total: slides.length }}
+              />
+            </View>
+          )}
+        />
+      </View>
 
       {slides.length > 1 && (
-        <View style={styles.positionRow}>
-          <Text style={styles.positionText}>
-            {`${index + 1} / ${slides.length}`}
-          </Text>
+        <View style={styles.dotsRow}>
+          {slides.map((s, i) => {
+            const active = i === index;
+            return (
+              <View
+                key={s.key}
+                style={[
+                  styles.dot,
+                  active && styles.dotActive,
+                ]}
+              />
+            );
+          })}
         </View>
       )}
     </View>
   );
 }
 
-// ─── Slide body ─────────────────────────────────────────────────────────────
+// ─── Slide ───────────────────────────────────────────────────────────────────
 
-function SlideBody({
-  iconName,
-  label,
-  primary,
-  secondary,
+function Slide({
+  highlight,
+  position,
 }: {
-  iconName: SlideIcon;
-  label: string;
-  primary: string;
-  secondary?: string;
+  highlight: Highlight;
+  position: { index: number; total: number };
 }) {
   const styles = useThemedStyles(createStyles);
+  const { iconName, title, value, valueUnit, secondaryName, secondaryRest } = highlight;
+  const positionLabel = `${pad2(position.index + 1)} / ${pad2(position.total)}`;
+  const hasSecondary = !!(secondaryName || secondaryRest);
+
   return (
-    // Explicit 60 % / 40 % horizontal split. Left holds title (pinned to
-    // top-left) + icon + value. Right holds the context (centered + wraps).
-    // No flex auto-distribution between content blocks — every dimension is
-    // a number you can change in one spot.
-    <View style={styles.slide}>
-      {/* Left 60 % — title + icon/value stacked */}
-      <View style={styles.leftSide}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={1}>{label}</Text>
-        </View>
-        <View style={styles.iconValueRow}>
-          <View style={styles.iconCell}>
-            <Feather name={iconName} size={50} style={styles.icon} />
-          </View>
-          <View style={styles.valueCell}>
-            <Text
-              style={styles.value}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.4}
-            >
-              {primary}
-            </Text>
-          </View>
-        </View>
+    <View style={styles.slideInner}>
+      {/* Left — medallion */}
+      <View style={styles.medallionWrap}>
+        <HighlightMedallion iconName={iconName} size={130} />
       </View>
 
-      {/* Right 40 % — context centered, wraps up to 3 lines. */}
-      <View style={styles.rightSide}>
-        {secondary ? (
+      {/* Faint vertical divider between medallion and content */}
+      <View style={styles.divider} />
+
+      {/* Right — content stack */}
+      <View style={styles.content}>
+        {/* Title row: amber uppercase title + extending faint line */}
+        <View style={styles.titleRow}>
+          <Text style={styles.title} numberOfLines={1}>{title}</Text>
+          <View style={styles.titleLine} />
+        </View>
+
+        {/* Value row: big serif number/text + small unit + position tag */}
+        <View style={styles.valueRow}>
           <Text
-            style={styles.context}
-            numberOfLines={3}
-            ellipsizeMode="tail"
+            style={styles.value}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.55}
           >
-            {secondary}
+            {value}
           </Text>
-        ) : null}
+          {valueUnit ? (
+            <Text style={styles.valueUnit} numberOfLines={1}>{valueUnit}</Text>
+          ) : null}
+          <View style={styles.spacer} />
+          <Text style={styles.positionText}>{positionLabel}</Text>
+        </View>
+
+        {/* Secondary line: italic name + grey rest */}
+        {hasSecondary && (
+          <Text style={styles.secondary} numberOfLines={2}>
+            {secondaryName ? (
+              <Text style={styles.secondaryName}>{secondaryName}</Text>
+            ) : null}
+            {secondaryName && secondaryRest ? <Text>  </Text> : null}
+            {secondaryRest ? (
+              <Text style={styles.secondaryRest}>{secondaryRest}</Text>
+            ) : null}
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -443,15 +423,17 @@ function SlideBody({
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const createStyles = (t: AppTheme) => ({
+  // The carousel sits in `outer`, which holds the frame + the dots row below.
+  outer: {
+    width: '100%' as unknown as number,
+    marginBottom: spacing[3],
+  },
   frame: {
-    backgroundColor: t.colors.accent.primary + '22',
+    backgroundColor: t.colors.accent.primary + '14',
     borderRadius: t.radius.md,
-    // Full-perimeter 2 px line in the brighter amber that used to live only
-    // at the top — the whole outline now reads as the highlight.
     borderWidth: 2,
     borderColor: t.colors.accent.primary + '88',
     overflow: 'hidden' as const,
-    marginBottom: spacing[3],
   },
   skeleton: {
     paddingVertical: spacing[3],
@@ -468,103 +450,126 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size.caption,
   },
 
-  // Slide = 60 % left / 40 % right horizontal split. Total slide height is
-  // 110 px (same as before: 26 titleRow + 84 icon/value). Right side fills
-  // the full 110 px vertically to centre its context. No padding on slide;
-  // sides handle their own internal insets.
+  // ── Slide ─────────────────────────────────────────────────────────────────
+  // Fixed height of 170 px to fit the 130-px medallion comfortably with
+  // breathing room above and below. Width is set per-render from FlatList.
   slide: {
-    width: '100%' as unknown as number,
-    height: 110,
-    flexDirection: 'row' as const,
+    height: 170,
   },
-
-  // ── Left 60 % ─────────────────────────────────────────────────────────────
-  leftSide: {
-    width: '60%' as unknown as number,
-    height: 110,
-  },
-  titleRow: {
-    height: 26,
+  slideInner: {
+    flex: 1,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    paddingLeft: 5,
+    paddingVertical: spacing[3],
+  },
+
+  medallionWrap: {
+    width: 150,
+    height: 150,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    flexShrink: 0,
+  },
+  divider: {
+    width: 1,
+    height: '70%' as unknown as number,
+    backgroundColor: t.colors.accent.primary + '44',
+    marginRight: spacing[3],
+  },
+
+  content: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center' as const,
+    paddingRight: spacing[3],
+    gap: spacing[3],
+  },
+
+  // Title row — uppercase amber label + line extending to the right edge.
+  titleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: spacing[3],
   },
   title: {
     color: t.colors.accent.primary,
-    fontSize: 17,
+    fontSize: 13,
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.semibold,
-    letterSpacing: 0.8,
+    letterSpacing: 2,
     textTransform: 'uppercase' as const,
-    textAlign: 'left' as const,
   },
-  iconValueRow: {
-    height: 84,
-    flexDirection: 'row' as const,
-  },
-  iconCell: {
-    width: 60,
-    height: 84,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  icon: {
-    color: t.colors.accent.primary,
-    textShadowColor: t.colors.accent.primary + '55',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
-  // minWidth: 0 — without it the valueCell refuses to shrink below its
-  // intrinsic text width, breaking the parent's 60 % allotment.
-  valueCell: {
+  titleLine: {
     flex: 1,
-    minWidth: 0,
-    height: 84,
-    paddingLeft: 5,
-    paddingRight: 5,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+    height: 1,
+    backgroundColor: t.colors.accent.primary + '55',
+  },
+
+  // Value row — big serif number/text + small uppercase unit + position tag.
+  valueRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'baseline' as const,
+    gap: spacing[2],
   },
   value: {
-    color: t.colors.accent.primary,
-    fontSize: 48,
-    lineHeight: 52,
-    fontFamily: t.typography.fontFamily.headline,
+    color: t.colors.text.primary,
+    fontSize: 44,
+    fontFamily: t.typography.fontFamily.display ?? t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.bold,
-    textAlign: 'center' as const,
+    lineHeight: 48,
+    flexShrink: 1,
   },
-
-  // ── Right 40 % — context centered, wraps to 3 lines ───────────────────────
-  rightSide: {
-    width: '40%' as unknown as number,
-    height: 110,
-    paddingLeft: 5,
-    paddingRight: 5,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+  valueUnit: {
+    color: t.colors.accent.primary,
+    fontSize: 14,
+    fontFamily: t.typography.fontFamily.headline,
+    fontWeight: t.typography.weight.semibold,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase' as const,
   },
-  context: {
-    color: t.colors.text.secondary,
-    fontSize: 16,
-    lineHeight: 19,
-    textAlign: 'center' as const,
-    width: '100%' as unknown as number,
-  },
-
-  // Compact "n / total" tag instead of a row of dots — 13 dots reads as
-  // noise; the small text gives the same position info in a fraction of
-  // the visual weight.
-  positionRow: {
-    alignItems: 'flex-end' as const,
-    paddingRight: 8,
-    paddingBottom: 4,
-    paddingTop: 2,
+  spacer: {
+    flex: 1,
   },
   positionText: {
-    color: t.colors.accent.primary + 'AA',
-    fontSize: 11,
+    color: t.colors.text.muted,
+    fontSize: 12,
     fontVariant: ['tabular-nums'] as const,
     fontWeight: t.typography.weight.semibold,
-    letterSpacing: 0.4,
+    letterSpacing: 1,
+  },
+
+  // Secondary line — italic name + plain grey rest.
+  secondary: {
+    color: t.colors.text.secondary,
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  secondaryName: {
+    color: t.colors.text.secondary,
+    fontStyle: 'italic' as const,
+    fontFamily: t.typography.fontFamily.display ?? t.typography.fontFamily.headline,
+    fontWeight: t.typography.weight.medium,
+  },
+  secondaryRest: {
+    color: t.colors.text.secondary,
+  },
+
+  // Dots row sits OUTSIDE the frame, below it.
+  dotsRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    paddingTop: spacing[3],
+    gap: 6,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: t.colors.accent.primary + '33',
+  },
+  dotActive: {
+    width: 18,
+    backgroundColor: t.colors.accent.primary,
   },
 });
