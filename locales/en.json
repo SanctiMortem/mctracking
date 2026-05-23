@@ -498,9 +498,21 @@
       "damageAmount_other": "{{count}} dmg",
       "unknownPlayer": "Unknown player",
       "unknownCommander": "Unknown commander",
-      "longestLossStreak": "Longest Loss Streak",
+      "currentLossStreak": "Current Loss Streak",
       "lossesInARow_one": "{{count}} loss in a row",
-      "lossesInARow_other": "{{count}} losses in a row"
+      "lossesInARow_other": "{{count}} losses in a row",
+      "highestHeal": "Most Life Healed",
+      "lifeHealed_one": "{{count}} life healed",
+      "lifeHealed_other": "{{count}} life healed",
+      "totalLifeLost": "Total Life Lost (Pod)",
+      "totalLifeLostSub": "across every match",
+      "largestSwing": "Biggest Life Swing",
+      "largestSwingSub": "{{name}} · turn {{turn}}",
+      "longestMatch": "Longest Match",
+      "longestMatchSub": "by wall-clock time",
+      "avgViolentTurn": "Matches Turn Aggressive",
+      "avgViolentTurnSub": "average first violent turn",
+      "turnNumber": "T{{turn}}"
     }
   },
   "guest": {

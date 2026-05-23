@@ -39,6 +39,10 @@ const ROTATE_INTERVAL_MS = 6000;
 // the inner page width that the FlatList actually shows.
 const FRAME_BORDER = 2;
 
+// Total slides we'd ever show. Carousel randomly picks RANDOM_SLIDE_COUNT
+// of these per Stats screen mount, so each visit feels fresh.
+const RANDOM_SLIDE_COUNT = 5;
+
 // Feather names we use; constraining to a small set so a typo at the call
 // site is a compile error, not a missing glyph.
 type SlideIcon =
@@ -46,10 +50,15 @@ type SlideIcon =
   | 'user'
   | 'award'
   | 'clock'
-  | 'droplet'        // infect → poison
-  | 'zap'            // combo → lightning chain
-  | 'crosshair'      // biggest hit
-  | 'trending-down';
+  | 'droplet'         // infect → poison
+  | 'zap'             // combo → lightning chain
+  | 'crosshair'       // biggest hit
+  | 'trending-down'   // loss streak
+  | 'heart'           // healing
+  | 'trending-up'     // total life lost (volume)
+  | 'activity'        // life swing in a turn (volatility)
+  | 'watch'           // longest match
+  | 'alert-triangle'; // average violent turn → aggression warning
 
 interface Slide {
   key: string;
@@ -82,7 +91,7 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
   const [index, setIndex] = useState(0);
   const [width, setWidth] = useState(0);
 
-  const slides = useMemo<Slide[]>(() => {
+  const allSlides = useMemo<Slide[]>(() => {
     if (!data) return [];
     const out: Slide[] = [];
 
@@ -194,14 +203,87 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
       });
     }
 
-    if (data.longest_loss_streak && data.longest_loss_streak.streak >= 2) {
-      const { player, streak } = data.longest_loss_streak;
+    if (data.highest_total_healed) {
+      const { player, healed } = data.highest_total_healed;
+      out.push({
+        key: 'highest-heal',
+        render: () => (
+          <SlideBody
+            iconName="heart"
+            label={t('stats.podHighlights.highestHeal')}
+            primary={player.name}
+            secondary={t('stats.podHighlights.lifeHealed', { count: healed })}
+          />
+        ),
+      });
+    }
+
+    if (data.total_life_lost_pod > 0) {
+      out.push({
+        key: 'total-life-lost',
+        render: () => (
+          <SlideBody
+            iconName="trending-up"
+            label={t('stats.podHighlights.totalLifeLost')}
+            primary={`${data.total_life_lost_pod}`}
+            secondary={t('stats.podHighlights.totalLifeLostSub')}
+          />
+        ),
+      });
+    }
+
+    if (data.largest_life_swing_in_turn) {
+      const { player, swing, turn } = data.largest_life_swing_in_turn;
+      const magnitude = Math.abs(swing);
+      out.push({
+        key: 'largest-swing',
+        render: () => (
+          <SlideBody
+            iconName="activity"
+            label={t('stats.podHighlights.largestSwing')}
+            primary={`${swing > 0 ? '+' : '−'}${magnitude}`}
+            secondary={t('stats.podHighlights.largestSwingSub', { name: player.name, turn })}
+          />
+        ),
+      });
+    }
+
+    if (data.longest_match_seconds > 0) {
+      out.push({
+        key: 'longest-match',
+        render: () => (
+          <SlideBody
+            iconName="watch"
+            label={t('stats.podHighlights.longestMatch')}
+            primary={formatDuration(data.longest_match_seconds)}
+            secondary={t('stats.podHighlights.longestMatchSub')}
+          />
+        ),
+      });
+    }
+
+    if (data.avg_violent_turn && data.avg_violent_turn > 0) {
+      out.push({
+        key: 'avg-violent-turn',
+        render: () => (
+          <SlideBody
+            iconName="alert-triangle"
+            label={t('stats.podHighlights.avgViolentTurn')}
+            primary={t('stats.podHighlights.turnNumber', { turn: data.avg_violent_turn })}
+            secondary={t('stats.podHighlights.avgViolentTurnSub')}
+          />
+        ),
+      });
+    }
+
+    if (data.current_loss_streak && data.current_loss_streak.streak >= 2) {
+      const { player, streak } = data.current_loss_streak;
       out.push({
         key: 'loss-streak',
         render: () => (
           <SlideBody
             iconName="trending-down"
-            label={t('stats.podHighlights.longestLossStreak')}
+            label={t('stats.podHighlights.currentLossStreak')}
             primary={player.name}
             secondary={t('stats.podHighlights.lossesInARow', { count: streak })}
           />
@@ -211,6 +293,20 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
 
     return out;
   }, [data, t]);
+
+  // Randomly pick RANDOM_SLIDE_COUNT slides per Stats screen mount so each
+  // visit feels fresh. Memoised against the slide *keys* so a re-render
+  // doesn't reshuffle and yank the slide out from under the user.
+  const slides = useMemo<Slide[]>(() => {
+    if (allSlides.length <= RANDOM_SLIDE_COUNT) return allSlides;
+    const shuffled = [...allSlides];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.slice(0, RANDOM_SLIDE_COUNT);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allSlides.map((s) => s.key).join('|')]);
 
   // Auto-rotate — unconditional. User explicitly didn't want a pause.
   useEffect(() => {
@@ -316,43 +412,44 @@ function SlideBody({
 }) {
   const styles = useThemedStyles(createStyles);
   return (
-    // Explicit 2-row × 3-col grid. No flex holders, no auto-distribution.
-    // Every dimension is a number you can change in one place.
+    // Explicit 60 % / 40 % horizontal split. Left holds title (pinned to
+    // top-left) + icon + value. Right holds the context (centered + wraps).
+    // No flex auto-distribution between content blocks — every dimension is
+    // a number you can change in one spot.
     <View style={styles.slide}>
-      {/* Row 1 — 26 px tall, title centered (spans the full width). */}
-      <View style={styles.titleRow}>
-        <Text style={styles.title} numberOfLines={1}>{label}</Text>
+      {/* Left 60 % — title + icon/value stacked */}
+      <View style={styles.leftSide}>
+        <View style={styles.titleRow}>
+          <Text style={styles.title} numberOfLines={1}>{label}</Text>
+        </View>
+        <View style={styles.iconValueRow}>
+          <View style={styles.iconCell}>
+            <Feather name={iconName} size={50} style={styles.icon} />
+          </View>
+          <View style={styles.valueCell}>
+            <Text
+              style={styles.value}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.4}
+            >
+              {primary}
+            </Text>
+          </View>
+        </View>
       </View>
 
-      {/* Row 2 — 84 px tall, three columns:
-            col 1 → 60 px wide, icon centered
-            col 2 → flex 1 (50 % of remaining), value cell
-            col 3 → flex 1 (50 % of remaining), context cell                 */}
-      <View style={styles.statRow}>
-        <View style={styles.iconCell}>
-          <Feather name={iconName} size={50} style={styles.icon} />
-        </View>
-        <View style={styles.valueCell}>
+      {/* Right 40 % — context centered, wraps up to 3 lines. */}
+      <View style={styles.rightSide}>
+        {secondary ? (
           <Text
-            style={styles.value}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.4}
+            style={styles.context}
+            numberOfLines={3}
+            ellipsizeMode="tail"
           >
-            {primary}
+            {secondary}
           </Text>
-        </View>
-        <View style={styles.contextCell}>
-          {secondary ? (
-            <Text
-              style={styles.context}
-              numberOfLines={3}
-              ellipsizeMode="tail"
-            >
-              {secondary}
-            </Text>
-          ) : null}
-        </View>
+        ) : null}
       </View>
     </View>
   );
@@ -386,25 +483,26 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size.caption,
   },
 
-  // Slide = a 2-row × 3-col grid with explicit pixel dimensions.
-  // No flex:1 + space-between, no space-evenly, no padding on the slide
-  // itself — every position is dictated by row height + column width.
-  //
-  // Total inner height = 26 (titleRow) + 84 (statRow) = 110 px.
-  // Plus the dots row (~13 px) and the 2 × 2 px borders the OUTER frame
-  // measures 110 + 13 + 4 = 127 px on screen.
+  // Slide = 60 % left / 40 % right horizontal split. Total slide height is
+  // 110 px (same as before: 26 titleRow + 84 icon/value). Right side fills
+  // the full 110 px vertically to centre its context. No padding on slide;
+  // sides handle their own internal insets.
   slide: {
     width: '100%' as unknown as number,
-    // No padding; rows fill edge-to-edge inside the frame border.
+    height: 110,
+    flexDirection: 'row' as const,
   },
 
-  // ── Row 1 — title pinned to the left with 5 px inset ──────────────────────
+  // ── Left 60 % ─────────────────────────────────────────────────────────────
+  leftSide: {
+    width: '60%' as unknown as number,
+    height: 110,
+  },
   titleRow: {
     height: 26,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     paddingLeft: 5,
-    width: '100%' as unknown as number,
   },
   title: {
     color: t.colors.accent.primary,
@@ -415,16 +513,9 @@ const createStyles = (t: AppTheme) => ({
     textTransform: 'uppercase' as const,
     textAlign: 'left' as const,
   },
-
-  // ── Row 2 — three columns ─────────────────────────────────────────────────
-  // `minWidth: 0` on the flex cells is the critical bit: without it a flex:1
-  // child refuses to shrink below its intrinsic content width, so long
-  // strings like the context push past the 50 % slice and bleed into the
-  // next slide. With `minWidth: 0` flex:1 actually means flex:1.
-  statRow: {
+  iconValueRow: {
     height: 84,
     flexDirection: 'row' as const,
-    width: '100%' as unknown as number,
   },
   iconCell: {
     width: 60,
@@ -438,6 +529,8 @@ const createStyles = (t: AppTheme) => ({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
+  // minWidth: 0 — without it the valueCell refuses to shrink below its
+  // intrinsic text width, breaking the parent's 60 % allotment.
   valueCell: {
     flex: 1,
     minWidth: 0,
@@ -455,10 +548,12 @@ const createStyles = (t: AppTheme) => ({
     fontWeight: t.typography.weight.bold,
     textAlign: 'center' as const,
   },
-  contextCell: {
-    flex: 1,
-    minWidth: 0,
-    height: 84,
+
+  // ── Right 40 % — context centered, wraps to 3 lines ───────────────────────
+  rightSide: {
+    width: '40%' as unknown as number,
+    height: 110,
+    paddingLeft: 5,
     paddingRight: 5,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,

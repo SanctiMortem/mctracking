@@ -1827,6 +1827,15 @@ export type PodHighlightBiggestHit = {
   receiver_player: Player | null;
 };
 
+/** Largest swing of life on a single participation in a single turn. */
+export type PodHighlightLifeSwing = {
+  player: Player;
+  /** Signed delta (negative = lost, positive = gained) of the most extreme single turn. */
+  swing: number;
+  /** Turn number on the participation (1-indexed). */
+  turn: number;
+};
+
 export type PodHighlights = {
   /** Completed matches in this pod. Drives the leading carousel slide. */
   total_matches: number;
@@ -1841,7 +1850,21 @@ export type PodHighlights = {
   most_combo_wins: PodHighlightWinconCount | null;
   /** Largest single commander_damage event with dealer + receiver attribution. */
   biggest_hit: PodHighlightBiggestHit | null;
-  longest_loss_streak: PodHighlightLossStreak | null;
+  /** Player who has healed the most life across all in-scope matches. */
+  highest_total_healed: (PodHighlightPlayer & { healed: number }) | null;
+  /** Aggregate life lost across every participation in scope (positive number). */
+  total_life_lost_pod: number;
+  /** Player+turn with the biggest single-turn life swing (absolute value). */
+  largest_life_swing_in_turn: PodHighlightLifeSwing | null;
+  /** Longest single completed match in seconds. */
+  longest_match_seconds: number;
+  /** Average turn (across matches) when the first "violent" event occurs.
+   *  Violent = any life_change <= -8 OR commander_damage >= 5. null when
+   *  no match in scope has logged violence yet. */
+  avg_violent_turn: number | null;
+  /** Player with the longest CURRENT (active, not all-time) losing run as
+   *  of the most recent in-scope match. null when nobody is on a streak. */
+  current_loss_streak: PodHighlightLossStreak | null;
 };
 
 export type GetPodHighlightsResult = { data: PodHighlights };
@@ -1869,7 +1892,17 @@ export async function getPodHighlights(
     : and(eq(matches.createdBy, userId), eq(matches.status, 'completed'));
 
   // Fan-out the independent aggregations in parallel.
-  const [totalMatchRows, playerCountRows, totalTimeRows, winconRows, biggestHitRows, lossOrderRows] = await Promise.all([
+  const [
+    totalMatchRows,
+    playerCountRows,
+    totalTimeRows,
+    winconRows,
+    biggestHitRows,
+    lossOrderRows,
+    healLostRows,
+    longestMatchRows,
+    rawEventRows,
+  ] = await Promise.all([
     // Total completed matches in the pod — drives the leading "Total Pod Matches" slide.
     db
       .select({ total: count(matches.id) })
@@ -1945,6 +1978,53 @@ export async function getPodHighlights(
       .innerJoin(matches, eq(participations.matchId, matches.id))
       .where(matchScope)
       .orderBy(matches.createdAt),
+
+    // Per-player sum of healing (positive life_change deltas) and total pod
+    // life lost (sum of negative life_change deltas, always returned as a
+    // positive number). One row per player; aggregate the lost sum after.
+    db
+      .select({
+        playerId: participations.playerId,
+        healed: sql<number>`coalesce(sum(case when ${matchEvents.delta} > 0 then ${matchEvents.delta} else 0 end), 0)`,
+        lost: sql<number>`coalesce(sum(case when ${matchEvents.delta} < 0 then ${matchEvents.delta} else 0 end), 0)`,
+      })
+      .from(matchEvents)
+      .innerJoin(participations, eq(participations.id, matchEvents.participationId))
+      .innerJoin(matches, eq(matches.id, matchEvents.matchId))
+      .where(and(
+        matchScope,
+        eq(matchEvents.eventType, 'life_change'),
+        eq(matchEvents.isUndone, false),
+      ))
+      .groupBy(participations.playerId),
+
+    // Single longest completed match in seconds.
+    db
+      .select({
+        matchId: matches.id,
+        seconds: sql<number>`extract(epoch from (${matches.endedAt} - ${matches.createdAt}))`,
+      })
+      .from(matches)
+      .where(and(matchScope, isNotNull(matches.endedAt)))
+      .orderBy(sql`extract(epoch from (${matches.endedAt} - ${matches.createdAt})) desc`)
+      .limit(1),
+
+    // Raw event stream — used for both the largest single-turn life swing
+    // and the average violent-turn computation. Ordered by match → time so
+    // a single pass can bracket events by turn_passed events on each
+    // participation.
+    db
+      .select({
+        matchId: matchEvents.matchId,
+        participationId: matchEvents.participationId,
+        eventType: matchEvents.eventType,
+        delta: matchEvents.delta,
+        createdAt: matchEvents.createdAt,
+      })
+      .from(matchEvents)
+      .innerJoin(matches, eq(matches.id, matchEvents.matchId))
+      .where(and(matchScope, eq(matchEvents.isUndone, false)))
+      .orderBy(matchEvents.matchId, matchEvents.createdAt),
   ]);
 
   // ── Most active + top winner ───────────────────────────────────────────────
@@ -2015,25 +2095,94 @@ export async function getPodHighlights(
     hitDealerPid = dealer?.participationId ?? null;
   }
 
-  // ── Longest loss streak (per-player consecutive runs across pod matches) ──
-  const runsByPlayer = new Map<string, number>(); // player → current run
-  const bestByPlayer = new Map<string, number>(); // player → best run seen
+  // ── Current loss streak (per-player ACTIVE run as of most recent match) ──
+  // Walk the chronologically-ordered participations, increment on every loss
+  // and RESET to zero on any win/draw. At the end of the walk the run map
+  // holds each player's CURRENT (not historic) streak. We pick the highest.
+  const runsByPlayer = new Map<string, number>();
   for (const r of lossOrderRows) {
     if (r.result === 'lose') {
-      const next = (runsByPlayer.get(r.playerId) ?? 0) + 1;
-      runsByPlayer.set(r.playerId, next);
-      if (next > (bestByPlayer.get(r.playerId) ?? 0)) {
-        bestByPlayer.set(r.playerId, next);
-      }
+      runsByPlayer.set(r.playerId, (runsByPlayer.get(r.playerId) ?? 0) + 1);
     } else {
       runsByPlayer.set(r.playerId, 0);
     }
   }
   let lossStreakRow: { playerId: string; streak: number } | null = null;
-  for (const [playerId, streak] of bestByPlayer) {
+  for (const [playerId, streak] of runsByPlayer) {
+    if (streak < 2) continue; // skip ties / single losses to avoid noise
     if (!lossStreakRow || streak > lossStreakRow.streak) {
       lossStreakRow = { playerId, streak };
     }
+  }
+
+  // ── Healed + life-lost aggregation ────────────────────────────────────────
+  // healLostRows already groups per player. healed is the positive sum,
+  // lost is a negative sum (we'll flip its sign for display).
+  let highestHealRow: { playerId: string; healed: number } | null = null;
+  let totalLifeLostPod = 0;
+  for (const r of healLostRows) {
+    const healed = Number(r.healed ?? 0);
+    const lost = Number(r.lost ?? 0); // negative or zero
+    totalLifeLostPod += -lost; // accumulate positive number
+    if (healed > 0 && (!highestHealRow || healed > highestHealRow.healed)) {
+      highestHealRow = { playerId: r.playerId, healed };
+    }
+  }
+
+  // ── Longest match ─────────────────────────────────────────────────────────
+  const longestMatchSeconds = Number(longestMatchRows[0]?.seconds ?? 0);
+
+  // ── Single-pass scan over raw events for swing + violent-turn ─────────────
+  // For each (match, participation) we track the running turn count and the
+  // cumulative life delta for each turn. The largest abs swing across all
+  // (participation, turn) buckets wins the swing slide. The earliest turn in
+  // each match where any "violent" event happens (life_change <= -8 OR
+  // commander_damage >= 5) feeds the average-violent-turn average.
+  let largestSwingRow: { participationId: string; swing: number; turn: number } | null = null;
+  const firstViolentTurnByMatch = new Map<string, number>();
+  const turnsByPart = new Map<string, number>(); // participationId → current turn
+  const turnDeltas = new Map<string, number>(); // `${pid}:${turn}` → cumulative life delta
+  let lastMatchId: string | null = null;
+
+  for (const e of rawEventRows) {
+    // Reset per-match state when matchId rolls over.
+    if (e.matchId !== lastMatchId) {
+      turnsByPart.clear();
+      turnDeltas.clear();
+      lastMatchId = e.matchId;
+    }
+
+    if (e.eventType === 'turn_passed') {
+      turnsByPart.set(e.participationId, (turnsByPart.get(e.participationId) ?? 0) + 1);
+      continue;
+    }
+
+    const turn = turnsByPart.get(e.participationId) ?? 1;
+
+    if (e.eventType === 'life_change') {
+      const key = `${e.participationId}:${turn}`;
+      const next = (turnDeltas.get(key) ?? 0) + e.delta;
+      turnDeltas.set(key, next);
+      if (
+        !largestSwingRow ||
+        Math.abs(next) > Math.abs(largestSwingRow.swing)
+      ) {
+        largestSwingRow = { participationId: e.participationId, swing: next, turn };
+      }
+      if (e.delta <= -8 && !firstViolentTurnByMatch.has(e.matchId)) {
+        firstViolentTurnByMatch.set(e.matchId, turn);
+      }
+    } else if (e.eventType === 'commander_damage') {
+      if (e.delta >= 5 && !firstViolentTurnByMatch.has(e.matchId)) {
+        firstViolentTurnByMatch.set(e.matchId, turn);
+      }
+    }
+  }
+
+  let avgViolentTurn: number | null = null;
+  if (firstViolentTurnByMatch.size > 0) {
+    const sum = Array.from(firstViolentTurnByMatch.values()).reduce((a, b) => a + b, 0);
+    avgViolentTurn = Math.round(sum / firstViolentTurnByMatch.size);
   }
 
   // ── Resolve player + deck + commander objects in one pass each ────────────
@@ -2045,19 +2194,26 @@ export async function getPodHighlights(
   if (lossStreakRow) playerIdsNeeded.add(lossStreakRow.playerId);
   if (mostInfectRow) playerIdsNeeded.add(mostInfectRow.playerId);
   if (mostComboRow) playerIdsNeeded.add(mostComboRow.playerId);
+  if (highestHealRow) playerIdsNeeded.add(highestHealRow.playerId);
+
+  // The largest life swing is keyed by participation_id; we need to resolve
+  // it to a player by joining through the participations table. We'll do
+  // that with a small targeted lookup below.
 
   // For biggest hit, fetch the receiver participation (→ playerId) and the
   // dealer participation (→ playerId + deckId). receiverPid + hitDealerPid
-  // both live on the participations table.
-  const hitParticipationIds: string[] = [];
-  if (hitTop) hitParticipationIds.push(hitTop.receiverPid);
-  if (hitDealerPid) hitParticipationIds.push(hitDealerPid);
+  // both live on the participations table. We piggy-back the swing
+  // participation lookup onto the same query.
+  const lookupParticipationIds: string[] = [];
+  if (hitTop) lookupParticipationIds.push(hitTop.receiverPid);
+  if (hitDealerPid) lookupParticipationIds.push(hitDealerPid);
+  if (largestSwingRow) lookupParticipationIds.push(largestSwingRow.participationId);
 
-  const hitPartRows = hitParticipationIds.length
+  const hitPartRows = lookupParticipationIds.length
     ? await db
         .select({ id: participations.id, playerId: participations.playerId, deckId: participations.deckId })
         .from(participations)
-        .where(inArray(participations.id, hitParticipationIds))
+        .where(inArray(participations.id, lookupParticipationIds))
     : [];
   const hitPartMap = new Map(hitPartRows.map((p) => [p.id, p]));
   for (const p of hitPartRows) playerIdsNeeded.add(p.playerId);
@@ -2123,7 +2279,21 @@ export async function getPodHighlights(
       most_infect_wins: winconHighlight(mostInfectRow),
       most_combo_wins: winconHighlight(mostComboRow),
       biggest_hit: biggestHit,
-      longest_loss_streak: lossStreakRow && playerMap.get(lossStreakRow.playerId)
+      highest_total_healed: highestHealRow && playerMap.get(highestHealRow.playerId)
+        ? { player: playerMap.get(highestHealRow.playerId)!, value: highestHealRow.healed, healed: highestHealRow.healed }
+        : null,
+      total_life_lost_pod: Math.round(totalLifeLostPod),
+      largest_life_swing_in_turn: largestSwingRow
+        ? (() => {
+            const part = hitPartMap.get(largestSwingRow.participationId);
+            const player = part ? playerMap.get(part.playerId) : null;
+            if (!player) return null;
+            return { player, swing: largestSwingRow.swing, turn: largestSwingRow.turn };
+          })()
+        : null,
+      longest_match_seconds: Math.round(longestMatchSeconds),
+      avg_violent_turn: avgViolentTurn,
+      current_loss_streak: lossStreakRow && playerMap.get(lossStreakRow.playerId)
         ? { player: playerMap.get(lossStreakRow.playerId)!, streak: lossStreakRow.streak }
         : null,
     },

@@ -498,9 +498,21 @@
       "damageAmount_other": "{{count}} dmg",
       "unknownPlayer": "Jugador desconocido",
       "unknownCommander": "Commander desconocido",
-      "longestLossStreak": "Racha de derrotas más larga",
+      "currentLossStreak": "Racha de derrotas actual",
       "lossesInARow_one": "{{count}} derrota seguida",
-      "lossesInARow_other": "{{count}} derrotas seguidas"
+      "lossesInARow_other": "{{count}} derrotas seguidas",
+      "highestHeal": "Más vida curada",
+      "lifeHealed_one": "{{count}} de vida curada",
+      "lifeHealed_other": "{{count}} de vida curada",
+      "totalLifeLost": "Vida total perdida (Pod)",
+      "totalLifeLostSub": "en todas las partidas",
+      "largestSwing": "Mayor cambio de vida",
+      "largestSwingSub": "{{name}} · turno {{turn}}",
+      "longestMatch": "Partida más larga",
+      "longestMatchSub": "por tiempo de reloj",
+      "avgViolentTurn": "Las partidas se ponen agresivas",
+      "avgViolentTurnSub": "primer turno violento promedio",
+      "turnNumber": "T{{turn}}"
     }
   },
   "guest": {
