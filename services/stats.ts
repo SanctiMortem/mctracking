@@ -1121,10 +1121,24 @@ export type GlobalStats = {
   top_player_decks: TopPlayerDeckEntry[];
 };
 
+export type GlobalStatsOptions = {
+  /**
+   * Cap for top_decks + top_commanders. Default 5 (the stats dashboard).
+   * Pass `null` to disable the cap entirely — used by the per-entity
+   * "ALL" screens (/stats/decks, /stats/commanders).
+   *
+   * player_rankings is always unbounded — the ranking semantics need
+   * the full denominator to compute ties correctly (BR-STATS-07).
+   */
+  limit?: number | null;
+};
+
 export async function getGlobalStats(
   userId: string,
   groupId?: string | null,
+  options: GlobalStatsOptions = {},
 ): Promise<{ data: GlobalStats }> {
+  const limit = options.limit === undefined ? 5 : options.limit;
   // Scope: when groupId is set, include any match with that groupId (the API route
   // validates membership). Otherwise, personal scope = matches created by the user.
   const matchScope = groupId
@@ -1211,15 +1225,15 @@ export async function getGlobalStats(
 
   // ── Top 5 decks (min 3 matches, by win_rate DESC) ─────────────────────────────
 
-  const top5DeckEntries = deckStatRows
+  const allDeckEntriesRanked = deckStatRows
     .map((r) => {
       const total = Number(r.total ?? 0);
       const wins = Number(r.wins ?? 0);
       return { deckId: r.deckId, total, wins, wr: calcWinRate(wins, total) };
     })
     .filter((e) => e.total >= 3)
-    .sort((a, b) => (b.wr ?? -1) - (a.wr ?? -1))
-    .slice(0, 5);
+    .sort((a, b) => (b.wr ?? -1) - (a.wr ?? -1));
+  const top5DeckEntries = limit === null ? allDeckEntriesRanked : allDeckEntriesRanked.slice(0, limit);
 
   // ── Top 5 commanders (min 3 matches, by win_rate DESC, both partners counted) ─
 
@@ -1234,11 +1248,11 @@ export async function getGlobalStats(
     }
   }
 
-  const top5CmdEntries = [...cmdStatsMap.entries()]
+  const allCmdEntriesRanked = [...cmdStatsMap.entries()]
     .map(([id, stats]) => ({ commanderId: id, ...stats, wr: calcWinRate(stats.wins, stats.total) }))
     .filter((e) => e.total >= 3)
-    .sort((a, b) => (b.wr ?? -1) - (a.wr ?? -1))
-    .slice(0, 5);
+    .sort((a, b) => (b.wr ?? -1) - (a.wr ?? -1));
+  const top5CmdEntries = limit === null ? allCmdEntriesRanked : allCmdEntriesRanked.slice(0, limit);
 
   // ── Top-3 players' most-used decks (hero thumbnails in the ranking list) ────
 

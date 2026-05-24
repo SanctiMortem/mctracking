@@ -110,6 +110,8 @@ export const justiceOfTheLight: AppTheme = {
       headline: 'NotoSerif_600SemiBold',
       body: 'WorkSans_400Regular',               // clean functional body
       bodyMedium: 'WorkSans_500Medium',
+      displayItalic: 'NotoSerif_600SemiBold_Italic',
+      bodyItalic: 'NotoSerif_400Regular_Italic',
     },
     size: {
       'display-lg': 80,

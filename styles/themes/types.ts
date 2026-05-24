@@ -88,6 +88,10 @@ export interface ThemeTypography {
     headline: string;
     body: string;
     bodyMedium: string;
+    /** Italic serif for stats screen titles + large display numbers (e.g. "62%"). */
+    displayItalic: string;
+    /** Italic serif (regular weight) for subtitles. */
+    bodyItalic: string;
   };
   size: {
     'display-lg': number;

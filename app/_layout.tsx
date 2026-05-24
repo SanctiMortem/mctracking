@@ -24,7 +24,13 @@ import { SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fon
 import { Manrope_400Regular, Manrope_500Medium } from '@expo-google-fonts/manrope';
 import { BigShouldersDisplay_600SemiBold, BigShouldersDisplay_700Bold } from '@expo-google-fonts/big-shoulders-display';
 // Fonts — "Justice of the Light" skin
-import { NotoSerif_400Regular, NotoSerif_600SemiBold, NotoSerif_700Bold } from '@expo-google-fonts/noto-serif';
+import {
+  NotoSerif_400Regular,
+  NotoSerif_400Regular_Italic,
+  NotoSerif_600SemiBold,
+  NotoSerif_600SemiBold_Italic,
+  NotoSerif_700Bold,
+} from '@expo-google-fonts/noto-serif';
 import { WorkSans_400Regular, WorkSans_500Medium } from '@expo-google-fonts/work-sans';
 
 // i18n init (SETUP-006)
@@ -340,6 +346,12 @@ function AuthGate() {
       <Stack.Screen name="commanders/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="commanders/index" options={{ title: t('commanders.title') }} />
       <Stack.Screen name="stats/matchup" options={{ title: t('stats.viewMatchup') }} />
+      {/* ALL-list screens for the redesigned Stats dashboard — render their
+          own in-body header (italic-serif title + scope picker), so the
+          native stack header is suppressed. */}
+      <Stack.Screen name="stats/decks" options={{ headerShown: false }} />
+      <Stack.Screen name="stats/players" options={{ headerShown: false }} />
+      <Stack.Screen name="stats/commanders" options={{ headerShown: false }} />
       <Stack.Screen name="groups/index" options={{ title: t('groups.title') }} />
       <Stack.Screen name="groups/[id]" options={{ title: t('groups.podDetail') }} />
       <Stack.Screen name="settings" options={{ title: t('settings.title') }} />
@@ -385,6 +397,10 @@ export default function RootLayout() {
     NotoSerif_400Regular,
     NotoSerif_600SemiBold,
     NotoSerif_700Bold,
+    // Italic variants used across both themes for the stats redesign
+    // (screen / section titles, large display numbers, subtitles).
+    NotoSerif_400Regular_Italic,
+    NotoSerif_600SemiBold_Italic,
     WorkSans_400Regular,
     WorkSans_500Medium,
   });

@@ -1,29 +1,34 @@
 /**
  * SCR-006 — Stats Dashboard.
  *
- * Displays:
- *   - Hero metric: total completed matches
- *   - CTA to SCR-015 Matchup Stats
- *   - Player Rankings (PlayerRankingRow list)
- *   - Top Decks (DeckStatRow reuse)
- *   - Top Commanders (color chips + win rate)
+ * Composes the redesigned stats experience:
+ *   - Hero: "Stats" + italic-serif tagline
+ *   - Scope chip strip (eye-icon on the active "All my matches" pill)
+ *   - Highlights carousel (compass-dial medallions — shipped separately)
+ *   - "THE HALL — Top Decks" 3-up podium + ranks 4-5 rows
+ *   - "View Matchup" callout
+ *   - "THE STANDINGS — Player Ranking"
+ *   - "MOST HONOURED — Top Commanders"
  *
  * Empty state when no completed matches exist yet.
  *
  * HIST-011 (EPIC-04)
  */
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
-import { DeckStatRow } from '@/components/match/DeckStatRow';
-import { PlayerRankingRow } from '@/components/stats/PlayerRankingRow';
+import { CommanderRankRow } from '@/components/stats/CommanderRankRow';
+import { DeckRankRow } from '@/components/stats/DeckRankRow';
+import { MatchupCallout } from '@/components/stats/MatchupCallout';
+import { PlayerRankRow } from '@/components/stats/PlayerRankRow';
 import { PodHighlightsCarousel } from '@/components/stats/PodHighlightsCarousel';
-import { TopDeckPodiumCard, type PodiumTier } from '@/components/stats/TopDeckPodiumCard';
-import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
+import { SectionHeader } from '@/components/stats/SectionHeader';
+import { StatsScopePicker } from '@/components/stats/StatsScopePicker';
+import { TopDecksPodium, type PodiumDeckEntry } from '@/components/stats/TopDecksPodium';
 import { useGlobalStats } from '@/hooks/useGlobalStats';
 import { useGroups } from '@/hooks/useGroups';
 import { useStatsHighlights } from '@/hooks/useStatsHighlights';
@@ -33,19 +38,10 @@ import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
 import { useTheme } from '@/contexts/ThemeContext';
 
-// ─── Section header ───────────────────────────────────────────────────────────
-
-function SectionHeader({ title }: { title: string }) {
-  const styles = useThemedStyles(createStyles);
-
-  return <Text style={styles.sectionHeader}>{title}</Text>;
-}
-
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 function EmptyState() {
   const styles = useThemedStyles(createStyles);
-
   const { t } = useTranslation();
   return (
     <View style={styles.empty}>
@@ -60,7 +56,6 @@ function EmptyState() {
 
 export default function StatsScreen() {
   const { theme } = useTheme();
-
   const styles = useThemedStyles(createStyles);
 
   const router = useRouter();
@@ -89,6 +84,33 @@ export default function StatsScreen() {
     ...groups.map((g) => ({ id: g.group.id, label: g.group.name })),
   ];
 
+  // Subtitle: "Season tally, by the pod." when a pod is selected,
+  // otherwise "Season tally, all your matches." — matches the mockup's
+  // ledger-narration tone without inventing a new copy block.
+  const subtitle = scopeGroupId !== null
+    ? t('stats.subtitlePod')
+    : t('stats.subtitlePersonal');
+
+  // Map player → top commander name for the "often [Commander]" subline
+  // on the ranking rows. Built off top_player_decks already returned by
+  // the global stats endpoint.
+  const playerTopCommanderName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const entry of data?.top_player_decks ?? []) {
+      const first = entry.commanders[0];
+      if (first) m.set(entry.playerId, first.name);
+    }
+    return m;
+  }, [data?.top_player_decks]);
+
+  // ALL links → dedicated per-entity screens. Forward the active scope so
+  // the user lands on the same lens they were viewing in the dashboard;
+  // the in-screen picker can still override it.
+  const allParams = scopeGroupId ? { group_id: scopeGroupId } : undefined;
+  const navigateToAllDecks = () => router.push({ pathname: '/stats/decks', params: allParams });
+  const navigateToAllPlayers = () => router.push({ pathname: '/stats/players', params: allParams });
+  const navigateToAllCommanders = () => router.push({ pathname: '/stats/commanders', params: allParams });
+
   const header = (
     <View
       style={[
@@ -99,37 +121,17 @@ export default function StatsScreen() {
           : undefined,
       ]}
     >
-      <Text style={styles.title}>{t('tabs.stats')}</Text>
-      <Text style={styles.subtitle}>
-        The ledger of triumphs and defeats — take measure of your legend.
-      </Text>
+      <Text style={styles.title}>{t('stats.title')}</Text>
+      <View style={styles.subtitleRow}>
+        <View style={styles.subtitleDash} />
+        <Text style={styles.subtitle}>{subtitle}</Text>
+      </View>
     </View>
   );
 
-  const scopePicker = scopeOptions.length > 1 ? (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.scopeRow}
-      style={styles.scopeScroll}
-    >
-      {scopeOptions.map((opt) => {
-        const selected = opt.id === scopeGroupId;
-        return (
-          <TouchableOpacity
-            key={opt.id ?? 'personal'}
-            style={[styles.scopeChip, selected && styles.scopeChipActive]}
-            onPress={() => setScopeGroupId(opt.id)}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.scopeChipText, selected && styles.scopeChipTextActive]} numberOfLines={1}>
-              {opt.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </ScrollView>
-  ) : null;
+  const scopePicker = (
+    <StatsScopePicker options={scopeOptions} value={scopeGroupId} onChange={setScopeGroupId} />
+  );
 
   if (loading) {
     return (
@@ -167,122 +169,113 @@ export default function StatsScreen() {
     );
   }
 
+  const podiumEntries: PodiumDeckEntry[] = data.top_decks.slice(0, 3).map((e) => ({
+    deck: e.deck,
+    commanders: e.commanders,
+    total_matches: e.total_matches,
+    win_rate_pct: e.win_rate_pct,
+  }));
+
   return (
     <SafeAreaView style={styles.screen}>
       {header}
-      {/* scope picker now lives INSIDE the main ScrollView so it scrolls
-          off-screen naturally as the user moves down — no point keeping it
-          pinned when tapping a chip already snaps back to the top. */}
-      <ScrollView style={styles.mainScroll} contentContainerStyle={[styles.content, { paddingHorizontal: contentPadding }, contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined]} showsVerticalScrollIndicator={false}>
-      {scopePicker}
-      {/* Highlights carousel — replaces the old hero block in both pod and
-          personal scope. The first slide carries the "Total Matches" number
-          so we don't lose the headline. Carousel renders nothing when there
-          are no matches to summarise, so empty accounts still degrade fine. */}
-      <PodHighlightsCarousel data={podHighlightsData} loading={podHighlightsLoading} />
-
-      {/* Top Decks — podium: #1 big art, #2 @ 2/3, #3 @ 1/2, ranks 4–5 as plain rows */}
-      {data.top_decks.length > 0 && (
-        <View style={styles.section}>
-          <SectionHeader title={t('stats.topDecks')} />
-          <View style={styles.podiumList}>
-            {data.top_decks.slice(0, 3).map((entry, i) => (
-              <TopDeckPodiumCard
-                key={entry.deck.id}
-                tier={(i + 1) as PodiumTier}
-                deck={entry.deck}
-                commanders={entry.commanders}
-                matches={entry.total_matches}
-                win_rate_pct={entry.win_rate_pct}
-                current_streak={entry.current_streak}
-                onPress={() => router.push(`/decks/${entry.deck.id}`)}
-              />
-            ))}
-            {data.top_decks.slice(3).map((entry) => (
-              <DeckStatRow
-                key={entry.deck.id}
-                deck={entry.deck}
-                commanders={entry.commanders}
-                matches={entry.total_matches}
-                win_rate_pct={entry.win_rate_pct}
-                onPress={() => router.push(`/decks/${entry.deck.id}`)}
-              />
-            ))}
-          </View>
-        </View>
-      )}
-
-      {/* Matchup CTA — sits between Top Decks and Player Rankings as a
-          natural pivot from deck-comparison to head-to-head exploration. */}
-      <TouchableOpacity
-        style={styles.matchupCta}
-        onPress={() => router.push('/stats/matchup')}
-        activeOpacity={0.8}
+      <ScrollView
+        style={styles.mainScroll}
+        contentContainerStyle={[
+          styles.content,
+          { paddingHorizontal: contentPadding },
+          contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as unknown as number } : undefined,
+        ]}
+        showsVerticalScrollIndicator={false}
       >
-        <View>
-          <Text style={styles.matchupCtaTitle}>{t('stats.viewMatchup')}</Text>
-          <Text style={styles.matchupCtaSub}>{t('stats.headToHead')}</Text>
-        </View>
-        <Text style={styles.matchupCtaArrow}>›</Text>
-      </TouchableOpacity>
+        {/* Scope chip strip scrolls with the content — keeps the page light
+            and avoids a sticky bar fighting with the carousel underneath. */}
+        {scopePicker}
 
-      {/* Player Rankings — ranks #1–3 get a commander art thumbnail of their most-used deck */}
-      {data.player_rankings.length > 0 && (
-        <View style={styles.section}>
-          <SectionHeader title={t('stats.playerRanking')} />
-          <View style={styles.list}>
-            {data.player_rankings.map((ranking) => {
-              const isPodium = ranking.rank >= 1 && ranking.rank <= 3;
-              const podiumDeck = isPodium
-                ? data.top_player_decks?.find((e) => e.playerId === ranking.player.id) ?? null
-                : null;
-              return (
-                <PlayerRankingRow
-                  key={ranking.player.id}
-                  ranking={ranking}
-                  topDeckArtCrop={podiumDeck?.commanders[0]?.artCrop ?? null}
-                  topDeckLabel={ranking.rank === 1 ? podiumDeck?.deck.name ?? null : null}
-                  onPress={() => router.push(`/players/${ranking.player.id}`)}
-                />
-              );
-            })}
+        {/* Highlights carousel — locked design, shipped previously. */}
+        <PodHighlightsCarousel data={podHighlightsData} loading={podHighlightsLoading} />
+
+        {/* THE HALL — Top Decks */}
+        {data.top_decks.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader
+              eyebrow={t('stats.sectionHallEyebrow')}
+              title={t('stats.topDecks')}
+              onAllPress={navigateToAllDecks}
+            />
+            <TopDecksPodium decks={podiumEntries} onPressDeck={(deck) => router.push(`/decks/${deck.id}`)} />
+            {data.top_decks.slice(3).map((entry, idx) => (
+              <DeckRankRow
+                key={entry.deck.id}
+                rank={idx + 4}
+                deck={entry.deck}
+                commanders={entry.commanders}
+                matches={entry.total_matches}
+                win_rate_pct={entry.win_rate_pct}
+                ownerName={entry.commanders[0]?.name ?? null}
+                onPress={() => router.push(`/decks/${entry.deck.id}`)}
+              />
+            ))}
           </View>
-        </View>
-      )}
+        )}
 
-      {/* Top Commanders */}
-      {data.top_commanders.length > 0 && (
-        <View style={styles.section}>
-          <SectionHeader title={t('stats.topCommanders')} />
-          <View style={styles.list}>
-            {data.top_commanders.map((entry) => {
-              const winRateText = entry.win_rate_pct !== null ? `${entry.win_rate_pct}%` : '—';
-              return (
-                <TouchableOpacity
+        {/* View Matchup — pivot from deck stats to head-to-head. */}
+        <MatchupCallout
+          title={t('stats.viewMatchup')}
+          subtitle={t('stats.headToHead')}
+          onPress={() => router.push('/stats/matchup')}
+        />
+
+        {/* THE STANDINGS — Player Ranking */}
+        {data.player_rankings.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader
+              eyebrow={t('stats.sectionStandingsEyebrow')}
+              title={t('stats.playerRanking')}
+              onAllPress={navigateToAllPlayers}
+            />
+            <View>
+              {data.player_rankings.slice(0, 6).map((ranking) => {
+                const isPodium = ranking.rank >= 1 && ranking.rank <= 3;
+                const podiumDeck = isPodium
+                  ? data.top_player_decks?.find((e) => e.playerId === ranking.player.id) ?? null
+                  : null;
+                return (
+                  <PlayerRankRow
+                    key={ranking.player.id}
+                    ranking={ranking}
+                    topDeckArtCrop={podiumDeck?.commanders[0]?.artCrop ?? null}
+                    topCommanderName={playerTopCommanderName.get(ranking.player.id) ?? null}
+                    onPress={() => router.push(`/players/${ranking.player.id}`)}
+                  />
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* MOST HONOURED — Top Commanders */}
+        {data.top_commanders.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader
+              eyebrow={t('stats.sectionHonouredEyebrow')}
+              title={t('stats.topCommanders')}
+              onAllPress={navigateToAllCommanders}
+            />
+            <View>
+              {data.top_commanders.map((entry, idx) => (
+                <CommanderRankRow
                   key={entry.commander.id}
-                  style={styles.commanderRow}
+                  rank={idx + 1}
+                  commander={entry.commander}
+                  matches={entry.total_matches}
+                  win_rate_pct={entry.win_rate_pct}
                   onPress={() => router.push(`/commanders/${entry.commander.id}`)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.commanderInfo}>
-                    <Text style={styles.commanderName} numberOfLines={1}>{entry.commander.name}</Text>
-                    <ManaIdentityRow colors={entry.commander.colorIdentity} size="xs" />
-                  </View>
-                  <View style={styles.commanderStats}>
-                    <Text style={styles.matchCount}>{entry.total_matches}p</Text>
-                    <View style={[styles.wrBadge, entry.win_rate_pct !== null && styles.wrBadgeActive]}>
-                      <Text style={[styles.wrText, entry.win_rate_pct !== null && styles.wrTextActive]}>
-                        {winRateText}
-                      </Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+                />
+              ))}
+            </View>
           </View>
-        </View>
-      )}
-
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -296,187 +289,57 @@ const createStyles = (t: AppTheme) => ({
     backgroundColor: t.colors.background.primary,
   },
   content: {
-    padding: spacing[4],
+    paddingTop: spacing[3],
+    paddingBottom: spacing[8],
     gap: spacing[6],
   },
   center: {
     flex: 1,
     backgroundColor: t.colors.background.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
 
   header: {
-    gap: 2,
-    paddingVertical: spacing[4],
-    borderBottomWidth: 1,
-    borderBottomColor: t.colors.border.subtle,
+    gap: 6,
+    paddingTop: spacing[3],
+    paddingBottom: spacing[3],
   },
   title: {
     color: t.colors.text.primary,
-    fontSize: t.typography.size['heading-lg'],
-    fontFamily: t.typography.fontFamily.headline,
-    fontWeight: t.typography.weight.bold,
+    fontSize: 40,
+    lineHeight: 46,
+    fontFamily: t.typography.fontFamily.displayItalic,
+    fontStyle: 'italic' as const,
+    fontWeight: t.typography.weight.semibold,
+  },
+  subtitleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+  },
+  subtitleDash: {
+    width: 18,
+    height: 1,
+    backgroundColor: t.colors.text.muted,
   },
   subtitle: {
     color: t.colors.text.secondary,
-    fontSize: t.typography.size.caption,
-    fontFamily: t.typography.fontFamily.body,
+    fontSize: t.typography.size['body-sm'],
+    fontFamily: t.typography.fontFamily.bodyItalic,
     fontStyle: 'italic' as const,
-    letterSpacing: 0.2,
   },
 
-  // flexShrink: 0 prevents the strip from being squeezed by the main
-  // ScrollView below once it fills with content. flexGrow: 0 stops it from
-  // expanding to fill remaining vertical space.
-  scopeScroll: {
-    flexGrow: 0,
-    flexShrink: 0,
-  },
-  // The main scroll view explicitly takes the remaining space and scrolls
-  // internally — without flex: 1 it sizes to its content height, which causes
-  // the column to overflow and forces sibling shrink.
+  // Main scroll fills the remaining viewport — without flex:1 the content
+  // would size to its own height and force siblings to shrink awkwardly.
   mainScroll: {
     flex: 1,
   },
-  // Padding hardcoded (not driven by useResponsive's contentPadding) so the
-  // chip strip's metrics never change when the page below it loads/reflows.
-  scopeRow: {
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[3],
-    paddingBottom: spacing[6],
-    gap: spacing[2],
-    alignItems: 'center' as const,
-  },
-  scopeChip: {
-    paddingHorizontal: spacing[3],
-    paddingVertical: 6,
-    borderRadius: t.radius.round,
-    borderWidth: 1,
-    borderColor: t.colors.border.default,
-    backgroundColor: t.colors.background.surface,
-  },
-  scopeChipActive: {
-    backgroundColor: t.colors.accent.primary + '22',
-    borderColor: t.colors.accent.primary + '99',
-  },
-  scopeChipText: {
-    color: t.colors.text.secondary,
-    fontSize: t.typography.size.caption,
-    fontFamily: t.typography.fontFamily.bodyMedium,
-    fontWeight: t.typography.weight.semibold,
-  },
-  scopeChipTextActive: {
-    color: t.colors.accent.primary,
-  },
-
-  hero: {
-    alignItems: 'center',
-    paddingTop: spacing[3],
-    paddingBottom: spacing[6],
-    gap: spacing[1],
-  },
-  heroNumber: {
-    color: t.colors.accent.primary,
-    fontSize: t.typography.size['heading-xl'],
-    fontFamily: t.typography.fontFamily.display,
-    fontWeight: t.typography.weight.black,
-  },
-  heroLabel: {
-    color: t.colors.text.primary,
-    fontSize: t.typography.size['body-lg'],
-    fontFamily: t.typography.fontFamily.headline,
-    fontWeight: t.typography.weight.semibold,
-  },
-  heroSub: {
-    color: t.colors.text.secondary,
-    fontSize: t.typography.size['body-sm'],
-    fontFamily: t.typography.fontFamily.body,
-  },
-  // Recoloured to status.info (cool blue) so the H2H CTA no longer fights
-  // visually with the amber Highlights carousel above it.
-  matchupCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: t.colors.status.info + '22',
-    borderRadius: t.radius.md,
-    borderWidth: 1,
-    borderColor: t.colors.status.info + '44',
-    paddingVertical: spacing[4],
-    paddingHorizontal: spacing[4],
-  },
-  matchupCtaTitle: {
-    color: t.colors.status.info,
-    fontSize: t.typography.size['body-lg'],
-    fontFamily: t.typography.fontFamily.headline,
-    fontWeight: t.typography.weight.semibold,
-  },
-  matchupCtaSub: {
-    color: t.colors.text.secondary,
-    fontSize: t.typography.size['body-sm'],
-    fontFamily: t.typography.fontFamily.body,
-    marginTop: 2,
-  },
-  matchupCtaArrow: {
-    color: t.colors.status.info,
-    fontSize: 28,
-    lineHeight: 32,
-  },
 
   section: { gap: spacing[3] },
-  sectionHeader: {
-    color: t.colors.text.secondary,
-    fontSize: t.typography.size['body-sm'],
-    fontFamily: t.typography.fontFamily.headline,
-    fontWeight: t.typography.weight.semibold,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  list: { gap: spacing[2] },
-  podiumList: { gap: spacing[4] + 4 },
-
-  commanderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: t.colors.background.surface,
-    borderRadius: t.radius.md,
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
-    gap: spacing[3],
-  },
-  commanderInfo: { flex: 1, gap: 4 },
-  commanderName: {
-    color: t.colors.text.primary,
-    fontSize: t.typography.size['body-lg'],
-    fontFamily: t.typography.fontFamily.bodyMedium,
-    fontWeight: t.typography.weight.medium,
-  },
-  commanderStats: { alignItems: 'flex-end', gap: 4, flexShrink: 0 },
-  matchCount: {
-    color: t.colors.text.muted,
-    fontSize: t.typography.size['body-sm'],
-    fontFamily: t.typography.fontFamily.body,
-  },
-  wrBadge: {
-    backgroundColor: t.colors.background.elevated,
-    borderRadius: t.radius.sm,
-    paddingHorizontal: spacing[2],
-    paddingVertical: 2,
-    minWidth: 44,
-    alignItems: 'center',
-  },
-  wrBadgeActive: { backgroundColor: t.colors.accent.primary + '22' },
-  wrText: {
-    color: t.colors.text.muted,
-    fontSize: t.typography.size.label,
-    fontFamily: t.typography.fontFamily.bodyMedium,
-    fontWeight: t.typography.weight.semibold,
-  },
-  wrTextActive: { color: t.colors.accent.primary },
 
   empty: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
     gap: spacing[3],
     paddingVertical: spacing[12],
   },
@@ -486,20 +349,20 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size['heading-md'],
     fontFamily: t.typography.fontFamily.headline,
     fontWeight: t.typography.weight.semibold,
-    textAlign: 'center',
+    textAlign: 'center' as const,
   },
   emptySubtitle: {
     color: t.colors.text.secondary,
     fontSize: t.typography.size['body-sm'],
     fontFamily: t.typography.fontFamily.body,
-    textAlign: 'center',
+    textAlign: 'center' as const,
   },
 
   errorText: {
     color: t.colors.status.error,
     fontSize: t.typography.size['body-sm'],
     fontFamily: t.typography.fontFamily.body,
-    textAlign: 'center',
+    textAlign: 'center' as const,
     paddingHorizontal: spacing[4],
   },
-})
+});

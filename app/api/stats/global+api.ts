@@ -25,6 +25,10 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const groupId = url.searchParams.get('group_id');
+  // `limit=all` lifts the top-5 cap on decks + commanders so the
+  // per-entity "ALL" screens can show the full ranked list. Any other
+  // value falls back to the default (top 5).
+  const limit = url.searchParams.get('limit') === 'all' ? null : undefined;
 
   if (groupId) {
     const [member] = await db
@@ -37,6 +41,6 @@ export async function GET(req: Request) {
     }
   }
 
-  const result = await getGlobalStats(userId, groupId);
+  const result = await getGlobalStats(userId, groupId, { limit });
   return Response.json({ success: true, data: result.data }, { status: 200 });
 }

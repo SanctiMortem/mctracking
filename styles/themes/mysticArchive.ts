@@ -106,6 +106,8 @@ export const mysticArchive: AppTheme = {
       headline: 'SpaceGrotesk_600SemiBold',
       body: 'Manrope_400Regular',
       bodyMedium: 'Manrope_500Medium',
+      displayItalic: 'NotoSerif_600SemiBold_Italic',
+      bodyItalic: 'NotoSerif_400Regular_Italic',
     },
     size: {
       'display-lg': 80,
