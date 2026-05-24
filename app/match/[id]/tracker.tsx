@@ -27,6 +27,7 @@ import { useTranslation } from 'react-i18next';
 
 import { CommanderDamagePanel } from '@/components/tracker/CommanderDamagePanel';
 import { EventLogPanel } from '@/components/tracker/EventLogPanel';
+import { JoinLayoutPicker, type JoinLayoutPickerResult } from '@/components/match/JoinLayoutPicker';
 import { LifeCounter } from '@/components/tracker/LifeCounter';
 import { PlayerDashboard } from '@/components/tracker/PlayerDashboard';
 import { PoisonCounter } from '@/components/tracker/PoisonCounter';
@@ -190,6 +191,10 @@ export default function MatchTrackerScreen() {
     playerOrder: string[];
     layoutVariant: string;
   } | null>(null);
+  // `layoutLoadResolved` flips true after the SecureStore load completes
+  // (or is skipped because URL params are present). Until then we can't
+  // tell whether this device has a layout — so we suppress the picker.
+  const [layoutLoadResolved, setLayoutLoadResolved] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -201,13 +206,16 @@ export default function MatchTrackerScreen() {
         playerOrder: paramPlayerOrder,
         layoutVariant: paramLayoutVariant,
       });
+      setLayoutLoadResolved(true);
       return () => {
         cancelled = true;
       };
     }
     (async () => {
       const loaded = await loadMatchLayout(id);
-      if (!cancelled && loaded) setStoredLayout(loaded);
+      if (cancelled) return;
+      if (loaded) setStoredLayout(loaded);
+      setLayoutLoadResolved(true);
     })();
     return () => {
       cancelled = true;
@@ -316,6 +324,38 @@ export default function MatchTrackerScreen() {
       <View style={styles.centered}>
         <Text style={styles.errorText}>{error ?? t('match.matchNotFound')}</Text>
       </View>
+    );
+  }
+
+  // ── Layout-on-join picker ─────────────────────────────────────────────────
+  // When a device joins an in-progress match via the active-match banner it
+  // arrives at this screen WITHOUT URL params and WITHOUT a SecureStore
+  // entry, so the previously-rendered tracker fell back to empty rotations
+  // and a default layout. Show a picker so the joining player can pick
+  // their own seat order + rotations + layout variant for THIS device. The
+  // choice is saved per-device per-match so re-mounts skip the picker.
+  const hasUsableLayout =
+    (paramRotations && paramPlayerOrder && paramLayoutVariant) ||
+    storedLayout !== null;
+  if (layoutLoadResolved && !hasUsableLayout && participations.length > 0) {
+    const handlePickerConfirm = (result: JoinLayoutPickerResult) => {
+      // Persist for this device, then drop straight into the tracker by
+      // populating storedLayout — no remount or navigation roundtrip.
+      void saveMatchLayout(id, result);
+      setStoredLayout({
+        rotations: result.rotations,
+        playerOrder: result.playerOrder,
+        layoutVariant: result.layoutVariant,
+      });
+    };
+    return (
+      <JoinLayoutPicker
+        players={participations.map((p) => ({
+          playerId: p.playerId,
+          name: p.player.name,
+        }))}
+        onConfirm={handlePickerConfirm}
+      />
     );
   }
 

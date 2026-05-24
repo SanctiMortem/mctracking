@@ -523,6 +523,13 @@
       "commanderDamage": "commander damage"
     }
   },
+  "joinLayout": {
+    "title": "Set up your view",
+    "subtitle": "Pick the seat order, rotations, and layout for THIS device.",
+    "layoutLabel": "Layout",
+    "startBtn": "Start tracking",
+    "startLabel": "Start tracking the match"
+  },
   "guest": {
     "title": "Guest Tracker",
     "newMatch": "New Match",

@@ -523,6 +523,13 @@
       "commanderDamage": "daño de commander"
     }
   },
+  "joinLayout": {
+    "title": "Configura tu vista",
+    "subtitle": "Elige el orden de los asientos, rotaciones y disposición para ESTE dispositivo.",
+    "layoutLabel": "Disposición",
+    "startBtn": "Comenzar tracking",
+    "startLabel": "Comenzar a trackear la partida"
+  },
   "guest": {
     "title": "Tracker Invitado",
     "newMatch": "Nueva Partida",
