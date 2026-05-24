@@ -31,6 +31,10 @@ import {
   NotoSerif_600SemiBold_Italic,
   NotoSerif_700Bold,
 } from '@expo-google-fonts/noto-serif';
+import {
+  CormorantGaramond_400Regular_Italic,
+  CormorantGaramond_600SemiBold_Italic,
+} from '@expo-google-fonts/cormorant-garamond';
 import { WorkSans_400Regular, WorkSans_500Medium } from '@expo-google-fonts/work-sans';
 
 // i18n init (SETUP-006)
@@ -401,6 +405,10 @@ export default function RootLayout() {
     // (screen / section titles, large display numbers, subtitles).
     NotoSerif_400Regular_Italic,
     NotoSerif_600SemiBold_Italic,
+    // Optional display font — opt-in via Settings ("Display font" toggle).
+    // Loaded eagerly so flipping the toggle takes effect without a restart.
+    CormorantGaramond_400Regular_Italic,
+    CormorantGaramond_600SemiBold_Italic,
     WorkSans_400Regular,
     WorkSans_500Medium,
   });

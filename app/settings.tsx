@@ -23,6 +23,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAccountPlayer } from '@/contexts/AccountPlayerContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import type { DisplayFontId } from '@/contexts/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { themeList } from '@/styles/themes';
 import type { ThemeId } from '@/styles/themes/types';
@@ -140,7 +141,7 @@ export default function SettingsScreen() {
   const { contentMaxWidth, contentPadding } = useResponsive();
   const { settings, loading, error, saving, refresh, patchSetting } = useSettings();
   const { accountPlayer, setAccountPlayer } = useAccountPlayer();
-  const { theme, themeId, setThemeId } = useTheme();
+  const { theme, themeId, setThemeId, displayFontId, setDisplayFontId } = useTheme();
   const styles = useThemedStyles(createStyles);
 
   const [signingOut, setSigningOut] = useState(false);
@@ -291,6 +292,7 @@ export default function SettingsScreen() {
     | { key: 'life_total' }
     | { key: 'language' }
     | { key: 'theme' }
+    | { key: 'display_font' }
     | { key: 'player_name' }
     | { key: 'groups' }
     | { key: 'clear_history' }
@@ -315,7 +317,7 @@ export default function SettingsScreen() {
     },
     {
       title: t('settings.appearance'),
-      data: [{ key: 'theme' }],
+      data: [{ key: 'theme' }, { key: 'display_font' }],
     },
     {
       title: t('settings.account'),
@@ -395,6 +397,20 @@ export default function SettingsScreen() {
                 options={themeList.map((th) => ({ label: th.label, value: th.id }))}
                 selected={themeId}
                 onSelect={setThemeId}
+              />
+            </SettingRowStack>
+          );
+
+        case 'display_font':
+          return (
+            <SettingRowStack label={t('settings.displayFont')}>
+              <SegmentedPicker<DisplayFontId>
+                options={[
+                  { label: t('settings.displayFontNotoSerif'), value: 'noto-serif' },
+                  { label: t('settings.displayFontCormorant'), value: 'cormorant-garamond' },
+                ]}
+                selected={displayFontId}
+                onSelect={setDisplayFontId}
               />
             </SettingRowStack>
           );
