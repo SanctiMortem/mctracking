@@ -2297,10 +2297,15 @@ export async function getPodHighlights(
 
   // ── Single-pass scan over raw events for swing + violent-turn ─────────────
   // For each (match, participation) we track the running turn count and the
-  // cumulative life delta for each turn. The largest abs swing across all
-  // (participation, turn) buckets wins the swing slide. The earliest turn in
-  // each match where any "violent" event happens (life_change <= -8 OR
-  // commander_damage >= 5) feeds the average-violent-turn average.
+  // cumulative life delta for each turn. Both life_change AND commander_damage
+  // contribute to the swing — commander damage doesn't fire a life_change
+  // event, but it does subtract from life_total via the participation
+  // snapshot, so a "biggest hit" of -34 split into life-tap + commander
+  // damage would otherwise under-count by the cmd-damage amount.
+  // The largest abs swing across all (participation, turn) buckets wins
+  // the swing slide. The earliest turn in each match where any "violent"
+  // event happens (life_change <= -8 OR commander_damage >= 5) feeds the
+  // average-violent-turn average.
   let largestSwingRow: { participationId: string; swing: number; turn: number } | null = null;
   const firstViolentTurnByMatch = new Map<string, number>();
   const turnsByPart = new Map<string, number>(); // participationId → current turn
@@ -2347,6 +2352,18 @@ export async function getPodHighlights(
         firstViolentTurnByMatch.set(e.matchId, turn);
       }
     } else if (e.eventType === 'commander_damage') {
+      // Commander damage delta is stored positive (damage amount) but it
+      // REDUCES life via the participation snapshot — treat it as a
+      // negative life delta for the swing tally.
+      const key = `${e.participationId}:${turn}`;
+      const next = (turnDeltas.get(key) ?? 0) - e.delta;
+      turnDeltas.set(key, next);
+      if (
+        !largestSwingRow ||
+        Math.abs(next) > Math.abs(largestSwingRow.swing)
+      ) {
+        largestSwingRow = { participationId: e.participationId, swing: next, turn };
+      }
       if (e.delta >= 5 && !firstViolentTurnByMatch.has(e.matchId)) {
         firstViolentTurnByMatch.set(e.matchId, turn);
       }
