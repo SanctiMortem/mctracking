@@ -232,6 +232,11 @@ export const matchEvents = pgTable(
     commanderIdSource: uuid('commander_id_source').references(() => commanders.id),
     // Soft undo: event stays in log, marked undone (BR-TRACK-11)
     isUndone: boolean('is_undone').notNull().default(false),
+    // How many seconds the outgoing player spent on the turn that just ended.
+    // Only populated on event_type = 'turn_passed' events recorded by clients
+    // running the per-turn-time feature (migration 0008+). Older events stay
+    // null and are silently excluded from time-based stats.
+    turnDurationSeconds: integer('turn_duration_seconds'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [

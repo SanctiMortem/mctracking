@@ -68,7 +68,14 @@ function useMatchTimer() {
 function useTurnTimers(
   clockwiseOrder: string[],
   deadIds: ReadonlySet<string>,
-  onTurnPassed?: (participationId: string) => void,
+  /**
+   * Fires on every legitimate clockwise rotation. `incomingId` is the player
+   * whose turn is starting (the canonical owner of the resulting turn_passed
+   * event). `outgoingDurationSeconds` is the wall-time the previous active
+   * player spent on the turn that just ended — null on the very first turn
+   * of the match (no prior actor).
+   */
+  onTurnPassed?: (incomingId: string, outgoingDurationSeconds: number | null) => void,
 ) {
   // Elapsed seconds per player (persists across start/stop)
   const [elapsed, setElapsed] = useState<Record<string, number>>({});
@@ -89,13 +96,27 @@ function useTurnTimers(
   const deadRef = useRef(deadIds);
   deadRef.current = deadIds;
 
+  // Cumulative elapsed mirror — kept in a ref so `incrementTurn` (running
+  // inside a setState callback) can read the latest values synchronously
+  // when computing the outgoing player's just-ended turn duration.
+  const elapsedRef = useRef<Record<string, number>>({});
+  // Snapshot of `elapsed[playerId]` at the moment that player's current turn
+  // started. Diffed against `elapsed[playerId]` on the next legitimate
+  // rotation to derive that turn's duration. Pauses don't tick `elapsed`, so
+  // paused time is naturally excluded from the diff.
+  const turnStartSnapshotRef = useRef<Record<string, number>>({});
+
   // Tick the active player's timer every second
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     if (!activeId) return;
 
     intervalRef.current = setInterval(() => {
-      setElapsed((prev) => ({ ...prev, [activeId]: (prev[activeId] ?? 0) + 1 }));
+      setElapsed((prev) => {
+        const next = { ...prev, [activeId]: (prev[activeId] ?? 0) + 1 };
+        elapsedRef.current = next;
+        return next;
+      });
     }, 1000);
 
     return () => {
@@ -105,7 +126,18 @@ function useTurnTimers(
 
   const incrementTurn = useCallback((id: string) => {
     setTurnCounts((counts) => ({ ...counts, [id]: (counts[id] ?? 0) + 1 }));
-    onTurnPassedRef.current?.(id);
+    // Compute the outgoing player's just-ended turn duration (null on the
+    // very first turn — no prior actor — so no duration is recorded).
+    const outgoing = lastCorrectActorRef.current;
+    const outgoingDuration = outgoing
+      ? Math.max(
+          0,
+          (elapsedRef.current[outgoing] ?? 0) - (turnStartSnapshotRef.current[outgoing] ?? 0),
+        )
+      : null;
+    onTurnPassedRef.current?.(id, outgoingDuration);
+    // Snapshot the incoming player's cumulative elapsed as their turn start.
+    turnStartSnapshotRef.current[id] = elapsedRef.current[id] ?? 0;
     lastCorrectActorRef.current = id;
   }, []);
 
@@ -247,10 +279,21 @@ export default function MatchTrackerScreen() {
   } = useTracker(id);
 
   // Turn timers — initialized once participations load.
-  // When a *legitimate* clockwise rotation happens, persist a turn_passed marker.
+  // When a *legitimate* clockwise rotation happens, persist a turn_passed
+  // marker for the incoming player (event ownership unchanged), and tag it
+  // with the duration of the just-ended turn so per-player time stats can
+  // pair consecutive turn_passed events to attribute the duration to the
+  // outgoing player.
   const recordTurnPassed = useCallback(
-    (participationId: string) => {
-      void recordEvent({ participationId, eventType: 'turn_passed', delta: 0 });
+    (participationId: string, outgoingDurationSeconds: number | null) => {
+      void recordEvent({
+        participationId,
+        eventType: 'turn_passed',
+        delta: 0,
+        ...(outgoingDurationSeconds !== null
+          ? { turnDurationSeconds: outgoingDurationSeconds }
+          : {}),
+      });
     },
     [recordEvent],
   );

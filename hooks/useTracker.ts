@@ -170,8 +170,10 @@ export function useTracker(matchId: string): UseTrackerReturn {
     eventType: EventType;
     delta: number;
     commanderIdSource?: string;
+    /** Only meaningful on eventType = 'turn_passed'. Seconds the outgoing player spent on the turn. */
+    turnDurationSeconds?: number;
   }) => {
-    const { participationId, eventType, delta, commanderIdSource } = input;
+    const { participationId, eventType, delta, commanderIdSource, turnDurationSeconds } = input;
 
     // Optimistic update — mirrors applyLifeChange/applyPoisonChange/applyCommanderDamage.
     // We do NOT revert on failure (see commitSingleEvent doc): what the user sees
@@ -208,6 +210,11 @@ export function useTracker(matchId: string): UseTrackerReturn {
           event_type: eventType,
           delta,
           commander_id_source: commanderIdSource,
+          // Server ignores this on non-turn_passed events; we only forward
+          // when it's present so the payload stays minimal in the common case.
+          ...(typeof turnDurationSeconds === 'number'
+            ? { turn_duration_seconds: turnDurationSeconds }
+            : {}),
         },
         token ?? undefined,
       );

@@ -27,6 +27,12 @@ export type RecordEventInput = {
   eventType: EventType;
   delta: number;
   commanderIdSource?: string; // required when eventType = 'commander_damage'
+  /**
+   * Seconds the outgoing player spent on the turn that just ended.
+   * Only meaningful on eventType = 'turn_passed'; ignored on every other type.
+   * Stored as null when omitted — time-based stats silently exclude null rows.
+   */
+  turnDurationSeconds?: number;
 };
 
 export type RecordEventResult =
@@ -53,7 +59,7 @@ export type UndoResult =
  * The API client sends the debounce-accumulated delta — no debounce logic here.
  */
 export async function recordEvent(input: RecordEventInput): Promise<RecordEventResult> {
-  const { matchId, participationId, eventType, delta, commanderIdSource } = input;
+  const { matchId, participationId, eventType, delta, commanderIdSource, turnDurationSeconds } = input;
 
   // Validate: commander_damage requires commanderIdSource
   if (eventType === 'commander_damage' && !commanderIdSource) {
@@ -89,6 +95,10 @@ export async function recordEvent(input: RecordEventInput): Promise<RecordEventR
       delta,
       commanderIdSource: commanderIdSource ?? null,
       isUndone: false,
+      // Only meaningful on turn_passed events. Validated >0 at the API layer.
+      turnDurationSeconds: eventType === 'turn_passed' && typeof turnDurationSeconds === 'number'
+        ? turnDurationSeconds
+        : null,
     })
     .returning();
 

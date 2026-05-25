@@ -1,7 +1,11 @@
 /**
  * POST /api/match-events — record a tracker state change.
  *
- * Body: { match_id, participation_id, event_type, delta, commander_id_source? }
+ * Body: { match_id, participation_id, event_type, delta, commander_id_source?, turn_duration_seconds? }
+ *
+ * `turn_duration_seconds` is only meaningful on event_type = 'turn_passed' events;
+ * it's the wall-time the outgoing player spent on their turn (excluding paused
+ * intervals). Ignored on every other event type.
  *
  * The debounce window runs on the client (React Native).
  * The API receives the already-accumulated delta.
@@ -30,7 +34,8 @@ export async function POST(req: Request) {
     return Response.json({ error: 'VALIDATION_ERROR', message: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { match_id, participation_id, event_type, delta, commander_id_source } = body as Record<string, unknown>;
+  const { match_id, participation_id, event_type, delta, commander_id_source, turn_duration_seconds } =
+    body as Record<string, unknown>;
 
   if (typeof match_id !== 'string' || !match_id) {
     return Response.json({ error: 'VALIDATION_ERROR', message: 'match_id is required' }, { status: 400 });
@@ -52,12 +57,31 @@ export async function POST(req: Request) {
     return Response.json({ error: 'VALIDATION_ERROR', message: 'delta must be non-zero for this event type' }, { status: 400 });
   }
 
+  // turn_duration_seconds is optional. When present must be a positive integer
+  // ≤ 24h (a guard against client clock weirdness / paused-forever sessions).
+  let turnDuration: number | undefined;
+  if (turn_duration_seconds !== undefined && turn_duration_seconds !== null) {
+    if (
+      typeof turn_duration_seconds !== 'number' ||
+      !Number.isInteger(turn_duration_seconds) ||
+      turn_duration_seconds < 0 ||
+      turn_duration_seconds > 60 * 60 * 24
+    ) {
+      return Response.json(
+        { error: 'VALIDATION_ERROR', message: 'turn_duration_seconds must be a non-negative integer ≤ 86400' },
+        { status: 400 },
+      );
+    }
+    turnDuration = turn_duration_seconds;
+  }
+
   const result = await recordEvent({
     matchId: match_id,
     participationId: participation_id,
     eventType: event_type as EventType,
     delta,
     commanderIdSource: typeof commander_id_source === 'string' ? commander_id_source : undefined,
+    turnDurationSeconds: turnDuration,
   });
 
   if ('notFound' in result) {
