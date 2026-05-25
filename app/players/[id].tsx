@@ -33,6 +33,16 @@ import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
 import { useTheme } from '@/contexts/ThemeContext';
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** "47s" under a minute, "1:30" otherwise. Kept local — only used here. */
+function formatTempoSeconds(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
 // ─── Section title ────────────────────────────────────────────────────────────
 
 function SectionTitle({ label, count }: { label: string; count?: number }) {
@@ -85,7 +95,7 @@ export default function PlayerProfileScreen() {
     );
   }
 
-  const { player, total_matches, wins, losses, draws, win_rate_pct, favorite_decks, favorite_commanders } = data;
+  const { player, total_matches, wins, losses, draws, win_rate_pct, favorite_decks, favorite_commanders, avg_turn_time_seconds, longest_turn_seconds, timed_turn_count } = data;
 
   const initials = player.name
     .split(' ')
@@ -170,6 +180,23 @@ export default function PlayerProfileScreen() {
               <Text style={styles.wldLabel}>{t('common.total')}</Text>
             </View>
           </View>
+
+          {/* Tempo row — only when at least one timed turn has been recorded.
+              Pre-feature matches contribute nothing here and the row stays
+              hidden until the first timed match completes. */}
+          {timed_turn_count > 0 && (
+            <View style={styles.tempoRow}>
+              <View style={styles.tempoItem}>
+                <Text style={styles.tempoValue}>{formatTempoSeconds(avg_turn_time_seconds ?? 0)}</Text>
+                <Text style={styles.tempoLabel}>{t('player.avgTurnTime')}</Text>
+              </View>
+              <View style={styles.tempoDivider} />
+              <View style={styles.tempoItem}>
+                <Text style={styles.tempoValue}>{formatTempoSeconds(longest_turn_seconds ?? 0)}</Text>
+                <Text style={styles.tempoLabel}>{t('player.longestTurn')}</Text>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* ── Decks más usados ── */}
@@ -346,6 +373,35 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size.caption,
   },
   wldDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: t.colors.border.subtle,
+  },
+
+  // Tempo row — sits below the W/L/D row with a soft separator above it,
+  // visually distinct so it reads as "different category of stat."
+  tempoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginTop: spacing[3],
+    paddingTop: spacing[3],
+    borderTopWidth: 1,
+    borderTopColor: t.colors.border.subtle,
+  },
+  tempoItem: { flex: 1, alignItems: 'center', gap: 2 },
+  tempoValue: {
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['heading-md'],
+    fontFamily: t.typography.fontFamily.displayItalic,
+    fontStyle: 'italic',
+    fontWeight: t.typography.weight.semibold,
+  },
+  tempoLabel: {
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+  },
+  tempoDivider: {
     width: 1,
     height: 32,
     backgroundColor: t.colors.border.subtle,

@@ -147,6 +147,18 @@ export type PlayerStats = {
   win_rate_pct: number | null;
   favorite_decks: FavoriteDeck[];
   favorite_commanders: FavoriteCommander[];
+  /**
+   * Average wall-time per completed turn, across every visible timed match
+   * the player has been in. null when no timed turns have been recorded.
+   */
+  avg_turn_time_seconds: number | null;
+  /**
+   * Longest single turn this player has taken, in seconds. null when no
+   * timed turns have been recorded.
+   */
+  longest_turn_seconds: number | null;
+  /** Count of timed turns aggregated — drives an explicit "no data" copy. */
+  timed_turn_count: number;
 };
 
 export type GetPlayerStatsResult =
@@ -171,7 +183,7 @@ export async function getPlayerStats(
   if (!(await userCanViewPlayer(userId, player))) return { forbidden: true };
 
   // 2. Run all aggregation queries in parallel
-  const [statsRows, deckStatRows, partRows] = await Promise.all([
+  const [statsRows, deckStatRows, partRows, turnEventRows] = await Promise.all([
     // Overall stats — total completed matches, wins, losses, draws
     db
       .select({
@@ -215,6 +227,32 @@ export async function getPlayerStats(
       .where(
         and(eq(participations.playerId, playerId), eq(matches.status, 'completed')),
       ),
+
+    // turn_passed event stream for every completed match this player has
+    // been in. We need the OUTGOING player to attribute duration, which is
+    // the participationId on the PREVIOUS turn_passed event in the same
+    // match — pairing happens in JS below.
+    db
+      .select({
+        matchId: matchEvents.matchId,
+        participationId: matchEvents.participationId,
+        turnDurationSeconds: matchEvents.turnDurationSeconds,
+      })
+      .from(matchEvents)
+      .innerJoin(matches, eq(matches.id, matchEvents.matchId))
+      .where(and(
+        eq(matchEvents.eventType, 'turn_passed'),
+        eq(matchEvents.isUndone, false),
+        eq(matches.status, 'completed'),
+        // Limit to matches this player participated in. Subquery would be
+        // more efficient on huge histories, but the player's participation
+        // IDs would have to be resolved first — for the current scale
+        // (hundreds of matches per pod, not millions) the JS filter is fine.
+        sql`${matchEvents.matchId} IN (
+          SELECT match_id FROM participations WHERE player_id = ${playerId}
+        )`,
+      ))
+      .orderBy(matchEvents.matchId, matchEvents.createdAt),
   ]);
 
   // 3. Overall numbers (SQL SUM returns null when no rows match — coerce to 0)
@@ -223,6 +261,44 @@ export async function getPlayerStats(
   const wins = Number(statsRow?.wins ?? 0);
   const losses = Number(statsRow?.losses ?? 0);
   const draws = Number(statsRow?.draws ?? 0);
+
+  // ── Per-player turn-time aggregation ──────────────────────────────────────
+  // First pull this player's participation IDs so we can attribute durations
+  // (duration on a turn_passed event belongs to the participation on the
+  // PREVIOUS turn_passed event in that match).
+  const partIdRows = await db
+    .select({ id: participations.id })
+    .from(participations)
+    .where(eq(participations.playerId, playerId));
+  const playerParticipationIds = new Set(partIdRows.map((r) => r.id));
+
+  let turnDurationTotal = 0;
+  let turnDurationCount = 0;
+  let longestTurnSeconds = 0;
+  let prevEvent: { matchId: string; participationId: string } | null = null;
+  for (const e of turnEventRows) {
+    // Reset pairing window when we cross into a new match.
+    if (!prevEvent || prevEvent.matchId !== e.matchId) {
+      prevEvent = { matchId: e.matchId, participationId: e.participationId };
+      continue;
+    }
+    if (
+      typeof e.turnDurationSeconds === 'number' &&
+      playerParticipationIds.has(prevEvent.participationId)
+    ) {
+      turnDurationTotal += e.turnDurationSeconds;
+      turnDurationCount += 1;
+      if (e.turnDurationSeconds > longestTurnSeconds) {
+        longestTurnSeconds = e.turnDurationSeconds;
+      }
+    }
+    prevEvent = { matchId: e.matchId, participationId: e.participationId };
+  }
+
+  const avgTurnTimeSeconds = turnDurationCount > 0
+    ? Math.round(turnDurationTotal / turnDurationCount)
+    : null;
+  const longestTurnOrNull = turnDurationCount > 0 ? longestTurnSeconds : null;
 
   // 4. Resolve full Deck + Commander objects for top 5 decks
   let favoriteDecksList: FavoriteDeck[] = [];
@@ -308,6 +384,9 @@ export async function getPlayerStats(
       losses,
       draws,
       win_rate_pct: calcWinRate(wins, total),
+      avg_turn_time_seconds: avgTurnTimeSeconds,
+      longest_turn_seconds: longestTurnOrNull,
+      timed_turn_count: turnDurationCount,
       favorite_decks: favoriteDecksList,
       favorite_commanders: favoriteCommandersList,
     },
@@ -1941,6 +2020,10 @@ export type PodHighlights = {
    *  Violent = any life_change <= -8 OR commander_damage >= 5. null when
    *  no match in scope has logged violence yet. */
   avg_violent_turn: number | null;
+  /** Average wall-time per turn, in seconds, across every completed
+   *  (turn_passed-with-duration) turn in scope. null when no timed turns
+   *  have been recorded yet. */
+  avg_turn_time_seconds: number | null;
   /** Player with the longest CURRENT (active, not all-time) losing run as
    *  of the most recent in-scope match. null when nobody is on a streak. */
   current_loss_streak: PodHighlightLossStreak | null;
@@ -2098,6 +2181,7 @@ export async function getPodHighlights(
         participationId: matchEvents.participationId,
         eventType: matchEvents.eventType,
         delta: matchEvents.delta,
+        turnDurationSeconds: matchEvents.turnDurationSeconds,
         createdAt: matchEvents.createdAt,
       })
       .from(matchEvents)
@@ -2223,6 +2307,13 @@ export async function getPodHighlights(
   const turnDeltas = new Map<string, number>(); // `${pid}:${turn}` → cumulative life delta
   let lastMatchId: string | null = null;
 
+  // Avg turn time across all completed turns in scope. Duration on a
+  // turn_passed event belongs to the OUTGOING player — we don't need
+  // to know who that is for the pod-wide average; we just sum durations
+  // and divide by the count of timed turns.
+  let turnDurationTotal = 0;
+  let turnDurationCount = 0;
+
   for (const e of rawEventRows) {
     // Reset per-match state when matchId rolls over.
     if (e.matchId !== lastMatchId) {
@@ -2233,6 +2324,10 @@ export async function getPodHighlights(
 
     if (e.eventType === 'turn_passed') {
       turnsByPart.set(e.participationId, (turnsByPart.get(e.participationId) ?? 0) + 1);
+      if (typeof e.turnDurationSeconds === 'number') {
+        turnDurationTotal += e.turnDurationSeconds;
+        turnDurationCount += 1;
+      }
       continue;
     }
 
@@ -2263,6 +2358,13 @@ export async function getPodHighlights(
     const sum = Array.from(firstViolentTurnByMatch.values()).reduce((a, b) => a + b, 0);
     avgViolentTurn = Math.round(sum / firstViolentTurnByMatch.size);
   }
+
+  // Pod-wide average turn time, in seconds. Null when no timed turns have
+  // been recorded yet (pre-feature matches, or matches with no completed
+  // turn_passed events).
+  const avgTurnTimeSeconds: number | null = turnDurationCount > 0
+    ? Math.round(turnDurationTotal / turnDurationCount)
+    : null;
 
   // ── Resolve player + deck + commander objects in one pass each ────────────
   // For biggest_hit we need an extra join: receiver participation → its player,
@@ -2372,6 +2474,7 @@ export async function getPodHighlights(
         : null,
       longest_match_seconds: Math.round(longestMatchSeconds),
       avg_violent_turn: avgViolentTurn,
+      avg_turn_time_seconds: avgTurnTimeSeconds,
       current_loss_streak: lossStreakRow && playerMap.get(lossStreakRow.playerId)
         ? { player: playerMap.get(lossStreakRow.playerId)!, streak: lossStreakRow.streak }
         : null,

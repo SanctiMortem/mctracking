@@ -53,7 +53,8 @@ type SlideIcon =
   | 'trending-up'     // total life lost (volume)
   | 'activity'        // life swing in a turn (volatility)
   | 'watch'           // longest match
-  | 'alert-triangle'; // average violent turn → aggression warning
+  | 'alert-triangle'  // average violent turn → aggression warning
+  | 'hash';           // avg turn time → tempo
 
 // Declarative slide content. The carousel handles layout, icons, dots, etc.
 interface Highlight {
@@ -243,6 +244,20 @@ export function PodHighlightsCarousel({ data, loading }: Props) {
         title: t('stats.podHighlights.avgViolentTurn'),
         value: `T${data.avg_violent_turn}`,
         secondaryRest: t('stats.podHighlights.avgViolentTurnSub'),
+      });
+    }
+
+    if (data.avg_turn_time_seconds && data.avg_turn_time_seconds > 0) {
+      const seconds = data.avg_turn_time_seconds;
+      const value = seconds < 60
+        ? `${seconds}s`
+        : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+      out.push({
+        key: 'avg-turn-time',
+        iconName: 'hash',
+        title: t('stats.podHighlights.avgTurnTime'),
+        value,
+        secondaryRest: t('stats.podHighlights.avgTurnTimeSub'),
       });
     }
 

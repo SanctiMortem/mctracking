@@ -220,7 +220,9 @@
     "noMatches": "Sin partidas aún",
     "decksUsed": "Mazos más usados",
     "noDecksData": "Sin datos de mazos",
-    "nameLabel": "Nombre"
+    "nameLabel": "Nombre",
+    "avgTurnTime": "turno promedio",
+    "longestTurn": "turno más largo"
   },
   "deck": {
     "decks": "Mazos",
@@ -528,6 +530,8 @@
       "longestMatchSub": "por tiempo de reloj",
       "avgViolentTurn": "Agresión",
       "avgViolentTurnSub": "turno promedio en que se pone violento",
+      "avgTurnTime": "Tiempo medio por turno",
+      "avgTurnTimeSub": "duración promedio de un turno",
       "turnNumber": "T{{turn}}",
       "turnSubInline": "· turno {{turn}}",
       "matchesUnit": "partidas",
