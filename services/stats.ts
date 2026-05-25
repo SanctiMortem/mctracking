@@ -2064,6 +2064,7 @@ export async function getPodHighlights(
     healLostRows,
     longestMatchRows,
     rawEventRows,
+    playerCountPerMatchRows,
   ] = await Promise.all([
     // Total completed matches in the pod — drives the leading "Total Pod Matches" slide.
     db
@@ -2188,7 +2189,29 @@ export async function getPodHighlights(
       .innerJoin(matches, eq(matches.id, matchEvents.matchId))
       .where(and(matchScope, eq(matchEvents.isUndone, false)))
       .orderBy(matchEvents.matchId, matchEvents.createdAt),
+
+    // Per-match participation count. Used to convert the global rotation
+    // counter (every turn_passed event increments it) into a "round" the
+    // players think in (= active player's turn number, since players take
+    // turns in clockwise order so round ≈ ceil(rotation / playerCount)).
+    db
+      .select({
+        matchId: participations.matchId,
+        players: count(participations.id),
+      })
+      .from(participations)
+      .innerJoin(matches, eq(matches.id, participations.matchId))
+      .where(matchScope)
+      .groupBy(participations.matchId),
   ]);
+
+  const playerCountByMatch = new Map<string, number>(
+    playerCountPerMatchRows.map((r) => [r.matchId, Number(r.players ?? 1)]),
+  );
+  const rotationToRound = (matchId: string, rotation: number): number => {
+    const n = playerCountByMatch.get(matchId) ?? 1;
+    return Math.max(1, Math.ceil(rotation / n));
+  };
 
   // ── Most active + top winner ───────────────────────────────────────────────
   let mostActiveRow: { playerId: string; total: number } | null = null;
@@ -2315,7 +2338,9 @@ export async function getPodHighlights(
   // The earliest rotation in each match where any "violent" event
   // happens (life_change <= -8 OR commander_damage >= 5) feeds the
   // average-violent-turn average.
-  let largestSwingRow: { participationId: string; swing: number; turn: number } | null = null;
+  // `turn` here is the GLOBAL ROTATION at the time of the swing; we
+  // convert to a player-round at return time using playerCountByMatch.
+  let largestSwingRow: { matchId: string; participationId: string; swing: number; turn: number } | null = null;
   const firstViolentTurnByMatch = new Map<string, number>();
   const turnDeltas = new Map<string, number>(); // `${pid}:${rotation}` → cumulative life delta
   let globalRotation = 1;
@@ -2358,7 +2383,7 @@ export async function getPodHighlights(
         !largestSwingRow ||
         Math.abs(next) > Math.abs(largestSwingRow.swing)
       ) {
-        largestSwingRow = { participationId: e.participationId, swing: next, turn: rotation };
+        largestSwingRow = { matchId: e.matchId, participationId: e.participationId, swing: next, turn: rotation };
       }
       if (e.delta <= -8 && !firstViolentTurnByMatch.has(e.matchId)) {
         firstViolentTurnByMatch.set(e.matchId, rotation);
@@ -2370,7 +2395,7 @@ export async function getPodHighlights(
         !largestSwingRow ||
         Math.abs(next) > Math.abs(largestSwingRow.swing)
       ) {
-        largestSwingRow = { participationId: e.participationId, swing: next, turn: rotation };
+        largestSwingRow = { matchId: e.matchId, participationId: e.participationId, swing: next, turn: rotation };
       }
       if (e.delta >= 5 && !firstViolentTurnByMatch.has(e.matchId)) {
         firstViolentTurnByMatch.set(e.matchId, rotation);
@@ -2378,10 +2403,17 @@ export async function getPodHighlights(
     }
   }
 
+  // Convert each match's "first violent rotation" to a round before
+  // averaging — players think in rounds (everyone's turn N), not in
+  // global rotation counts which scale with pod size.
   let avgViolentTurn: number | null = null;
   if (firstViolentTurnByMatch.size > 0) {
-    const sum = Array.from(firstViolentTurnByMatch.values()).reduce((a, b) => a + b, 0);
-    avgViolentTurn = Math.round(sum / firstViolentTurnByMatch.size);
+    const rounds: number[] = [];
+    for (const [matchId, rotation] of firstViolentTurnByMatch) {
+      rounds.push(rotationToRound(matchId, rotation));
+    }
+    const sum = rounds.reduce((a, b) => a + b, 0);
+    avgViolentTurn = Math.round(sum / rounds.length);
   }
 
   // Pod-wide average turn time, in seconds. Null when no timed turns have
@@ -2494,7 +2526,10 @@ export async function getPodHighlights(
             const part = hitPartMap.get(largestSwingRow.participationId);
             const player = part ? playerMap.get(part.playerId) : null;
             if (!player) return null;
-            return { player, swing: largestSwingRow.swing, turn: largestSwingRow.turn };
+            // turn here is reported as the round (active player's turn N),
+            // not the global rotation — matches player intuition.
+            const round = rotationToRound(largestSwingRow.matchId, largestSwingRow.turn);
+            return { player, swing: largestSwingRow.swing, turn: round };
           })()
         : null,
       longest_match_seconds: Math.round(longestMatchSeconds),
