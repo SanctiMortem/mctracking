@@ -40,30 +40,74 @@ interface JoinLayoutPickerProps {
   /** Match's participations resolved to playerId + display name. */
   players: JoinLayoutPickerPlayer[];
   onConfirm: (result: JoinLayoutPickerResult) => void;
+  /**
+   * Pre-fill the picker with the device's current layout instead of starting
+   * from the defaults. Used by the mid-match "Adjust layout" button so the
+   * user lands on their existing config and can tweak it. When omitted the
+   * picker starts fresh (default behaviour for the join-from-another-device
+   * first-load case).
+   */
+  initialLayoutVariant?: string;
+  initialRotations?: Record<string, number>;
+  initialPlayerOrder?: string[];
+  /** Optional copy override for the primary action — defaults to "Start". */
+  confirmLabel?: string;
+  /** Optional secondary action (Cancel). When set, renders a Cancel button. */
+  onCancel?: () => void;
 }
 
 function defaultRotationsForCount(variant: string): number[] {
   return [...(DEFAULT_SLOT_ROTATIONS[variant] ?? [])];
 }
 
-export function JoinLayoutPicker({ players, onConfirm }: JoinLayoutPickerProps) {
+export function JoinLayoutPicker({
+  players,
+  onConfirm,
+  initialLayoutVariant,
+  initialRotations,
+  initialPlayerOrder,
+  confirmLabel,
+  onCancel,
+}: JoinLayoutPickerProps) {
   const styles = useThemedStyles(createStyles);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   const count = players.length;
 
-  const initialVariant = LAYOUT_VARIANTS[count]?.[0] ?? '';
+  // Resolve the variant + ordering + rotations either from the explicit
+  // initial-state props (mid-match edit) or from defaults (first join).
+  const initialVariant = initialLayoutVariant ?? LAYOUT_VARIANTS[count]?.[0] ?? '';
   const [layoutVariant, setLayoutVariant] = useState<string>(initialVariant);
 
   // Seat order is just a permutation of the incoming players. We track it
   // by playerId (not by a fresh slot id) so the LayoutPreview can drag-and-
   // drop tiles labelled with the real player names.
-  const [orderedPlayers, setOrderedPlayers] = useState<JoinLayoutPickerPlayer[]>(() => [...players]);
+  const [orderedPlayers, setOrderedPlayers] = useState<JoinLayoutPickerPlayer[]>(() => {
+    if (!initialPlayerOrder || initialPlayerOrder.length === 0) return [...players];
+    const byId = new Map(players.map((p) => [p.playerId, p]));
+    const ordered = initialPlayerOrder
+      .map((pid) => byId.get(pid))
+      .filter((p): p is JoinLayoutPickerPlayer => p !== undefined);
+    // Append any players missing from initialPlayerOrder so the picker
+    // never silently drops a seat (defensive — shouldn't happen in practice).
+    const seen = new Set(ordered.map((p) => p.playerId));
+    for (const p of players) if (!seen.has(p.playerId)) ordered.push(p);
+    return ordered;
+  });
 
   // Rotation is keyed by slot index, mapped onto whichever player currently
-  // sits in that slot. Start from the layout's default rotation list.
-  const [slotRotations, setSlotRotations] = useState<number[]>(() => defaultRotationsForCount(initialVariant));
+  // sits in that slot. Pre-fill from initialRotations (looked up by the
+  // player sitting in that slot) when provided; otherwise use defaults.
+  const [slotRotations, setSlotRotations] = useState<number[]>(() => {
+    if (initialRotations) {
+      const ordered = initialPlayerOrder && initialPlayerOrder.length > 0
+        ? initialPlayerOrder
+        : players.map((p) => p.playerId);
+      return ordered.map((pid) => initialRotations[pid] ?? 0);
+    }
+    return defaultRotationsForCount(initialVariant);
+  });
 
   // LayoutPreview wants tiles with id + name. We use the player's id as the
   // tile id so reorder events flow back cleanly.
@@ -150,13 +194,23 @@ export function JoinLayoutPicker({ players, onConfirm }: JoinLayoutPickerProps) 
       </ScrollView>
 
       <View style={styles.footer}>
+        {onCancel && (
+          <Pressable
+            onPress={onCancel}
+            style={styles.cancelBtn}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.cancel')}
+          >
+            <Text style={styles.cancelBtnText}>{t('common.cancel')}</Text>
+          </Pressable>
+        )}
         <Pressable
           onPress={handleStart}
-          style={styles.startBtn}
+          style={[styles.startBtn, onCancel && styles.startBtnInline]}
           accessibilityRole="button"
           accessibilityLabel={t('joinLayout.startLabel')}
         >
-          <Text style={styles.startBtnText}>{t('joinLayout.startBtn')}</Text>
+          <Text style={styles.startBtnText}>{confirmLabel ?? t('joinLayout.startBtn')}</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -207,6 +261,8 @@ const createStyles = (t: AppTheme) => ({
     bottom: 0,
     left: 0,
     right: 0,
+    flexDirection: 'row' as const,
+    gap: spacing[3],
     paddingHorizontal: spacing[4],
     paddingBottom: spacing[8],
     paddingTop: spacing[3],
@@ -215,14 +271,35 @@ const createStyles = (t: AppTheme) => ({
     borderTopColor: t.colors.border.subtle,
   },
   startBtn: {
+    flex: 1,
     backgroundColor: t.colors.accent.primary,
     borderRadius: t.radius.xl,
     height: 52,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
+  // Kept as an explicit no-op style so existing call sites that read the
+  // `startBtnInline` selector don't break — startBtn already has flex:1.
+  startBtnInline: {},
   startBtnText: {
     color: t.colors.accent.onPrimary,
+    fontFamily: t.typography.fontFamily.headline,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.semibold,
+    letterSpacing: 0.5,
+  },
+  cancelBtn: {
+    flex: 1,
+    borderRadius: t.radius.xl,
+    height: 52,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    borderWidth: 1,
+    borderColor: t.colors.border.default,
+    backgroundColor: t.colors.background.surface,
+  },
+  cancelBtnText: {
+    color: t.colors.text.secondary,
     fontFamily: t.typography.fontFamily.headline,
     fontSize: t.typography.size['body-lg'],
     fontWeight: t.typography.weight.semibold,

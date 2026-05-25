@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -196,6 +197,10 @@ export default function MatchTrackerScreen() {
   const timer = useMatchTimer();
   const insets = useSafeAreaInsets();
   const [logVisible, setLogVisible] = useState(false);
+  // Mid-match layout editor — opens the JoinLayoutPicker in a modal
+  // pre-filled with the device's current layout so the user can fix a
+  // misconfigured seat arrangement without abandoning the match.
+  const [layoutEditorVisible, setLayoutEditorVisible] = useState(false);
 
   // Parse rotation map from setup screen (playerId → degrees). If the URL
   // params are missing (user resumed after closing the app), we fall back to
@@ -255,12 +260,15 @@ export default function MatchTrackerScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, rotationsParam, playerOrderParam, layoutParam]);
 
+  // storedLayout wins over paramRotations so a mid-match "Adjust layout"
+  // save (which writes into storedLayout) immediately overrides the
+  // setup-time URL params on the next render.
   const rotationMap: Record<string, number> =
-    paramRotations ?? storedLayout?.rotations ?? {};
+    storedLayout?.rotations ?? paramRotations ?? {};
   const playerOrder: string[] =
-    paramPlayerOrder ?? storedLayout?.playerOrder ?? [];
+    storedLayout?.playerOrder ?? paramPlayerOrder ?? [];
   const resolvedLayoutVariant: string | undefined =
-    paramLayoutVariant ?? storedLayout?.layoutVariant ?? undefined;
+    storedLayout?.layoutVariant ?? paramLayoutVariant ?? undefined;
 
   const {
     match,
@@ -559,6 +567,15 @@ export default function MatchTrackerScreen() {
         >
           <Text style={styles.floatingBtnText}>{t('tracker.logBtn')}</Text>
         </Pressable>
+
+        <Pressable
+          onPress={() => setLayoutEditorVisible(true)}
+          style={styles.floatingBtn}
+          accessibilityRole="button"
+          accessibilityLabel={t('tracker.adjustLayoutLabel')}
+        >
+          <Text style={styles.floatingBtnText}>{t('tracker.layoutBtn')}</Text>
+        </Pressable>
       </View>
 
       {/* Event log panel */}
@@ -570,6 +587,40 @@ export default function MatchTrackerScreen() {
           onClose={() => setLogVisible(false)}
         />
       )}
+
+      {/* Mid-match layout editor — reuses JoinLayoutPicker pre-filled with
+          the device's current layout. Local-only (per-device SecureStore),
+          no API call, no effect on other phones in the pod. */}
+      <Modal
+        visible={layoutEditorVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setLayoutEditorVisible(false)}
+      >
+        <JoinLayoutPicker
+          players={participations.map((p) => ({
+            playerId: p.playerId,
+            name: p.player.name,
+          }))}
+          initialLayoutVariant={resolvedLayoutVariant}
+          initialRotations={rotationMap}
+          initialPlayerOrder={playerOrder}
+          confirmLabel={t('tracker.saveLayout')}
+          onCancel={() => setLayoutEditorVisible(false)}
+          onConfirm={(result) => {
+            // Persist for this device, then update local state so the
+            // tracker re-renders with the new seat orientation. No remount
+            // or navigation roundtrip required.
+            void saveMatchLayout(id, result);
+            setStoredLayout({
+              rotations: result.rotations,
+              playerOrder: result.playerOrder,
+              layoutVariant: result.layoutVariant,
+            });
+            setLayoutEditorVisible(false);
+          }}
+        />
+      </Modal>
     </SafeAreaView>
   );
 }
