@@ -447,8 +447,7 @@
   },
   "stats": {
     "title": "Estadísticas",
-    "subtitlePod": "Resumen de la temporada, por el pod.",
-    "subtitlePersonal": "Resumen de la temporada, todas tus partidas.",
+    "subtitle": "Conoce el campo, domina la amenaza.",
     "sectionHallEyebrow": "EL SALÓN",
     "sectionStandingsEyebrow": "LA CLASIFICACIÓN",
     "sectionHonouredEyebrow": "LOS MÁS HONRADOS",

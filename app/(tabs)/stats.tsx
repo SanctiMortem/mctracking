@@ -84,12 +84,10 @@ export default function StatsScreen() {
     ...groups.map((g) => ({ id: g.group.id, label: g.group.name })),
   ];
 
-  // Subtitle: "Season tally, by the pod." when a pod is selected,
-  // otherwise "Season tally, all your matches." — matches the mockup's
-  // ledger-narration tone without inventing a new copy block.
-  const subtitle = scopeGroupId !== null
-    ? t('stats.subtitlePod')
-    : t('stats.subtitlePersonal');
+  // One subtitle for every scope — the line is doing brand work, not
+  // narrating the data. Scope picker carries the "what am I looking at"
+  // job on its own.
+  const subtitle = t('stats.subtitle');
 
   // Map player → top commander name for the "often [Commander]" subline
   // on the ranking rows. Built off top_player_decks already returned by

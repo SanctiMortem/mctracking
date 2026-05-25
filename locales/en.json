@@ -447,8 +447,7 @@
   },
   "stats": {
     "title": "Stats",
-    "subtitlePod": "Season tally, by the pod.",
-    "subtitlePersonal": "Season tally, all your matches.",
+    "subtitle": "Know the field, master the threat.",
     "sectionHallEyebrow": "THE HALL",
     "sectionStandingsEyebrow": "THE STANDINGS",
     "sectionHonouredEyebrow": "MOST HONOURED",
