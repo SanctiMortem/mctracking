@@ -5,15 +5,13 @@
  *  1. Player selection chips (CMP-019)
  *  2. Deck assignment per selected player (CMP-018)
  *
- * Includes inline deck picker Modal (pageSheet) and duplicate-deck validation.
+ * Deck picker UI lives in its own DeckPickerModal component.
  *
  * MATCH-005 (EPIC-02)
  */
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
-  Modal,
   Pressable,
   ScrollView,
   Text,
@@ -35,13 +33,17 @@ import type { PodDeck } from '@/services/pods';
 import type { Player } from '@/db/index';
 import { spacing } from '@/styles/tokens';
 
+import { DeckPickerModal } from './DeckPickerModal';
 import { LayoutPreview } from './LayoutPreview';
 import { PlayerSelectorChip } from './PlayerSelectorChip';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
 import { useTheme } from '@/contexts/ThemeContext';
 
-/** Unified deck type for the picker — works for both personal and pod decks */
+/**
+ * Unified deck type for the picker — works for both personal and pod decks.
+ * Re-exported via DeckPickerModal so the actual modal owns the canonical shape.
+ */
 type PickerDeck = DeckWithCommanders & { ownerName?: string };
 
 const STARTING_LIFE_OPTIONS = [25, 30, 40] as const;
@@ -154,16 +156,6 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
     .filter(Boolean) as Player[];
 
   const hasDuplicate = duplicateDeckIds.size > 0;
-
-  // Group decks by owner for pod deck picker sections
-  const decksByOwner = isPod
-    ? (allDecks as PickerDeck[]).reduce<Record<string, PickerDeck[]>>((acc, d) => {
-        const key = d.ownerName ?? t('match.unknownOwner');
-        if (!acc[key]) acc[key] = [];
-        acc[key].push(d);
-        return acc;
-      }, {})
-    : null;
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -367,110 +359,26 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
         </Pressable>
       </View>
 
-      {/* ── Deck Picker Modal ── */}
-      <Modal
+      {/* Deck picker — lives in its own component (DeckPickerModal). It
+          owns the collapsible-by-owner UX and the smart default ("focused
+          player's section is the only one open on open"). */}
+      <DeckPickerModal
         visible={deckPickerFor !== null}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setDeckPickerFor(null)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{t('match.selectADeck')}</Text>
-            <Pressable
-              onPress={() => setDeckPickerFor(null)}
-              style={styles.modalClose}
-              accessibilityLabel={t('match.closeDeckSelector')}
-            >
-              <Text style={styles.modalCloseText}>✕</Text>
-            </Pressable>
-          </View>
-
-          {isPod && decksByOwner ? (
-            <ScrollView contentContainerStyle={styles.deckList} keyboardShouldPersistTaps="handled">
-              {Object.entries(decksByOwner).map(([ownerName, ownerDecks]) => (
-                <View key={ownerName}>
-                  <Text style={styles.deckSectionHeader}>{ownerName}</Text>
-                  {ownerDecks.map((item, idx) => {
-                    const isSelected =
-                      deckPickerFor !== null && deckAssignments[deckPickerFor] === item.id;
-                    return (
-                      <View key={item.id}>
-                        {idx > 0 && <View style={styles.separator} />}
-                        <DeckOption
-                          deck={item}
-                          isSelected={isSelected}
-                          onSelect={() => {
-                            if (deckPickerFor) setDeck(deckPickerFor, item.id);
-                            setDeckPickerFor(null);
-                          }}
-                        />
-                      </View>
-                    );
-                  })}
-                </View>
-              ))}
-            </ScrollView>
-          ) : (
-            <FlatList
-              data={allDecks}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => {
-                const isSelected =
-                  deckPickerFor !== null && deckAssignments[deckPickerFor] === item.id;
-                return (
-                  <DeckOption
-                    deck={item}
-                    isSelected={isSelected}
-                    onSelect={() => {
-                      if (deckPickerFor) setDeck(deckPickerFor, item.id);
-                      setDeckPickerFor(null);
-                    }}
-                  />
-                );
-              }}
-              ItemSeparatorComponent={() => <View style={styles.separator} />}
-              contentContainerStyle={styles.deckList}
-              keyboardShouldPersistTaps="handled"
-            />
-          )}
-        </View>
-      </Modal>
+        decks={allDecks}
+        selectedDeckId={deckPickerFor !== null ? deckAssignments[deckPickerFor] ?? null : null}
+        forPlayerName={
+          deckPickerFor !== null
+            ? allPlayers.find((p) => p.id === deckPickerFor)?.name ?? null
+            : null
+        }
+        grouped={isPod}
+        onSelect={(deckId) => {
+          if (deckPickerFor) setDeck(deckPickerFor, deckId);
+          setDeckPickerFor(null);
+        }}
+        onClose={() => setDeckPickerFor(null)}
+      />
     </>
-  );
-}
-
-// ─── DeckOption ──────────────────────────────────────────────────────────────
-
-function DeckOption({
-  deck,
-  isSelected,
-  onSelect,
-}: {
-  deck: DeckWithCommanders;
-  isSelected: boolean;
-  onSelect: () => void;
-}) {
-  const styles = useThemedStyles(createStyles);
-
-  return (
-    <Pressable
-      onPress={onSelect}
-      style={[styles.deckOption, isSelected && styles.deckOptionSelected]}
-      accessibilityRole="radio"
-      accessibilityState={{ selected: isSelected }}
-    >
-      <View style={styles.deckOptionInfo}>
-        <Text style={styles.deckOptionName} numberOfLines={1}>
-          {deck.name}
-        </Text>
-        <Text style={styles.deckOptionCommander} numberOfLines={1}>
-          {deck.commander.name}
-          {deck.commander2 ? ` / ${deck.commander2.name}` : ''}
-        </Text>
-      </View>
-      <ManaIdentityRow colors={deck.commander.colorIdentity} size="xs" />
-    </Pressable>
   );
 }
 
@@ -667,83 +575,6 @@ const createStyles = (t: AppTheme) => ({
   },
   submitBtnTextDisabled: {
     color: t.colors.text.muted,
-  },
-
-  // ─── Deck Picker Modal ────────────────────────────────────────────────────
-  modalContainer: {
-    flex: 1,
-    backgroundColor: t.colors.background.primary,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[4],
-    borderBottomWidth: 1,
-    borderBottomColor: t.colors.border.subtle,
-  },
-  modalTitle: {
-    color: t.colors.text.primary,
-    fontFamily: t.typography.fontFamily.headline,
-    fontSize: t.typography.size['heading-md'],
-    fontWeight: t.typography.weight.semibold,
-  },
-  modalClose: {
-    width: 36,
-    height: 36,
-    borderRadius: t.radius.round,
-    backgroundColor: t.colors.background.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalCloseText: {
-    color: t.colors.text.secondary,
-    fontSize: t.typography.size['body-lg'],
-  },
-  deckList: {
-    paddingVertical: spacing[2],
-  },
-  deckSectionHeader: {
-    color: t.colors.text.muted,
-    fontFamily: t.typography.fontFamily.headline,
-    fontSize: t.typography.size.caption,
-    fontWeight: t.typography.weight.semibold,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[4],
-    paddingBottom: spacing[2],
-  },
-  separator: {
-    height: 1,
-    backgroundColor: t.colors.border.subtle,
-    marginHorizontal: spacing[4],
-  },
-  deckOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    gap: spacing[3],
-  },
-  deckOptionSelected: {
-    backgroundColor: t.colors.accent.primary + '1A',
-  },
-  deckOptionInfo: {
-    flex: 1,
-    gap: spacing[1],
-  },
-  deckOptionName: {
-    color: t.colors.text.primary,
-    fontFamily: t.typography.fontFamily.body,
-    fontSize: t.typography.size['body-lg'],
-    fontWeight: t.typography.weight.medium,
-  },
-  deckOptionCommander: {
-    color: t.colors.text.tertiary,
-    fontFamily: t.typography.fontFamily.body,
-    fontSize: t.typography.size['body-sm'],
   },
 
   // ─── Edge cases ───────────────────────────────────────────────────────────
