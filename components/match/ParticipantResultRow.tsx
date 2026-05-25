@@ -19,9 +19,14 @@ interface ParticipantResultRowProps {
   isWinner: boolean;
   /** Optional count of turn_passed events recorded for this player. */
   turnCount?: number;
+  /**
+   * Optional turn-time aggregates for this player. Omitted when the match
+   * predates the per-turn-time feature or no timed turns were recorded.
+   */
+  turnTimeStats?: { totalSeconds: number; turns: number; longestSeconds: number };
 }
 
-export function ParticipantResultRow({ participation, isWinner, turnCount }: ParticipantResultRowProps) {
+export function ParticipantResultRow({ participation, isWinner, turnCount, turnTimeStats }: ParticipantResultRowProps) {
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -66,6 +71,15 @@ export function ParticipantResultRow({ participation, isWinner, turnCount }: Par
               <Text style={styles.turnChipText}>↻ {turnCount}</Text>
             </View>
           )}
+          {turnTimeStats && turnTimeStats.turns > 0 && (
+            <View style={styles.turnChip}>
+              <Text style={styles.turnChipText}>
+                ⏱ {formatTurnTime(Math.round(turnTimeStats.totalSeconds / turnTimeStats.turns))}
+                {' avg · '}
+                {formatTurnTime(turnTimeStats.longestSeconds)} max
+              </Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -75,6 +89,16 @@ export function ParticipantResultRow({ participation, isWinner, turnCount }: Par
       </View>
     </View>
   );
+}
+
+// ─── Time formatter ───────────────────────────────────────────────────────────
+// `<60s → "47s"`, otherwise `m:ss`. Keeps the chip tight on small phones.
+
+function formatTurnTime(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
 }
 
 // ─── Flavor picker ────────────────────────────────────────────────────────────

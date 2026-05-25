@@ -98,7 +98,7 @@ export default function MatchDetailScreen() {
     );
   }
 
-  const { match, participations, result, formattedEvents, outcome, winner, winConditionDisplay, duration, turnCounts } = data;
+  const { match, participations, result, formattedEvents, outcome, winner, winConditionDisplay, duration, turnCounts, turnTimes } = data;
   const sc = statusConfig(match.status, t, theme);
   const oc = outcomeLabelConfig(outcome, t, theme);
 
@@ -201,6 +201,7 @@ export default function MatchDetailScreen() {
                     participation={p}
                     isWinner={winner?.id === p.id}
                     turnCount={turnCounts[p.id] ?? 0}
+                    turnTimeStats={turnTimes[p.id]}
                   />
                 ))}
               </View>

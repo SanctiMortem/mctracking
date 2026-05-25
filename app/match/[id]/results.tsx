@@ -53,7 +53,7 @@ export default function MatchResultsScreen() {
     );
   }
 
-  const { match, outcome, winner, winConditionDisplay, participations, duration } = data;
+  const { match, outcome, winner, winConditionDisplay, participations, duration, turnTimes } = data;
 
   // 15-min edit window
   const canEdit = outcome !== 'abandoned' && match.endedAt &&
@@ -82,6 +82,7 @@ export default function MatchResultsScreen() {
                 key={p.id}
                 participation={p}
                 isWinner={winner?.id === p.id}
+                turnTimeStats={turnTimes[p.id]}
               />
             ))}
           </View>

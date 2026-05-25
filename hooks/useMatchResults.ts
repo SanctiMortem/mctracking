@@ -14,7 +14,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@clerk/clerk-expo';
 
 import { apiFetch } from '@/services/api';
-import type { Match, MatchResult } from '@/db/index';
+import type { Match, MatchEvent, MatchResult } from '@/db/index';
 import type { ParticipationDetail } from '@/services/matches';
 
 // ─── Win condition display labels ────────────────────────────────────────────
@@ -51,6 +51,12 @@ export function formatMatchDuration(createdAt: string | Date, endedAt: string | 
 
 export type MatchOutcome = 'win' | 'draw' | 'abandoned';
 
+export type TurnTimeStats = {
+  totalSeconds: number;
+  turns: number;
+  longestSeconds: number;
+};
+
 export type MatchResultsData = {
   match: Match;
   participations: ParticipationDetail[];
@@ -59,6 +65,8 @@ export type MatchResultsData = {
   winner: ParticipationDetail | null;
   winConditionDisplay: string | null;
   duration: string;
+  /** participationId → turn-time aggregates from this match. Missing key = no timed turns. */
+  turnTimes: Record<string, TurnTimeStats>;
 };
 
 export type UseMatchResultsReturn = {
@@ -83,12 +91,17 @@ export function useMatchResults(matchId: string): UseMatchResultsReturn {
         const token = await getToken();
         const res = await apiFetch<{
           success: true;
-          data: { match: Match; participations: ParticipationDetail[]; result: MatchResult | null };
+          data: {
+            match: Match;
+            participations: ParticipationDetail[];
+            result: MatchResult | null;
+            events: MatchEvent[];
+          };
         }>(`/api/matches/${matchId}`, 'GET', undefined, token ?? undefined);
 
         if (cancelled) return;
 
-        const { match, participations, result } = res.data;
+        const { match, participations, result, events } = res.data;
 
         const outcome: MatchOutcome =
           match.status === 'abandoned'
@@ -107,7 +120,27 @@ export function useMatchResults(matchId: string): UseMatchResultsReturn {
 
         const duration = formatMatchDuration(match.createdAt, match.endedAt);
 
-        setData({ match, participations, result, outcome, winner, winConditionDisplay, duration });
+        // Per-player turn-time aggregates. Duration on a turn_passed event
+        // belongs to the OUTGOING player — i.e. the participation_id of the
+        // previous non-undone turn_passed event in this match. Pre-feature
+        // events carry null durations and are silently skipped.
+        const turnTimes: Record<string, TurnTimeStats> = {};
+        let prevTurnPassed: MatchEvent | null = null;
+        for (const e of events) {
+          if (e.eventType !== 'turn_passed' || e.isUndone) continue;
+          if (prevTurnPassed && typeof e.turnDurationSeconds === 'number') {
+            const owner = prevTurnPassed.participationId;
+            const dur = e.turnDurationSeconds;
+            const entry = turnTimes[owner] ?? { totalSeconds: 0, turns: 0, longestSeconds: 0 };
+            entry.totalSeconds += dur;
+            entry.turns += 1;
+            if (dur > entry.longestSeconds) entry.longestSeconds = dur;
+            turnTimes[owner] = entry;
+          }
+          prevTurnPassed = e;
+        }
+
+        setData({ match, participations, result, outcome, winner, winConditionDisplay, duration, turnTimes });
       } catch (e) {
         if (!cancelled) setError((e as Error).message ?? 'Failed to load results.');
       } finally {

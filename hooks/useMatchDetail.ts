@@ -32,6 +32,13 @@ export type MatchDetailData = {
   duration: string;
   /** participationId → number of turn_passed events recorded for that player. */
   turnCounts: Record<string, number>;
+  /**
+   * Per-player turn-time aggregates derived from non-undone turn_passed events
+   * that carry a `turn_duration_seconds` value. Pre-feature matches and pre-
+   * feature events have nulls everywhere, so a player with no timed turns
+   * appears as a missing key (caller hides the row).
+   */
+  turnTimes: Record<string, { totalSeconds: number; turns: number; longestSeconds: number }>;
 };
 
 export type UseMatchDetailReturn = {
@@ -148,7 +155,27 @@ export function useMatchDetail(matchId: string): UseMatchDetailReturn {
           }
         }
 
-        setData({ match, participations, result, events, formattedEvents, outcome, winner, winConditionDisplay, duration, turnCounts });
+        // Per-player turn-time aggregates. The duration on a turn_passed
+        // event belongs to the OUTGOING player — i.e. the participation_id
+        // of the *previous* non-undone turn_passed event in this match.
+        // First turn of the match has no prior actor → no duration recorded.
+        const turnTimes: MatchDetailData['turnTimes'] = {};
+        let prevTurnPassed: MatchEvent | null = null;
+        for (const e of events) {
+          if (e.eventType !== 'turn_passed' || e.isUndone) continue;
+          if (prevTurnPassed && typeof e.turnDurationSeconds === 'number') {
+            const owner = prevTurnPassed.participationId;
+            const dur = e.turnDurationSeconds;
+            const entry = turnTimes[owner] ?? { totalSeconds: 0, turns: 0, longestSeconds: 0 };
+            entry.totalSeconds += dur;
+            entry.turns += 1;
+            if (dur > entry.longestSeconds) entry.longestSeconds = dur;
+            turnTimes[owner] = entry;
+          }
+          prevTurnPassed = e;
+        }
+
+        setData({ match, participations, result, events, formattedEvents, outcome, winner, winConditionDisplay, duration, turnCounts, turnTimes });
         setError(null);
       } catch (e) {
         if (!cancelled) setError((e as Error).message ?? 'Failed to load match detail.');
