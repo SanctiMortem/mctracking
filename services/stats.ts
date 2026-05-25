@@ -2296,20 +2296,29 @@ export async function getPodHighlights(
   const longestMatchSeconds = Number(longestMatchRows[0]?.seconds ?? 0);
 
   // ── Single-pass scan over raw events for swing + violent-turn ─────────────
-  // For each (match, participation) we track the running turn count and the
-  // cumulative life delta for each turn. Both life_change AND commander_damage
-  // contribute to the swing — commander damage doesn't fire a life_change
-  // event, but it does subtract from life_total via the participation
-  // snapshot, so a "biggest hit" of -34 split into life-tap + commander
-  // damage would otherwise under-count by the cmd-damage amount.
-  // The largest abs swing across all (participation, turn) buckets wins
-  // the swing slide. The earliest turn in each match where any "violent"
-  // event happens (life_change <= -8 OR commander_damage >= 5) feeds the
+  // For each receiver participation we track the cumulative life delta
+  // *per rotation of play* — where a "rotation" is one player's active
+  // turn, demarcated by the global turn_passed sequence. Bucketing by
+  // the receiver's OWN turn count is wrong: it lumps damage taken on
+  // another player's turn into the receiver's previous turn window
+  // whenever the receiver doesn't live to start their next turn.
+  // Example: Faisan heals +3 +3 on his turn, Gabo's turn starts, Gabo
+  // hits him for -34 and he dies. Under the old rule everything went
+  // into Faisan:9 = -28; under the new rule the heals stay in
+  // Faisan:9 = +6 and the -34 lands in Faisan:10 = -34, giving the
+  // correct swing of -34.
+  //
+  // Both life_change AND commander_damage contribute (cmd_damage delta
+  // is stored positive but subtracts from life via the participation
+  // snapshot, so we negate it).
+  //
+  // The earliest rotation in each match where any "violent" event
+  // happens (life_change <= -8 OR commander_damage >= 5) feeds the
   // average-violent-turn average.
   let largestSwingRow: { participationId: string; swing: number; turn: number } | null = null;
   const firstViolentTurnByMatch = new Map<string, number>();
-  const turnsByPart = new Map<string, number>(); // participationId → current turn
-  const turnDeltas = new Map<string, number>(); // `${pid}:${turn}` → cumulative life delta
+  const turnDeltas = new Map<string, number>(); // `${pid}:${rotation}` → cumulative life delta
+  let globalRotation = 1;
   let lastMatchId: string | null = null;
 
   // Avg turn time across all completed turns in scope. Duration on a
@@ -2320,15 +2329,18 @@ export async function getPodHighlights(
   let turnDurationCount = 0;
 
   for (const e of rawEventRows) {
-    // Reset per-match state when matchId rolls over.
+    // Reset per-match state when matchId rolls over. The new match
+    // starts at rotation 1 (events before any turn_passed bucket into 1).
     if (e.matchId !== lastMatchId) {
-      turnsByPart.clear();
       turnDeltas.clear();
+      globalRotation = 1;
       lastMatchId = e.matchId;
     }
 
     if (e.eventType === 'turn_passed') {
-      turnsByPart.set(e.participationId, (turnsByPart.get(e.participationId) ?? 0) + 1);
+      // A turn just ended → the next rotation begins for the player
+      // taking the new turn. Increment regardless of whose turn it is.
+      globalRotation += 1;
       if (typeof e.turnDurationSeconds === 'number') {
         turnDurationTotal += e.turnDurationSeconds;
         turnDurationCount += 1;
@@ -2336,36 +2348,32 @@ export async function getPodHighlights(
       continue;
     }
 
-    const turn = turnsByPart.get(e.participationId) ?? 1;
+    const rotation = globalRotation;
+    const key = `${e.participationId}:${rotation}`;
 
     if (e.eventType === 'life_change') {
-      const key = `${e.participationId}:${turn}`;
       const next = (turnDeltas.get(key) ?? 0) + e.delta;
       turnDeltas.set(key, next);
       if (
         !largestSwingRow ||
         Math.abs(next) > Math.abs(largestSwingRow.swing)
       ) {
-        largestSwingRow = { participationId: e.participationId, swing: next, turn };
+        largestSwingRow = { participationId: e.participationId, swing: next, turn: rotation };
       }
       if (e.delta <= -8 && !firstViolentTurnByMatch.has(e.matchId)) {
-        firstViolentTurnByMatch.set(e.matchId, turn);
+        firstViolentTurnByMatch.set(e.matchId, rotation);
       }
     } else if (e.eventType === 'commander_damage') {
-      // Commander damage delta is stored positive (damage amount) but it
-      // REDUCES life via the participation snapshot — treat it as a
-      // negative life delta for the swing tally.
-      const key = `${e.participationId}:${turn}`;
       const next = (turnDeltas.get(key) ?? 0) - e.delta;
       turnDeltas.set(key, next);
       if (
         !largestSwingRow ||
         Math.abs(next) > Math.abs(largestSwingRow.swing)
       ) {
-        largestSwingRow = { participationId: e.participationId, swing: next, turn };
+        largestSwingRow = { participationId: e.participationId, swing: next, turn: rotation };
       }
       if (e.delta >= 5 && !firstViolentTurnByMatch.has(e.matchId)) {
-        firstViolentTurnByMatch.set(e.matchId, turn);
+        firstViolentTurnByMatch.set(e.matchId, rotation);
       }
     }
   }
