@@ -141,23 +141,17 @@ export function JoinLayoutPicker({
 
   const handleReorder = useCallback(
     (reordered: { id: string; name: string }[]) => {
-      // Reorder the underlying players array AND move each rotation with its
-      // tile so the seat orientation stays attached to the player, not the
-      // slot — what you see is what you persist.
+      // Rotation belongs to the slot (frame), NOT to the player — same
+      // rule as useMatchSetup.reorderPlayers. We only reorder the player
+      // array; slotRotations stays untouched. Since rotation is indexed
+      // by slot position, the seat orientation is pinned where it is and
+      // whichever player ends up in that slot adopts that orientation.
       setOrderedPlayers((prev) => {
         const byId = new Map(prev.map((p) => [p.playerId, p]));
         return reordered.map((r) => byId.get(r.id)).filter((p): p is JoinLayoutPickerPlayer => p !== undefined);
       });
-      setSlotRotations((prev) => {
-        const next = [...prev];
-        reordered.forEach((tile, newIdx) => {
-          const oldIdx = previewTiles.findIndex((p) => p.id === tile.id);
-          if (oldIdx >= 0) next[newIdx] = prev[oldIdx] ?? 0;
-        });
-        return next;
-      });
     },
-    [previewTiles],
+    [],
   );
 
   function handleStart() {
