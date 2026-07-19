@@ -58,8 +58,14 @@ interface LifeCounterProps {
 }
 
 // Big Shoulders Display is a condensed font — narrower character widths.
-const CHAR_WIDTH_RATIO = 0.48;
-const NEGATIVE_SIGN_RATIO = 0.28;
+// Bumped from 0.48 → 0.56 because the earlier estimate was tuned against
+// 2-digit HP totals; the accumulated per-char error over 3+ digits pushed
+// the rendered text past the container and numberOfLines={1} truncated
+// "100" to "1…". 0.56 gives ~15% margin at 3 digits, plenty for 4-digit
+// commander shenanigans. The adjustsFontSizeToFit prop on the <Text> is a
+// belt-and-suspenders safety net for any layout the estimate still misses.
+const CHAR_WIDTH_RATIO = 0.56;
+const NEGATIVE_SIGN_RATIO = 0.32;
 
 /** Compute the largest fontSize that fits `text` inside `w × h`. */
 function computeFontSize(text: string, w: number, h: number): number {
@@ -278,6 +284,13 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
               },
             ]}
             numberOfLines={1}
+            // If the manual estimate above is still slightly too big for a
+            // given container (edge cases: unusual aspect ratios, 4-digit
+            // totals), let the platform shrink the text down instead of
+            // clipping to "1…". minimumFontScale caps how much it can
+            // shrink so we never render a legible-only-with-glasses "132".
+            adjustsFontSizeToFit
+            minimumFontScale={0.5}
           >
             {displayValue}
           </Text>
