@@ -2084,12 +2084,32 @@ export async function getPodHighlights(
       .where(matchScope)
       .groupBy(participations.playerId),
 
-    // Sum of completed-match durations (seconds).
+    // Sum of completed-match durations (seconds). Uses trailing-gap
+    // truncation: if the gap between the last non-undone event and
+    // ended_at exceeds 2 hours, the match is treated as ending at the
+    // last event (abandoned-then-belatedly-closed matches would otherwise
+    // report inflated durations). Mirrors services/matchDuration.ts.
     db
       .select({
-        seconds: sql<number>`coalesce(sum(extract(epoch from (${matches.endedAt} - ${matches.createdAt}))), 0)`,
+        seconds: sql<number>`coalesce(sum(
+          extract(epoch from (
+            CASE
+              WHEN (${matches.endedAt} - COALESCE(last_ev.max_at, ${matches.createdAt})) > INTERVAL '2 hours'
+                THEN COALESCE(last_ev.max_at, ${matches.createdAt})
+              ELSE ${matches.endedAt}
+            END
+          ) - ${matches.createdAt})
+        ), 0)`,
       })
       .from(matches)
+      .leftJoin(
+        sql`LATERAL (
+          SELECT MAX(created_at) AS max_at
+          FROM match_events
+          WHERE match_id = ${matches.id} AND is_undone = false
+        ) AS last_ev`,
+        sql`true`,
+      )
       .where(and(matchScope, isNotNull(matches.endedAt))),
 
     // Per-player win counts grouped by win_condition — feeds both the
@@ -2161,15 +2181,37 @@ export async function getPodHighlights(
       ))
       .groupBy(participations.playerId),
 
-    // Single longest completed match in seconds.
+    // Single longest completed match in seconds — same trailing-gap
+    // truncation as total_play_time above so a single abandoned match
+    // doesn't win "Longest Match".
     db
       .select({
         matchId: matches.id,
-        seconds: sql<number>`extract(epoch from (${matches.endedAt} - ${matches.createdAt}))`,
+        seconds: sql<number>`extract(epoch from (
+          CASE
+            WHEN (${matches.endedAt} - COALESCE(last_ev.max_at, ${matches.createdAt})) > INTERVAL '2 hours'
+              THEN COALESCE(last_ev.max_at, ${matches.createdAt})
+            ELSE ${matches.endedAt}
+          END
+        ) - ${matches.createdAt})`,
       })
       .from(matches)
+      .leftJoin(
+        sql`LATERAL (
+          SELECT MAX(created_at) AS max_at
+          FROM match_events
+          WHERE match_id = ${matches.id} AND is_undone = false
+        ) AS last_ev`,
+        sql`true`,
+      )
       .where(and(matchScope, isNotNull(matches.endedAt)))
-      .orderBy(sql`extract(epoch from (${matches.endedAt} - ${matches.createdAt})) desc`)
+      .orderBy(sql`extract(epoch from (
+        CASE
+          WHEN (${matches.endedAt} - COALESCE(last_ev.max_at, ${matches.createdAt})) > INTERVAL '2 hours'
+            THEN COALESCE(last_ev.max_at, ${matches.createdAt})
+          ELSE ${matches.endedAt}
+        END
+      ) - ${matches.createdAt}) desc`)
       .limit(1),
 
     // Raw event stream — used for both the largest single-turn life swing

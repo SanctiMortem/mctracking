@@ -16,6 +16,7 @@ import { useAuth } from '@clerk/clerk-expo';
 import { apiFetch } from '@/services/api';
 import type { Match, MatchEvent, MatchResult } from '@/db/index';
 import type { ParticipationDetail } from '@/services/matches';
+import { effectiveDurationSeconds } from '@/services/matchDuration';
 
 // ─── Win condition display labels ────────────────────────────────────────────
 
@@ -36,10 +37,21 @@ export function winConditionLabel(value: string): string {
 
 // ─── Duration helper ─────────────────────────────────────────────────────────
 
-export function formatMatchDuration(createdAt: string | Date, endedAt: string | Date | null): string {
-  if (!endedAt) return '–';
-  const ms = new Date(endedAt).getTime() - new Date(createdAt).getTime();
-  const mins = Math.round(ms / 60000);
+/**
+ * Pretty-print a match duration. When `lastEventAt` is provided and the
+ * trailing gap between it and `endedAt` exceeds the abandonment threshold,
+ * duration is truncated to end at `lastEventAt` — so a match that was
+ * closed 22h after the last real play doesn't render as "~24h". See
+ * services/matchDuration.ts for the heuristic.
+ */
+export function formatMatchDuration(
+  createdAt: string | Date,
+  endedAt: string | Date | null,
+  lastEventAt?: string | Date | null,
+): string {
+  const seconds = effectiveDurationSeconds(createdAt, endedAt, lastEventAt ?? null);
+  if (seconds === null) return '–';
+  const mins = Math.round(seconds / 60);
   if (mins < 1) return '< 1 min';
   if (mins < 60) return `~${mins} min`;
   const h = Math.floor(mins / 60);
@@ -118,7 +130,16 @@ export function useMatchResults(matchId: string): UseMatchResultsReturn {
         const winConditionDisplay =
           result && !result.isDraw ? winConditionLabel(result.winCondition) : null;
 
-        const duration = formatMatchDuration(match.createdAt, match.endedAt);
+        // Last activity timestamp — max createdAt across non-undone events.
+        // Fed to formatMatchDuration so a match closed hours after real play
+        // ended (abandoned + belated close) reports the "true" duration.
+        let lastEventAt: Date | null = null;
+        for (const e of events) {
+          if (e.isUndone) continue;
+          const t = new Date(e.createdAt);
+          if (!lastEventAt || t > lastEventAt) lastEventAt = t;
+        }
+        const duration = formatMatchDuration(match.createdAt, match.endedAt, lastEventAt);
 
         // Per-player turn-time aggregates. Duration on a turn_passed event
         // belongs to the OUTGOING player — i.e. the participation_id of the

@@ -135,7 +135,16 @@ export function useMatchDetail(matchId: string): UseMatchDetailReturn {
         const winConditionDisplay =
           result && !result.isDraw ? winConditionLabel(result.winCondition) : null;
 
-        const duration = formatMatchDuration(match.createdAt, match.endedAt);
+        // Last activity timestamp — max createdAt across non-undone events.
+        // Passed to formatMatchDuration so an abandoned-then-belatedly-closed
+        // match doesn't report the belated close time as end-of-play.
+        let lastEventAt: Date | null = null;
+        for (const e of events) {
+          if (e.isUndone) continue;
+          const t = new Date(e.createdAt);
+          if (!lastEventAt || t > lastEventAt) lastEventAt = t;
+        }
+        const duration = formatMatchDuration(match.createdAt, match.endedAt, lastEventAt);
 
         // Format events newest-first for display (DB returns asc, we reverse)
         const formattedEvents: FormattedEvent[] = [...events]
