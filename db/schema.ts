@@ -171,6 +171,20 @@ export const decks = pgTable(
 // matches
 // E-005 · BR-MATCH-01 · BR-MATCH-06
 // ─────────────────────────────────────────────
+/**
+ * Seat arrangement for a match: which variant of the grid, what order the
+ * players sit in, and which way each frame faces. `rotations` is keyed by
+ * playerId and holds degrees (0 / 90 / 180 / 270).
+ *
+ * Canonical home for this shape — services/matchLayout.ts re-exports it for
+ * the client-side SecureStore helpers.
+ */
+export interface MatchLayout {
+  rotations: Record<string, number>;
+  playerOrder: string[];
+  layoutVariant: string;
+}
+
 export const matches = pgTable(
   'matches',
   {
@@ -182,6 +196,13 @@ export const matches = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
     // Set when match transitions to completed or abandoned
     endedAt: timestamp('ended_at'),
+    // Seat layout captured at setup. Acts as the cross-device DEFAULT: a phone
+    // opening an in-progress match reproduces the table arrangement instead of
+    // prompting for it. Per-device overrides still live in SecureStore and win
+    // over this, so the mid-match layout editor stays local to one device.
+    // Nullable — matches created before this column, and casual/guest matches,
+    // simply have no server-side layout.
+    layout: jsonb('layout').$type<MatchLayout>(),
   },
   (table) => [index('matches_group_id_idx').on(table.groupId)],
 );

@@ -12,12 +12,13 @@
  * TRACK-003 (EPIC-03)
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 
 import { useAuth } from '@clerk/clerk-expo';
 
 import { apiFetch } from '@/services/api';
 import type { Match, MatchEvent, MatchResult } from '@/db/index';
-import type { ParticipationDetail } from '@/services/matches';
+import type { MatchSyncState, ParticipationDetail } from '@/services/matches';
 import type { EventType } from '@/services/matchEvents';
 
 // ─────────────────────────────────────────────
@@ -34,13 +35,28 @@ export type TrackerParticipation = ParticipationDetail & {
 /** Lightweight local event log entry (mirrors MatchEvent shape). */
 export type LocalEvent = Pick<
   MatchEvent,
-  'id' | 'participationId' | 'eventType' | 'delta' | 'commanderIdSource' | 'isUndone' | 'createdAt'
+  | 'id'
+  | 'participationId'
+  | 'eventType'
+  | 'delta'
+  | 'commanderIdSource'
+  | 'isUndone'
+  | 'createdAt'
+  // Needed to rebuild per-player elapsed time when resuming a match on a
+  // device that never saw the turns happen. Only ever set on turn_passed.
+  | 'turnDurationSeconds'
 >;
 
 export type UseTrackerReturn = {
   match: Match | null;
   participations: TrackerParticipation[];
   events: LocalEvent[];
+  /**
+   * Latest live snapshot from the server, or null before the first poll lands.
+   * Life/poison/commander damage are already merged into `participations`;
+   * this carries the turn, death and undo state for the tracker to apply.
+   */
+  remoteSync: MatchSyncState | null;
   loading: boolean;
   error: string | null;
   toastError: string | null;
@@ -80,6 +96,21 @@ export type UseTrackerReturn = {
 };
 
 const COMMIT_DEBOUNCE_MS = 600;
+
+/**
+ * How often each open tracker asks the server for live state. Every device
+ * with the match open polls, so this is a direct multiplier on Neon reads —
+ * four phones on a 90-minute game is already ~5,400 requests. Fast enough that
+ * a life change lands on the other phones within a beat, slow enough not to
+ * hammer a serverless Postgres.
+ */
+const SYNC_POLL_MS = 4000;
+
+function sameCommanderDamage(a: Record<string, number>, b: Record<string, number>): boolean {
+  const aKeys = Object.keys(a);
+  if (aKeys.length !== Object.keys(b).length) return false;
+  return aKeys.every((k) => a[k] === b[k]);
+}
 
 // ─────────────────────────────────────────────
 // Hook
@@ -134,6 +165,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
             match: Match;
             participations: ParticipationDetail[];
             result: MatchResult | null;
+            events: MatchEvent[];
           };
         }>(`/api/matches/${matchId}`, 'GET', undefined, token ?? undefined);
 
@@ -149,6 +181,22 @@ export function useTracker(matchId: string): UseTrackerReturn {
 
         setMatch(res.data.match);
         setParticipations(trackerParticipations);
+        // Seed the log with the match's full server-side history (ordered by
+        // created_at). Previously this was dropped and `events` started empty,
+        // which meant a resumed match had no undo history and the tracker had
+        // no way to rebuild turn counts, elapsed time, or who was dead.
+        setEvents(
+          (res.data.events ?? []).map((e) => ({
+            id: e.id,
+            participationId: e.participationId,
+            eventType: e.eventType,
+            delta: e.delta,
+            commanderIdSource: e.commanderIdSource,
+            isUndone: e.isUndone,
+            createdAt: e.createdAt,
+            turnDurationSeconds: e.turnDurationSeconds,
+          })),
+        );
       } catch (e) {
         if (!cancelled) setError((e as Error).message ?? 'Failed to load match.');
       } finally {
@@ -229,6 +277,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
           commanderIdSource: res.data.commanderIdSource,
           isUndone: false,
           createdAt: res.data.createdAt,
+          turnDurationSeconds: res.data.turnDurationSeconds,
         },
       ]);
     } catch (e) {
@@ -301,6 +350,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
               commanderIdSource: res.data.commanderIdSource,
               isUndone: false,
               createdAt: res.data.createdAt,
+              turnDurationSeconds: res.data.turnDurationSeconds,
             },
           ]);
           return;
@@ -526,6 +576,97 @@ export function useTracker(matchId: string): UseTrackerReturn {
     return lastEvent;
   }, [events, matchId, getToken]);
 
+  // ── Live sync ──────────────────────────────
+  // Every device with this match open polls a compact server-derived snapshot
+  // and converges on it. See services/matches.ts `getMatchSyncState`.
+  const [remoteSync, setRemoteSync] = useState<MatchSyncState | null>(null);
+
+  /**
+   * Adopt the server's counter snapshot.
+   *
+   * A participation with un-flushed local taps is skipped entirely. The whole
+   * optimistic design here rests on "what the user sees is authoritative"
+   * (see commitSingleEvent) — overwriting mid-tap would resurrect exactly the
+   * HP snapback this hook was rewritten to eliminate, except now triggered by
+   * a timer instead of a network reply. The debounce flushes in 600ms and the
+   * next poll picks the server value up.
+   */
+  const applyRemoteParticipations = useCallback((remote: MatchSyncState['participations']) => {
+    const byId = new Map(remote.map((r) => [r.id, r]));
+    setParticipations((parts) => {
+      let changed = false;
+      const next = parts.map((p) => {
+        const pend = pendingRef.current.get(p.id);
+        if (pend && (pend.life !== 0 || pend.poison !== 0 || pend.cmdDamage.size > 0 || pend.timer)) {
+          return p;
+        }
+        const r = byId.get(p.id);
+        if (!r) return p;
+        const rCmd = (r.commanderDamage as Record<string, number>) ?? {};
+        if (
+          p.lifeTotal === r.lifeTotal &&
+          p.poisonCounters === r.poisonCounters &&
+          sameCommanderDamage(p.commanderDamage, rCmd)
+        ) {
+          return p;
+        }
+        changed = true;
+        return { ...p, lifeTotal: r.lifeTotal, poisonCounters: r.poisonCounters, commanderDamage: rCmd };
+      });
+      // Keep array identity when nothing moved, so a quiet poll doesn't
+      // re-render every player frame twice a second.
+      return changed ? next : parts;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!matchId) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const schedule = () => {
+      if (cancelled) return;
+      timer = setTimeout(poll, SYNC_POLL_MS);
+    };
+
+    async function poll() {
+      if (cancelled) return;
+      // Nobody is looking at a backgrounded app, and iOS throttles the timer
+      // anyway — skip the query and pick up on the next foreground tick.
+      if (AppState.currentState !== 'active') {
+        schedule();
+        return;
+      }
+      try {
+        const token = await getTokenRef.current();
+        const res = await apiFetch<{ success: true; data: MatchSyncState }>(
+          `/api/matches/${matchId}/sync`,
+          'GET',
+          undefined,
+          token ?? undefined,
+        );
+        if (cancelled) return;
+        applyRemoteParticipations(res.data.participations);
+        setRemoteSync(res.data);
+        // Another device closed the match — mirror the status so the tracker's
+        // existing redirect effect moves this screen to the results screen.
+        if (res.data.status !== 'in_progress') {
+          setMatch((m) => (m && m.status !== res.data.status ? { ...m, status: res.data.status } : m));
+        }
+      } catch {
+        // Best-effort. A dropped poll just means this device is briefly stale;
+        // the user did nothing wrong, so it must not raise a toast.
+      }
+      schedule();
+    }
+
+    schedule();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [matchId, applyRemoteParticipations]);
+
   const clearToastError = useCallback(() => setToastError(null), []);
 
   /** Inject a local-only event into the log (not sent to API). */
@@ -544,6 +685,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
         commanderIdSource: undefined,
         isUndone: false,
         createdAt: new Date().toISOString(),
+        turnDurationSeconds: null,
       },
     ]);
   }, []);
@@ -552,6 +694,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
     match,
     participations,
     events,
+    remoteSync,
     loading,
     error,
     toastError,

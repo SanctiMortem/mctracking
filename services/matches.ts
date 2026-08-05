@@ -13,6 +13,7 @@ import { alias } from 'drizzle-orm/pg-core';
 import { db } from '@/services/db';
 import { commanders, decks, groupMembers, matchEvents, matchResults, matches, participations, players } from '@/db/schema';
 import type { Commander, Deck, Match, MatchEvent, MatchResult, Participation, Player } from '@/db/index';
+import type { MatchLayout } from '@/db/schema';
 
 // ─────────────────────────────────────────────
 // Pod membership helper
@@ -33,6 +34,36 @@ async function canManageMatch(userId: string, match: Match): Promise<boolean> {
   if (match.createdBy === userId) return true;
   if (match.groupId) return isGroupMember(userId, match.groupId);
   return false;
+}
+
+/**
+ * Read access to a match: the creator, a member of its pod, or the account
+ * player who took part in it. Broader than `canManageMatch` on purpose —
+ * a participant who doesn't own the match can still watch it.
+ *
+ * Single source of truth for match visibility; `getMatchById` and
+ * `getMatchSyncState` both defer to it so the two can't drift apart.
+ */
+async function canViewMatch(userId: string, match: Match, matchId: string): Promise<boolean> {
+  if (match.createdBy === userId) return true;
+
+  if (match.groupId && (await isGroupMember(userId, match.groupId))) return true;
+
+  const [accountPlayer] = await db
+    .select({ id: players.id })
+    .from(players)
+    .where(and(eq(players.accountUserId, userId), isNull(players.deletedAt)))
+    .limit(1);
+
+  if (!accountPlayer) return false;
+
+  const [participated] = await db
+    .select({ id: participations.id })
+    .from(participations)
+    .where(and(eq(participations.matchId, matchId), eq(participations.playerId, accountPlayer.id)))
+    .limit(1);
+
+  return !!participated;
 }
 
 // ─────────────────────────────────────────────
@@ -94,6 +125,7 @@ export async function createMatch(
   participants: ParticipantInput[],
   groupId?: string | null,
   startingLifeTotal: number = 40,
+  layout?: MatchLayout | null,
 ): Promise<CreateMatchResult> {
   // 1. Count
   if (participants.length < 2 || participants.length > 4) {
@@ -150,7 +182,7 @@ export async function createMatch(
   // 5. Insert match then participations (neon-http does not support transactions)
   const [match] = await db
     .insert(matches)
-    .values({ createdBy: userId, groupId: groupId ?? null })
+    .values({ createdBy: userId, groupId: groupId ?? null, layout: layout ?? null })
     .returning();
 
   const inserted = await db
@@ -420,6 +452,139 @@ export type GetMatchByIdResult =
   | { notFound: true };
 
 /**
+ * Compact live state for a match, polled by every tracker that has it open.
+ *
+ * Turn state is derived HERE rather than shipping the raw event log, for two
+ * reasons. First, the payload stays the same small size whether the match has
+ * 10 events or 10,000 — this is polled every few seconds per device. Second,
+ * undo needs no cursor bookkeeping: `is_undone` flips an existing row rather
+ * than appending a new one, so an incremental "events since X" feed would
+ * silently miss undos performed on another device. Re-deriving from current
+ * rows each poll is always correct by construction.
+ */
+export type MatchSyncState = {
+  status: Match['status'];
+  /** Authoritative counter snapshot — the columns the event writer maintains. */
+  participations: {
+    id: string;
+    lifeTotal: number;
+    poisonCounters: number;
+    commanderDamage: unknown;
+  }[];
+  /** participationId → turns taken. */
+  turnCounts: Record<string, number>;
+  /** participationId → seconds across COMPLETED turns (excludes the one in flight). */
+  elapsed: Record<string, number>;
+  /** Participation whose turn it currently is, or null before the first turn. */
+  lastActorId: string | null;
+  /** When that turn began — lets an observing device show a live in-flight clock. */
+  lastTurnPassedAt: string | null;
+  deadParticipationIds: string[];
+  /** Drives the Undo button's enabled state across devices. */
+  undoableEventCount: number;
+  /**
+   * Server time when this snapshot was built. A client compares its own
+   * just-written events against it to tell "the server hasn't seen my write
+   * yet" apart from "the server says this was undone elsewhere".
+   */
+  syncedAt: string;
+};
+
+export type GetMatchSyncStateResult =
+  | { data: MatchSyncState }
+  | { notFound: true };
+
+export async function getMatchSyncState(
+  userId: string,
+  matchId: string,
+): Promise<GetMatchSyncStateResult> {
+  const [match] = await db
+    .select()
+    .from(matches)
+    .where(eq(matches.id, matchId))
+    .limit(1);
+
+  if (!match) return { notFound: true };
+  if (!(await canViewMatch(userId, match, matchId))) return { notFound: true };
+
+  // Filter by event type in SQL. A long game accumulates hundreds of
+  // life_change rows but only one turn_passed per turn, so this keeps the
+  // per-poll read small. neon-http has no transactions; these are independent
+  // reads, so a Promise.all is safe (same pattern as getMatchById).
+  const [participationRows, turnRows, deathRows, undoableRows] = await Promise.all([
+    db
+      .select({
+        id: participations.id,
+        lifeTotal: participations.lifeTotal,
+        poisonCounters: participations.poisonCounters,
+        commanderDamage: participations.commanderDamage,
+      })
+      .from(participations)
+      .where(eq(participations.matchId, matchId)),
+    db
+      .select({
+        participationId: matchEvents.participationId,
+        turnDurationSeconds: matchEvents.turnDurationSeconds,
+        createdAt: matchEvents.createdAt,
+      })
+      .from(matchEvents)
+      .where(
+        and(
+          eq(matchEvents.matchId, matchId),
+          eq(matchEvents.eventType, 'turn_passed'),
+          eq(matchEvents.isUndone, false),
+        ),
+      )
+      .orderBy(asc(matchEvents.createdAt)),
+    db
+      .select({ participationId: matchEvents.participationId })
+      .from(matchEvents)
+      .where(
+        and(
+          eq(matchEvents.matchId, matchId),
+          eq(matchEvents.eventType, 'player_died'),
+          eq(matchEvents.isUndone, false),
+        ),
+      ),
+    db
+      .select({ count: count() })
+      .from(matchEvents)
+      .where(and(eq(matchEvents.matchId, matchId), eq(matchEvents.isUndone, false))),
+  ]);
+
+  // Same pairing rule as the match detail screen: the duration recorded on a
+  // turn_passed event belongs to the OUTGOING player — the participation on
+  // the previous turn_passed. The first turn has no prior actor.
+  const turnCounts: Record<string, number> = {};
+  const elapsed: Record<string, number> = {};
+  let prevTurnPassedBy: string | null = null;
+
+  for (const row of turnRows) {
+    turnCounts[row.participationId] = (turnCounts[row.participationId] ?? 0) + 1;
+    if (prevTurnPassedBy && typeof row.turnDurationSeconds === 'number') {
+      elapsed[prevTurnPassedBy] = (elapsed[prevTurnPassedBy] ?? 0) + row.turnDurationSeconds;
+    }
+    prevTurnPassedBy = row.participationId;
+  }
+
+  const lastTurn = turnRows.length > 0 ? turnRows[turnRows.length - 1] : null;
+
+  return {
+    data: {
+      status: match.status,
+      participations: participationRows,
+      turnCounts,
+      elapsed,
+      lastActorId: lastTurn?.participationId ?? null,
+      lastTurnPassedAt: lastTurn ? new Date(lastTurn.createdAt).toISOString() : null,
+      deadParticipationIds: Array.from(new Set(deathRows.map((r) => r.participationId))),
+      undoableEventCount: undoableRows[0]?.count ?? 0,
+      syncedAt: new Date().toISOString(),
+    },
+  };
+}
+
+/**
  * Returns a match with participations (player + deck + commander[s] embedded), optional MatchResult,
  * and the full ordered event log (asc by createdAt — UI reverses for display).
  * Returns notFound if the match doesn't exist or was created by a different user.
@@ -437,34 +602,7 @@ export async function getMatchById(userId: string, matchId: string): Promise<Get
   if (!match) return { notFound: true };
 
   // Access check: creator, pod member, or account player who participated
-  if (match.createdBy !== userId) {
-    let hasAccess = false;
-
-    // Check pod membership
-    if (match.groupId) {
-      hasAccess = await isGroupMember(userId, match.groupId);
-    }
-
-    // Check if user's account player participated in this match
-    if (!hasAccess) {
-      const [accountPlayer] = await db
-        .select({ id: players.id })
-        .from(players)
-        .where(and(eq(players.accountUserId, userId), isNull(players.deletedAt)))
-        .limit(1);
-
-      if (accountPlayer) {
-        const [participated] = await db
-          .select({ id: participations.id })
-          .from(participations)
-          .where(and(eq(participations.matchId, matchId), eq(participations.playerId, accountPlayer.id)))
-          .limit(1);
-        if (participated) hasAccess = true;
-      }
-    }
-
-    if (!hasAccess) return { notFound: true };
-  }
+  if (!(await canViewMatch(userId, match, matchId))) return { notFound: true };
 
   // 2. Fetch participations with player / deck / both commanders joined
   const c1 = alias(commanders, 'commander1');

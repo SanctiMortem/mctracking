@@ -187,6 +187,14 @@ export function useMatchSetup(
     return true;
   }, [selectedPlayerIds, deckAssignments, duplicateDeckIds]);
 
+  // Derived layout state. Declared above `submit` so the create payload can
+  // carry the seat arrangement — see the `layout` field in the body below.
+  const playerCount = selectedPlayerIds.length;
+  const variants = LAYOUT_VARIANTS[playerCount] ?? [];
+  const effectiveLayout = layoutVariant && variants.includes(layoutVariant)
+    ? layoutVariant
+    : variants[0] ?? '';
+
   const submit = useCallback(async (): Promise<string | null> => {
     if (!isValid || isSubmitting) return null;
     setIsSubmitting(true);
@@ -200,6 +208,15 @@ export function useMatchSetup(
       const body: Record<string, unknown> = { participants };
       if (groupId) body.group_id = groupId;
       body.starting_life_total = startingLife;
+      // Persist the seat arrangement with the match so any other device that
+      // opens it reproduces this table instead of prompting for a layout.
+      if (effectiveLayout) {
+        body.layout = {
+          rotations,
+          playerOrder: selectedPlayerIds,
+          layoutVariant: effectiveLayout,
+        };
+      }
       const res = await apiFetch<{ success: true; data: { match: Match; participations: Participation[] } }>(
         '/api/matches',
         'POST',
@@ -220,14 +237,7 @@ export function useMatchSetup(
     } finally {
       setIsSubmitting(false);
     }
-  }, [isValid, isSubmitting, getToken, selectedPlayerIds, deckAssignments, groupId, startingLife]);
-
-  // Auto-select default layout variant when player count changes
-  const playerCount = selectedPlayerIds.length;
-  const variants = LAYOUT_VARIANTS[playerCount] ?? [];
-  const effectiveLayout = layoutVariant && variants.includes(layoutVariant)
-    ? layoutVariant
-    : variants[0] ?? '';
+  }, [isValid, isSubmitting, getToken, selectedPlayerIds, deckAssignments, groupId, startingLife, rotations, effectiveLayout]);
 
   // Apply default rotations whenever the effective layout or player list changes.
   // This sets sensible defaults (top=180°, bottom=0°) without overriding manual changes

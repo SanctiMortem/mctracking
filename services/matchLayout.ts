@@ -13,11 +13,11 @@
  */
 import * as SecureStore from 'expo-secure-store';
 
-export interface MatchLayout {
-  rotations: Record<string, number>;
-  playerOrder: string[];
-  layoutVariant: string;
-}
+// Canonical shape lives in the schema (matches.layout uses it too). Type-only
+// import, so nothing from drizzle ends up in the client bundle.
+import type { MatchLayout } from '@/db/schema';
+
+export type { MatchLayout };
 
 function keyFor(matchId: string): string {
   return `mtg_match_layout_${matchId}`;

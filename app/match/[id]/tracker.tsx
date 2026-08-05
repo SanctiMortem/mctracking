@@ -43,16 +43,30 @@ import { useTheme } from '@/contexts/ThemeContext';
 
 // ─── Match Timer ────────────────────────────────
 
-function useMatchTimer() {
-  const [elapsed, setElapsed] = useState(0);
+/**
+ * Match wall clock. Derived from `matches.created_at` rather than counted up
+ * from zero, so the header shows the true age of the match on every device
+ * that opens it — not the age of this screen's mount. Timestamp-derived also
+ * means it stays correct across app backgrounding, where JS interval throttling
+ * would otherwise lose seconds.
+ *
+ * Returns "--:--" until the match loads, since we have no start time yet and
+ * showing "00:00" for a two-hour-old match is worse than showing nothing.
+ */
+function useMatchTimer(startedAt: string | Date | null | undefined) {
+  const [now, setNow] = useState(() => Date.now());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    intervalRef.current = setInterval(() => setElapsed((s) => s + 1), 1000);
+    intervalRef.current = setInterval(() => setNow(Date.now()), 1000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
+
+  const startMs = startedAt ? new Date(startedAt).getTime() : NaN;
+  if (!Number.isFinite(startMs)) return '--:--';
+  const elapsed = Math.max(0, Math.floor((now - startMs) / 1000));
 
   const hours = Math.floor(elapsed / 3600);
   const minutes = Math.floor((elapsed % 3600) / 60);
@@ -106,6 +120,11 @@ function useTurnTimers(
   // rotation to derive that turn's duration. Pauses don't tick `elapsed`, so
   // paused time is naturally excluded from the diff.
   const turnStartSnapshotRef = useRef<Record<string, number>>({});
+  // Set by `hydrate`. The turn that was already in progress when this device
+  // opened the match was never observed here, so its real duration is unknown.
+  // The next rotation therefore reports `null` rather than a bogus 0, which
+  // would otherwise land a 0-second turn in the stats and drag averages down.
+  const resumedTurnUnmeasuredRef = useRef(false);
 
   // Tick the active player's timer every second
   useEffect(() => {
@@ -130,12 +149,18 @@ function useTurnTimers(
     // Compute the outgoing player's just-ended turn duration (null on the
     // very first turn — no prior actor — so no duration is recorded).
     const outgoing = lastCorrectActorRef.current;
-    const outgoingDuration = outgoing
+    let outgoingDuration = outgoing
       ? Math.max(
           0,
           (elapsedRef.current[outgoing] ?? 0) - (turnStartSnapshotRef.current[outgoing] ?? 0),
         )
       : null;
+    // First rotation after a resume — we never saw this turn start, so we
+    // can't measure it. Report unknown instead of the 0 the diff would give.
+    if (resumedTurnUnmeasuredRef.current) {
+      outgoingDuration = null;
+      resumedTurnUnmeasuredRef.current = false;
+    }
     onTurnPassedRef.current?.(id, outgoingDuration);
     // Snapshot the incoming player's cumulative elapsed as their turn start.
     turnStartSnapshotRef.current[id] = elapsedRef.current[id] ?? 0;
@@ -176,7 +201,104 @@ function useTurnTimers(
     setActiveId(id);
   }, [incrementTurn]);
 
-  return { elapsed, activeId, toggle, turnCounts, seedActivePlayer };
+  /**
+   * Restore turn state rebuilt from the server event log (resuming a match,
+   * possibly on a different device). Completed turns replay exactly, because
+   * `turn_duration_seconds` was measured with pauses already excluded.
+   *
+   * `activeId` is deliberately left null. A device that didn't watch the
+   * current turn begin has no honest basis for a running clock — pauses aren't
+   * events, so elapsing from the last turn_passed timestamp would over-count
+   * every pause and show absurd numbers for a match reopened the next day.
+   * The active player is still highlighted; one tap starts their clock.
+   */
+  const hydrate = useCallback((snapshot: {
+    elapsed: Record<string, number>;
+    turnCounts: Record<string, number>;
+    lastActorId: string | null;
+  }) => {
+    setElapsed(snapshot.elapsed);
+    elapsedRef.current = snapshot.elapsed;
+    setTurnCounts(snapshot.turnCounts);
+    lastCorrectActorRef.current = snapshot.lastActorId;
+    // Snapshot == cumulative, so the in-flight turn measures from zero here.
+    turnStartSnapshotRef.current = { ...snapshot.elapsed };
+    if (snapshot.lastActorId) resumedTurnUnmeasuredRef.current = true;
+  }, []);
+
+  /**
+   * Converge on the server's turn state (live sync). Called on every poll.
+   *
+   * The server only knows about COMPLETED turns — the turn currently in flight
+   * hasn't produced a `turn_passed` event yet, so its seconds exist nowhere but
+   * on the device running the clock. That's why the locally-active player is
+   * exempt from the elapsed overwrite: adopting the server's lower number would
+   * visibly rewind their timer on every poll.
+   */
+  const applyRemote = useCallback((remote: {
+    elapsed: Record<string, number>;
+    turnCounts: Record<string, number>;
+    lastActorId: string | null;
+    turnStartedAtMs: number | null;
+  }) => {
+    // Merge by max, never by replace. Both counters only ever climb, and a
+    // poll can easily be older than a local write that hasn't committed yet —
+    // replacing would visibly rewind a turn we just took, then restore it a
+    // few seconds later. Max converges either way: a higher local value wins
+    // until the server catches up, a higher remote value (another device took
+    // a turn) is adopted immediately.
+    setTurnCounts((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const [pid, remoteCount] of Object.entries(remote.turnCounts)) {
+        if (remoteCount > (next[pid] ?? 0)) {
+          next[pid] = remoteCount;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+
+    setElapsed((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const [pid, remoteSeconds] of Object.entries(remote.elapsed)) {
+        // The locally-active player is exempt: their local value legitimately
+        // exceeds the server's by the in-flight turn, and max already keeps it.
+        if (remoteSeconds > (next[pid] ?? 0)) {
+          next[pid] = remoteSeconds;
+          changed = true;
+        }
+      }
+      if (!changed) return prev;
+      elapsedRef.current = next;
+      return next;
+    });
+
+    // A turn started that this device didn't author. We're watching it happen,
+    // so — unlike a cold resume — we legitimately know when it began and can
+    // run the clock from there. This is what makes the "tick from the moment
+    // you observe the turn start" rule hold for synced devices too.
+    const incoming = remote.lastActorId;
+    if (incoming && incoming !== lastCorrectActorRef.current) {
+      lastCorrectActorRef.current = incoming;
+      const base = remote.elapsed[incoming] ?? 0;
+      turnStartSnapshotRef.current[incoming] = base;
+      const inFlight = remote.turnStartedAtMs
+        ? Math.max(0, Math.floor((Date.now() - remote.turnStartedAtMs) / 1000))
+        : 0;
+      setElapsed((prev) => {
+        const next = { ...prev, [incoming]: base + inFlight };
+        elapsedRef.current = next;
+        return next;
+      });
+      setActiveId(incoming);
+      // We observed this turn begin, so its duration IS measurable.
+      resumedTurnUnmeasuredRef.current = false;
+    }
+  }, []);
+
+  return { elapsed, activeId, toggle, turnCounts, seedActivePlayer, hydrate, applyRemote };
 }
 
 // ─── Screen ─────────────────────────────────────
@@ -194,7 +316,6 @@ export default function MatchTrackerScreen() {
   const { id, rotations: rotationsParam, playerOrder: playerOrderParam, layout: layoutParam } = useLocalSearchParams<{ id: string; rotations?: string; playerOrder?: string; layout?: string }>();
   const router = useRouter();
   const { t } = useTranslation();
-  const timer = useMatchTimer();
   const insets = useSafeAreaInsets();
   const [logVisible, setLogVisible] = useState(false);
   // Mid-match layout editor — opens the JoinLayoutPicker in a modal
@@ -260,16 +381,6 @@ export default function MatchTrackerScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, rotationsParam, playerOrderParam, layoutParam]);
 
-  // storedLayout wins over paramRotations so a mid-match "Adjust layout"
-  // save (which writes into storedLayout) immediately overrides the
-  // setup-time URL params on the next render.
-  const rotationMap: Record<string, number> =
-    storedLayout?.rotations ?? paramRotations ?? {};
-  const playerOrder: string[] =
-    storedLayout?.playerOrder ?? paramPlayerOrder ?? [];
-  const resolvedLayoutVariant: string | undefined =
-    storedLayout?.layoutVariant ?? paramLayoutVariant ?? undefined;
-
   const {
     match,
     participations,
@@ -284,7 +395,26 @@ export default function MatchTrackerScreen() {
     applyCommanderDamage,
     undoLastEvent,
     addLocalEvent,
+    remoteSync,
   } = useTracker(id);
+
+  // Declared after useTracker so it can read the match's real start time.
+  const timer = useMatchTimer(match?.createdAt);
+
+  // ── Layout resolution — most specific source first ────────────────────────
+  //  1. storedLayout — this device's own choice, from the join picker or the
+  //     mid-match editor. Always wins, so a local correction is never undone.
+  //  2. URL params   — fresh from setup, on the device that created the match.
+  //  3. match.layout — the setup arrangement, persisted server-side. This is
+  //     what lets a second device reproduce the table automatically instead of
+  //     being asked to rebuild it from scratch.
+  const serverLayout = match?.layout ?? null;
+  const rotationMap: Record<string, number> =
+    storedLayout?.rotations ?? paramRotations ?? serverLayout?.rotations ?? {};
+  const playerOrder: string[] =
+    storedLayout?.playerOrder ?? paramPlayerOrder ?? serverLayout?.playerOrder ?? [];
+  const resolvedLayoutVariant: string | undefined =
+    storedLayout?.layoutVariant ?? paramLayoutVariant ?? serverLayout?.layoutVariant ?? undefined;
 
   // Turn timers — initialized once participations load.
   // When a *legitimate* clockwise rotation happens, persist a turn_passed
@@ -362,6 +492,91 @@ export default function MatchTrackerScreen() {
 
   const [hasRolled, setHasRolled] = useState(false);
 
+  // ── Resume: rebuild turn state from the server event log ──────────────────
+  // Runs once, the first time the match finishes loading. Everything below is
+  // derived from events the server already returns, so a device that never saw
+  // the match start comes up with the same turn counts, per-player time, dead
+  // players and rotation pointer as the device that has been tracking it.
+  //
+  // Undone events are skipped throughout, so an undo performed before the
+  // resume is honoured (a revived player is alive again, their turn uncounted).
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (hydratedRef.current || loading || participations.length === 0) return;
+    hydratedRef.current = true;
+
+    const dead = new Set<string>();
+    const turnCounts: Record<string, number> = {};
+    const elapsed: Record<string, number> = {};
+    let lastActorId: string | null = null;
+    // Duration on a turn_passed event belongs to the OUTGOING player — the
+    // participation on the *previous* non-undone turn_passed. Same pairing
+    // rule as the read-only match detail screen (hooks/useMatchDetail.ts).
+    let prevTurnPassedBy: string | null = null;
+
+    for (const e of events) {
+      if (e.isUndone) continue;
+      if (e.eventType === 'player_died') {
+        dead.add(e.participationId);
+        continue;
+      }
+      if (e.eventType !== 'turn_passed') continue;
+
+      turnCounts[e.participationId] = (turnCounts[e.participationId] ?? 0) + 1;
+      if (prevTurnPassedBy && typeof e.turnDurationSeconds === 'number') {
+        elapsed[prevTurnPassedBy] = (elapsed[prevTurnPassedBy] ?? 0) + e.turnDurationSeconds;
+      }
+      prevTurnPassedBy = e.participationId;
+      lastActorId = e.participationId;
+    }
+
+    if (dead.size > 0) setDeadPlayerIds(dead);
+    // A turn has been taken, so the dice roll is spent — offering it again
+    // would reseed the rotation onto a random player mid-match.
+    if (lastActorId) setHasRolled(true);
+    turnTimers.hydrate({ elapsed, turnCounts, lastActorId });
+    // `events` is intentionally not a dep: it grows on every local action and
+    // this must run exactly once, off the initial load. hydratedRef guards it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, participations.length]);
+
+  // ── Live sync: converge on the server's turn + death state ────────────────
+  // Runs on every poll, but only after the initial hydrate — otherwise a poll
+  // landing first would start this device's clock on a turn it never saw.
+  useEffect(() => {
+    if (!remoteSync || !hydratedRef.current) return;
+
+    turnTimers.applyRemote({
+      elapsed: remoteSync.elapsed,
+      turnCounts: remoteSync.turnCounts,
+      lastActorId: remoteSync.lastActorId,
+      turnStartedAtMs: remoteSync.lastTurnPassedAt
+        ? new Date(remoteSync.lastTurnPassedAt).getTime()
+        : null,
+    });
+
+    const nextDead = new Set(remoteSync.deadParticipationIds);
+    // A death we recorded after the server built this snapshot isn't missing —
+    // it just hasn't been seen yet. Without this, marking a player dead makes
+    // them flicker back to alive until the following poll. Comparing against
+    // the server's own clock keeps that distinct from "undone on another
+    // device", which SHOULD revive them.
+    const syncedAtMs = new Date(remoteSync.syncedAt).getTime();
+    for (const e of events) {
+      if ((e.eventType as string) !== 'player_died' || e.isUndone) continue;
+      if (new Date(e.createdAt).getTime() > syncedAtMs) nextDead.add(e.participationId);
+    }
+
+    setDeadPlayerIds((prev) => {
+      if (prev.size === nextDead.size && [...prev].every((pid) => nextDead.has(pid))) return prev;
+      return nextDead;
+    });
+    // `turnTimers` is stable (all useCallback with [] deps); `events` is read
+    // only to reconcile in-flight writes, and re-running on its identity would
+    // fire this on every local tap.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remoteSync]);
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -387,7 +602,10 @@ export default function MatchTrackerScreen() {
   // choice is saved per-device per-match so re-mounts skip the picker.
   const hasUsableLayout =
     (paramRotations && paramPlayerOrder && paramLayoutVariant) ||
-    storedLayout !== null;
+    storedLayout !== null ||
+    // Match was created with a seat arrangement — use it rather than asking
+    // this device to describe a table it can already know about.
+    serverLayout !== null;
   if (layoutLoadResolved && !hasUsableLayout && participations.length > 0) {
     const handlePickerConfirm = (result: JoinLayoutPickerResult) => {
       // Persist for this device, then drop straight into the tracker by
@@ -491,7 +709,11 @@ export default function MatchTrackerScreen() {
     };
   });
 
-  const hasUndoableEvents = events.some((e) => !e.isUndone);
+  // Undo is enabled if EITHER this session recorded something or the server
+  // reports undoable history — the latter covers a resumed match and events
+  // another device recorded while this one was watching.
+  const hasUndoableEvents =
+    events.some((e) => !e.isUndone) || (remoteSync?.undoableEventCount ?? 0) > 0;
 
   return (
     <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>

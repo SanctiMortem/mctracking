@@ -6,6 +6,7 @@ import { getAuth } from '@/services/auth';
 
 import { createMatch, listMatches } from '@/services/matches';
 import type { ListMatchesFilters, ParticipantInput } from '@/services/matches';
+import type { MatchLayout } from '@/db/schema';
 
 const VALID_RESULTS = new Set(['win', 'lose', 'draw', 'abandoned']);
 
@@ -79,8 +80,40 @@ export async function POST(req: Request) {
     }
   }
 
-  const { group_id, starting_life_total } = body as Record<string, unknown>;
+  const { group_id, starting_life_total, layout } = body as Record<string, unknown>;
   const groupId = typeof group_id === 'string' ? group_id : undefined;
+
+  // Seat layout is optional — absent means "no cross-device default", which is
+  // how every match created before this field behaves. When present it's stored
+  // verbatim as jsonb, so validate the shape here rather than letting arbitrary
+  // client JSON into the column.
+  let matchLayout: MatchLayout | undefined;
+  if (layout !== undefined && layout !== null) {
+    const l = layout as Partial<MatchLayout>;
+    const rotationsValid =
+      !!l.rotations &&
+      typeof l.rotations === 'object' &&
+      !Array.isArray(l.rotations) &&
+      Object.values(l.rotations).every((v) => typeof v === 'number' && Number.isFinite(v));
+    const orderValid =
+      Array.isArray(l.playerOrder) && l.playerOrder.every((p) => typeof p === 'string');
+
+    if (!rotationsValid || !orderValid || typeof l.layoutVariant !== 'string') {
+      return Response.json(
+        {
+          error: 'VALIDATION_ERROR',
+          message:
+            'layout must be { rotations: Record<string, number>, playerOrder: string[], layoutVariant: string }',
+        },
+        { status: 400 },
+      );
+    }
+    matchLayout = {
+      rotations: l.rotations as Record<string, number>,
+      playerOrder: l.playerOrder as string[],
+      layoutVariant: l.layoutVariant,
+    };
+  }
 
   let startingLife: number | undefined;
   if (starting_life_total !== undefined) {
@@ -98,7 +131,13 @@ export async function POST(req: Request) {
     startingLife = starting_life_total;
   }
 
-  const result = await createMatch(userId, participants as ParticipantInput[], groupId, startingLife);
+  const result = await createMatch(
+    userId,
+    participants as ParticipantInput[],
+    groupId,
+    startingLife,
+    matchLayout,
+  );
 
   if ('invalidPlayerCount' in result) {
     return Response.json(
