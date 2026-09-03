@@ -1212,6 +1212,11 @@ export type GlobalStatsOptions = {
   limit?: number | null;
 };
 
+/** Minimum completed matches before a deck or commander qualifies for the
+ *  Top-5 lists on the Stats screen. Raised 3 → 5 so a single lucky game can't
+ *  top the board on a 100% win rate. */
+const TOP_LIST_MIN_MATCHES = 5;
+
 export async function getGlobalStats(
   userId: string,
   groupId?: string | null,
@@ -1302,7 +1307,7 @@ export async function getGlobalStats(
     if (ranked[i].rank === 0) ranked[i].rank = ranked[i - 1].rank;
   }
 
-  // ── Top 5 decks (min 3 matches, by win_rate DESC) ─────────────────────────────
+  // ── Top 5 decks (min TOP_LIST_MIN_MATCHES matches, by win_rate DESC) ─────────────────────────────
 
   const allDeckEntriesRanked = deckStatRows
     .map((r) => {
@@ -1310,11 +1315,11 @@ export async function getGlobalStats(
       const wins = Number(r.wins ?? 0);
       return { deckId: r.deckId, total, wins, wr: calcWinRate(wins, total) };
     })
-    .filter((e) => e.total >= 3)
+    .filter((e) => e.total >= TOP_LIST_MIN_MATCHES)
     .sort((a, b) => (b.wr ?? -1) - (a.wr ?? -1));
   const top5DeckEntries = limit === null ? allDeckEntriesRanked : allDeckEntriesRanked.slice(0, limit);
 
-  // ── Top 5 commanders (min 3 matches, by win_rate DESC, both partners counted) ─
+  // ── Top 5 commanders (min TOP_LIST_MIN_MATCHES, by win_rate DESC, both partners counted) ─
 
   const cmdStatsMap = new Map<string, { wins: number; total: number }>();
   for (const row of commanderPartRows) {
@@ -1329,7 +1334,7 @@ export async function getGlobalStats(
 
   const allCmdEntriesRanked = [...cmdStatsMap.entries()]
     .map(([id, stats]) => ({ commanderId: id, ...stats, wr: calcWinRate(stats.wins, stats.total) }))
-    .filter((e) => e.total >= 3)
+    .filter((e) => e.total >= TOP_LIST_MIN_MATCHES)
     .sort((a, b) => (b.wr ?? -1) - (a.wr ?? -1));
   const top5CmdEntries = limit === null ? allCmdEntriesRanked : allCmdEntriesRanked.slice(0, limit);
 
