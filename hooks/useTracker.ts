@@ -141,8 +141,28 @@ export function useTracker(matchId: string): UseTrackerReturn {
     poison: number;
     cmdDamage: Map<string, number>;
     timer: ReturnType<typeof setTimeout> | null;
+    /**
+     * POSTs fired for this participation that haven't settled yet.
+     *
+     * `flushPending` zeroes the accumulators and nulls the timer BEFORE firing,
+     * so between the debounce expiring and the response landing every other
+     * "is there local work?" signal reads clean while the server still holds
+     * the pre-tap value. A sync poll arriving in that window used to adopt the
+     * stale snapshot and visibly bounce the counter back. Retries make the
+     * window up to ~1.5s wide, so it is hit routinely during active play.
+     */
+    inFlight: number;
   };
   const pendingRef = useRef<Map<string, PendingCommit>>(new Map());
+
+  /**
+   * participationId → ms timestamp of this device's last local mutation
+   * (tap scheduled, or commit settled). A server snapshot built before this
+   * instant cannot contain our write, so adopting it would rewind the user's
+   * own change. Compared against the snapshot's `syncedAt`, which is the same
+   * mechanism the tracker already uses to reconcile in-flight deaths.
+   */
+  const lastLocalWriteAtRef = useRef<Map<string, number>>(new Map());
 
   // ── Load match on mount ────────────────────
   // CRITICAL: `getToken` from Clerk is an unstable reference — it re-creates
@@ -297,7 +317,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
   const getPending = useCallback((pid: string): PendingCommit => {
     let p = pendingRef.current.get(pid);
     if (!p) {
-      p = { life: 0, poison: 0, cmdDamage: new Map(), timer: null };
+      p = { life: 0, poison: 0, cmdDamage: new Map(), timer: null, inFlight: 0 };
       pendingRef.current.set(pid, p);
     }
     return p;
@@ -386,22 +406,25 @@ export function useTracker(matchId: string): UseTrackerReturn {
       p.poison = 0;
       p.cmdDamage.clear();
 
-      if (lifeDelta !== 0) {
-        void commitSingleEvent({
-          participationId: pid,
-          eventType: 'life_change',
-          delta: lifeDelta,
+      // Hold the participation "busy" until the write settles, and re-stamp
+      // the local-write clock on the way out: only once the server has
+      // acknowledged (or we've exhausted retries) may a poll speak for it.
+      const fire = (input: Parameters<typeof commitSingleEvent>[0]) => {
+        p.inFlight += 1;
+        void commitSingleEvent(input).finally(() => {
+          p.inFlight = Math.max(0, p.inFlight - 1);
+          lastLocalWriteAtRef.current.set(pid, Date.now());
         });
+      };
+
+      if (lifeDelta !== 0) {
+        fire({ participationId: pid, eventType: 'life_change', delta: lifeDelta });
       }
       if (poisonDelta !== 0) {
-        void commitSingleEvent({
-          participationId: pid,
-          eventType: 'poison_change',
-          delta: poisonDelta,
-        });
+        fire({ participationId: pid, eventType: 'poison_change', delta: poisonDelta });
       }
       for (const [cmdId, delta] of cmdEntries) {
-        void commitSingleEvent({
+        fire({
           participationId: pid,
           eventType: 'commander_damage',
           delta,
@@ -415,6 +438,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
   const scheduleCommit = useCallback(
     (pid: string) => {
       const p = getPending(pid);
+      lastLocalWriteAtRef.current.set(pid, Date.now());
       if (p.timer) clearTimeout(p.timer);
       p.timer = setTimeout(() => flushPending(pid), COMMIT_DEBOUNCE_MS);
     },
@@ -556,6 +580,11 @@ export function useTracker(matchId: string): UseTrackerReturn {
       evts.map((e) => (e.id === lastEvent.id ? { ...e, isUndone: true } : e)),
     );
 
+    // Undo writes straight through apiFetch rather than the debounced flush,
+    // so it has to stamp the local-write clock itself — otherwise a poll built
+    // before the undo landed would re-adopt the pre-undo counters and bounce
+    // the value back, exactly as un-flushed taps used to.
+    lastLocalWriteAtRef.current.set(lastEvent.participationId, Date.now());
     try {
       const token = await getToken();
       await apiFetch(
@@ -564,6 +593,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
         undefined,
         token ?? undefined,
       );
+      lastLocalWriteAtRef.current.set(lastEvent.participationId, Date.now());
     } catch (e) {
       // Revert on failure
       setParticipations(prev);
@@ -591,13 +621,28 @@ export function useTracker(matchId: string): UseTrackerReturn {
    * a timer instead of a network reply. The debounce flushes in 600ms and the
    * next poll picks the server value up.
    */
-  const applyRemoteParticipations = useCallback((remote: MatchSyncState['participations']) => {
+  const applyRemoteParticipations = useCallback((
+    remote: MatchSyncState['participations'],
+    syncedAtMs: number,
+  ) => {
     const byId = new Map(remote.map((r) => [r.id, r]));
     setParticipations((parts) => {
       let changed = false;
       const next = parts.map((p) => {
         const pend = pendingRef.current.get(p.id);
+        // Phase 1 — taps still accumulating, or the debounce is armed.
         if (pend && (pend.life !== 0 || pend.poison !== 0 || pend.cmdDamage.size > 0 || pend.timer)) {
+          return p;
+        }
+        // Phase 2 — flushed, but the POST hasn't come back yet. The old guard
+        // stopped here, which is precisely where the bounce came from.
+        if (pend && pend.inFlight > 0) {
+          return p;
+        }
+        // Phase 3 — settled, but this snapshot was built before we wrote, so
+        // it cannot contain our change even though nothing is in flight now.
+        const localAt = lastLocalWriteAtRef.current.get(p.id) ?? 0;
+        if (localAt > syncedAtMs) {
           return p;
         }
         const r = byId.get(p.id);
@@ -646,7 +691,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
           token ?? undefined,
         );
         if (cancelled) return;
-        applyRemoteParticipations(res.data.participations);
+        applyRemoteParticipations(res.data.participations, new Date(res.data.syncedAt).getTime());
         setRemoteSync(res.data);
         // Another device closed the match — mirror the status so the tracker's
         // existing redirect effect moves this screen to the results screen.
