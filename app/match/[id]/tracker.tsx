@@ -78,6 +78,10 @@ function useMatchTimer(startedAt: string | Date | null | undefined) {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+/** Longest a single in-flight `turn_passed` write may hold off adoption of
+ *  remote turn state. See `turnWriteDeadlineRef`. */
+const TURN_WRITE_GUARD_MAX_MS = 15000;
+
 // ─── Per-Player Turn Timers ─────────────────────
 
 function useTurnTimers(
@@ -133,6 +137,28 @@ function useTurnTimers(
    * compare against the snapshot's `syncedAt` and ignore anything older.
    */
   const lastLocalTurnAtRef = useRef(0);
+  /**
+   * `turn_passed` writes fired from this device that haven't settled yet.
+   *
+   * The timestamp above is NOT sufficient on its own. Between taking a turn
+   * (stamped) and its POST landing, the server is still building snapshots
+   * that legitimately predate the write — those carry `syncedAt` values
+   * NEWER than the stamp while still reporting the previous actor, so they
+   * sail past the timestamp check and rewind the rotation. The user then sees
+   * their turn bounce back, taps again believing it never registered, and the
+   * second tap IS the expected clockwise successor — so it counts a second
+   * turn. This counter blocks the whole window regardless of timestamps,
+   * mirroring `PendingCommit.inFlight` on the life/poison path.
+   */
+  const turnWriteInFlightRef = useRef(0);
+  /**
+   * Safety valve. `apiFetch` sets no timeout, so a wedged request would never
+   * settle, `.finally` would never run, and the counter above would pin this
+   * guard open — leaving the device permanently unable to adopt turn changes
+   * from anyone else. Well clear of a normal round trip (<1s) and of the 4s
+   * poll, while bounding the damage from a request that never returns.
+   */
+  const turnWriteDeadlineRef = useRef(0);
 
   // Tick the active player's timer every second
   useEffect(() => {
@@ -255,7 +281,9 @@ function useTurnTimers(
     // rotation behind reality. The monotonic merges below are still safe (a
     // stale snapshot only ever carries lower counters, which max discards),
     // but the rotation pointer must not move.
-    const stale = remote.syncedAtMs < lastLocalTurnAtRef.current;
+    const stale =
+      (turnWriteInFlightRef.current > 0 && Date.now() < turnWriteDeadlineRef.current) ||
+      remote.syncedAtMs < lastLocalTurnAtRef.current;
     // Merge by max, never by replace. Both counters only ever climb, and a
     // poll can easily be older than a local write that hasn't committed yet —
     // replacing would visibly rewind a turn we just took, then restore it a
@@ -325,13 +353,23 @@ function useTurnTimers(
    * predating the write, so it would slip past the staleness check and rewind
    * the rotation anyway. Called from the write's settle handler.
    */
-  const markLocalTurnWrite = useCallback(() => {
+  const beginLocalTurnWrite = useCallback(() => {
+    turnWriteInFlightRef.current += 1;
+    const now = Date.now();
+    lastLocalTurnAtRef.current = now;
+    turnWriteDeadlineRef.current = now + TURN_WRITE_GUARD_MAX_MS;
+  }, []);
+
+  const endLocalTurnWrite = useCallback(() => {
+    turnWriteInFlightRef.current = Math.max(0, turnWriteInFlightRef.current - 1);
+    // Only now can a snapshot legitimately speak for the rotation again.
     lastLocalTurnAtRef.current = Date.now();
   }, []);
 
   return {
     elapsed, activeId, toggle, turnCounts,
-    seedActivePlayer, hydrate, applyRemote, markLocalTurnWrite,
+    seedActivePlayer, hydrate, applyRemote,
+    beginLocalTurnWrite, endLocalTurnWrite,
   };
 }
 
@@ -459,10 +497,11 @@ export default function MatchTrackerScreen() {
   // Ref-held because `recordTurnPassed` is passed INTO useTurnTimers, so it
   // cannot close over the hook's return value directly. Same pattern as
   // `onTurnPassedRef` / `flushPendingRef` elsewhere in this file.
-  const markTurnWriteRef = useRef<(() => void) | null>(null);
+  const markTurnWriteRef = useRef<{ begin: () => void; end: () => void } | null>(null);
 
   const recordTurnPassed = useCallback(
     (participationId: string, outgoingDurationSeconds: number | null) => {
+      markTurnWriteRef.current?.begin();
       void recordEvent({
         participationId,
         eventType: 'turn_passed',
@@ -473,7 +512,7 @@ export default function MatchTrackerScreen() {
       }).finally(() => {
         // The server has it now, so snapshots built from here on may speak
         // for the rotation again.
-        markTurnWriteRef.current?.();
+        markTurnWriteRef.current?.end();
       });
     },
     [recordEvent],
@@ -497,7 +536,10 @@ export default function MatchTrackerScreen() {
     : participations.map((p) => p.id);
   const clockwiseIds = clockwiseParticipationIds(resolvedLayoutVariant, sortedParticipationIds);
   const turnTimers = useTurnTimers(clockwiseIds, deadPlayerIds, recordTurnPassed);
-  markTurnWriteRef.current = turnTimers.markLocalTurnWrite;
+  markTurnWriteRef.current = {
+    begin: turnTimers.beginLocalTurnWrite,
+    end: turnTimers.endLocalTurnWrite,
+  };
 
   // Clear toast after 3s
   useEffect(() => {
