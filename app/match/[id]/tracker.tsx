@@ -119,6 +119,14 @@ function useTurnTimers(
   // inside a setState callback) can read the latest values synchronously
   // when computing the outgoing player's just-ended turn duration.
   const elapsedRef = useRef<Record<string, number>>({});
+  /**
+   * Mirror of `turnCounts`, so `applyRemote` can compare how many turns this
+   * device knows about against how many the server does. Turns only ever
+   * climb, so that total is a reliable "who is further ahead" signal —
+   * unlike wall clocks, which cannot tell a snapshot built before our write
+   * from one built after it.
+   */
+  const turnCountsRef = useRef<Record<string, number>>({});
   // Snapshot of `elapsed[playerId]` at the moment that player's current turn
   // started. Diffed against `elapsed[playerId]` on the next legitimate
   // rotation to derive that turn's duration. Pauses don't tick `elapsed`, so
@@ -179,7 +187,12 @@ function useTurnTimers(
   }, [activeId]);
 
   const incrementTurn = useCallback((id: string) => {
-    setTurnCounts((counts) => ({ ...counts, [id]: (counts[id] ?? 0) + 1 }));
+    const nextCounts = {
+      ...turnCountsRef.current,
+      [id]: (turnCountsRef.current[id] ?? 0) + 1,
+    };
+    turnCountsRef.current = nextCounts;
+    setTurnCounts(nextCounts);
     // Compute the outgoing player's just-ended turn duration (null on the
     // very first turn — no prior actor — so no duration is recorded).
     const outgoing = lastCorrectActorRef.current;
@@ -255,6 +268,7 @@ function useTurnTimers(
     setElapsed(snapshot.elapsed);
     elapsedRef.current = snapshot.elapsed;
     setTurnCounts(snapshot.turnCounts);
+    turnCountsRef.current = snapshot.turnCounts;
     lastCorrectActorRef.current = snapshot.lastActorId;
     // Snapshot == cumulative, so the in-flight turn measures from zero here.
     turnStartSnapshotRef.current = { ...snapshot.elapsed };
@@ -281,7 +295,19 @@ function useTurnTimers(
     // rotation behind reality. The monotonic merges below are still safe (a
     // stale snapshot only ever carries lower counters, which max discards),
     // but the rotation pointer must not move.
+    // Primary guard, and the only timing-independent one: turns only ever
+    // climb on a device, so a snapshot carrying FEWER total turns than we
+    // already know about was built before our write and cannot speak for the
+    // rotation — no matter what its clock says. Two earlier attempts at this
+    // reasoned about wall clocks and in-flight windows instead, and both
+    // missed cases where the snapshot's syncedAt was newer than our stamp
+    // while the write itself still hadn't committed.
+    const total = (c: Record<string, number>) =>
+      Object.values(c).reduce((a, b) => a + b, 0);
+    const serverBehind = total(remote.turnCounts) < total(turnCountsRef.current);
+
     const stale =
+      serverBehind ||
       (turnWriteInFlightRef.current > 0 && Date.now() < turnWriteDeadlineRef.current) ||
       remote.syncedAtMs < lastLocalTurnAtRef.current;
     // Merge by max, never by replace. Both counters only ever climb, and a
@@ -290,17 +316,18 @@ function useTurnTimers(
     // few seconds later. Max converges either way: a higher local value wins
     // until the server catches up, a higher remote value (another device took
     // a turn) is adopted immediately.
-    setTurnCounts((prev) => {
-      const next = { ...prev };
-      let changed = false;
-      for (const [pid, remoteCount] of Object.entries(remote.turnCounts)) {
-        if (remoteCount > (next[pid] ?? 0)) {
-          next[pid] = remoteCount;
-          changed = true;
-        }
+    const mergedCounts = { ...turnCountsRef.current };
+    let countsChanged = false;
+    for (const [pid, remoteCount] of Object.entries(remote.turnCounts)) {
+      if (remoteCount > (mergedCounts[pid] ?? 0)) {
+        mergedCounts[pid] = remoteCount;
+        countsChanged = true;
       }
-      return changed ? next : prev;
-    });
+    }
+    if (countsChanged) {
+      turnCountsRef.current = mergedCounts;
+      setTurnCounts(mergedCounts);
+    }
 
     setElapsed((prev) => {
       const next = { ...prev };
