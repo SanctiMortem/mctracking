@@ -253,6 +253,10 @@ interface DeckFormProps {
     commander_id: string;
     commander_id_2?: string | null;
     description?: string | null;
+    /** null clears the link. */
+    moxfield_url: string | null;
+    /** Pasted card list. Empty = leave the deck's current list untouched. */
+    decklist_text: string;
   }) => Promise<void>;
   onClose: () => void;
   onCreateCommander: (input: DeckCreateCommanderInput) => Promise<{ id: string }>;
@@ -271,6 +275,9 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
   // Deck fields
   const [deckName, setDeckName] = useState('');
   const [description, setDescription] = useState('');
+  // Optional full list (DECK-005) and Moxfield link (DECK-006)
+  const [moxfieldUrl, setMoxfieldUrl] = useState('');
+  const [decklistText, setDecklistText] = useState('');
 
   // Scryfall-resolved commanders
   const [cmd1, setCmd1] = useState<ScryfallCommander | null>(null);
@@ -287,6 +294,8 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
     if (deck) {
       setDeckName(deck.name);
       setDescription(deck.description ?? '');
+      setMoxfieldUrl(deck.moxfieldUrl ?? '');
+      setDecklistText('');
       setCmd1(commanderToScryfall(deck.commander));
       if (deck.commander2) {
         setHasPartner(true);
@@ -298,6 +307,8 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
     } else {
       setDeckName('');
       setDescription('');
+      setMoxfieldUrl('');
+      setDecklistText('');
       setCmd1(null);
       setCmd2(null);
       setHasPartner(false);
@@ -315,6 +326,12 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
     }
     if (hasPartner && !cmd2) {
       Alert.alert(t('common.error'), 'Select a partner commander from the search results.');
+      return;
+    }
+
+    const link = moxfieldUrl.trim();
+    if (link && !/^https:\/\/(www\.)?moxfield\.com\/\S+$/i.test(link)) {
+      Alert.alert(t('common.error'), t('decklist.moxfieldInvalid'));
       return;
     }
 
@@ -345,6 +362,8 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
         commander_id: created1.id,
         commander_id_2: cmd2Id,
         description: description.trim() || null,
+        moxfield_url: link || null,
+        decklist_text: decklistText,
       });
       onClose();
     } catch (e: unknown) {
@@ -432,6 +451,36 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
             numberOfLines={3}
             textAlignVertical="top"
           />
+
+          {/* Moxfield link */}
+          <Text style={styles.label}>{t('decklist.moxfieldLabel')}</Text>
+          <TextInput
+            style={styles.input}
+            value={moxfieldUrl}
+            onChangeText={setMoxfieldUrl}
+            placeholder="https://moxfield.com/decks/…"
+            placeholderTextColor={theme.colors.text.muted}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+          />
+
+          {/* Decklist */}
+          <Text style={styles.label}>{t('decklist.formLabel')}</Text>
+          <TextInput
+            style={[styles.input, styles.inputDecklist]}
+            value={decklistText}
+            onChangeText={setDecklistText}
+            placeholder={'1 Sol Ring\n1 Arcane Signet\n1 Command Tower'}
+            placeholderTextColor={theme.colors.text.muted}
+            multiline
+            autoCapitalize="none"
+            autoCorrect={false}
+            textAlignVertical="top"
+          />
+          <Text style={styles.fieldHint}>
+            {deck ? t('decklist.formHintEdit') : t('decklist.formHintNew')}
+          </Text>
         </ScrollView>
 
         {/* Actions */}
@@ -514,6 +563,12 @@ const createStyles = (t: AppTheme) => ({
     marginBottom: spacing[2],
   },
   inputMultiline: { minHeight: 80 },
+  inputDecklist: { minHeight: 120, maxHeight: 220, fontSize: t.typography.size['body-sm'] },
+  fieldHint: {
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+    marginBottom: spacing[2],
+  },
 
   // Partner toggle row
   partnerRow: {

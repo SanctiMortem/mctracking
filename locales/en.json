@@ -620,16 +620,7 @@
   },
   "decklist": {
     "title": "Decklist",
-    "empty": "No decklist yet. Paste one to see the cards here.",
-    "add": "Add decklist",
-    "replace": "Replace list",
-    "remove": "Remove",
-    "removeTitle": "Remove decklist?",
-    "removeMessage": "The card list will be removed from this deck. Match history is not affected.",
-    "import": "Import",
     "importFailed": "Could not import the list.",
-    "linkFailed": "Could not save the link.",
-    "pasteHint": "Paste your list, one card per line. Set codes and foil tags are ignored.",
     "moxfieldLabel": "Moxfield link (optional)",
     "openMoxfield": "Open in Moxfield",
     "show": "Show",
@@ -642,6 +633,13 @@
     "offIdentityCount_other": "{{count}} outside color identity",
     "needsAttention": "Needs attention",
     "notFound": "Not found",
-    "offIdentity": "Off-color"
+    "offIdentity": "Off-color",
+    "formLabel": "Decklist (optional)",
+    "formHintNew": "Paste one card per line. Set codes and foil tags are ignored.",
+    "formHintEdit": "Paste a list to replace the current one. Leave empty to keep it.",
+    "moxfieldInvalid": "The Moxfield link must start with https://moxfield.com/",
+    "importedWithUnresolved_one": "{{total}} cards imported. {{count}} was not found — open the deck to see it.",
+    "importedWithUnresolved_other": "{{total}} cards imported. {{count}} were not found — open the deck to see them.",
+    "importRetryHint": "The deck was saved. Edit it to try the list again."
   }
 }

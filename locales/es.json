@@ -620,16 +620,7 @@
   },
   "decklist": {
     "title": "Lista del mazo",
-    "empty": "Aún no hay lista. Pega una para ver las cartas aquí.",
-    "add": "Agregar lista",
-    "replace": "Reemplazar lista",
-    "remove": "Quitar",
-    "removeTitle": "¿Quitar la lista?",
-    "removeMessage": "La lista de cartas se quitará de este mazo. El historial de partidas no cambia.",
-    "import": "Importar",
     "importFailed": "No se pudo importar la lista.",
-    "linkFailed": "No se pudo guardar el enlace.",
-    "pasteHint": "Pega tu lista, una carta por línea. Se ignoran los códigos de edición y las marcas de foil.",
     "moxfieldLabel": "Enlace de Moxfield (opcional)",
     "openMoxfield": "Abrir en Moxfield",
     "show": "Ver",
@@ -642,6 +633,13 @@
     "offIdentityCount_other": "{{count}} fuera de la identidad de color",
     "needsAttention": "Requieren atención",
     "notFound": "No encontrada",
-    "offIdentity": "Fuera de color"
+    "offIdentity": "Fuera de color",
+    "formLabel": "Lista del mazo (opcional)",
+    "formHintNew": "Pega una carta por línea. Se ignoran los códigos de edición y las marcas de foil.",
+    "formHintEdit": "Pega una lista para reemplazar la actual. Déjalo vacío para conservarla.",
+    "moxfieldInvalid": "El enlace de Moxfield debe empezar con https://moxfield.com/",
+    "importedWithUnresolved_one": "{{total}} cartas importadas. {{count}} no se encontró — abre el mazo para verla.",
+    "importedWithUnresolved_other": "{{total}} cartas importadas. {{count}} no se encontraron — abre el mazo para verlas.",
+    "importRetryHint": "El mazo se guardó. Edítalo para volver a intentar con la lista."
   }
 }

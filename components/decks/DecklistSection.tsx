@@ -1,9 +1,10 @@
 /**
  * DecklistSection — a deck's optional full card list on the deck screen.
  *
- * - Owner: paste a list to import or replace it, remove it, set a Moxfield link.
- * - Everyone who can see the deck: read the list, tap a card for its image
- *   and rules text, open the Moxfield link.
+ * Read-only: the list, a card's image and rules text on tap, and the Moxfield
+ * link. Adding or replacing the list and setting the link happen in the
+ * create / edit deck form (DeckForm), not here. Renders nothing for a deck
+ * with no list and no link.
  *
  * Unresolved lines and cards outside the commander's colour identity are
  * listed first with a warning. Card names are always shown in English.
@@ -13,21 +14,17 @@
  */
 import { useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
   Image,
   Linking,
   Modal,
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { useTheme } from '@/contexts/ThemeContext';
 import { useDecklist } from '@/hooks/useDecklist';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { DecklistCard } from '@/services/decklists';
@@ -57,17 +54,10 @@ function typeGroup(card: DecklistCard): string {
 
 export function DecklistSection({ deckId, moxfieldUrl }: DecklistSectionProps) {
   const { t } = useTranslation();
-  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const { data, loading, saving, importText, remove, saveMoxfieldUrl } = useDecklist(deckId);
+  const { data, loading } = useDecklist(deckId);
 
-  const [editing, setEditing] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [text, setText] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [link, setLink] = useState(moxfieldUrl ?? null);
-  const [linkDraft, setLinkDraft] = useState(moxfieldUrl ?? '');
-  const [linkSaving, setLinkSaving] = useState(false);
   const [selected, setSelected] = useState<DecklistCard | null>(null);
 
   const groups = useMemo(() => {
@@ -90,48 +80,8 @@ export function DecklistSection({ deckId, moxfieldUrl }: DecklistSectionProps) {
   if (loading || !data) return null;
 
   const hasList = data.cards.length > 0;
-  const canEdit = data.can_edit;
-  // Nothing to show a viewer who cannot edit.
-  if (!hasList && !link && !canEdit) return null;
-
-  const onImport = async () => {
-    setError(null);
-    try {
-      await importText(text);
-      setEditing(false);
-      setText('');
-      setExpanded(true);
-    } catch (e) {
-      setError((e as Error).message || t('decklist.importFailed'));
-    }
-  };
-
-  const onSaveLink = async () => {
-    setError(null);
-    setLinkSaving(true);
-    try {
-      const saved = await saveMoxfieldUrl(linkDraft);
-      setLink(saved);
-      setLinkDraft(saved ?? '');
-    } catch (e) {
-      setError((e as Error).message || t('decklist.linkFailed'));
-    } finally {
-      setLinkSaving(false);
-    }
-  };
-
-  const onRemove = () => {
-    Alert.alert(t('decklist.removeTitle'), t('decklist.removeMessage'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('decklist.remove'),
-        style: 'destructive',
-        onPress: () => {
-          remove().catch((e) => setError((e as Error).message));
-        },
-      },
-    ]);
-  };
+  const link = moxfieldUrl ?? null;
+  if (!hasList && !link) return null;
 
   const renderRow = (c: DecklistCard) => (
     <TouchableOpacity
@@ -187,9 +137,7 @@ export function DecklistSection({ deckId, moxfieldUrl }: DecklistSectionProps) {
               {expanded ? t('decklist.hide') : t('decklist.show')}
             </Text>
           </TouchableOpacity>
-        ) : (
-          canEdit && !editing && <Text style={styles.empty}>{t('decklist.empty')}</Text>
-        )}
+        ) : null}
 
         {/* ── List ── */}
         {hasList && expanded && (
@@ -212,90 +160,12 @@ export function DecklistSection({ deckId, moxfieldUrl }: DecklistSectionProps) {
         )}
 
         {/* ── Moxfield link ── */}
-        {link && !editing && (
+        {link && (
           <TouchableOpacity onPress={() => Linking.openURL(link)} activeOpacity={0.7}>
             <Text style={styles.linkText}>{t('decklist.openMoxfield')} ↗</Text>
           </TouchableOpacity>
         )}
 
-        {/* ── Owner actions ── */}
-        {canEdit && !editing && (
-          <View style={styles.actions}>
-            <TouchableOpacity style={styles.btn} onPress={() => { setError(null); setEditing(true); }}>
-              <Text style={styles.btnText}>
-                {hasList ? t('decklist.replace') : t('decklist.add')}
-              </Text>
-            </TouchableOpacity>
-            {hasList && (
-              <TouchableOpacity style={styles.btnGhost} onPress={onRemove} disabled={saving}>
-                <Text style={styles.btnGhostText}>{t('decklist.remove')}</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-
-        {/* ── Editor ── */}
-        {canEdit && editing && (
-          <View style={styles.editor}>
-            <Text style={styles.hint}>{t('decklist.pasteHint')}</Text>
-            <TextInput
-              style={styles.textArea}
-              value={text}
-              onChangeText={setText}
-              placeholder={'1 Sol Ring\n1 Arcane Signet\n1 Command Tower'}
-              placeholderTextColor={theme.colors.text.muted}
-              multiline
-              autoCapitalize="none"
-              autoCorrect={false}
-              textAlignVertical="top"
-              editable={!saving}
-            />
-            <View style={styles.actions}>
-              <TouchableOpacity
-                style={[styles.btn, (saving || text.trim() === '') && styles.btnDisabled]}
-                onPress={onImport}
-                disabled={saving || text.trim() === ''}
-              >
-                {saving ? (
-                  <ActivityIndicator color={theme.colors.accent.primary} size="small" />
-                ) : (
-                  <Text style={styles.btnText}>{t('decklist.import')}</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.btnGhost}
-                onPress={() => { setEditing(false); setError(null); }}
-                disabled={saving}
-              >
-                <Text style={styles.btnGhostText}>{t('common.cancel')}</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.hint}>{t('decklist.moxfieldLabel')}</Text>
-            <View style={styles.linkRow}>
-              <TextInput
-                style={styles.linkInput}
-                value={linkDraft}
-                onChangeText={setLinkDraft}
-                placeholder="https://moxfield.com/decks/…"
-                placeholderTextColor={theme.colors.text.muted}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-                editable={!linkSaving}
-              />
-              <TouchableOpacity
-                style={[styles.btnGhost, linkSaving && styles.btnDisabled]}
-                onPress={onSaveLink}
-                disabled={linkSaving || linkDraft.trim() === (link ?? '')}
-              >
-                <Text style={styles.btnGhostText}>{t('common.save')}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {error && <Text style={styles.error}>{error}</Text>}
       </View>
 
       {/* ── Card detail ── */}
@@ -364,7 +234,6 @@ const createStyles = (t: AppTheme) => ({
     fontWeight: t.typography.weight.semibold,
   },
   summaryWarn: { color: t.colors.status.error, fontSize: t.typography.size.caption },
-  empty: { color: t.colors.text.muted, fontSize: t.typography.size['body-sm'] },
   linkText: {
     color: t.colors.accent.primary,
     fontSize: t.typography.size['body-sm'],
@@ -411,22 +280,6 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size.caption,
     fontWeight: t.typography.weight.semibold,
   },
-  actions: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing[3] },
-  btn: {
-    minHeight: 40,
-    paddingHorizontal: spacing[4],
-    borderRadius: t.radius.lg,
-    borderWidth: 1,
-    borderColor: t.colors.accent.primary,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  btnDisabled: { opacity: 0.4 },
-  btnText: {
-    color: t.colors.accent.primary,
-    fontSize: t.typography.size['body-sm'],
-    fontWeight: t.typography.weight.semibold,
-  },
   btnGhost: {
     minHeight: 40,
     paddingHorizontal: spacing[2],
@@ -438,30 +291,6 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size['body-sm'],
     fontWeight: t.typography.weight.semibold,
   },
-  editor: { gap: spacing[2] },
-  hint: { color: t.colors.text.muted, fontSize: t.typography.size.caption },
-  textArea: {
-    minHeight: 160,
-    maxHeight: 280,
-    color: t.colors.text.primary,
-    fontSize: t.typography.size['body-sm'],
-    borderWidth: 1,
-    borderColor: t.colors.border.default,
-    borderRadius: t.radius.lg,
-    padding: spacing[3],
-  },
-  linkRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing[2] },
-  linkInput: {
-    flex: 1,
-    minHeight: 40,
-    color: t.colors.text.primary,
-    fontSize: t.typography.size['body-sm'],
-    borderWidth: 1,
-    borderColor: t.colors.border.default,
-    borderRadius: t.radius.lg,
-    paddingHorizontal: spacing[3],
-  },
-  error: { color: t.colors.status.error, fontSize: t.typography.size['body-sm'] },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.75)',

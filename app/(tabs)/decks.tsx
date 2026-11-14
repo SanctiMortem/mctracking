@@ -38,7 +38,7 @@ export default function DecksScreen() {
   const { contentPadding, contentMaxWidth } = useResponsive();
   const { create: createCommander } = useCommanders();
   const [showArchived, setShowArchived] = useState(false);
-  const { decks, loading, error, refresh, create, update, remove, setArchived } = useDecks(
+  const { decks, loading, error, refresh, create, update, remove, setArchived, importDecklist } = useDecks(
     undefined,
     { includeArchived: showArchived },
   );
@@ -66,11 +66,42 @@ export default function DecksScreen() {
     commander_id: string;
     commander_id_2?: string | null;
     description?: string | null;
+    moxfield_url: string | null;
+    decklist_text: string;
   }) {
+    const { decklist_text, moxfield_url, ...deckData } = data;
+
+    let deckId: string;
     if (editing) {
-      await update(editing.id, data);
+      deckId = editing.id;
+      await update(deckId, { ...deckData, moxfield_url });
     } else {
-      await create(data);
+      deckId = (await create(deckData)).id;
+      // POST /api/decks does not take the link; set it on the new deck.
+      if (moxfield_url) await update(deckId, { moxfield_url });
+    }
+
+    if (decklist_text.trim() === '') return;
+
+    // The deck itself is saved at this point. A failed list import must not
+    // throw — the form would stay open and saving again would create a
+    // second deck — so report it and let the user retry from Edit.
+    try {
+      const list = await importDecklist(deckId, decklist_text);
+      if (list.unresolved_count > 0) {
+        Alert.alert(
+          t('decklist.title'),
+          t('decklist.importedWithUnresolved', {
+            total: list.total_cards,
+            count: list.unresolved_count,
+          }),
+        );
+      }
+    } catch (e: unknown) {
+      Alert.alert(
+        t('decklist.importFailed'),
+        `${e instanceof Error ? e.message : ''}\n${t('decklist.importRetryHint')}`.trim(),
+      );
     }
   }
 

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@clerk/clerk-expo';
 
 import { apiFetch } from '@/services/api';
+import type { Decklist } from '@/services/decklists';
 import type { DeckWithCommanders } from '@/services/decks';
 
 type CreateInput = {
@@ -15,7 +16,7 @@ type CreateInput = {
   description?: string | null;
 };
 
-type UpdateInput = Partial<CreateInput>;
+type UpdateInput = Partial<CreateInput> & { moxfield_url?: string | null };
 
 export function useDecks(
   commanderFilter?: string,
@@ -68,6 +69,18 @@ export function useDecks(
     return updated;
   }, []);
 
+  /** Import pasted text as the deck's card list, replacing any existing list. */
+  const importDecklist = useCallback(async (id: string, text: string): Promise<Decklist> => {
+    const token = await getTokenRef.current();
+    const res = await apiFetch<{ success: true; data: Decklist }>(
+      `/api/decks/${id}/decklist`,
+      'POST',
+      { text },
+      token ?? undefined,
+    );
+    return res.data;
+  }, []);
+
   const remove = useCallback(async (id: string): Promise<void> => {
     const token = await getTokenRef.current();
     await apiFetch(`/api/decks/${id}`, 'DELETE', undefined, token ?? undefined);
@@ -90,5 +103,5 @@ export function useDecks(
     return updated;
   }, [includeArchived]);
 
-  return { decks, loading, error, refresh, create, update, remove, setArchived };
+  return { decks, loading, error, refresh, create, update, remove, setArchived, importDecklist };
 }
