@@ -23,6 +23,7 @@ import {
 } from 'react-native';
 
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Commander } from '@/db/index';
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
@@ -42,6 +43,11 @@ export function CommanderForm({ visible, commander, onSave, onClose }: Commander
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const { t } = useTranslation();
+  // KeyboardAvoidingView (behavior="padding") overwrites the sheet's own
+  // paddingBottom with the keyboard height — 0 when the keyboard is closed —
+  // which left the buttons flush against the bottom edge. Space them here.
+  const insets = useSafeAreaInsets();
+  const actionsBottomGap = Math.max(insets.bottom, spacing[4]) + spacing[2];
 
   const [name, setName] = useState('');
   const [isPartner, setIsPartner] = useState(false);
@@ -117,7 +123,7 @@ export function CommanderForm({ visible, commander, onSave, onClose }: Commander
         </View>
 
         {/* Actions */}
-        <View style={styles.actions}>
+        <View style={[styles.actions, { marginBottom: actionsBottomGap }]}>
           <Pressable style={styles.btnCancel} onPress={onClose}>
             <Text style={styles.btnCancelText}>{t('common.cancel')}</Text>
           </Pressable>

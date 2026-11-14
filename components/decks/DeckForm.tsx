@@ -27,6 +27,7 @@ import {
 } from 'react-native';
 
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { DeckWithCommanders } from '@/services/decks';
 import { findCommander, type ScryfallCommander } from '@/services/scryfall';
@@ -261,6 +262,11 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const { t } = useTranslation();
+  // KeyboardAvoidingView (behavior="padding") overwrites the sheet's own
+  // paddingBottom with the keyboard height — 0 when the keyboard is closed —
+  // which left the buttons flush against the bottom edge. Space them here.
+  const insets = useSafeAreaInsets();
+  const actionsBottomGap = Math.max(insets.bottom, spacing[4]) + spacing[2];
 
   // Deck fields
   const [deckName, setDeckName] = useState('');
@@ -429,7 +435,7 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
         </ScrollView>
 
         {/* Actions */}
-        <View style={styles.actions}>
+        <View style={[styles.actions, { marginBottom: actionsBottomGap }]}>
           <Pressable style={styles.btnCancel} onPress={onClose}>
             <Text style={styles.btnCancelText}>{t('common.cancel')}</Text>
           </Pressable>
