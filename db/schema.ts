@@ -5,6 +5,7 @@ import {
   text,
   boolean,
   integer,
+  real,
   jsonb,
   timestamp,
   index,
@@ -341,6 +342,69 @@ export const matchResults = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [uniqueIndex('match_results_match_id_unique_idx').on(table.matchId)],
+);
+
+// ─────────────────────────────────────────────
+// match_narrations — LABS: AI recap of a match (ANL-003, RCP-001)
+// One per match. Built from the annotated log; the transcript itself is
+// never stored here.
+// ─────────────────────────────────────────────
+export interface NarrationSpeaker {
+  label: string;
+  player: string | null;
+  confidence: number;
+  evidence: string;
+}
+export interface NarrationRulesDebate {
+  question: string;
+  outcome: string;
+}
+
+export const matchNarrations = pgTable(
+  'match_narrations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    matchId: uuid('match_id').notNull().references(() => matches.id),
+    // 'draft' = visible to the match's players only; 'published' = pod-visible
+    status: text('status').notNull().default('draft'),
+    model: text('model'),
+    headline: text('headline').notNull(),
+    narrative: text('narrative').notNull(),
+    keyMoments: jsonb('key_moments').$type<string[]>().notNull().default([]),
+    rulesDebates: jsonb('rules_debates').$type<NarrationRulesDebate[]>().notNull().default([]),
+    speakers: jsonb('speakers').$type<NarrationSpeaker[]>().notNull().default([]),
+    createdBy: text('created_by').notNull(), // Clerk user ID of whoever ran the analysis
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('match_narrations_match_id_unique').on(table.matchId)],
+);
+
+// ─────────────────────────────────────────────
+// match_event_annotations — LABS: why a log entry happened (ANL-002)
+// At most one per event; a new analysis run replaces the previous rows.
+// The log entry itself (amount, target, time) is never changed.
+// ─────────────────────────────────────────────
+export const matchEventAnnotations = pgTable(
+  'match_event_annotations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    matchId: uuid('match_id').notNull().references(() => matches.id),
+    eventId: uuid('event_id').notNull().references(() => matchEvents.id),
+    // Who caused it — a participation in the same match, when identified
+    sourceParticipationId: uuid('source_participation_id').references(() => participations.id),
+    // English card name as said at the table, when one was named
+    sourceCard: text('source_card'),
+    // combat | commander | spell | ability | lifegain | other
+    damageType: text('damage_type').notNull(),
+    confidence: real('confidence').notNull(),
+    evidenceQuote: text('evidence_quote'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('match_event_annotations_event_id_unique').on(table.eventId),
+    index('match_event_annotations_match_id_idx').on(table.matchId),
+  ],
 );
 
 // ─────────────────────────────────────────────

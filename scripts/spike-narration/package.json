@@ -1,0 +1,10 @@
+{
+  "name": "spike-narration",
+  "private": true,
+  "type": "module",
+  "description": "SPIKE-001: is table audio good enough for AI match narration? Not app code.",
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest",
+    "zod": "latest"
+  }
+}

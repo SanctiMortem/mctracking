@@ -19,6 +19,9 @@ export type NewCard = typeof schema.cards.$inferInsert;
 export type DeckCard = typeof schema.deckCards.$inferSelect;
 export type NewDeckCard = typeof schema.deckCards.$inferInsert;
 
+export type MatchNarration = typeof schema.matchNarrations.$inferSelect;
+export type MatchEventAnnotation = typeof schema.matchEventAnnotations.$inferSelect;
+
 export type Match = typeof schema.matches.$inferSelect;
 export type NewMatch = typeof schema.matches.$inferInsert;
 

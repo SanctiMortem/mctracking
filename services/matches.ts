@@ -44,7 +44,7 @@ async function canManageMatch(userId: string, match: Match): Promise<boolean> {
  * Single source of truth for match visibility; `getMatchById` and
  * `getMatchSyncState` both defer to it so the two can't drift apart.
  */
-async function canViewMatch(userId: string, match: Match, matchId: string): Promise<boolean> {
+export async function canViewMatch(userId: string, match: Match, matchId: string): Promise<boolean> {
   if (match.createdBy === userId) return true;
 
   if (match.groupId && (await isGroupMember(userId, match.groupId))) return true;

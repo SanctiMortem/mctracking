@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
+import { NarrationCause, NarrationRecap, useNarration } from '@/components/labs/MatchNarration';
 import { EventLogItem } from '@/components/tracker/EventLogItem';
 import { ParticipantResultRow } from '@/components/match/ParticipantResultRow';
 import { useMatchDetail } from '@/hooks/useMatchDetail';
@@ -78,6 +79,8 @@ export default function MatchDetailScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { data, loading, error } = useMatchDetail(id);
+  // LABS: AI recap + per-event causes. Empty unless Labs is on and the match has one.
+  const { narration, causes } = useNarration(id);
 
   if (loading) {
     return (
@@ -207,6 +210,8 @@ export default function MatchDetailScreen() {
               </View>
             </View>
 
+            <NarrationRecap narration={narration} />
+
             {/* ── Event Log header ── */}
             <View style={styles.section}>
               <SectionTitle label="Event Log" count={formattedEvents.length} />
@@ -218,6 +223,7 @@ export default function MatchDetailScreen() {
         renderItem={({ item }) => (
           <View style={styles.eventItem}>
             <EventLogItem event={item} />
+            <NarrationCause cause={causes.get(item.id)} />
           </View>
         )}
 
