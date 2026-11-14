@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { useResponsive } from '@/hooks/useResponsive';
@@ -30,6 +31,7 @@ const SCRYFALL_LICENSE_URL = 'https://creativecommons.org/licenses/by-nc/4.0/';
 
 export default function AboutScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
   const { theme } = useTheme();
   const { contentMaxWidth } = useResponsive();
   const styles = useThemedStyles(createStyles);
@@ -57,7 +59,12 @@ export default function AboutScreen() {
         <View style={styles.appHeader}>
           <Text style={styles.appName}>{t('about.appName')}</Text>
           <Text style={styles.appTagline}>{t('about.tagline')}</Text>
-          <Text style={styles.version}>
+          {/* Long-press opens the hidden Labs screen (experimental features). */}
+          <Text
+            style={styles.version}
+            onLongPress={() => router.push('/labs' as never)}
+            suppressHighlighting
+          >
             {t('about.versionLabel')} {version}
             {buildNumber ? ` · ${t('about.buildLabel')} ${buildNumber}` : ''}
           </Text>
