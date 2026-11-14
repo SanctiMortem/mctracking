@@ -200,6 +200,7 @@
     "pushForTurn": "Pulsa para turno"
   },
   "player": {
+    "howItWins": "Cómo gana",
     "players": "Jugadores",
     "guestPlayers": "Jugadores Invitados",
     "newPlayer": "Nuevo Jugador",
@@ -228,6 +229,7 @@
     "longestTurn": "turno más largo"
   },
   "deck": {
+    "howItWins": "Cómo gana este mazo",
     "decks": "Mazos",
     "newDeck": "Nuevo Mazo",
     "editDeck": "Editar Mazo",
@@ -283,6 +285,7 @@
     "archivedEmptyBody": "Los mazos archivados aparecen aquí. Su historial se conserva, pero quedan ocultos del setup de partidas."
   },
   "commanders": {
+    "howItWins": "Cómo gana este comandante",
     "title": "Commanders",
     "noCommandersYet": "Sin commanders aún",
     "noCommandersBody": "Toca el botón de arriba para agregar tu primer commander.",

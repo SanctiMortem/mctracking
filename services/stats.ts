@@ -8,7 +8,7 @@
  *
  * HIST-004, HIST-006, HIST-008 (EPIC-04)
  */
-import { and, count, desc, eq, inArray, isNotNull, isNull, or, sql } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNotNull, isNull, or, sql, type SQL } from 'drizzle-orm';
 
 import { db } from '@/services/db';
 import { commanders, decks, groupMembers, matchEvents, matchResults, matches, participations, players } from '@/db/schema';
@@ -123,6 +123,36 @@ function calcWinRate(wins: number, total: number): number | null {
   return Math.round((wins / total) * 1000) / 10;
 }
 
+// ─── Wins by win condition (STAT-001) ─────────────────────────────────────────
+
+export type WinConditionCount = {
+  /** winConditionEnum value. */
+  condition: string;
+  wins: number;
+};
+
+/**
+ * How the winning participations matching `filter` won, grouped by the
+ * win condition picked at match close. Completed matches only; draws have no
+ * winner_participation_id and drop out of the join. Conditions with zero wins
+ * are omitted. Sorted by wins DESC, then condition name for a stable order.
+ */
+async function getWinsByCondition(filter: SQL | undefined): Promise<WinConditionCount[]> {
+  const rows = await db
+    .select({ condition: matchResults.winCondition, wins: count(matchResults.id) })
+    .from(matchResults)
+    .innerJoin(participations, eq(matchResults.winnerParticipationId, participations.id))
+    .innerJoin(matches, eq(participations.matchId, matches.id))
+    .innerJoin(decks, eq(participations.deckId, decks.id))
+    .where(and(eq(matches.status, 'completed'), eq(matchResults.isDraw, false), filter))
+    .groupBy(matchResults.winCondition);
+
+  return rows
+    .map((r) => ({ condition: r.condition as string, wins: Number(r.wins ?? 0) }))
+    .filter((r) => r.wins > 0)
+    .sort((a, b) => b.wins - a.wins || a.condition.localeCompare(b.condition));
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type FavoriteDeck = {
@@ -159,6 +189,8 @@ export type PlayerStats = {
   longest_turn_seconds: number | null;
   /** Count of timed turns aggregated — drives an explicit "no data" copy. */
   timed_turn_count: number;
+  /** How this player's wins were achieved. Empty when no wins. */
+  wins_by_condition: WinConditionCount[];
 };
 
 export type GetPlayerStatsResult =
@@ -183,7 +215,7 @@ export async function getPlayerStats(
   if (!(await userCanViewPlayer(userId, player))) return { forbidden: true };
 
   // 2. Run all aggregation queries in parallel
-  const [statsRows, deckStatRows, partRows, turnEventRows] = await Promise.all([
+  const [statsRows, deckStatRows, partRows, turnEventRows, winsByCondition] = await Promise.all([
     // Overall stats — total completed matches, wins, losses, draws
     db
       .select({
@@ -253,6 +285,8 @@ export async function getPlayerStats(
         )`,
       ))
       .orderBy(matchEvents.matchId, matchEvents.createdAt),
+
+    getWinsByCondition(eq(participations.playerId, playerId)),
   ]);
 
   // 3. Overall numbers (SQL SUM returns null when no rows match — coerce to 0)
@@ -387,6 +421,7 @@ export async function getPlayerStats(
       avg_turn_time_seconds: avgTurnTimeSeconds,
       longest_turn_seconds: longestTurnOrNull,
       timed_turn_count: turnDurationCount,
+      wins_by_condition: winsByCondition,
       favorite_decks: favoriteDecksList,
       favorite_commanders: favoriteCommandersList,
     },
@@ -438,6 +473,8 @@ export type DeckStats = {
   strong_against_colors: ColorMatchup[];
   /** Colors this deck has the lowest negative score against. Empty when none. */
   weak_against_colors: ColorMatchup[];
+  /** How this deck's wins were achieved. Empty when no wins. */
+  wins_by_condition: WinConditionCount[];
 };
 
 /** Min number of DECISIVE matches against a single opposing deck for it
@@ -470,7 +507,7 @@ export async function getDeckStats(
   // 2. Fetch commander(s) + aggregate stats in parallel
   const commanderIds = [deck.commanderId, deck.commanderId2].filter(Boolean) as string[];
 
-  const [deckCommanderObjects, statsRows, perPlayerRows, ownMatchRows] = await Promise.all([
+  const [deckCommanderObjects, statsRows, perPlayerRows, ownMatchRows, winsByCondition] = await Promise.all([
     // Commander objects (1 or 2 for partner decks)
     db.select().from(commanders).where(inArray(commanders.id, commanderIds)),
 
@@ -503,6 +540,8 @@ export async function getDeckStats(
       .from(participations)
       .innerJoin(matches, eq(participations.matchId, matches.id))
       .where(and(eq(participations.deckId, deckId), eq(matches.status, 'completed'))),
+
+    getWinsByCondition(eq(participations.deckId, deckId)),
   ]);
 
   // 3. Build DeckWithCommanders
@@ -723,6 +762,7 @@ export async function getDeckStats(
       worst_matchups: worstMatchups,
       strong_against_colors: strongAgainstColors,
       weak_against_colors: weakAgainstColors,
+      wins_by_condition: winsByCondition,
     },
   };
 }
@@ -764,6 +804,8 @@ export type CommanderStats = {
   win_rate_pct: number | null;
   decks_using: DeckUsage[];
   players_using: PlayerCommanderUsage[];
+  /** How decks led by this commander won. Empty when no wins. */
+  wins_by_condition: WinConditionCount[];
 };
 
 export type GetCommanderStatsResult =
@@ -794,7 +836,7 @@ export async function getCommanderStats(
   );
 
   // 2. Run aggregation queries in parallel
-  const [statsRows, perDeckRows, perPlayerRows] = await Promise.all([
+  const [statsRows, perDeckRows, perPlayerRows, winsByCondition] = await Promise.all([
     // Overall stats
     db
       .select({
@@ -831,6 +873,11 @@ export async function getCommanderStats(
       .where(commanderFilter)
       .groupBy(participations.playerId)
       .orderBy(desc(count(participations.id))),
+
+    // Primary or partner slot (BR-STATS-05)
+    getWinsByCondition(
+      or(eq(decks.commanderId, commanderId), eq(decks.commanderId2, commanderId)),
+    ),
   ]);
 
   // 3. Overall numbers
@@ -887,6 +934,7 @@ export async function getCommanderStats(
       win_rate_pct: calcWinRate(wins, total),
       decks_using: decksUsing,
       players_using: playersUsing,
+      wins_by_condition: winsByCondition,
     },
   };
 }

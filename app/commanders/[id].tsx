@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 
 import { CircularWinRate } from '@/components/ui/CircularWinRate';
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
+import { WinConditionBreakdown } from '@/components/stats/WinConditionBreakdown';
 import { useCommanderStats } from '@/hooks/useCommanderStats';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -144,6 +145,8 @@ export default function CommanderDetailScreen() {
             </View>
           )}
         </View>
+
+        <WinConditionBreakdown title={t('commanders.howItWins')} rows={data.wins_by_condition} />
 
         {/* ── Decks using ── */}
         <View style={styles.section}>

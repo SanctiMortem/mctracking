@@ -200,6 +200,7 @@
     "pushForTurn": "Push for turn"
   },
   "player": {
+    "howItWins": "How they win",
     "players": "Players",
     "guestPlayers": "Guest Players",
     "newPlayer": "New Player",
@@ -228,6 +229,7 @@
     "longestTurn": "longest turn"
   },
   "deck": {
+    "howItWins": "How this deck wins",
     "decks": "Decks",
     "newDeck": "New Deck",
     "editDeck": "Edit Deck",
@@ -283,6 +285,7 @@
     "archivedEmptyBody": "Archived decks appear here. Their history is kept, but they are hidden from match setup."
   },
   "commanders": {
+    "howItWins": "How this commander wins",
     "title": "Commanders",
     "noCommandersYet": "No commanders yet",
     "noCommandersBody": "Tap the button above to add your first commander.",
