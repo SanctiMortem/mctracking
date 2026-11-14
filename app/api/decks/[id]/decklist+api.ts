@@ -22,7 +22,7 @@ import { getRouteParam } from '@/services/route-params';
 const MAX_TEXT_LENGTH = 30_000;
 
 export async function GET(req: Request) {
-  const { userId } = getAuth(req);
+  const { userId } = await getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const id = getRouteParam(req, 'id');
@@ -36,7 +36,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const { userId } = getAuth(req);
+  const { userId } = await getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const id = getRouteParam(req, 'id');
@@ -93,7 +93,7 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const { userId } = getAuth(req);
+  const { userId } = await getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const id = getRouteParam(req, 'id');
