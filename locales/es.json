@@ -227,7 +227,10 @@
     "noDecksData": "Sin datos de mazos",
     "nameLabel": "Nombre",
     "avgTurnTime": "turno promedio",
-    "longestTurn": "turno más largo"
+    "longestTurn": "turno más largo",
+    "seeAllDecks_one": "Ver el mazo ({{count}})",
+    "seeAllDecks_other": "Ver los {{count}} mazos",
+    "showTopDecks": "Ver los 5 principales"
   },
   "deck": {
     "howItWins": "Cómo gana este mazo",
@@ -449,8 +452,12 @@
     "dateRange": "Rango de fechas",
     "dateFrom": "Desde (AAAA-MM-DD)",
     "dateTo": "Hasta (AAAA-MM-DD)",
-    "filtersStub": "Filtros por jugador / mazo / commander — disponibles en una próxima actualización",
-    "victoriaLabel": "Victoria para"
+    "victoriaLabel": "Victoria para",
+    "filterPlayer": "Jugador",
+    "filterDeck": "Mazo",
+    "filterCommander": "Comandante",
+    "search": "Buscar…",
+    "scopeMine": "Mis partidas"
   },
   "stats": {
     "title": "Estadísticas",

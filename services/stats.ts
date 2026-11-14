@@ -400,8 +400,9 @@ export async function getPlayerStats(
         and(eq(participations.playerId, playerId), eq(matches.status, 'completed')),
       )
       .groupBy(participations.deckId)
-      .orderBy(desc(count(participations.id)))
-      .limit(5),
+      // Every deck the player has used, most played first. The screen shows
+      // the top five and a "see all" toggle for the rest.
+      .orderBy(desc(count(participations.id))),
 
     // Commander data — includes commander_id_2 for partner decks (BR-STATS-05)
     db

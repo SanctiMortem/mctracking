@@ -269,7 +269,9 @@ export function MatchSetupForm({ onSubmit }: MatchSetupFormProps) {
                     {assignedDeck ? (
                       <View style={styles.deckTriggerFilled}>
                         <Text style={styles.deckTriggerName} numberOfLines={1}>
-                          {assignedDeck.name}
+                          {/* Commander first, matching the picker list */}
+                          {assignedDeck.commander.name}
+                          {assignedDeck.commander2 ? ` / ${assignedDeck.commander2.name}` : ''}
                         </Text>
                         <ManaIdentityRow colors={assignedDeck.commander.colorIdentity} size="xs" />
                       </View>

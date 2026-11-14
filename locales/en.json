@@ -227,7 +227,10 @@
     "noDecksData": "No deck data",
     "nameLabel": "Name",
     "avgTurnTime": "avg turn",
-    "longestTurn": "longest turn"
+    "longestTurn": "longest turn",
+    "seeAllDecks_one": "See all {{count}} deck",
+    "seeAllDecks_other": "See all {{count}} decks",
+    "showTopDecks": "Show top 5"
   },
   "deck": {
     "howItWins": "How this deck wins",
@@ -449,8 +452,12 @@
     "dateRange": "Date Range",
     "dateFrom": "From (YYYY-MM-DD)",
     "dateTo": "To (YYYY-MM-DD)",
-    "filtersStub": "Player / Deck / Commander filters — coming in a future update",
-    "victoriaLabel": "Victory for"
+    "victoriaLabel": "Victory for",
+    "filterPlayer": "Player",
+    "filterDeck": "Deck",
+    "filterCommander": "Commander",
+    "search": "Search…",
+    "scopeMine": "My matches"
   },
   "stats": {
     "title": "Stats",

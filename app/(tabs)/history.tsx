@@ -7,6 +7,7 @@
  *
  * HIST-002 (EPIC-04)
  */
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -16,8 +17,11 @@ import { useTranslation } from 'react-i18next';
 
 import { MatchCard, MatchCardSkeleton } from '@/components/match/MatchCard';
 import { MatchHistoryFilterBar } from '@/components/match/MatchHistoryFilterBar';
+import { StatsScopePicker } from '@/components/stats/StatsScopePicker';
 import { useGroupContext } from '@/contexts/GroupContext';
+import { useGroups } from '@/hooks/useGroups';
 import { useMatchHistory } from '@/hooks/useMatchHistory';
+import { useMatchupOptions } from '@/hooks/useMatchupOptions';
 import { useResponsive } from '@/hooks/useResponsive';
 import { apiFetch } from '@/services/api';
 import { spacing } from '@/styles/tokens';
@@ -85,7 +89,25 @@ export default function HistoryScreen() {
   const { getToken } = useAuth();
   const { t } = useTranslation();
   const { activeContext } = useGroupContext();
-  const groupId = activeContext !== 'personal' ? activeContext : null;
+  // Scope shown on this tab: null = my matches (any pod), or one pod's id =
+  // every match played in that pod. Starts on the app-wide context and can
+  // be changed here without affecting the rest of the app.
+  const [groupId, setGroupId] = useState<string | null>(
+    activeContext !== 'personal' ? activeContext : null,
+  );
+  useEffect(() => {
+    setGroupId(activeContext !== 'personal' ? activeContext : null);
+  }, [activeContext]);
+  const { groups } = useGroups();
+  const scopeOptions = useMemo(
+    () => [
+      { id: null, label: t('history.scopeMine') },
+      ...groups.map((g) => ({ id: g.group.id, label: g.group.name })),
+    ],
+    [groups, t],
+  );
+  // Players / decks / commanders that can be filtered on in this scope.
+  const { data: filterOptions } = useMatchupOptions(groupId);
   const { isTablet, columns, contentMaxWidth, contentPadding } = useResponsive();
   const {
     matches, hasMore, loading, loadingMore, error,
@@ -136,7 +158,17 @@ export default function HistoryScreen() {
       </View>
 
       {/* Filter bar — always visible */}
-      <MatchHistoryFilterBar filters={filters} onChange={setFilters} />
+      <StatsScopePicker
+        options={scopeOptions}
+        value={groupId}
+        onChange={(id) => {
+          // A player / deck / commander picked in one scope may not exist in
+          // the next — drop those, keep result / condition / dates.
+          setFilters({ ...filters, player_id: undefined, deck_id: undefined, commander_id: undefined });
+          setGroupId(id);
+        }}
+      />
+      <MatchHistoryFilterBar filters={filters} onChange={setFilters} options={filterOptions} />
 
       {/* Error banner */}
       {error && (

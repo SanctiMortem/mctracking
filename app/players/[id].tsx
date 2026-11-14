@@ -8,6 +8,7 @@
  * Replaces DATA-008 stub (EPIC-01).
  * HIST-005 (EPIC-04)
  */
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -45,6 +46,9 @@ function formatTempoSeconds(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+/** Decks shown before the "see all" toggle. */
+const TOP_DECKS = 5;
+
 // ─── Section title ────────────────────────────────────────────────────────────
 
 function SectionTitle({ label, count }: { label: string; count?: number }) {
@@ -73,6 +77,7 @@ export default function PlayerProfileScreen() {
   const insets = useSafeAreaInsets();
   const { contentMaxWidth, contentPadding } = useResponsive();
   const { data, loading, error } = usePlayerStats(id);
+  const [showAllDecks, setShowAllDecks] = useState(false);
 
   if (loading) {
     return (
@@ -214,7 +219,7 @@ export default function PlayerProfileScreen() {
             </View>
           ) : (
             <View style={styles.list}>
-              {favorite_decks.map((fd) => (
+              {(showAllDecks ? favorite_decks : favorite_decks.slice(0, TOP_DECKS)).map((fd) => (
                 <DeckStatRow
                   key={fd.deck.id}
                   deck={fd.deck}
@@ -224,6 +229,19 @@ export default function PlayerProfileScreen() {
                   onPress={() => router.push(`/decks/${fd.deck.id}`)}
                 />
               ))}
+              {favorite_decks.length > TOP_DECKS && (
+                <TouchableOpacity
+                  onPress={() => setShowAllDecks((v) => !v)}
+                  hitSlop={8}
+                  style={styles.seeAllBtn}
+                >
+                  <Text style={styles.seeAllText}>
+                    {showAllDecks
+                      ? t('player.showTopDecks')
+                      : t('player.seeAllDecks', { count: favorite_decks.length })}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </View>
@@ -445,6 +463,12 @@ const createStyles = (t: AppTheme) => ({
     color: t.colors.text.muted,
     fontSize: t.typography.size['body-sm'],
     fontStyle: 'italic',
+  },
+  seeAllBtn: { alignSelf: 'center', paddingVertical: spacing[2] },
+  seeAllText: {
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
   },
 
   // Commander row

@@ -43,6 +43,11 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 export type PickerDeck = DeckWithCommanders & { ownerName?: string };
 
+/** "Atraxa, Praetors' Voice" or "Thrasios / Tymna" for partners. */
+function commanderLabel(deck: DeckWithCommanders): string {
+  return deck.commander2 ? `${deck.commander.name} / ${deck.commander2.name}` : deck.commander.name;
+}
+
 interface DeckPickerModalProps {
   visible: boolean;
   /**
@@ -79,10 +84,21 @@ export function DeckPickerModal({
   // Grouped view: { ownerName: PickerDeck[] }. Owner order is "the slot's
   // own player first, then everyone else alphabetically" — keeps the
   // common-case section pinned at the top.
+  // Commander first: that is how players think of a deck at the table, so
+  // the list is ordered by commander name (deck name breaks ties).
+  const sortedDecks = useMemo(
+    () =>
+      [...decks].sort(
+        (a, b) =>
+          commanderLabel(a).localeCompare(commanderLabel(b)) || a.name.localeCompare(b.name),
+      ),
+    [decks],
+  );
+
   const sections = useMemo(() => {
     if (!grouped) return null;
     const byOwner: Record<string, PickerDeck[]> = {};
-    for (const d of decks) {
+    for (const d of sortedDecks) {
       const key = d.ownerName ?? t('match.unknownOwner');
       (byOwner[key] ??= []).push(d);
     }
@@ -92,7 +108,7 @@ export function DeckPickerModal({
       return a.localeCompare(b);
     });
     return owners.map((owner) => ({ owner, decks: byOwner[owner] }));
-  }, [grouped, decks, forPlayerName, t]);
+  }, [grouped, sortedDecks, forPlayerName, t]);
 
   // Collapse state. Default: only the slot-player's section open. We
   // re-derive this every time the modal opens with a different player so
@@ -198,7 +214,7 @@ export function DeckPickerModal({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {decks.map((deck, idx) => (
+            {sortedDecks.map((deck, idx) => (
               <View key={deck.id}>
                 {idx > 0 && <View style={styles.separator} />}
                 <DeckOption
@@ -236,13 +252,17 @@ function DeckOption({
       accessibilityState={{ selected: isSelected }}
     >
       <View style={styles.deckOptionInfo}>
+        {/* Commander is the headline; the deck name sits under it, and is
+            dropped when it just repeats the commander. */}
         <Text style={styles.deckOptionName} numberOfLines={1}>
-          {deck.name}
+          {commanderLabel(deck)}
         </Text>
-        <Text style={styles.deckOptionCommander} numberOfLines={1}>
-          {deck.commander.name}
-          {deck.commander2 ? ` / ${deck.commander2.name}` : ''}
-        </Text>
+        {deck.name.trim().toLowerCase() !== commanderLabel(deck).toLowerCase() &&
+          deck.name.trim().toLowerCase() !== deck.commander.name.toLowerCase() && (
+            <Text style={styles.deckOptionCommander} numberOfLines={1}>
+              {deck.name}
+            </Text>
+          )}
       </View>
       <ManaIdentityRow colors={deck.commander.colorIdentity} size="xs" />
     </Pressable>

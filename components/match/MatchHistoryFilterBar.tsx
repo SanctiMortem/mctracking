@@ -3,16 +3,19 @@
  *
  * Chips: result (all/win/lose/draw/abandoned), win_condition (8 options).
  * Date range: ISO text inputs (date picker in Fase 2).
- * Player/deck/commander filters: placeholder stubs — selectors in Fase 2 (PLAT).
+ * Player / deck / commander: searchable pickers fed by the current scope's
+ * options (the same list the matchup screen uses).
  *
  * HIST-002 (EPIC-04)
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { useTranslation } from 'react-i18next';
 
+import { EntitySelector, type EntityOption } from '@/components/stats/EntitySelector';
 import type { HistoryFilters } from '@/hooks/useMatchHistory';
+import type { MatchupOptions } from '@/hooks/useMatchupOptions';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
@@ -45,14 +48,71 @@ function SectionLabel({ label }: { label: string }) {
   return <Text style={styles.sectionLabel}>{label}</Text>;
 }
 
+// ─── Entity filter (player / deck / commander) ────────────────────────────────
+
+/**
+ * One row showing the current pick (or "Any"); tapping it opens a searchable
+ * list in place. Picking closes the list; the ✕ clears the filter.
+ */
+function EntityFilter({
+  label, anyLabel, searchPlaceholder, options, value, onChange,
+}: {
+  label: string;
+  anyLabel: string;
+  searchPlaceholder: string;
+  options: EntityOption[];
+  value: string | undefined;
+  onChange: (id: string | undefined) => void;
+}) {
+  const styles = useThemedStyles(createStyles);
+  const [open, setOpen] = useState(false);
+  const selected = options.find((o) => o.id === value);
+
+  return (
+    <View>
+      <SectionLabel label={label} />
+      <View style={styles.entityRow}>
+        <Pressable
+          onPress={() => setOpen((v) => !v)}
+          style={[styles.chip, styles.entityChip, !!selected && styles.chipActive]}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.chipText, !!selected && styles.chipTextActive]} numberOfLines={1}>
+            {selected?.label ?? anyLabel} {open ? '▴' : '▾'}
+          </Text>
+        </Pressable>
+        {selected && (
+          <Pressable onPress={() => onChange(undefined)} hitSlop={10} accessibilityRole="button">
+            <Text style={styles.clearText}>✕</Text>
+          </Pressable>
+        )}
+      </View>
+      {open && (
+        <EntitySelector
+          entities={options}
+          selected={value ?? null}
+          onSelect={(id) => {
+            onChange(id);
+            setOpen(false);
+          }}
+          placeholder={anyLabel}
+          searchPlaceholder={searchPlaceholder}
+        />
+      )}
+    </View>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface MatchHistoryFilterBarProps {
   filters: HistoryFilters;
   onChange: (f: HistoryFilters) => void;
+  /** Players, decks and commanders selectable in the current scope. */
+  options?: MatchupOptions;
 }
 
-export function MatchHistoryFilterBar({ filters, onChange }: MatchHistoryFilterBarProps) {
+export function MatchHistoryFilterBar({ filters, onChange, options }: MatchHistoryFilterBarProps) {
   const { theme } = useTheme();
 
   const styles = useThemedStyles(createStyles);
@@ -80,6 +140,26 @@ export function MatchHistoryFilterBar({ filters, onChange }: MatchHistoryFilterB
   ];
 
   const activeCount = Object.values(filters).filter(Boolean).length;
+
+  const byLabel = (a: EntityOption, b: EntityOption) => a.label.localeCompare(b.label);
+  const playerOptions = useMemo(
+    () => (options?.players ?? []).map((p) => ({ id: p.id, label: p.name })).sort(byLabel),
+    [options],
+  );
+  const commanderOptions = useMemo(
+    () => (options?.commanders ?? []).map((c) => ({ id: c.id, label: c.name })).sort(byLabel),
+    [options],
+  );
+  // Commander first, deck name after — how decks are listed in match setup.
+  const deckOptions = useMemo(() => {
+    const commanderName = new Map((options?.commanders ?? []).map((c) => [c.id, c.name]));
+    return (options?.decks ?? [])
+      .map((d) => {
+        const cmd = commanderName.get(d.commanderId);
+        return { id: d.id, label: cmd && cmd !== d.name ? `${cmd} — ${d.name}` : d.name };
+      })
+      .sort(byLabel);
+  }, [options]);
 
   return (
     <View style={styles.root}>
@@ -110,7 +190,13 @@ export function MatchHistoryFilterBar({ filters, onChange }: MatchHistoryFilterB
 
       {/* Expanded panel */}
       {expanded && (
-        <View style={styles.panel}>
+        // Scrollable so the pickers stay reachable on a short screen.
+        <ScrollView
+          style={styles.panelScroll}
+          contentContainerStyle={styles.panel}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
+        >
           {/* Result filter */}
           <SectionLabel label={t('history.result')} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
@@ -165,9 +251,32 @@ export function MatchHistoryFilterBar({ filters, onChange }: MatchHistoryFilterB
             />
           </View>
 
-          {/* Player / Deck / Commander — stubs for Fase 2 */}
-          <Text style={styles.stubNote}>{t('history.filtersStub')}</Text>
-        </View>
+          {/* Player / Deck / Commander */}
+          <EntityFilter
+            label={t('history.filterPlayer')}
+            anyLabel={t('history.any')}
+            searchPlaceholder={t('history.search')}
+            options={playerOptions}
+            value={filters.player_id}
+            onChange={(id) => onChange({ ...filters, player_id: id })}
+          />
+          <EntityFilter
+            label={t('history.filterDeck')}
+            anyLabel={t('history.any')}
+            searchPlaceholder={t('history.search')}
+            options={deckOptions}
+            value={filters.deck_id}
+            onChange={(id) => onChange({ ...filters, deck_id: id })}
+          />
+          <EntityFilter
+            label={t('history.filterCommander')}
+            anyLabel={t('history.any')}
+            searchPlaceholder={t('history.search')}
+            options={commanderOptions}
+            value={filters.commander_id}
+            onChange={(id) => onChange({ ...filters, commander_id: id })}
+          />
+        </ScrollView>
       )}
     </View>
   );
@@ -206,6 +315,7 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size['body-sm'],
   },
 
+  panelScroll: { maxHeight: 420 },
   panel: {
     paddingHorizontal: spacing[4],
     paddingBottom: spacing[4],
@@ -266,6 +376,13 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size['body-sm'],
   },
 
+  entityRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: spacing[3],
+    marginBottom: spacing[2],
+  },
+  entityChip: { flexShrink: 1, maxWidth: '85%' as const },
   stubNote: {
     color: t.colors.text.muted,
     fontSize: t.typography.size.caption,

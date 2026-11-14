@@ -5,6 +5,7 @@
  * MATCH-007 (EPIC-02)
  */
 import { Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
@@ -32,6 +33,7 @@ export function ParticipantResultRow({ participation, isWinner, turnCount, turnT
   const { t } = useTranslation();
 
   const { player, deck, commander } = participation;
+  const router = useRouter();
 
   const initials = player.name
     .split(' ')
@@ -53,7 +55,12 @@ export function ParticipantResultRow({ participation, isWinner, turnCount, turnT
       {/* Player + deck info */}
       <View style={styles.info}>
         <View style={styles.nameRow}>
-          <Text style={[styles.playerName, isWinner && styles.playerNameWinner]} numberOfLines={1}>
+          <Text
+            style={[styles.playerName, isWinner && styles.playerNameWinner]}
+            numberOfLines={1}
+            onPress={() => router.push(`/players/${player.id}`)}
+            suppressHighlighting
+          >
             {player.name}
           </Text>
           {isWinner && <Text style={styles.crownIcon}>👑</Text>}
@@ -64,7 +71,14 @@ export function ParticipantResultRow({ participation, isWinner, turnCount, turnT
           </Text>
         )}
         <View style={styles.deckRow}>
-          <Text style={styles.deckName} numberOfLines={1}>{deck.name}</Text>
+          <Text
+            style={styles.deckName}
+            numberOfLines={1}
+            onPress={() => router.push(`/decks/${deck.id}`)}
+            suppressHighlighting
+          >
+            {deck.name}
+          </Text>
           <ManaIdentityRow colors={commander.colorIdentity} size="xs" />
           {turnCount !== undefined && turnCount > 0 && (
             <View style={styles.turnChip}>

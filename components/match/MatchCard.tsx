@@ -8,6 +8,7 @@
  * CMP-008 (design doc) · HIST-002 (EPIC-04)
  */
 import { Pressable, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import type { MatchSummary } from '@/services/matches';
 import { formatMatchDuration, winConditionLabel } from '@/hooks/useMatchResults';
@@ -51,27 +52,39 @@ function getOutcomeStyles(accentPrimary: string): Record<Outcome, OutcomeStyle> 
 // ─── Header helpers ───────────────────────────────────────────────────────────
 
 /** The subject of the match — the winner, or the first participant on draw/abandoned. */
-function headerSubject(summary: MatchSummary): { name: string; deck: string; isWinner: boolean } | null {
+type Subject = {
+  name: string;
+  deck: string;
+  isWinner: boolean;
+  /** Ids for navigation — absent on the no-participations fallback. */
+  participationId?: string;
+  playerId?: string;
+  deckId?: string;
+};
+
+function headerSubject(summary: MatchSummary): Subject | null {
   const { result, participations, match } = summary;
   const winnerId = result && !result.isDraw ? result.winnerParticipationId : null;
-  if (winnerId) {
-    const p = participations.find((pp) => pp.id === winnerId);
-    if (p) return { name: p.player.name, deck: p.deck.name, isWinner: true };
+  const winner = winnerId ? participations.find((pp) => pp.id === winnerId) : undefined;
+  const p = winner ?? participations[0];
+  if (p) {
+    return {
+      name: p.player.name,
+      deck: p.deck.name,
+      isWinner: !!winner,
+      participationId: p.id,
+      playerId: p.player.id,
+      deckId: p.deck.id,
+    };
   }
-  const first = participations[0];
-  if (first) return { name: first.player.name, deck: first.deck.name, isWinner: false };
   // Fallback label if we somehow have no participations
   const status = match.status === 'abandoned' ? 'Abandoned' : result?.isDraw ? 'Draw' : 'Match';
   return { name: status, deck: '', isWinner: false };
 }
 
-function otherParticipants(summary: MatchSummary, subjectName: string | null): string {
-  const parts = summary.participations;
-  const rest = subjectName
-    ? parts.filter((p) => p.player.name !== subjectName)
-    : parts;
-  if (rest.length === 0) return '';
-  return rest.map((p) => `${p.player.name} (${p.deck.name})`).join(' · ');
+/** Everyone except the header subject. */
+function otherParticipants(summary: MatchSummary, subject: Subject | null) {
+  return summary.participations.filter((p) => p.id !== subject?.participationId);
 }
 
 // ─── Date+time formatter ──────────────────────────────────────────────────────
@@ -100,6 +113,11 @@ export function MatchCard({ summary, onPress, onDelete }: MatchCardProps) {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const { accountPlayer } = useAccountPlayer();
+  const router = useRouter();
+  // Player and deck names are their own tap targets; a tap anywhere else on
+  // the card still opens the match.
+  const openPlayer = (id: string) => router.push(`/players/${id}`);
+  const openDeck = (id: string) => router.push(`/decks/${id}`);
 
   const outcome = deriveOutcome(summary);
   const OUTCOME_STYLES = getOutcomeStyles(theme.colors.accent.primary);
@@ -110,7 +128,7 @@ export function MatchCard({ summary, onPress, onDelete }: MatchCardProps) {
   const duration = formatMatchDuration(summary.match.createdAt, summary.match.endedAt);
   const dateTime = formatDateTime(summary.match.endedAt ?? summary.match.createdAt);
   const subject = headerSubject(summary);
-  const others = otherParticipants(summary, subject?.name ?? null);
+  const others = otherParticipants(summary, subject);
   const condition = summary.result && !summary.result.isDraw
     ? winConditionLabel(summary.result.winCondition)
     : null;
@@ -138,12 +156,19 @@ export function MatchCard({ summary, onPress, onDelete }: MatchCardProps) {
                 <Text
                   style={[styles.subjectName, subject.isWinner && styles.subjectNameWinner]}
                   numberOfLines={1}
+                  onPress={subject.playerId ? () => openPlayer(subject.playerId!) : undefined}
+                  suppressHighlighting
                 >
                   {subject.name}
                 </Text>
               </View>
               {subject.deck ? (
-                <Text style={styles.subjectDeck} numberOfLines={1}>
+                <Text
+                  style={styles.subjectDeck}
+                  numberOfLines={1}
+                  onPress={subject.deckId ? () => openDeck(subject.deckId!) : undefined}
+                  suppressHighlighting
+                >
                   {subject.deck}
                 </Text>
               ) : null}
@@ -160,9 +185,19 @@ export function MatchCard({ summary, onPress, onDelete }: MatchCardProps) {
 
       {/* Other participants */}
       {others.length > 0 && (
-        <Text style={styles.others} numberOfLines={2}>
-          {others}
-        </Text>
+        <View style={styles.othersList}>
+          {others.map((p) => (
+            <Text key={p.id} style={styles.others} numberOfLines={1}>
+              <Text onPress={() => openPlayer(p.player.id)} suppressHighlighting>
+                {p.player.name}
+              </Text>
+              <Text style={styles.othersSep}>{'  ·  '}</Text>
+              <Text style={styles.othersDeck} onPress={() => openDeck(p.deck.id)} suppressHighlighting>
+                {p.deck.name}
+              </Text>
+            </Text>
+          ))}
+        </View>
       )}
 
       {/* Footer — outcome + win condition */}
@@ -263,6 +298,9 @@ const createStyles = (t: AppTheme) => ({
     fontFamily: t.typography.fontFamily.body,
   },
 
+  othersList: { gap: spacing[1] },
+  othersSep: { color: t.colors.text.muted },
+  othersDeck: { color: t.colors.text.muted },
   others: {
     color: t.colors.text.secondary,
     fontSize: t.typography.size['body-sm'],
