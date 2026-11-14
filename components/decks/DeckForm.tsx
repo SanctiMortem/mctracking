@@ -16,6 +16,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -245,6 +246,9 @@ export type DeckCreateCommanderInput = {
   is_partner: boolean;
 };
 
+/** Same rule the API enforces: only https links to moxfield.com. */
+const MOXFIELD_URL_RE = /^https:\/\/(www\.)?moxfield\.com\/\S+$/i;
+
 interface DeckFormProps {
   visible: boolean;
   deck?: DeckWithCommanders | null;
@@ -330,7 +334,7 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
     }
 
     const link = moxfieldUrl.trim();
-    if (link && !/^https:\/\/(www\.)?moxfield\.com\/\S+$/i.test(link)) {
+    if (link && !MOXFIELD_URL_RE.test(link)) {
       Alert.alert(t('common.error'), t('decklist.moxfieldInvalid'));
       return;
     }
@@ -464,6 +468,17 @@ export function DeckForm({ visible, deck, onSave, onClose, onCreateCommander }: 
             autoCorrect={false}
             keyboardType="url"
           />
+          {/* Manual version of the assisted import (DECK-007): open the deck on
+              Moxfield, copy it there, come back and paste below. Detecting the
+              clipboard automatically needs a native module (build 1.1.0). */}
+          {MOXFIELD_URL_RE.test(moxfieldUrl.trim()) && (
+            <View style={styles.moxfieldAssist}>
+              <Pressable onPress={() => Linking.openURL(moxfieldUrl.trim())} hitSlop={8}>
+                <Text style={styles.moxfieldAssistLink}>{t('decklist.getFromMoxfield')} ↗</Text>
+              </Pressable>
+              <Text style={styles.fieldHint}>{t('decklist.getFromMoxfieldHint')}</Text>
+            </View>
+          )}
 
           {/* Decklist */}
           <Text style={styles.label}>{t('decklist.formLabel')}</Text>
@@ -563,6 +578,12 @@ const createStyles = (t: AppTheme) => ({
     marginBottom: spacing[2],
   },
   inputMultiline: { minHeight: 80 },
+  moxfieldAssist: { gap: 2, marginBottom: spacing[1] },
+  moxfieldAssistLink: {
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
+  },
   inputDecklist: { minHeight: 120, maxHeight: 220, fontSize: t.typography.size['body-sm'] },
   fieldHint: {
     color: t.colors.text.muted,

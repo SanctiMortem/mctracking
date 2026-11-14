@@ -640,6 +640,8 @@
     "moxfieldInvalid": "El enlace de Moxfield debe empezar con https://moxfield.com/",
     "importedWithUnresolved_one": "{{total}} cartas importadas. {{count}} no se encontró — abre el mazo para verla.",
     "importedWithUnresolved_other": "{{total}} cartas importadas. {{count}} no se encontraron — abre el mazo para verlas.",
-    "importRetryHint": "El mazo se guardó. Edítalo para volver a intentar con la lista."
+    "importRetryHint": "El mazo se guardó. Edítalo para volver a intentar con la lista.",
+    "getFromMoxfield": "Obtener lista de Moxfield",
+    "getFromMoxfieldHint": "En Moxfield: Export → Copy as plain text. Luego vuelve y pégala abajo."
   }
 }

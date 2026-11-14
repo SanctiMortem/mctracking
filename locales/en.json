@@ -640,6 +640,8 @@
     "moxfieldInvalid": "The Moxfield link must start with https://moxfield.com/",
     "importedWithUnresolved_one": "{{total}} cards imported. {{count}} was not found — open the deck to see it.",
     "importedWithUnresolved_other": "{{total}} cards imported. {{count}} were not found — open the deck to see them.",
-    "importRetryHint": "The deck was saved. Edit it to try the list again."
+    "importRetryHint": "The deck was saved. Edit it to try the list again.",
+    "getFromMoxfield": "Get list from Moxfield",
+    "getFromMoxfieldHint": "On Moxfield: Export → Copy as plain text. Then come back and paste it below."
   }
 }
