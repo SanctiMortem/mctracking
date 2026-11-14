@@ -18,7 +18,7 @@ import { groupMembers, matches, participations, players } from '@/db/schema';
 import { getOrCreateSettings } from '@/services/settings';
 
 export async function GET(req: Request) {
-  const { userId } = getAuth(req);
+  const { userId } = await getAuth(req);
 
   if (!userId) {
     return Response.json({ success: true, data: { authenticated: false } });

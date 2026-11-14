@@ -21,7 +21,7 @@ import { groupMembers } from '@/db/schema';
 import { getMatchupOptions } from '@/services/stats';
 
 export async function GET(req: Request) {
-  const { userId } = getAuth(req);
+  const { userId } = await getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(req.url);

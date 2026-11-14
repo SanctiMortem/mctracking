@@ -7,7 +7,7 @@ import { getAuth } from '@/services/auth';
 import { getAccountPlayer, getOrCreateAccountPlayer, updatePlayer } from '@/services/players';
 
 export async function GET(req: Request) {
-  const { userId } = getAuth(req);
+  const { userId } = await getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const player = await getAccountPlayer(userId);
@@ -15,7 +15,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const { userId } = getAuth(req);
+  const { userId } = await getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json().catch(() => null);
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  const { userId } = getAuth(req);
+  const { userId } = await getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json().catch(() => null);

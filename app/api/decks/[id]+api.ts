@@ -11,7 +11,7 @@ import { getRouteParam } from '@/services/route-params';
 import { getDeckById, setDeckArchived, softDeleteDeck, updateDeck } from '@/services/decks';
 
 export async function GET(req: Request) {
-  const { userId } = getAuth(req);
+  const { userId } = await getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const id = getRouteParam(req, 'id');
@@ -25,7 +25,7 @@ export async function GET(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  const { userId } = getAuth(req);
+  const { userId } = await getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const id = getRouteParam(req, 'id');
@@ -98,7 +98,7 @@ export async function PATCH(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const { userId } = getAuth(req);
+  const { userId } = await getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const id = getRouteParam(req, 'id');

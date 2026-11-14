@@ -12,7 +12,7 @@ import { db } from '@/services/db';
 import { getAuth } from '@/services/auth';
 
 export async function POST(req: Request) {
-  const { userId } = getAuth(req);
+  const { userId } = await getAuth(req);
   if (!userId) {
     return Response.json({ success: false, error: 'Unauthorized' }, { status: 401 });
   }

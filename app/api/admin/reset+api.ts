@@ -11,8 +11,14 @@
  */
 import { sql } from 'drizzle-orm';
 import { db } from '@/services/db';
+import { getAuth } from '@/services/auth';
 
-export async function POST() {
+export async function POST(req: Request) {
+  const { userId } = await getAuth(req);
+  if (!userId) {
+    return Response.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     await db.execute(sql`DELETE FROM match_results`);
     await db.execute(sql`DELETE FROM match_events`);

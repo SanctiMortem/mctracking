@@ -12,7 +12,7 @@ import type { SettingsPatch } from '@/services/settings';
 const VALID_LANGUAGES = new Set(['en', 'es', 'auto']);
 
 export async function GET(req: Request) {
-  const { userId } = getAuth(req);
+  const { userId } = await getAuth(req);
   if (!userId) return Response.json({ success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
 
   const settings = await getOrCreateSettings(userId);
@@ -20,7 +20,7 @@ export async function GET(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  const { userId } = getAuth(req);
+  const { userId } = await getAuth(req);
   if (!userId) return Response.json({ success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
 
   const body = await req.json().catch(() => null);

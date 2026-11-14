@@ -11,7 +11,7 @@ import { getAuth } from '@/services/auth';
 import { getGlobalAggregates } from '@/services/stats';
 
 export async function GET(req: Request) {
-  const { userId } = getAuth(req);
+  const { userId } = await getAuth(req);
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
