@@ -197,7 +197,8 @@
     "undoAction": "↩  Deshacer",
     "dead": "Muerto",
     "activePlayer": "Jugador activo",
-    "pushForTurn": "Pulsa para turno"
+    "pushForTurn": "Pulsa para turno",
+    "saveAndClose": "Guardar y cerrar"
   },
   "player": {
     "howItWins": "Cómo gana",

@@ -4,10 +4,17 @@
  * Shows all enemy commander damage rows directly (no toggle/expand).
  * The overlay chrome (backdrop, close button) is handled by PlayerDashboard.
  *
+ * Per-hit entry (CMDR-001): every counter starts at 0 each time the panel
+ * opens and + / − set only the damage from THIS hit. The running total sits
+ * next to the commander's name. Nothing is applied while the panel is open;
+ * when it closes (unmounts) each non-zero hit is handed to `onDelta` once,
+ * so it reaches the log as a single commander_damage event of that size.
+ *
  * Partners get two separate rows (BR-TRACK-03).
  *
  * TRACK-005 (EPIC-03)
  */
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
 import { CommanderDamageRow } from './CommanderDamageRow';
@@ -27,7 +34,7 @@ interface CommanderDamagePanelProps {
   /** List of all enemy commanders visible to this player (partners as separate entries). */
   enemyCommanders: EnemyCommander[];
   participationId: string;
-  /** Called on every tap with +1 or −1. Parent updates damage + life synchronously. */
+  /** Called once per commander when the panel closes, with that hit's full amount. */
   onDelta: (participationId: string, commanderIdSource: string, delta: number) => void;
 }
 
@@ -39,6 +46,34 @@ export function CommanderDamagePanel({
 }: CommanderDamagePanelProps) {
   const { scale, isTablet } = useResponsive();
   const styles = useThemedStyles(createStyles);
+
+  // Damage entered for the hit in progress, per source commander.
+  const [hits, setHits] = useState<Record<string, number>>({});
+
+  // Refs so the unmount commit sees the latest values without re-subscribing.
+  const hitsRef = useRef(hits);
+  hitsRef.current = hits;
+  const onDeltaRef = useRef(onDelta);
+  onDeltaRef.current = onDelta;
+  const participationIdRef = useRef(participationId);
+  participationIdRef.current = participationId;
+
+  const adjustHit = useCallback((commanderId: string, delta: number) => {
+    setHits((prev) => {
+      const next = Math.max(0, (prev[commanderId] ?? 0) + delta);
+      return { ...prev, [commanderId]: next };
+    });
+  }, []);
+
+  // Commit on close: the panel only stays mounted while the overlay is open.
+  useEffect(
+    () => () => {
+      for (const [commanderId, amount] of Object.entries(hitsRef.current)) {
+        if (amount > 0) onDeltaRef.current(participationIdRef.current, commanderId, amount);
+      }
+    },
+    [],
+  );
 
   if (enemyCommanders.length === 0) return null;
 
@@ -57,9 +92,9 @@ export function CommanderDamagePanel({
             key={cmd.id}
             commanderName={cmd.name}
             commanderId={cmd.id}
-            currentDamage={commanderDamage[cmd.id] ?? 0}
-            participationId={participationId}
-            onDelta={onDelta}
+            totalDamage={commanderDamage[cmd.id] ?? 0}
+            hit={hits[cmd.id] ?? 0}
+            onAdjust={adjustHit}
           />
         ))}
       </ScrollView>

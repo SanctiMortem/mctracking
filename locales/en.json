@@ -197,7 +197,8 @@
     "undoAction": "↩  Undo",
     "dead": "Dead",
     "activePlayer": "Active player",
-    "pushForTurn": "Push for turn"
+    "pushForTurn": "Push for turn",
+    "saveAndClose": "Save & close"
   },
   "player": {
     "howItWins": "How they win",

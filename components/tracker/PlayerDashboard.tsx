@@ -31,7 +31,7 @@
  *
  * TRACK-003 (EPIC-03)
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Image, type LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import { GHPressable } from '@/components/ui/GHPressable';
 import { useTranslation } from 'react-i18next';
@@ -82,9 +82,6 @@ function pickDeathMessage(): string {
   return DEATH_MESSAGES[Math.floor(Math.random() * DEATH_MESSAGES.length)];
 }
 
-
-/** Auto-dismiss overlay after this many ms of no interaction */
-const AUTO_DISMISS_MS = 3000;
 
 /** Fixed size for the Dead button (high-risk, always hittable). Zone B
  *  (counter footer) matches this exact height. */
@@ -149,38 +146,18 @@ export function PlayerDashboard({
   const flip = usePlayerFlip();
   const [mode, setMode] = useState<DisplayMode>('life');
   const [dashSize, setDashSize] = useState({ w: 0, h: 0 });
-  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Stable random message — picked once when player dies
   const deathMessage = useMemo(pickDeathMessage, []);
 
   const isCompact = dashSize.h > 0 && dashSize.h < COMPACT_THRESHOLD;
   const isUltraCompact = dashSize.h > 0 && dashSize.h < ULTRA_COMPACT_THRESHOLD;
 
-  // ── Auto-dismiss timer ──
-  const clearDismissTimer = useCallback(() => {
-    if (dismissTimerRef.current) {
-      clearTimeout(dismissTimerRef.current);
-      dismissTimerRef.current = null;
-    }
-  }, []);
-
-  const resetDismissTimer = useCallback(() => {
-    clearDismissTimer();
-    dismissTimerRef.current = setTimeout(() => {
-      setMode('life');
-    }, AUTO_DISMISS_MS);
-  }, [clearDismissTimer]);
-
+  // Overlays (poison, commander damage) never close on a timer: they stay
+  // open until the player taps the sidebar, which is an exit control while
+  // one is open.
   const switchMode = useCallback((newMode: DisplayMode) => {
-    if (newMode === 'life') {
-      clearDismissTimer();
-    } else {
-      resetDismissTimer();
-    }
     setMode(newMode);
-  }, [clearDismissTimer, resetDismissTimer]);
-
-  useEffect(() => () => clearDismissTimer(), [clearDismissTimer]);
+  }, []);
 
   // Sidebar tap toggles timer (or dismisses an overlay if one is open).
   const handleSidebarTap = useCallback(() => {
@@ -199,9 +176,9 @@ export function PlayerDashboard({
     });
   }, []);
 
-  const handleOverlayTouch = useCallback(() => {
-    if (mode !== 'life') resetDismissTimer();
-  }, [mode, resetDismissTimer]);
+  const exitLabel = mode === 'cmd'
+    ? t('tracker.saveAndClose', { defaultValue: 'Save & close' })
+    : t('common.close', { defaultValue: 'Close' });
 
   // Responsive sidebar typography.
   const sidebarFontScale = isUltraCompact ? 0.72 : isCompact ? 0.86 : 1;
@@ -243,6 +220,27 @@ export function PlayerDashboard({
           >
             {playerName}
           </Text>
+          {mode !== 'life' ? (
+            // While an overlay is open the turn area is an exit control:
+            // tapping it closes the overlay (saving the commander damage
+            // hit), so the turn can never be passed from this screen.
+            <>
+              <Text
+                style={[styles.exitGlyph, { fontSize: baseNameSize * sidebarFontScale * 1.8 }]}
+                numberOfLines={1}
+                accessibilityRole="button"
+                accessibilityLabel={exitLabel}
+              >
+                ✕
+              </Text>
+              {!isCompact && (
+                <Text style={styles.turnHintActive} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+                  {exitLabel}
+                </Text>
+              )}
+            </>
+          ) : (
+          <>
           <Text
             style={[
               styles.timer,
@@ -275,6 +273,8 @@ export function PlayerDashboard({
                 {t('tracker.pushForTurn', { defaultValue: 'Push for turn' })}
               </Text>
             )
+          )}
+          </>
           )}
           {flip.flipped && (
             <Text style={styles.flipIndicator} numberOfLines={1}>⇅</Text>
@@ -341,19 +341,13 @@ export function PlayerDashboard({
         )}
 
         {mode === 'poison' && (
-          <View
-            style={styles.overlayZone}
-            onTouchStart={handleOverlayTouch}
-          >
+          <View style={styles.overlayZone}>
             {poisonOverlay}
           </View>
         )}
 
         {mode === 'cmd' && (
-          <View
-            style={styles.overlayZone}
-            onTouchStart={handleOverlayTouch}
-          >
+          <View style={styles.overlayZone}>
             {cmdDamageOverlay}
           </View>
         )}
@@ -372,6 +366,11 @@ const createStyles = (t: AppTheme) => ({
   },
   dashboardDead: {
     opacity: 0.45,
+  },
+  exitGlyph: {
+    color: t.colors.accent.primary,
+    fontWeight: t.typography.weight.bold,
+    textAlign: 'center' as const,
   },
 
   // ── Commander art backdrop ──

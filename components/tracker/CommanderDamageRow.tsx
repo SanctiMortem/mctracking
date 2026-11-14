@@ -1,8 +1,10 @@
 /**
  * CommanderDamageRow — one row per enemy commander in CommanderDamagePanel.
  *
- * Tap +/- to add commander damage. Alert at 21 (BR-TRACK-04).
- * Fires onDelta on every tap; parent batches the server commit.
+ * The counter is the damage of the hit being entered (starts at 0); the
+ * running total is shown beside the name as "total / 21". Alert when the
+ * total plus this hit reaches 21 (BR-TRACK-04). The panel owns the hit
+ * state and applies it when the overlay closes.
  *
  * TRACK-005 (EPIC-03)
  */
@@ -21,29 +23,31 @@ const COMMANDER_DAMAGE_LIMIT = 21;
 interface CommanderDamageRowProps {
   commanderName: string;
   commanderId: string;
-  currentDamage: number;
-  participationId: string;
-  /** Called on every tap with +1 or −1. Parent updates damage + life synchronously. */
-  onDelta: (participationId: string, commanderId: string, delta: number) => void;
+  /** Running total already applied from this commander. */
+  totalDamage: number;
+  /** Damage entered for the hit in progress (not applied yet). */
+  hit: number;
+  /** Called on every tap with +1 or −1 to adjust the hit in progress. */
+  onAdjust: (commanderId: string, delta: number) => void;
 }
 
 export function CommanderDamageRow({
   commanderName,
   commanderId,
-  currentDamage,
-  participationId,
-  onDelta,
+  totalDamage,
+  hit,
+  onAdjust,
 }: CommanderDamageRowProps) {
   const { scale, isTablet } = useResponsive();
   const styles = useThemedStyles(createStyles);
   const { theme: t } = useTheme();
-  // Single source of truth — no local arithmetic on displayed damage.
-  const displayDamage = currentDamage;
-  const isAtLimit = displayDamage >= COMMANDER_DAMAGE_LIMIT;
+  const displayDamage = hit;
+  // Lethal once this hit lands, not only after it has been saved.
+  const isAtLimit = totalDamage + hit >= COMMANDER_DAMAGE_LIMIT;
 
   const applyDelta = useCallback((d: number) => {
-    onDelta(participationId, commanderId, d);
-  }, [onDelta, participationId, commanderId]);
+    onAdjust(commanderId, d);
+  }, [onAdjust, commanderId]);
 
   const btnSize = isTablet ? scale(28) : 28;
   const fontSize = isTablet ? scale(t.typography.size['body-lg']) : t.typography.size['body-lg'];
@@ -58,6 +62,9 @@ export function CommanderDamageRow({
         minimumFontScale={0.7}
       >
         {commanderName}
+        <Text style={[styles.total, isAtLimit && styles.nameAlert]}>
+          {`  ${totalDamage} / ${COMMANDER_DAMAGE_LIMIT}`}
+        </Text>
       </Text>
 
       <View style={styles.controls}>
@@ -73,7 +80,7 @@ export function CommanderDamageRow({
 
         <View style={styles.damageWrap}>
           <Text style={[styles.damage, isAtLimit && styles.damageAlert, isTablet && { fontSize, minWidth: scale(28) }]}>
-            {displayDamage}
+            {displayDamage > 0 ? `+${displayDamage}` : '0'}
           </Text>
           {isAtLimit && <Text style={styles.limitBadge}>21!</Text>}
         </View>
@@ -112,6 +119,10 @@ const createStyles = (t: AppTheme) => ({
   },
   nameAlert: {
     color: t.colors.status.error,
+  },
+  total: {
+    color: t.colors.text.muted,
+    fontVariant: ['tabular-nums' as const],
   },
   controls: {
     flexDirection: 'row' as const,
