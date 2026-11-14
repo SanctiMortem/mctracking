@@ -20,7 +20,7 @@ import type { Commander, Deck, Player } from '@/db/index';
 // means either the viewer created the match or the match is scoped to a group
 // the viewer belongs to — this covers the common case of a pod member bringing
 // a *personal* (group_id = null) deck to a group match.
-async function userCanViewDeck(userId: string, deck: Deck): Promise<boolean> {
+export async function userCanViewDeck(userId: string, deck: Deck): Promise<boolean> {
   if (deck.createdBy === userId) return true;
   if (deck.groupId) {
     const [member] = await db

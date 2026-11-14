@@ -13,6 +13,12 @@ export type NewPlayer = typeof schema.players.$inferInsert;
 export type Deck = typeof schema.decks.$inferSelect;
 export type NewDeck = typeof schema.decks.$inferInsert;
 
+export type Card = typeof schema.cards.$inferSelect;
+export type NewCard = typeof schema.cards.$inferInsert;
+
+export type DeckCard = typeof schema.deckCards.$inferSelect;
+export type NewDeckCard = typeof schema.deckCards.$inferInsert;
+
 export type Match = typeof schema.matches.$inferSelect;
 export type NewMatch = typeof schema.matches.$inferInsert;
 

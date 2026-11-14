@@ -617,5 +617,31 @@
     "globalSubDecks": "{{count}} decks",
     "emptyTitle": "No matches yet",
     "emptyCtaButton": "Start your first match"
+  },
+  "decklist": {
+    "title": "Decklist",
+    "empty": "No decklist yet. Paste one to see the cards here.",
+    "add": "Add decklist",
+    "replace": "Replace list",
+    "remove": "Remove",
+    "removeTitle": "Remove decklist?",
+    "removeMessage": "The card list will be removed from this deck. Match history is not affected.",
+    "import": "Import",
+    "importFailed": "Could not import the list.",
+    "linkFailed": "Could not save the link.",
+    "pasteHint": "Paste your list, one card per line. Set codes and foil tags are ignored.",
+    "moxfieldLabel": "Moxfield link (optional)",
+    "openMoxfield": "Open in Moxfield",
+    "show": "Show",
+    "hide": "Hide",
+    "cardsCount_one": "{{count}} card",
+    "cardsCount_other": "{{count}} cards",
+    "unresolvedCount_one": "{{count}} not found",
+    "unresolvedCount_other": "{{count}} not found",
+    "offIdentityCount_one": "{{count}} outside color identity",
+    "offIdentityCount_other": "{{count}} outside color identity",
+    "needsAttention": "Needs attention",
+    "notFound": "Not found",
+    "offIdentity": "Off-color"
   }
 }

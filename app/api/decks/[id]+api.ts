@@ -8,7 +8,13 @@
 import { getAuth } from '@/services/auth';
 import { getRouteParam } from '@/services/route-params';
 
-import { getDeckById, setDeckArchived, softDeleteDeck, updateDeck } from '@/services/decks';
+import {
+  getDeckById,
+  normalizeMoxfieldUrl,
+  setDeckArchived,
+  softDeleteDeck,
+  updateDeck,
+} from '@/services/decks';
 
 export async function GET(req: Request) {
   const { userId } = getAuth(req);
@@ -36,7 +42,7 @@ export async function PATCH(req: Request) {
     return Response.json({ error: 'VALIDATION_ERROR', message: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { name, commander_id, commander_id_2, description, archived } = body as Record<string, unknown>;
+  const { name, commander_id, commander_id_2, description, archived, moxfield_url } = body as Record<string, unknown>;
 
   // Archive / unarchive is a dedicated action — handle it separately
   if (archived !== undefined) {
@@ -75,6 +81,22 @@ export async function PATCH(req: Request) {
   }
   if (description !== undefined) {
     update.description = typeof description === 'string' ? description : null;
+  }
+
+  // null or '' clears the link; anything else must be a moxfield.com URL.
+  if (moxfield_url !== undefined) {
+    if (moxfield_url === null || moxfield_url === '') {
+      update.moxfieldUrl = null;
+    } else {
+      const url = typeof moxfield_url === 'string' ? normalizeMoxfieldUrl(moxfield_url) : null;
+      if (!url) {
+        return Response.json(
+          { error: 'VALIDATION_ERROR', field: 'moxfield_url', message: 'Must be a https://moxfield.com link' },
+          { status: 400 },
+        );
+      }
+      update.moxfieldUrl = url;
+    }
   }
 
   const result = await updateDeck(userId, id, update);

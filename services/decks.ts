@@ -37,6 +37,7 @@ function buildDeckSelect() {
       commanderId2: decks.commanderId2,
       groupId: decks.groupId,
       description: decks.description,
+      moxfieldUrl: decks.moxfieldUrl,
       createdBy: decks.createdBy,
       archivedAt: decks.archivedAt,
       deletedAt: decks.deletedAt,
@@ -138,7 +139,18 @@ type UpdateInput = Partial<{
   commanderId: string;
   commanderId2: string | null;
   description: string | null;
+  moxfieldUrl: string | null;
 }>;
+
+/**
+ * Accepts only https links to moxfield.com (DECK-006). Returns the trimmed
+ * URL, or null when the value is not an acceptable Moxfield link.
+ */
+export function normalizeMoxfieldUrl(value: string): string | null {
+  const trimmed = value.trim();
+  if (trimmed.length > 300) return null;
+  return /^https:\/\/(www\.)?moxfield\.com\/\S+$/i.test(trimmed) ? trimmed : null;
+}
 
 export async function createDeck(
   userId: string,
@@ -238,6 +250,7 @@ export async function updateDeck(
       ...(data.commanderId !== undefined && { commanderId: data.commanderId }),
       ...('commanderId2' in data && { commanderId2: data.commanderId2 }),
       ...(data.description !== undefined && { description: data.description }),
+      ...(data.moxfieldUrl !== undefined && { moxfieldUrl: data.moxfieldUrl }),
     })
     .where(eq(decks.id, id));
 
