@@ -152,6 +152,9 @@ export const decks = pgTable(
     // Nullable: only set when primary commander has is_partner = true
     commanderId2: uuid('commander_id_2').references(() => commanders.id),
     description: text('description'),
+    // Optional link to the list on moxfield.com. Shown as a tappable link only —
+    // the app never requests anything from Moxfield (DECK-006).
+    moxfieldUrl: text('moxfield_url'),
     // null = personal deck (not group-owned)
     groupId: uuid('group_id').references(() => groups.id),
     createdBy: text('created_by').notNull(), // Clerk user ID
@@ -164,6 +167,59 @@ export const decks = pgTable(
     index('decks_created_by_idx').on(table.createdBy),
     index('decks_commander_id_idx').on(table.commanderId),
     index('decks_group_id_idx').on(table.groupId),
+  ],
+);
+
+// ─────────────────────────────────────────────
+// cards — Scryfall cache (DECK-001)
+// One row per Scryfall card, shared by every deck. Filled lazily by decklist
+// imports so a card is only ever fetched from Scryfall once.
+// ─────────────────────────────────────────────
+export const cards = pgTable(
+  'cards',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    scryfallId: text('scryfall_id').notNull(),
+    oracleId: text('oracle_id'),
+    // Full canonical name. Double-faced / split cards keep "Front // Back".
+    name: text('name').notNull(),
+    // Lowercased front-face name — what a decklist line is matched against.
+    nameKey: text('name_key').notNull(),
+    // Faces joined with "\n//\n" for multi-faced cards.
+    oracleText: text('oracle_text'),
+    typeLine: text('type_line'),
+    colors: text('colors').array().notNull().default([]),
+    colorIdentity: text('color_identity').array().notNull().default([]),
+    // Scryfall image_uris.normal (front face for multi-faced cards)
+    imageUrl: text('image_url'),
+    fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('cards_scryfall_id_unique').on(table.scryfallId),
+    index('cards_name_key_idx').on(table.nameKey),
+  ],
+);
+
+// ─────────────────────────────────────────────
+// deck_cards — a deck's optional full list (DECK-001)
+// card_id is null when Scryfall could not resolve raw_name; the line is kept
+// so the user can see and fix it. Off-colour-identity is computed on read
+// from the deck's current commander(s), never stored.
+// ─────────────────────────────────────────────
+export const deckCards = pgTable(
+  'deck_cards',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    deckId: uuid('deck_id').notNull().references(() => decks.id),
+    cardId: uuid('card_id').references(() => cards.id),
+    // The name as the user pasted it (after parsing)
+    rawName: text('raw_name').notNull(),
+    quantity: integer('quantity').notNull().default(1),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('deck_cards_deck_raw_name_unique').on(table.deckId, table.rawName),
+    index('deck_cards_deck_id_idx').on(table.deckId),
   ],
 );
 

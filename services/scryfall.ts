@@ -165,6 +165,92 @@ function extractArtCrop(card: ScryfallCard): string | null {
 }
 
 // ─────────────────────────────────────────────
+// Decklist resolution (DECK-003)
+// ─────────────────────────────────────────────
+
+/** Card data we cache in the `cards` table. */
+export interface ScryfallCardData {
+  scryfallId: string;
+  oracleId: string | null;
+  /** Full canonical name ("Front // Back" for multi-faced cards). */
+  name: string;
+  /** Lowercased front-face name. */
+  nameKey: string;
+  oracleText: string | null;
+  typeLine: string | null;
+  colors: string[];
+  colorIdentity: string[];
+  imageUrl: string | null;
+}
+
+/** Scryfall's hard cap on identifiers per /cards/collection request. */
+const COLLECTION_BATCH = 75;
+/** Courtesy gap between consecutive Scryfall requests. */
+const REQUEST_GAP_MS = 100;
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+function toCardData(card: ScryfallCard): ScryfallCardData {
+  const faces = card.card_faces ?? [];
+  const front = faces[0];
+  const oracleText =
+    card.oracle_text ??
+    (faces.length > 0
+      ? faces.map((f) => f.oracle_text ?? '').filter(Boolean).join('\n//\n')
+      : null);
+  return {
+    scryfallId: card.id,
+    oracleId: card.oracle_id ?? null,
+    name: card.name,
+    nameKey: (front?.name ?? card.name).toLowerCase(),
+    oracleText: oracleText || null,
+    typeLine: card.type_line ?? front?.type_line ?? null,
+    colors: card.colors ?? front?.colors ?? [],
+    colorIdentity: Array.isArray(card.color_identity) ? card.color_identity : [],
+    imageUrl: card.image_uris?.normal ?? front?.image_uris?.normal ?? null,
+  };
+}
+
+/**
+ * Resolve exact card names in batches of 75 via POST /cards/collection.
+ * Returns every card Scryfall found; the caller matches them back to its
+ * inputs by name (the response order is not tied to the request order once
+ * some names are missing). Throws if Scryfall is unreachable or errors, so an
+ * outage is not mistaken for "none of these cards exist".
+ */
+export async function fetchCardsByNames(names: string[]): Promise<ScryfallCardData[]> {
+  const out: ScryfallCardData[] = [];
+  for (let i = 0; i < names.length; i += COLLECTION_BATCH) {
+    if (i > 0) await sleep(REQUEST_GAP_MS);
+    const batch = names.slice(i, i + COLLECTION_BATCH);
+    const res = await scryfallFetch('/cards/collection', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifiers: batch.map((name) => ({ name })) }),
+    });
+    if (!res.ok) throw new Error(`Scryfall /cards/collection failed: HTTP ${res.status}`);
+    const data = (await res.json()) as { data?: ScryfallCard[] };
+    for (const card of data.data ?? []) out.push(toCardData(card));
+  }
+  return out;
+}
+
+/**
+ * Typo-tolerant single lookup via /cards/named?fuzzy=. Returns null when
+ * Scryfall has no confident match (404) or the name is ambiguous.
+ */
+export async function fetchCardFuzzy(name: string): Promise<ScryfallCardData | null> {
+  await sleep(REQUEST_GAP_MS);
+  try {
+    const res = await scryfallFetch(`/cards/named?fuzzy=${encodeURIComponent(name)}`);
+    if (!res.ok) return null;
+    return toCardData((await res.json()) as ScryfallCard);
+  } catch {
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────
 // Scryfall card response shape (subset we use)
 // ─────────────────────────────────────────────
 interface ScryfallImageUris {
@@ -172,11 +258,17 @@ interface ScryfallImageUris {
   normal?: string;
 }
 interface ScryfallCardFace {
+  name?: string;
+  type_line?: string;
+  oracle_text?: string;
+  colors?: string[];
   image_uris?: ScryfallImageUris;
 }
 interface ScryfallCard {
   id: string;
+  oracle_id?: string;
   name: string;
+  colors?: string[];
   type_line?: string;
   oracle_text?: string;
   color_identity?: string[];

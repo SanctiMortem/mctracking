@@ -617,5 +617,31 @@
     "globalSubDecks": "{{count}} mazos",
     "emptyTitle": "Sin partidas aún",
     "emptyCtaButton": "Inicia tu primera partida"
+  },
+  "decklist": {
+    "title": "Lista del mazo",
+    "empty": "Aún no hay lista. Pega una para ver las cartas aquí.",
+    "add": "Agregar lista",
+    "replace": "Reemplazar lista",
+    "remove": "Quitar",
+    "removeTitle": "¿Quitar la lista?",
+    "removeMessage": "La lista de cartas se quitará de este mazo. El historial de partidas no cambia.",
+    "import": "Importar",
+    "importFailed": "No se pudo importar la lista.",
+    "linkFailed": "No se pudo guardar el enlace.",
+    "pasteHint": "Pega tu lista, una carta por línea. Se ignoran los códigos de edición y las marcas de foil.",
+    "moxfieldLabel": "Enlace de Moxfield (opcional)",
+    "openMoxfield": "Abrir en Moxfield",
+    "show": "Ver",
+    "hide": "Ocultar",
+    "cardsCount_one": "{{count}} carta",
+    "cardsCount_other": "{{count}} cartas",
+    "unresolvedCount_one": "{{count}} no encontrada",
+    "unresolvedCount_other": "{{count}} no encontradas",
+    "offIdentityCount_one": "{{count}} fuera de la identidad de color",
+    "offIdentityCount_other": "{{count}} fuera de la identidad de color",
+    "needsAttention": "Requieren atención",
+    "notFound": "No encontrada",
+    "offIdentity": "Fuera de color"
   }
 }
