@@ -643,5 +643,30 @@
     "importRetryHint": "The deck was saved. Edit it to try the list again.",
     "getFromMoxfield": "Get list from Moxfield",
     "getFromMoxfieldHint": "On Moxfield: Export → Copy as plain text. Then come back and paste it below."
+  },
+  "career": {
+    "title": "Career",
+    "byTurnOrder": "By turn order",
+    "byPodSize": "By pod size",
+    "byGameLength": "By game length",
+    "fastestWin": "Fastest win",
+    "longestGame": "Longest game",
+    "matches_one": "{{count}} match",
+    "matches_other": "{{count}} matches",
+    "players_one": "{{count}} player",
+    "players_other": "{{count}} players",
+    "turn": {
+      "1": "Going first",
+      "2": "Going second",
+      "3": "Going third",
+      "4": "Going fourth",
+      "nth": "Seat {{n}}"
+    },
+    "length": {
+      "lt30": "Under 30 min",
+      "30to60": "30–60 min",
+      "60to90": "60–90 min",
+      "gt90": "Over 90 min"
+    }
   }
 }

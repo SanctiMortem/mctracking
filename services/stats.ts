@@ -153,6 +153,162 @@ async function getWinsByCondition(filter: SQL | undefined): Promise<WinCondition
     .sort((a, b) => b.wins - a.wins || a.condition.localeCompare(b.condition));
 }
 
+// ─── Career breakdown (DSTAT-002) ─────────────────────────────────────────────
+// Win rate by pod size, game length and turn order, plus fastest win and
+// longest game. Built only from data the tracker already records.
+
+export type CareerBucket = {
+  /** Pod size ("2".."6"), length band ("lt30" | "30to60" | "60to90" | "gt90"),
+   *  or turn-order position ("1" = went first). */
+  key: string;
+  matches: number;
+  wins: number;
+  /** null until the bucket has CAREER_MIN_MATCHES — too few games to mean anything. */
+  win_rate_pct: number | null;
+};
+
+export type CareerBreakdown = {
+  by_pod_size: CareerBucket[];
+  by_game_length: CareerBucket[];
+  by_turn_order: CareerBucket[];
+  fastest_win_seconds: number | null;
+  longest_game_seconds: number | null;
+};
+
+/** Same threshold as the Top-5 deck / commander lists. */
+const CAREER_MIN_MATCHES = 5;
+/** A match left open overnight is not an 11-hour game — ignore for length stats. */
+const MAX_PLAUSIBLE_GAME_SECONDS = 8 * 60 * 60;
+/** A result typed in after the fact closes in seconds — not a real game length. */
+const MIN_PLAUSIBLE_GAME_SECONDS = 3 * 60;
+
+const GAME_LENGTH_BANDS: { key: string; maxSeconds: number }[] = [
+  { key: 'lt30', maxSeconds: 30 * 60 },
+  { key: '30to60', maxSeconds: 60 * 60 },
+  { key: '60to90', maxSeconds: 90 * 60 },
+  { key: 'gt90', maxSeconds: Infinity },
+];
+
+/**
+ * `filter` selects the participations to roll up (one player's, or one
+ * deck's). Completed matches only; draws count as matches, not wins.
+ */
+async function getCareerBreakdown(filter: SQL | undefined): Promise<CareerBreakdown> {
+  const own = await db
+    .select({
+      participationId: participations.id,
+      matchId: participations.matchId,
+      result: participations.result,
+      createdAt: matches.createdAt,
+      endedAt: matches.endedAt,
+    })
+    .from(participations)
+    .innerJoin(matches, eq(participations.matchId, matches.id))
+    .where(and(eq(matches.status, 'completed'), filter));
+
+  const empty: CareerBreakdown = {
+    by_pod_size: [],
+    by_game_length: [],
+    by_turn_order: [],
+    fastest_win_seconds: null,
+    longest_game_seconds: null,
+  };
+  if (own.length === 0) return empty;
+
+  const matchIds = [...new Set(own.map((r) => r.matchId))];
+
+  const [sizeRows, turnRows] = await Promise.all([
+    db
+      .select({ matchId: participations.matchId, players: count(participations.id) })
+      .from(participations)
+      .where(inArray(participations.matchId, matchIds))
+      .groupBy(participations.matchId),
+    db
+      .select({ matchId: matchEvents.matchId, participationId: matchEvents.participationId })
+      .from(matchEvents)
+      .where(and(
+        inArray(matchEvents.matchId, matchIds),
+        eq(matchEvents.eventType, 'turn_passed'),
+        eq(matchEvents.isUndone, false),
+      ))
+      .orderBy(matchEvents.matchId, matchEvents.createdAt),
+  ]);
+
+  const podSize = new Map(sizeRows.map((r) => [r.matchId, Number(r.players)]));
+
+  // Turn order per match. A turn_passed event belongs to the player whose
+  // turn is STARTING, and the tracker writes one for the very first turn too
+  // (with no duration), so the order in which participations first appear is
+  // the turn order: first seen went first.
+  const seenOrder = new Map<string, string[]>();
+  for (const r of turnRows) {
+    const list = seenOrder.get(r.matchId) ?? [];
+    if (!list.includes(r.participationId)) list.push(r.participationId);
+    seenOrder.set(r.matchId, list);
+  }
+  const turnPosition = (matchId: string, participationId: string): number | null => {
+    const idx = seenOrder.get(matchId)?.indexOf(participationId) ?? -1;
+    return idx < 0 ? null : idx + 1;
+  };
+
+  const tally = () => new Map<string, { matches: number; wins: number }>();
+  const bump = (m: Map<string, { matches: number; wins: number }>, key: string, won: boolean) => {
+    const cur = m.get(key) ?? { matches: 0, wins: 0 };
+    cur.matches += 1;
+    if (won) cur.wins += 1;
+    m.set(key, cur);
+  };
+
+  const bySize = tally();
+  const byLength = tally();
+  const byTurn = tally();
+  let fastestWin: number | null = null;
+  let longestGame: number | null = null;
+
+  for (const r of own) {
+    const won = r.result === 'win';
+
+    const size = podSize.get(r.matchId);
+    if (size) bump(bySize, String(size), won);
+
+    const pos = turnPosition(r.matchId, r.participationId);
+    if (pos) bump(byTurn, String(pos), won);
+
+    if (r.endedAt) {
+      const seconds = Math.round((r.endedAt.getTime() - r.createdAt.getTime()) / 1000);
+      if (seconds >= MIN_PLAUSIBLE_GAME_SECONDS && seconds <= MAX_PLAUSIBLE_GAME_SECONDS) {
+        const band = GAME_LENGTH_BANDS.find((b) => seconds < b.maxSeconds)!;
+        bump(byLength, band.key, won);
+        if (won && (fastestWin === null || seconds < fastestWin)) fastestWin = seconds;
+        if (longestGame === null || seconds > longestGame) longestGame = seconds;
+      }
+    }
+  }
+
+  const toBuckets = (m: Map<string, { matches: number; wins: number }>, order: string[]): CareerBucket[] =>
+    order
+      .filter((k) => m.has(k))
+      .map((k) => {
+        const v = m.get(k)!;
+        return {
+          key: k,
+          matches: v.matches,
+          wins: v.wins,
+          win_rate_pct: v.matches >= CAREER_MIN_MATCHES ? calcWinRate(v.wins, v.matches) : null,
+        };
+      });
+
+  const numeric = (m: Map<string, unknown>) => [...m.keys()].sort((a, b) => Number(a) - Number(b));
+
+  return {
+    by_pod_size: toBuckets(bySize, numeric(bySize)),
+    by_game_length: toBuckets(byLength, GAME_LENGTH_BANDS.map((b) => b.key)),
+    by_turn_order: toBuckets(byTurn, numeric(byTurn)),
+    fastest_win_seconds: fastestWin,
+    longest_game_seconds: longestGame,
+  };
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type FavoriteDeck = {
@@ -191,6 +347,7 @@ export type PlayerStats = {
   timed_turn_count: number;
   /** How this player's wins were achieved. Empty when no wins. */
   wins_by_condition: WinConditionCount[];
+  career: CareerBreakdown;
 };
 
 export type GetPlayerStatsResult =
@@ -215,7 +372,7 @@ export async function getPlayerStats(
   if (!(await userCanViewPlayer(userId, player))) return { forbidden: true };
 
   // 2. Run all aggregation queries in parallel
-  const [statsRows, deckStatRows, partRows, turnEventRows, winsByCondition] = await Promise.all([
+  const [statsRows, deckStatRows, partRows, turnEventRows, winsByCondition, career] = await Promise.all([
     // Overall stats — total completed matches, wins, losses, draws
     db
       .select({
@@ -287,6 +444,7 @@ export async function getPlayerStats(
       .orderBy(matchEvents.matchId, matchEvents.createdAt),
 
     getWinsByCondition(eq(participations.playerId, playerId)),
+    getCareerBreakdown(eq(participations.playerId, playerId)),
   ]);
 
   // 3. Overall numbers (SQL SUM returns null when no rows match — coerce to 0)
@@ -422,6 +580,7 @@ export async function getPlayerStats(
       longest_turn_seconds: longestTurnOrNull,
       timed_turn_count: turnDurationCount,
       wins_by_condition: winsByCondition,
+      career,
       favorite_decks: favoriteDecksList,
       favorite_commanders: favoriteCommandersList,
     },
@@ -475,6 +634,7 @@ export type DeckStats = {
   weak_against_colors: ColorMatchup[];
   /** How this deck's wins were achieved. Empty when no wins. */
   wins_by_condition: WinConditionCount[];
+  career: CareerBreakdown;
 };
 
 /** Min number of DECISIVE matches against a single opposing deck for it
@@ -507,7 +667,7 @@ export async function getDeckStats(
   // 2. Fetch commander(s) + aggregate stats in parallel
   const commanderIds = [deck.commanderId, deck.commanderId2].filter(Boolean) as string[];
 
-  const [deckCommanderObjects, statsRows, perPlayerRows, ownMatchRows, winsByCondition] = await Promise.all([
+  const [deckCommanderObjects, statsRows, perPlayerRows, ownMatchRows, winsByCondition, career] = await Promise.all([
     // Commander objects (1 or 2 for partner decks)
     db.select().from(commanders).where(inArray(commanders.id, commanderIds)),
 
@@ -542,6 +702,7 @@ export async function getDeckStats(
       .where(and(eq(participations.deckId, deckId), eq(matches.status, 'completed'))),
 
     getWinsByCondition(eq(participations.deckId, deckId)),
+    getCareerBreakdown(eq(participations.deckId, deckId)),
   ]);
 
   // 3. Build DeckWithCommanders
@@ -763,6 +924,7 @@ export async function getDeckStats(
       strong_against_colors: strongAgainstColors,
       weak_against_colors: weakAgainstColors,
       wins_by_condition: winsByCondition,
+      career,
     },
   };
 }

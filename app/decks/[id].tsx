@@ -25,6 +25,7 @@ import { useTranslation } from 'react-i18next';
 import { CircularWinRate } from '@/components/ui/CircularWinRate';
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { DecklistSection } from '@/components/decks/DecklistSection';
+import { CareerBreakdown } from '@/components/stats/CareerBreakdown';
 import { WinConditionBreakdown } from '@/components/stats/WinConditionBreakdown';
 import { useDeckStats } from '@/hooks/useDeckStats';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -208,6 +209,8 @@ export default function DeckDetailScreen() {
         </View>
 
         <WinConditionBreakdown title={t('deck.howItWins')} rows={data.wins_by_condition} />
+
+        <CareerBreakdown title={t('career.title')} career={data.career} />
 
         {/* ── Color matchups ── */}
         {(strong_against_colors.length > 0 || weak_against_colors.length > 0) && (

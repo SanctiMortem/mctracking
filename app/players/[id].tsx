@@ -26,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { CircularWinRate } from '@/components/ui/CircularWinRate';
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { DeckStatRow } from '@/components/match/DeckStatRow';
+import { CareerBreakdown } from '@/components/stats/CareerBreakdown';
 import { WinConditionBreakdown } from '@/components/stats/WinConditionBreakdown';
 import { usePlayerStats } from '@/hooks/usePlayerStats';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -201,6 +202,8 @@ export default function PlayerProfileScreen() {
         </View>
 
         <WinConditionBreakdown title={t('player.howItWins')} rows={data.wins_by_condition} />
+
+        <CareerBreakdown title={t('career.title')} career={data.career} />
 
         {/* ── Decks más usados ── */}
         <View style={styles.section}>

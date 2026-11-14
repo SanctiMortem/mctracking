@@ -643,5 +643,30 @@
     "importRetryHint": "El mazo se guardó. Edítalo para volver a intentar con la lista.",
     "getFromMoxfield": "Obtener lista de Moxfield",
     "getFromMoxfieldHint": "En Moxfield: Export → Copy as plain text. Luego vuelve y pégala abajo."
+  },
+  "career": {
+    "title": "Trayectoria",
+    "byTurnOrder": "Por orden de turno",
+    "byPodSize": "Por tamaño de mesa",
+    "byGameLength": "Por duración",
+    "fastestWin": "Victoria más rápida",
+    "longestGame": "Partida más larga",
+    "matches_one": "{{count}} partida",
+    "matches_other": "{{count}} partidas",
+    "players_one": "{{count}} jugador",
+    "players_other": "{{count}} jugadores",
+    "turn": {
+      "1": "Jugando primero",
+      "2": "Jugando segundo",
+      "3": "Jugando tercero",
+      "4": "Jugando cuarto",
+      "nth": "Turno {{n}}"
+    },
+    "length": {
+      "lt30": "Menos de 30 min",
+      "30to60": "30–60 min",
+      "60to90": "60–90 min",
+      "gt90": "Más de 90 min"
+    }
   }
 }
