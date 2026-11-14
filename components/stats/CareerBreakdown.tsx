@@ -86,7 +86,7 @@ export function CareerBreakdown({ title, career }: CareerBreakdownProps) {
                   <Text style={styles.value}>
                     {b.win_rate_pct !== null ? `${b.win_rate_pct}%` : '—'}
                     <Text style={styles.matches}>
-                      {`  ${t('career.matches', { count: b.matches })}`}
+                      {`  ${t('career.record', { wins: b.wins, count: b.matches })}`}
                     </Text>
                   </Text>
                 </View>

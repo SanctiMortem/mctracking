@@ -651,8 +651,6 @@
     "byGameLength": "Por duración",
     "fastestWin": "Victoria más rápida",
     "longestGame": "Partida más larga",
-    "matches_one": "{{count}} partida",
-    "matches_other": "{{count}} partidas",
     "players_one": "{{count}} jugador",
     "players_other": "{{count}} jugadores",
     "turn": {
@@ -667,6 +665,7 @@
       "30to60": "30–60 min",
       "60to90": "60–90 min",
       "gt90": "Más de 90 min"
-    }
+    },
+    "record": "{{wins}} de {{count}} ganadas"
   }
 }
