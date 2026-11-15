@@ -4,15 +4,21 @@
  * /report?kind=deck|player&id=…  — opened from "Analyze deck" on a deck and
  * "Analyze my stats" on your own player profile.
  *
- * The layout is fixed so every report looks the same:
- *   headline → deck shape → checkups → results → what stands out → things to try
+ * The layout is fixed so every report looks the same, in two steps:
+ *   1. deck shape (no AI) → summary → checkups
+ *   2. "Analyze matches" → results → what stands out → things to try
+ *
+ * Both steps come from one Claude call, so step 2 opens instantly; the
+ * button only reveals what is already there.
  *
  * Numbers (curve, counts, records) are drawn here from the data package.
- * Claude supplies the words and which cards fill each checkup. Nothing is
- * saved: closing the screen discards the report.
+ * Claude supplies the words and which cards fill each checkup.
+ *
+ * The finished report is saved and shown again on the next visit, at no
+ * cost, until the user taps "Re-analyze" (RPT-004).
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '@clerk/clerk-expo';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,7 +28,13 @@ import type { TFunction } from 'i18next';
 import { ManaSymbol, type ManaColor } from '@/components/ui/ManaSymbol';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
-import { fetchReportData, runStatsReport, type ReportFailure } from '@/services/labs/statsReport';
+import {
+  fetchReportData,
+  fetchSavedReport,
+  runStatsReport,
+  saveReport,
+  type ReportFailure,
+} from '@/services/labs/statsReport';
 import {
   allStats,
   type DeckShape,
@@ -91,37 +103,81 @@ export default function ReportScreen() {
   const [data, setData] = useState<ReportData | null>(null);
   const [phase, setPhase] = useState<Phase>({ step: 'loading' });
   const [openArea, setOpenArea] = useState<string | null>(null);
+  // Step 2 (match results and insights) stays folded until asked for.
+  const [showMatches, setShowMatches] = useState(false);
+  // When the report on screen was saved; null if it could not be saved.
+  const [savedAt, setSavedAt] = useState<string | null>(null);
   // Guards against a slow answer landing after the screen moved on.
   const runRef = useRef(0);
 
   const language = i18n.language.startsWith('es') ? 'es' : 'en';
 
-  const run = useCallback(async () => {
+  const reportKind: ReportKind = kind === 'player' ? 'player' : 'deck';
+
+  /** Write a fresh report. `useSaved` shows the saved one instead when there is one. */
+  const run = useCallback(async (useSaved: boolean) => {
     const runId = ++runRef.current;
     const current = () => runRef.current === runId;
     setPhase({ step: 'loading' });
+    setShowMatches(false);
+    setOpenArea(null);
+
+    let token: string | undefined;
+    try {
+      token = (await getTokenRef.current()) ?? undefined;
+    } catch {
+      token = undefined;
+    }
+
+    if (useSaved) {
+      // A failure here just means we write a new report.
+      const saved = await fetchSavedReport(reportKind, id, token).catch(() => null);
+      if (!current()) return;
+      if (saved) {
+        setData(saved.data);
+        setSavedAt(saved.created_at);
+        setPhase({ step: 'done', report: saved.report });
+        return;
+      }
+    }
 
     let pkg: ReportData;
     try {
-      const token = await getTokenRef.current();
-      pkg = await fetchReportData(kind === 'player' ? 'player' : 'deck', id, token ?? undefined);
+      pkg = await fetchReportData(reportKind, id, token);
     } catch {
       if (current()) setPhase({ step: 'data_failed' });
       return;
     }
     if (!current()) return;
     setData(pkg);
+    setSavedAt(null);
     setPhase({ step: 'thinking' });
 
     const outcome = await runStatsReport(pkg, language);
     if (!current()) return;
-    setPhase(outcome.ok ? { step: 'done', report: outcome.report } : { step: 'failed', reason: outcome.reason });
-  }, [kind, id, language]);
+    if (!outcome.ok) {
+      setPhase({ step: 'failed', reason: outcome.reason });
+      return;
+    }
+    setPhase({ step: 'done', report: outcome.report });
+
+    // Save in the background; the report is already on screen either way.
+    saveReport(reportKind, id, pkg, outcome.report, token)
+      .then((saved) => { if (current()) setSavedAt(saved.created_at); })
+      .catch(() => {});
+  }, [reportKind, id, language]);
 
   useEffect(() => {
-    void run();
+    void run(true);
     return () => { runRef.current++; };
   }, [run]);
+
+  const reanalyze = useCallback(() => {
+    Alert.alert(t('report.reanalyzeTitle'), t('report.reanalyzeBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('report.reanalyze'), onPress: () => void run(false) },
+    ]);
+  }, [run, t]);
 
   const stats = data ? new Map(allStats(data).map((s) => [s.id, s])) : new Map<string, ReportStat>();
   const deck = data?.kind === 'deck' ? data.decks[0] : undefined;
@@ -162,25 +218,27 @@ export default function ReportScreen() {
         {phase.step === 'loading' && (
           <View style={styles.status}>
             <ActivityIndicator color={theme.colors.accent.primary} />
-            <Text style={styles.muted}>{t('report.loadingData')}</Text>
+            <GatheringLine />
           </View>
         )}
 
         {phase.step === 'data_failed' && (
           <View style={styles.status}>
             <Text style={styles.muted}>{t('report.dataFailed')}</Text>
-            <TouchableOpacity onPress={run}><Text style={styles.link}>{t('report.retry')}</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => void run(false)}><Text style={styles.link}>{t('report.retry')}</Text></TouchableOpacity>
           </View>
         )}
 
-        {report?.headline ? <Text style={styles.headline}>{report.headline}</Text> : null}
+        {/* ── Deck shape ── */}
+        {deck?.shape ? <ShapeCard shape={deck.shape} /> : null}
+        {data?.kind === 'deck' && deck && !deck.shape ? (
+          <Text style={styles.muted}>{t('report.noList')}</Text>
+        ) : null}
 
-        {phase.step === 'thinking' && (
-          <View style={styles.status}>
-            <ActivityIndicator color={theme.colors.accent.primary} />
-            <Text style={styles.muted}>{t('report.thinking')}</Text>
-          </View>
-        )}
+        {/* ── Summary ── */}
+        {report?.summary ? <Text style={styles.summary}>{report.summary}</Text> : null}
+
+        {phase.step === 'thinking' ? <WaitingLines /> : null}
 
         {phase.step === 'failed' && (
           <View style={styles.card}>
@@ -190,16 +248,10 @@ export default function ReportScreen() {
                 <Text style={styles.link}>{t('report.openLabs')}</Text>
               </TouchableOpacity>
             ) : (
-              <TouchableOpacity onPress={run}><Text style={styles.link}>{t('report.retry')}</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => void run(false)}><Text style={styles.link}>{t('report.retry')}</Text></TouchableOpacity>
             )}
           </View>
         )}
-
-        {/* ── Deck shape ── */}
-        {deck?.shape ? <ShapeCard shape={deck.shape} /> : null}
-        {data?.kind === 'deck' && deck && !deck.shape ? (
-          <Text style={styles.muted}>{t('report.noList')}</Text>
-        ) : null}
 
         {/* ── Checkups ── */}
         {report && deck && report.checkups.length > 0 ? (
@@ -232,8 +284,15 @@ export default function ReportScreen() {
           </View>
         ) : null}
 
+        {/* ── Step 2: already loaded, shown on demand ── */}
+        {report && !showMatches ? (
+          <TouchableOpacity style={styles.primaryBtn} activeOpacity={0.8} onPress={() => setShowMatches(true)}>
+            <Text style={styles.primaryBtnText}>{t('report.analyzeMatches')}</Text>
+          </TouchableOpacity>
+        ) : null}
+
         {/* ── Results ── */}
-        {data ? (
+        {data && report && showMatches ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('report.results')}</Text>
             <View style={styles.card}>
@@ -249,7 +308,7 @@ export default function ReportScreen() {
         ) : null}
 
         {/* ── What stands out ── */}
-        {report && report.findings.length > 0 ? (
+        {report && showMatches && report.findings.length > 0 ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('report.standsOut')}</Text>
             {report.findings.map((f, i) => {
@@ -276,7 +335,7 @@ export default function ReportScreen() {
         ) : null}
 
         {/* ── Things to try ── */}
-        {report && report.suggestions.length > 0 ? (
+        {report && showMatches && report.suggestions.length > 0 ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('report.toTry')}</Text>
             {report.suggestions.map((s, i) => (
@@ -288,9 +347,88 @@ export default function ReportScreen() {
           </View>
         ) : null}
 
+        {report ? (
+          <View style={styles.savedRow}>
+            <Text style={styles.footer}>
+              {savedAt
+                ? t('report.savedOn', {
+                    date: new Date(savedAt).toLocaleDateString(i18n.language, {
+                      day: 'numeric', month: 'short', year: 'numeric',
+                    }),
+                  })
+                : t('report.notSaved')}
+            </Text>
+            <TouchableOpacity onPress={reanalyze} hitSlop={8}>
+              <Text style={styles.link}>{t('report.reanalyze')}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         {report ? <Text style={styles.footer}>{t('report.footer')}</Text> : null}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+/** How long each waiting line stays up. */
+const WAITING_LINE_MS = 4500;
+/** Lines spent on "trials in progress" before moving on to "gathering results". */
+const TRIAL_LINES = 6;
+
+type WaitingStage = 'gathering' | 'starting' | 'trials' | 'results';
+
+function stageLines(t: TFunction, stage: WaitingStage): string[] {
+  const raw = t(`report.waiting.${stage}`, { returnObjects: true }) as unknown;
+  return Array.isArray(raw) ? (raw as string[]) : [];
+}
+
+/** One phrase for the first stage, while the app loads the deck and matches. */
+function GatheringLine() {
+  const { t } = useTranslation();
+  const styles = useThemedStyles(createStyles);
+  const [pick] = useState(() => Math.random());
+  const lines = stageLines(t, 'gathering');
+  return <Text style={styles.waitingLine}>{lines[Math.floor(pick * lines.length)] ?? ''}</Text>;
+}
+
+/**
+ * Lines shown while Claude writes, in the voice of the end-of-match flavor
+ * text: starting trials → trials in progress → gathering results, each with
+ * a few phrases so two waits rarely read the same.
+ *
+ * The request is one call with no progress events, so the stages advance on
+ * a timer: one "starting" line, a run of "trials" lines, then "results"
+ * lines that keep rotating until the answer lands.
+ */
+function WaitingLines() {
+  const { t } = useTranslation();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const [tick, setTick] = useState(0);
+  // Random starting phrase per stage, fixed for this wait.
+  const [offset] = useState(() => Math.floor(Math.random() * 3));
+
+  useEffect(() => {
+    const timer = setInterval(() => setTick((n) => n + 1), WAITING_LINE_MS);
+    return () => clearInterval(timer);
+  }, []);
+
+  const pick = (stage: WaitingStage, n: number) => {
+    const lines = stageLines(t, stage);
+    return lines.length > 0 ? lines[(n + offset) % lines.length] : '';
+  };
+  const line =
+    tick === 0
+      ? pick('starting', 0)
+      : tick <= TRIAL_LINES
+        ? pick('trials', tick - 1)
+        : pick('results', tick - TRIAL_LINES - 1);
+
+  return (
+    <View style={styles.status}>
+      <ActivityIndicator color={theme.colors.accent.primary} />
+      <Text style={styles.waitingLine}>{line}</Text>
+    </View>
   );
 }
 
@@ -343,13 +481,35 @@ const createStyles = (t: AppTheme) => ({
     letterSpacing: 1,
     textTransform: 'uppercase' as const,
   },
-  headline: {
+  summary: {
     color: t.colors.text.primary,
-    fontSize: t.typography.size['heading-md'],
-    fontWeight: t.typography.weight.semibold,
-    lineHeight: t.typography.size['heading-md'] * 1.3,
+    fontSize: t.typography.size['body-lg'],
+    fontWeight: t.typography.weight.regular,
+    lineHeight: t.typography.size['body-lg'] * 1.45,
   },
-  status: { alignItems: 'center' as const, gap: spacing[2], paddingVertical: spacing[4] },
+  primaryBtn: {
+    alignItems: 'center' as const,
+    borderRadius: t.radius.lg,
+    backgroundColor: t.colors.accent.primary,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+  },
+  primaryBtnText: {
+    color: t.colors.accent.onPrimary,
+    fontSize: t.typography.size['body-md'],
+    fontWeight: t.typography.weight.semibold,
+  },
+  savedRow: { alignItems: 'center' as const, gap: spacing[2] },
+  status: { alignItems: 'center' as const, gap: spacing[3], paddingVertical: spacing[4] },
+  waitingLine: {
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-sm'],
+    fontStyle: 'italic' as const,
+    textAlign: 'center' as const,
+    lineHeight: 20,
+    // Two lines' height, so the layout does not jump as lines change.
+    minHeight: 40,
+  },
   section: { gap: spacing[2] },
   sectionTitle: {
     color: t.colors.text.muted,

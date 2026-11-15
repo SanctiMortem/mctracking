@@ -439,6 +439,29 @@ export const matchEventAnnotations = pgTable(
 );
 
 // ─────────────────────────────────────────────
+// stats_reports — LABS: the last AI stats report per user and subject (RPT-004)
+// One row per (user, kind, subject); re-analysing replaces it. `data` is the
+// data package the report was written from, so the saved numbers always
+// match the saved words. Private to user_id.
+// ─────────────────────────────────────────────
+export const statsReports = pgTable(
+  'stats_reports',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: text('user_id').notNull(), // Clerk user ID
+    kind: text('kind').notNull(), // 'deck' | 'player'
+    subjectId: uuid('subject_id').notNull(), // deck id or player id
+    data: jsonb('data').notNull(),
+    report: jsonb('report').notNull(),
+    model: text('model'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('stats_reports_user_subject_unique').on(table.userId, table.kind, table.subjectId),
+  ],
+);
+
+// ─────────────────────────────────────────────
 // group_members
 // E-004 · PLAT-001
 // ─────────────────────────────────────────────

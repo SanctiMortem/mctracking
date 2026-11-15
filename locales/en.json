@@ -680,8 +680,28 @@
     "analyzeDeck": "Analyze deck",
     "analyzeMe": "Analyze my stats",
     "analyzeHint": "Claude reads your matches and list. Uses your own key.",
-    "loadingData": "Gathering your matches…",
-    "thinking": "Claude is reading your deck…",
+    "waiting": {
+      "gathering": [
+        "Uniting the champions and their armies.",
+        "Gathering every spell from the library.",
+        "Summoning the commander to the war table."
+      ],
+      "starting": [
+        "The gates of the arena grind open.",
+        "The banners are raised. The trials begin.",
+        "The first spell is cast into the dark."
+      ],
+      "trials": [
+        "Steel meets spell upon the proving ground.",
+        "Every creature is being tested in battle.",
+        "Old victories and old defeats are fought again."
+      ],
+      "results": [
+        "The dust settles. The fallen are being counted.",
+        "The scribes record what the trials revealed.",
+        "The verdict is carried back from the field."
+      ]
+    },
     "dataFailed": "Could not load your stats.",
     "retry": "Try again",
     "openLabs": "Open Labs",
@@ -695,7 +715,13 @@
     "toTry": "Things to try",
     "record": "{{wins}} of {{matches}} won",
     "noList": "Add a decklist to this deck to get checkups and a mana curve.",
-    "footer": "Written by Claude from your match history and list. These are opinions, not rules. The report is not saved.",
+    "analyzeMatches": "Analyze matches",
+    "reanalyze": "Re-analyze",
+    "reanalyzeTitle": "Re-analyze?",
+    "reanalyzeBody": "Claude writes a new report from your current matches and list, using your key. It replaces the saved one.",
+    "savedOn": "Saved report from {{date}}",
+    "notSaved": "This report could not be saved.",
+    "footer": "Written by Claude from your match history and list. These are opinions, not rules.",
     "area": {
       "lands": "Lands",
       "ramp": "Ramp",

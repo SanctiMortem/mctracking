@@ -140,7 +140,8 @@ export type ReportFinding = {
 export type ReportSuggestion = { title: string; detail: string };
 
 export type StatsReport = {
-  headline: string;
+  /** A short paragraph on how the deck is built and how it has been doing. */
+  summary: string;
   checkups: ReportCheckup[];
   findings: ReportFinding[];
   suggestions: ReportSuggestion[];
@@ -148,3 +149,60 @@ export type StatsReport = {
 
 export const MAX_FINDINGS = 4;
 export const MAX_SUGGESTIONS = 3;
+
+/** A report as stored on the server, with the data it was written from. */
+export type SavedReport = {
+  data: ReportData;
+  report: StatsReport;
+  model: string | null;
+  created_at: string;
+};
+
+const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
+
+/**
+ * Hold the answer to the contract: known areas once each and in order, a
+ * finding's stat_id must exist in the data package, and the caps apply. The
+ * schema already guarantees the shape; this guards the meaning.
+ */
+export function cleanReport(raw: unknown, data: ReportData): StatsReport {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const statIds = new Set(allStats(data).map((s) => s.id));
+  const hasList = data.kind === 'deck' && (data.decks[0]?.cards.length ?? 0) > 0;
+
+  const rawCheckups = Array.isArray(r.checkups) ? (r.checkups as Record<string, unknown>[]) : [];
+  const checkups: ReportCheckup[] = hasList
+    ? CHECKUP_AREAS.flatMap((area) => {
+        const c = rawCheckups.find((x) => x?.area === area);
+        if (!c || !['low', 'fine', 'high'].includes(c.level as string)) return [];
+        return [{
+          area,
+          level: c.level as ReportCheckup['level'],
+          cards: Array.isArray(c.cards) ? c.cards.map(str).filter(Boolean) : [],
+          note: str(c.note),
+        }];
+      })
+    : [];
+
+  const rawFindings = Array.isArray(r.findings) ? (r.findings as Record<string, unknown>[]) : [];
+  const findings: ReportFinding[] = rawFindings
+    .filter((f) => str(f?.title) && str(f?.detail))
+    .slice(0, MAX_FINDINGS)
+    .map((f) => {
+      const statId = typeof f.stat_id === 'string' && statIds.has(f.stat_id) ? f.stat_id : null;
+      const basis = ['results', 'decklist', 'both'].includes(f.based_on as string)
+        ? (f.based_on as ReportFinding['based_on'])
+        : 'decklist';
+      return { title: str(f.title), detail: str(f.detail), based_on: basis, stat_id: statId };
+    });
+
+  const rawSuggestions = Array.isArray(r.suggestions) ? (r.suggestions as Record<string, unknown>[]) : [];
+  const suggestions = rawSuggestions
+    .filter((s) => str(s?.title) && str(s?.detail))
+    .slice(0, MAX_SUGGESTIONS)
+    .map((s) => ({ title: str(s.title), detail: str(s.detail) }));
+
+  const summary = str(r.summary);
+  if (!summary && findings.length === 0) throw new Error('empty report');
+  return { summary, checkups, findings, suggestions };
+}

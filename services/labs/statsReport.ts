@@ -6,7 +6,9 @@
  *    the key never reaches our backend (ADR-009).
  * 3. Clean the answer against the data package and hand it to the screen.
  *
- * Nothing is saved: the report lives in screen state and is gone on close.
+ * The finished report is then saved on our server (words and numbers, never
+ * the key) so it can be reopened without paying for a new one; re-analysing
+ * replaces it.
  *
  * Anthropic is called over plain HTTP on purpose: the official TypeScript
  * SDK does not support React Native (see aiKeys.ts).
@@ -21,14 +23,10 @@ import {
   type ReportLanguage,
 } from '@/services/labs/statsReportPrompt';
 import {
-  CHECKUP_AREAS,
-  MAX_FINDINGS,
-  MAX_SUGGESTIONS,
-  allStats,
-  type ReportCheckup,
+  cleanReport,
   type ReportData,
-  type ReportFinding,
   type ReportKind,
+  type SavedReport,
   type StatsReport,
 } from '@/services/reportShared';
 
@@ -143,51 +141,47 @@ export async function runStatsReport(
   }
 }
 
-const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
+// ─── Saved report (RPT-004) ───────────────────────────────────────────────────
+
+/** The last saved report for this subject, or null when there is none. */
+export async function fetchSavedReport(
+  kind: ReportKind,
+  id: string,
+  token: string | undefined,
+): Promise<SavedReport | null> {
+  const res = await apiFetch<{ success: true; data: SavedReport | null }>(
+    `/api/reports?kind=${kind}&id=${id}`,
+    'GET',
+    undefined,
+    token,
+  );
+  return res.data;
+}
 
 /**
- * Hold the answer to the contract: known areas once each and in order, a
- * finding's stat_id must exist in the data package, and the caps apply. The
- * schema already guarantees the shape; this guards the meaning.
+ * Save the report with the data it was written from. Rules text is dropped
+ * first: the screen only needs card names and counts, and it is most of the
+ * package's size.
  */
-export function cleanReport(raw: unknown, data: ReportData): StatsReport {
-  const r = (raw ?? {}) as Record<string, unknown>;
-  const statIds = new Set(allStats(data).map((s) => s.id));
-  const hasList = data.kind === 'deck' && (data.decks[0]?.cards.length ?? 0) > 0;
-
-  const rawCheckups = Array.isArray(r.checkups) ? (r.checkups as Record<string, unknown>[]) : [];
-  const checkups: ReportCheckup[] = hasList
-    ? CHECKUP_AREAS.flatMap((area) => {
-        const c = rawCheckups.find((x) => x?.area === area);
-        if (!c || !['low', 'fine', 'high'].includes(c.level as string)) return [];
-        return [{
-          area,
-          level: c.level as ReportCheckup['level'],
-          cards: Array.isArray(c.cards) ? c.cards.map(str).filter(Boolean) : [],
-          note: str(c.note),
-        }];
-      })
-    : [];
-
-  const rawFindings = Array.isArray(r.findings) ? (r.findings as Record<string, unknown>[]) : [];
-  const findings: ReportFinding[] = rawFindings
-    .filter((f) => str(f?.title) && str(f?.detail))
-    .slice(0, MAX_FINDINGS)
-    .map((f) => {
-      const statId = typeof f.stat_id === 'string' && statIds.has(f.stat_id) ? f.stat_id : null;
-      const basis = ['results', 'decklist', 'both'].includes(f.based_on as string)
-        ? (f.based_on as ReportFinding['based_on'])
-        : 'decklist';
-      return { title: str(f.title), detail: str(f.detail), based_on: basis, stat_id: statId };
-    });
-
-  const rawSuggestions = Array.isArray(r.suggestions) ? (r.suggestions as Record<string, unknown>[]) : [];
-  const suggestions = rawSuggestions
-    .filter((s) => str(s?.title) && str(s?.detail))
-    .slice(0, MAX_SUGGESTIONS)
-    .map((s) => ({ title: str(s.title), detail: str(s.detail) }));
-
-  const headline = str(r.headline);
-  if (!headline && findings.length === 0) throw new Error('empty report');
-  return { headline, checkups, findings, suggestions };
+export async function saveReport(
+  kind: ReportKind,
+  id: string,
+  data: ReportData,
+  report: StatsReport,
+  token: string | undefined,
+): Promise<SavedReport> {
+  const slim: ReportData = {
+    ...data,
+    decks: data.decks.map((d) => ({
+      ...d,
+      cards: d.cards.map((c) => ({ ...c, oracle_text: null })),
+    })),
+  };
+  const res = await apiFetch<{ success: true; data: SavedReport }>(
+    `/api/reports?kind=${kind}&id=${id}`,
+    'POST',
+    { data: slim, report, model: REPORT_MODEL },
+    token,
+  );
+  return res.data;
 }

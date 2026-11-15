@@ -35,7 +35,7 @@ A finding from the card list alone is welcome and often the most useful kind: a 
 
 ## Fields
 
-"headline": one sentence that sums up how things stand.
+"summary": a short paragraph of two to four sentences that the reader sees first, right under the deck's mana curve. Say what kind of deck this is and how it is put together, then how it has been doing so far. This is the overview; keep specific problems and advice for the findings and suggestions.
 
 "checkups": only for a deck report whose deck has a card list; otherwise an empty array. Give all six areas, in this order: lands, ramp, card_draw, removal, board_wipes, ways_to_win. For each:
 - "cards": the exact names, as written in the list, of the cards that do this job. A card that does two jobs belongs in both. For "lands" leave it empty; the app counts lands from card types.
@@ -74,9 +74,9 @@ const text = { type: 'string' } as const;
 export const REPORT_OUTPUT_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['headline', 'checkups', 'findings', 'suggestions'],
+  required: ['summary', 'checkups', 'findings', 'suggestions'],
   properties: {
-    headline: text,
+    summary: text,
     checkups: {
       type: 'array',
       items: {

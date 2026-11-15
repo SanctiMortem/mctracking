@@ -2,12 +2,8 @@
  * Stats report — the parts that keep a report consistent without a network:
  * sample labels, and holding Claude's answer to the data package (RPT-002).
  */
-jest.mock('expo-secure-store', () => ({}));
-jest.mock('@/services/api', () => ({ apiFetch: jest.fn() }));
-
-import { cleanReport } from '@/services/labs/statsReport';
 import { REPORT_OUTPUT_SCHEMA } from '@/services/labs/statsReportPrompt';
-import { sampleLevel, type ReportData, type ReportStat } from '@/services/reportShared';
+import { cleanReport, sampleLevel, type ReportData, type ReportStat } from '@/services/reportShared';
 
 const stat = (id: string, matches: number, wins: number): ReportStat => ({
   id, label: id, matches, wins, sample: sampleLevel(matches),
@@ -38,7 +34,7 @@ describe('sampleLevel', () => {
 
 describe('cleanReport', () => {
   const raw = {
-    headline: ' Doing fine. ',
+    summary: ' Doing fine. ',
     checkups: [
       { area: 'removal', level: 'low', cards: [], note: 'Thin.' },
       { area: 'lands', level: 'fine', cards: [], note: 'OK.' },
@@ -64,7 +60,7 @@ describe('cleanReport', () => {
 
   it('keeps only stat ids that exist, and applies the caps', () => {
     const r = cleanReport(raw, data);
-    expect(r.headline).toBe('Doing fine.');
+    expect(r.summary).toBe('Doing fine.');
     expect(r.findings).toHaveLength(4);
     expect(r.findings.map((f) => f.stat_id)).toEqual(['color:G', null, 'overall', null]);
     expect(r.suggestions).toHaveLength(3);

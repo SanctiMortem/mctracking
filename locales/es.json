@@ -680,8 +680,28 @@
     "analyzeDeck": "Analizar mazo",
     "analyzeMe": "Analizar mis estadísticas",
     "analyzeHint": "Claude lee tus partidas y tu lista. Usa tu propia clave.",
-    "loadingData": "Reuniendo tus partidas…",
-    "thinking": "Claude está leyendo tu mazo…",
+    "waiting": {
+      "gathering": [
+        "Uniendo a los campeones y sus ejércitos.",
+        "Reuniendo cada hechizo de la biblioteca.",
+        "Convocando al comandante a la mesa de guerra."
+      ],
+      "starting": [
+        "Las puertas de la arena se abren con estruendo.",
+        "Se alzan los estandartes. Comienzan las pruebas.",
+        "El primer hechizo es lanzado a la oscuridad."
+      ],
+      "trials": [
+        "El acero se cruza con el hechizo en el campo de pruebas.",
+        "Cada criatura es puesta a prueba en batalla.",
+        "Viejas victorias y viejas derrotas se libran de nuevo."
+      ],
+      "results": [
+        "El polvo se asienta. Se cuentan los caídos.",
+        "Los escribas anotan lo que las pruebas revelaron.",
+        "El veredicto es traído de vuelta desde el campo."
+      ]
+    },
     "dataFailed": "No se pudieron cargar tus estadísticas.",
     "retry": "Reintentar",
     "openLabs": "Abrir Labs",
@@ -695,7 +715,13 @@
     "toTry": "Cosas para probar",
     "record": "{{wins}} de {{matches}} ganadas",
     "noList": "Agrega una lista a este mazo para ver la revisión y la curva de maná.",
-    "footer": "Escrito por Claude a partir de tu historial de partidas y tu lista. Son opiniones, no reglas. El análisis no se guarda.",
+    "analyzeMatches": "Analizar partidas",
+    "reanalyze": "Volver a analizar",
+    "reanalyzeTitle": "¿Volver a analizar?",
+    "reanalyzeBody": "Claude escribe un análisis nuevo con tus partidas y tu lista actuales, usando tu clave. Reemplaza al guardado.",
+    "savedOn": "Análisis guardado del {{date}}",
+    "notSaved": "Este análisis no se pudo guardar.",
+    "footer": "Escrito por Claude a partir de tu historial de partidas y tu lista. Son opiniones, no reglas.",
     "area": {
       "lands": "Tierras",
       "ramp": "Aceleración",
