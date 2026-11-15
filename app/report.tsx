@@ -5,8 +5,8 @@
  * "Analyze my stats" on your own player profile.
  *
  * The layout is fixed so every report looks the same, in two steps:
- *   1. deck shape (no AI) → summary → checkups
- *   2. "Analyze matches" → results → what stands out → things to try
+ *   1. deck shape (no AI) → summary → checkups → results (no AI)
+ *   2. "Analyze matches" → what stands out → things to try
  *
  * Both steps come from one Claude call, so step 2 opens instantly; the
  * button only reveals what is already there.
@@ -103,7 +103,7 @@ export default function ReportScreen() {
   const [data, setData] = useState<ReportData | null>(null);
   const [phase, setPhase] = useState<Phase>({ step: 'loading' });
   const [openArea, setOpenArea] = useState<string | null>(null);
-  // Step 2 (match results and insights) stays folded until asked for.
+  // Step 2 (Claude's findings and suggestions) stays folded until asked for.
   const [showMatches, setShowMatches] = useState(false);
   // When the report on screen was saved; null if it could not be saved.
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -284,15 +284,8 @@ export default function ReportScreen() {
           </View>
         ) : null}
 
-        {/* ── Step 2: already loaded, shown on demand ── */}
-        {report && !showMatches ? (
-          <TouchableOpacity style={styles.primaryBtn} activeOpacity={0.8} onPress={() => setShowMatches(true)}>
-            <Text style={styles.primaryBtnText}>{t('report.analyzeMatches')}</Text>
-          </TouchableOpacity>
-        ) : null}
-
-        {/* ── Results ── */}
-        {data && report && showMatches ? (
+        {/* ── Results: plain records, no AI, shown as soon as they load ── */}
+        {data ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('report.results')}</Text>
             <View style={styles.card}>
@@ -305,6 +298,13 @@ export default function ReportScreen() {
               {statGroup('report.group.pod', data.by_pod_size)}
             </View>
           </View>
+        ) : null}
+
+        {/* ── Step 2: already loaded, shown on demand ── */}
+        {report && !showMatches ? (
+          <TouchableOpacity style={styles.primaryBtn} activeOpacity={0.8} onPress={() => setShowMatches(true)}>
+            <Text style={styles.primaryBtnText}>{t('report.analyzeMatches')}</Text>
+          </TouchableOpacity>
         ) : null}
 
         {/* ── What stands out ── */}
