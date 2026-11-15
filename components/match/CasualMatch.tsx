@@ -306,8 +306,11 @@ function CasualTrackerView({
       .filter((other) => other.id !== p.id)
       .map((other) => ({ id: other.id, name: other.name }));
 
+    // Commander damage is lethal at 21 from ONE commander — it does not add
+    // up across commanders — so the footer shows the highest single total,
+    // i.e. how close this player is to dying to commander damage.
     const cmdDamageTotal = Object.values(p.commanderDamage ?? {}).reduce(
-      (sum, v) => sum + (typeof v === 'number' ? v : 0),
+      (max, v) => (typeof v === 'number' && v > max ? v : max),
       0,
     );
 

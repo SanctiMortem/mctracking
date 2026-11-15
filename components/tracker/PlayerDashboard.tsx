@@ -118,7 +118,7 @@ interface PlayerDashboardProps {
   cmdDamageOverlay: React.ReactNode;
   /** Current poison count for the footer label. */
   poisonCount: number;
-  /** Total commander damage received for the footer label. */
+  /** Highest commander damage received from any single commander (footer label). */
   cmdDamageTotal: number;
   /** Optional Scryfall art_crop URL — renders as faded background. */
   artCrop?: string | null;

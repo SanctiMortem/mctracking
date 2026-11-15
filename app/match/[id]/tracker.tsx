@@ -772,8 +772,11 @@ export default function MatchTrackerScreen() {
       });
 
     // Sum all commander damage values for the trigger label
+    // Commander damage is lethal at 21 from ONE commander — it does not add
+    // up across commanders — so the footer shows the highest single total,
+    // i.e. how close this player is to dying to commander damage.
     const cmdDamageTotal = Object.values(p.commanderDamage ?? {}).reduce(
-      (sum: number, v: unknown) => sum + (typeof v === 'number' ? v : 0),
+      (max: number, v: unknown) => (typeof v === 'number' && v > max ? v : max),
       0,
     );
 
