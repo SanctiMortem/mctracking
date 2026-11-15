@@ -321,6 +321,11 @@ function AuthGate() {
         headerTitleStyle: { color: theme.colors.text.primary, fontFamily: theme.typography.fontFamily.headline },
         headerBackTitleVisible: false,
         headerBackTitle: '',
+        // The two options above no longer hide the label on current
+        // react-native-screens: an empty back title falls back to the previous
+        // screen's title, which for header-less screens is the route name
+        // ("decks/[id]"). "minimal" shows the arrow alone.
+        headerBackButtonDisplayMode: 'minimal',
         contentStyle: { backgroundColor: theme.colors.background.primary },
         animation: 'slide_from_right',
         gestureResponseDistance: { start: 30 } as any,
