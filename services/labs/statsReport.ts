@@ -3,7 +3,8 @@
  *
  * 1. Fetch the data package from our API (records, deck shape, card lists).
  * 2. Send it to Claude with the user's own key, straight from the phone —
- *    the key never reaches our backend (ADR-009).
+ *    the key never reaches our backend (ADR-009). Two calls run side by
+ *    side: a quick one for the opening summary and the full report.
  * 3. Clean the answer against the data package and hand it to the screen.
  *
  * The finished report is then saved on our server (words and numbers, never
@@ -13,13 +14,18 @@
  * Anthropic is called over plain HTTP on purpose: the official TypeScript
  * SDK does not support React Native (see aiKeys.ts).
  */
+import * as SecureStore from 'expo-secure-store';
+
 import { apiFetch } from '@/services/api';
 import { getAiKey } from '@/services/labs/aiKeys';
 import {
   REPORT_MODEL,
   REPORT_OUTPUT_SCHEMA,
   REPORT_SYSTEM_PROMPT,
+  SUMMARY_OUTPUT_SCHEMA,
+  SUMMARY_SYSTEM_PROMPT,
   buildReportUserMessage,
+  buildSummaryUserMessage,
   type ReportLanguage,
 } from '@/services/labs/statsReportPrompt';
 import {
@@ -64,12 +70,16 @@ type AnthropicMessage = {
   content?: { type: string; text?: string }[];
 };
 
-async function callClaude(
-  key: string,
-  data: ReportData,
-  language: ReportLanguage,
-  withFallback: boolean,
-): Promise<Response> {
+type ClaudeRequest = {
+  system: string;
+  user: string;
+  schema: unknown;
+  /** Thinking is always on for this model; effort is the only depth control. */
+  effort: 'low' | 'medium';
+  maxTokens: number;
+};
+
+async function postMessage(key: string, req: ClaudeRequest, withFallback: boolean): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -84,17 +94,16 @@ async function callClaude(
       },
       body: JSON.stringify({
         model: REPORT_MODEL,
-        max_tokens: MAX_TOKENS,
-        system: REPORT_SYSTEM_PROMPT,
-        // Thinking is always on for this model; effort is the only depth control.
+        max_tokens: req.maxTokens,
+        system: req.system,
         output_config: {
-          effort: 'medium',
-          format: { type: 'json_schema', schema: REPORT_OUTPUT_SCHEMA },
+          effort: req.effort,
+          format: { type: 'json_schema', schema: req.schema },
         },
         // If a safety classifier declines by mistake, let the API retry on
         // another model inside the same call.
         ...(withFallback ? { fallbacks: 'default' } : {}),
-        messages: [{ role: 'user', content: buildReportUserMessage(data, language) }],
+        messages: [{ role: 'user', content: req.user }],
       }),
     });
   } finally {
@@ -102,6 +111,54 @@ async function callClaude(
   }
 }
 
+/**
+ * The fallback option is a beta. Once an account or model has rejected it,
+ * stop sending it for the rest of the session rather than paying a wasted
+ * round trip on every call.
+ */
+let fallbackSupported = true;
+
+async function callClaude(key: string, req: ClaudeRequest): Promise<Response> {
+  let res = await postMessage(key, req, fallbackSupported);
+  if (res.status === 400 && fallbackSupported) {
+    const retry = await postMessage(key, req, false);
+    if (retry.ok) fallbackSupported = false;
+    res = retry;
+  }
+  return res;
+}
+
+/**
+ * The opening summary, as its own small call so it lands well before the
+ * full report: slimmer input, a few sentences of output, low effort. Returns
+ * null on any failure — the report is still complete without it.
+ */
+export async function runSummary(
+  data: ReportData,
+  language: ReportLanguage,
+): Promise<string | null> {
+  const key = await getAiKey('anthropic');
+  if (!key) return null;
+  try {
+    const res = await callClaude(key, {
+      system: SUMMARY_SYSTEM_PROMPT,
+      user: buildSummaryUserMessage(data, language),
+      schema: SUMMARY_OUTPUT_SCHEMA,
+      effort: 'low',
+      maxTokens: 4000,
+    });
+    if (!res.ok) return null;
+    const message = (await res.json()) as AnthropicMessage;
+    if (message.stop_reason === 'refusal' || message.stop_reason === 'max_tokens') return null;
+    const text = message.content?.find((b) => b.type === 'text')?.text;
+    const summary = text ? (JSON.parse(text) as { summary?: unknown }).summary : null;
+    return typeof summary === 'string' && summary.trim() ? summary.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The full report (checkups, findings, suggestions). Its `summary` is empty; see runSummary. */
 export async function runStatsReport(
   data: ReportData,
   language: ReportLanguage,
@@ -111,10 +168,13 @@ export async function runStatsReport(
 
   let res: Response;
   try {
-    res = await callClaude(key, data, language, true);
-    // The fallback option is a beta; if this account or model rejects it,
-    // the report itself should still work.
-    if (res.status === 400) res = await callClaude(key, data, language, false);
+    res = await callClaude(key, {
+      system: REPORT_SYSTEM_PROMPT,
+      user: buildReportUserMessage(data, language),
+      schema: REPORT_OUTPUT_SCHEMA,
+      effort: 'medium',
+      maxTokens: MAX_TOKENS,
+    });
   } catch {
     return { ok: false, reason: 'network' };
   }
@@ -184,4 +244,26 @@ export async function saveReport(
     token,
   );
   return res.data;
+}
+
+// ─── Insights opened (per device) ─────────────────────────────────────────────
+// Once someone has tapped "Analyze matches" for a deck or profile, the
+// insights stay open on later visits, including after a re-analyze.
+
+const openedKey = (kind: ReportKind, id: string) => `report_insights_open_${kind}_${id}`;
+
+export async function wereInsightsOpened(kind: ReportKind, id: string): Promise<boolean> {
+  try {
+    return (await SecureStore.getItemAsync(openedKey(kind, id))) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function rememberInsightsOpened(kind: ReportKind, id: string): Promise<void> {
+  try {
+    await SecureStore.setItemAsync(openedKey(kind, id), '1');
+  } catch {
+    // Not worth an error: the button just shows again next time.
+  }
 }

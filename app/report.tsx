@@ -8,8 +8,9 @@
  *   1. deck shape (no AI) → summary → checkups → results (no AI)
  *   2. "Analyze matches" → what stands out → things to try
  *
- * Both steps come from one Claude call, so step 2 opens instantly; the
- * button only reveals what is already there.
+ * Two Claude calls start together: a quick one for the summary, which shows
+ * within seconds, and the full report. Step 2 is already loaded when the
+ * button appears, so it opens instantly.
  *
  * Numbers (curve, counts, records) are drawn here from the data package.
  * Claude supplies the words and which cards fill each checkup.
@@ -31,8 +32,11 @@ import { useThemedStyles } from '@/hooks/useThemedStyles';
 import {
   fetchReportData,
   fetchSavedReport,
+  rememberInsightsOpened,
   runStatsReport,
+  runSummary,
   saveReport,
+  wereInsightsOpened,
   type ReportFailure,
 } from '@/services/labs/statsReport';
 import {
@@ -103,10 +107,13 @@ export default function ReportScreen() {
   const [data, setData] = useState<ReportData | null>(null);
   const [phase, setPhase] = useState<Phase>({ step: 'loading' });
   const [openArea, setOpenArea] = useState<string | null>(null);
-  // Step 2 (Claude's findings and suggestions) stays folded until asked for.
+  // Step 2 (Claude's findings and suggestions) stays folded until asked for —
+  // once. After the first tap it is remembered for this deck or profile.
   const [showMatches, setShowMatches] = useState(false);
   // When the report on screen was saved; null if it could not be saved.
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  // The quick summary, which lands before the full report does.
+  const [earlySummary, setEarlySummary] = useState<string | null>(null);
   // Guards against a slow answer landing after the screen moved on.
   const runRef = useRef(0);
 
@@ -119,8 +126,8 @@ export default function ReportScreen() {
     const runId = ++runRef.current;
     const current = () => runRef.current === runId;
     setPhase({ step: 'loading' });
-    setShowMatches(false);
     setOpenArea(null);
+    setEarlySummary(null);
 
     let token: string | undefined;
     try {
@@ -153,16 +160,24 @@ export default function ReportScreen() {
     setSavedAt(null);
     setPhase({ step: 'thinking' });
 
+    // Two calls side by side: the summary is small and shows as soon as it
+    // lands, while the full report is still being written.
+    const summaryCall = runSummary(pkg, language).then((summary) => {
+      if (current() && summary) setEarlySummary(summary);
+      return summary;
+    });
     const outcome = await runStatsReport(pkg, language);
     if (!current()) return;
     if (!outcome.ok) {
       setPhase({ step: 'failed', reason: outcome.reason });
       return;
     }
-    setPhase({ step: 'done', report: outcome.report });
+    const full: StatsReport = { ...outcome.report, summary: (await summaryCall) ?? '' };
+    if (!current()) return;
+    setPhase({ step: 'done', report: full });
 
     // Save in the background; the report is already on screen either way.
-    saveReport(reportKind, id, pkg, outcome.report, token)
+    saveReport(reportKind, id, pkg, full, token)
       .then((saved) => { if (current()) setSavedAt(saved.created_at); })
       .catch(() => {});
   }, [reportKind, id, language]);
@@ -171,6 +186,20 @@ export default function ReportScreen() {
     void run(true);
     return () => { runRef.current++; };
   }, [run]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setShowMatches(false);
+    wereInsightsOpened(reportKind, id).then((opened) => {
+      if (!cancelled && opened) setShowMatches(true);
+    });
+    return () => { cancelled = true; };
+  }, [reportKind, id]);
+
+  const openMatches = useCallback(() => {
+    setShowMatches(true);
+    void rememberInsightsOpened(reportKind, id);
+  }, [reportKind, id]);
 
   const reanalyze = useCallback(() => {
     Alert.alert(t('report.reanalyzeTitle'), t('report.reanalyzeBody'), [
@@ -236,7 +265,9 @@ export default function ReportScreen() {
         ) : null}
 
         {/* ── Summary ── */}
-        {report?.summary ? <Text style={styles.summary}>{report.summary}</Text> : null}
+        {report?.summary || earlySummary ? (
+          <Text style={styles.summary}>{report?.summary || earlySummary}</Text>
+        ) : null}
 
         {phase.step === 'thinking' ? <WaitingLines /> : null}
 
@@ -302,7 +333,7 @@ export default function ReportScreen() {
 
         {/* ── Step 2: already loaded, shown on demand ── */}
         {report && !showMatches ? (
-          <TouchableOpacity style={styles.primaryBtn} activeOpacity={0.8} onPress={() => setShowMatches(true)}>
+          <TouchableOpacity style={styles.primaryBtn} activeOpacity={0.8} onPress={openMatches}>
             <Text style={styles.primaryBtnText}>{t('report.analyzeMatches')}</Text>
           </TouchableOpacity>
         ) : null}

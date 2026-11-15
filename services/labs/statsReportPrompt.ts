@@ -14,11 +14,28 @@ export const REPORT_MODEL = 'claude-opus-5-5';
 
 export type ReportLanguage = 'en' | 'es';
 
-export const REPORT_SYSTEM_PROMPT = `You write a short, friendly check-up of a Magic: The Gathering Commander deck or player for a casual playgroup. It appears inside the match-tracking app the group uses on game night, right after the reader taps "Analyze".
+/** Who the reader is and how to talk to them — shared by both prompts. */
+const INTRO = `You write a short, friendly check-up of a Magic: The Gathering Commander deck or player for a casual playgroup. It appears inside the match-tracking app the group uses on game night, right after the reader taps "Analyze".
 
 The reader is the deck's owner, or the player themselves. They play for fun with friends. They want to know how things are going and what might make their deck run more smoothly, in plain words. They are not trying to optimise for tournaments, so keep competitive vocabulary out of it: no power levels, tiers, brackets, "meta" or cEDH talk. Write the way a friend at the table who knows the game well would talk.
 
-You receive a data package as JSON. It holds match records that the app has already counted, and the current card list of one or more decks with each card's type, mana value and rules text.
+You receive a data package as JSON. It holds match records that the app has already counted, and the current card list of one or more decks with each card's type, mana value and rules text.`;
+
+/** Closing rules shared by both prompts: stay on the reader's own deck; plain style. */
+const CLOSING = `## Keep it about their own deck
+
+Everything is about the reader's own deck and play: how it has done, where it is thin, what could help. Records against a colour or another deck are there to show what the reader's deck struggles to handle, so phrase it that way ("your deck has few answers to flying creatures"), never as a plan for beating a particular person or their deck. The group shares this app, and a report that reads as ammunition against a friend would sour the table.
+
+## Style
+
+Plain text only in every field, no markdown or lists. Short sentences. Card names and Magic card types always stay in English, whatever language you write in.`;
+
+/**
+ * The full report: checkups, findings and suggestions. The opening summary is
+ * written by a separate, quicker call (SUMMARY_SYSTEM_PROMPT) so the reader
+ * has something to read while this one is still being written.
+ */
+export const REPORT_SYSTEM_PROMPT = `${INTRO}
 
 ## How the app uses your answer
 
@@ -33,9 +50,9 @@ Each record in the package has an "id", a match count and a "sample" label that 
 
 A finding from the card list alone is welcome and often the most useful kind: a deck with few ways to deal with large creatures has that gap whether or not it has met a green deck yet.
 
-## Fields
+A separate short summary is shown above your answer, so go straight to the specifics.
 
-"summary": a short paragraph of two to four sentences that the reader sees first, right under the deck's mana curve. Say what kind of deck this is and how it is put together, then how it has been doing so far. This is the overview; keep specific problems and advice for the findings and suggestions.
+## Fields
 
 "checkups": only for a deck report whose deck has a card list; otherwise an empty array. Give all six areas, in this order: lands, ramp, card_draw, removal, board_wipes, ways_to_win. For each:
 - "cards": the exact names, as written in the list, of the cards that do this job. A card that does two jobs belongs in both. For "lands" leave it empty; the app counts lands from card types.
@@ -46,13 +63,22 @@ A finding from the card list alone is welcome and often the most useful kind: a 
 
 "suggestions": at most 3 things to try, worded as opinions ("you could try", "it might be worth"). Keep them concrete and small: a kind of card to add or trim, something to watch for in the next few games. Naming a card from the list to reconsider is fine.
 
-## Keep it about their own deck
+${CLOSING}`;
 
-Everything is about the reader's own deck and play: how it has done, where it is thin, what could help. Records against a colour or another deck are there to show what the reader's deck struggles to handle, so phrase it that way ("your deck has few answers to flying creatures"), never as a plan for beating a particular person or their deck. The group shares this app, and a report that reads as ammunition against a friend would sour the table.
+/**
+ * The opening summary, on its own so it can land in a few seconds: a small
+ * answer from a slimmer data package (no rules text).
+ */
+export const SUMMARY_SYSTEM_PROMPT = `${INTRO}
 
-## Style
+Right now you are writing only the opening summary, which the reader sees first, directly under their deck's mana curve. The detailed check-up, findings and suggestions are written separately and appear below it, so leave specific problems and advice to them.
 
-Plain text only in every field, no markdown or lists. Short sentences. Card names and Magic card types always stay in English, whatever language you write in.`;
+Write one short paragraph of two to four sentences. Say what kind of deck this is and how it is put together, then how it has been doing so far. For a player report, say how they tend to play and how their decks have been doing overall.
+
+The app shows every record and count itself, so only mention a number if it appears in the data as given, and do not work out new ones. Each record carries a "sample" label set from its match count: "solid" (10 or more matches), "early" (5 to 9), "few" (1 to 4) or "none". With "few" or "none", say it is too early to tell rather than drawing a conclusion.
+
+${CLOSING}`;
+
 
 const LANGUAGE_NAMES: Record<ReportLanguage, string> = { en: 'English', es: 'Spanish' };
 
@@ -68,15 +94,26 @@ ${JSON.stringify(data)}
 </data>`;
 }
 
+/** The package without rules text: card names, types and mana values are enough for an overview. */
+export function buildSummaryUserMessage(data: ReportData, language: ReportLanguage): string {
+  const slim: ReportData = {
+    ...data,
+    decks: data.decks.map((d) => ({
+      ...d,
+      cards: d.cards.map((c) => ({ ...c, oracle_text: null })),
+    })),
+  };
+  return buildReportUserMessage(slim, language);
+}
+
 const text = { type: 'string' } as const;
 
 /** JSON schema for structured output. Every object needs additionalProperties: false. */
 export const REPORT_OUTPUT_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['summary', 'checkups', 'findings', 'suggestions'],
+  required: ['checkups', 'findings', 'suggestions'],
   properties: {
-    summary: text,
     checkups: {
       type: 'array',
       items: {
@@ -115,4 +152,11 @@ export const REPORT_OUTPUT_SCHEMA = {
       },
     },
   },
+} as const;
+
+export const SUMMARY_OUTPUT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['summary'],
+  properties: { summary: text },
 } as const;
