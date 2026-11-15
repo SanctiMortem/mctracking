@@ -391,6 +391,9 @@ const createStyles = (t: AppTheme) => ({
   flashHalfFull: { bottom: -COUNTER_FOOTER_HEIGHT },
   // Floating "+3 / −2": a little larger and pulled in from the corner.
   deltaBadgeExp: {
+    // Translucent, so the life total stays visible behind it.
+    backgroundColor: t.colors.background.elevated + 'A6',
+    borderColor: t.colors.border.default + '80',
     right: '11%' as const,
     top: '20%' as const,
     paddingHorizontal: 11,
