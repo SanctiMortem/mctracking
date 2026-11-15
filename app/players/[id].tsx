@@ -244,6 +244,19 @@ export default function PlayerProfileScreen() {
               )}
             </View>
           )}
+          {/* Every deck this player OWNS (played or not) lives on its own page. */}
+          {(data.owned_decks?.length ?? 0) > 0 && (
+            <TouchableOpacity
+              onPress={() => router.push(`/players/${player.id}/decks` as never)}
+              style={styles.ownedDecksBtn}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.ownedDecksText}>
+                {t('player.viewOwnedDecks', { name: player.name, count: data.owned_decks.length })}
+              </Text>
+              <Text style={styles.ownedDecksChevron}>›</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* ── Commanders más usados ── */}
@@ -465,6 +478,25 @@ const createStyles = (t: AppTheme) => ({
     fontStyle: 'italic',
   },
   seeAllBtn: { alignSelf: 'center', paddingVertical: spacing[2] },
+  ownedDecksBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing[2],
+    minHeight: 48,
+    paddingHorizontal: spacing[4],
+    borderRadius: t.radius.lg,
+    borderWidth: 1,
+    borderColor: t.colors.accent.primary + '66',
+    backgroundColor: t.colors.accent.primary + '0F',
+  },
+  ownedDecksText: {
+    flexShrink: 1,
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-md'],
+    fontWeight: t.typography.weight.semibold,
+  },
+  ownedDecksChevron: { color: t.colors.accent.primary, fontSize: t.typography.size['heading-lg'] },
   seeAllText: {
     color: t.colors.accent.primary,
     fontSize: t.typography.size['body-sm'],

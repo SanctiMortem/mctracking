@@ -163,7 +163,8 @@ export type CareerBucket = {
   key: string;
   matches: number;
   wins: number;
-  /** null until the bucket has CAREER_MIN_MATCHES — too few games to mean anything. */
+  /** wins / matches for this bucket. The row also shows the record ("2 of 3
+   *  won"), so a small sample is visible for what it is. */
   win_rate_pct: number | null;
 };
 
@@ -175,8 +176,6 @@ export type CareerBreakdown = {
   longest_game_seconds: number | null;
 };
 
-/** Same threshold as the Top-5 deck / commander lists. */
-const CAREER_MIN_MATCHES = 5;
 /** A match left open overnight is not an 11-hour game — ignore for length stats. */
 const MAX_PLAUSIBLE_GAME_SECONDS = 8 * 60 * 60;
 /** A result typed in after the fact closes in seconds — not a real game length. */
@@ -294,7 +293,7 @@ async function getCareerBreakdown(filter: SQL | undefined): Promise<CareerBreakd
           key: k,
           matches: v.matches,
           wins: v.wins,
-          win_rate_pct: v.matches >= CAREER_MIN_MATCHES ? calcWinRate(v.wins, v.matches) : null,
+          win_rate_pct: calcWinRate(v.wins, v.matches),
         };
       });
 
@@ -348,6 +347,12 @@ export type PlayerStats = {
   /** How this player's wins were achieved. Empty when no wins. */
   wins_by_condition: WinConditionCount[];
   career: CareerBreakdown;
+  /**
+   * Decks this player owns (created by their account), played or not, with
+   * each deck's overall record across everyone who has used it. Ordered by
+   * commander name. Empty for guest players, who have no account.
+   */
+  owned_decks: FavoriteDeck[];
 };
 
 export type GetPlayerStatsResult =
@@ -529,6 +534,55 @@ export async function getPlayerStats(
       .filter((x): x is FavoriteDeck => x !== null);
   }
 
+  // 4b. Decks the player owns — everything their account created, whether or
+  //     not it has been played. Archived and deleted decks are left out.
+  let ownedDecksList: FavoriteDeck[] = [];
+  if (player.accountUserId) {
+    const ownedDecks = await db
+      .select()
+      .from(decks)
+      .where(and(
+        eq(decks.createdBy, player.accountUserId),
+        isNull(decks.deletedAt),
+        isNull(decks.archivedAt),
+      ));
+    if (ownedDecks.length > 0) {
+      const ownedIds = ownedDecks.map((d) => d.id);
+      const ownedCmdIds = [
+        ...new Set(ownedDecks.flatMap((d) => [d.commanderId, d.commanderId2].filter(Boolean) as string[])),
+      ];
+      const [ownedCmds, ownedStats] = await Promise.all([
+        db.select().from(commanders).where(inArray(commanders.id, ownedCmdIds)),
+        db
+          .select({
+            deckId: participations.deckId,
+            matches: count(participations.id),
+            wins: sql<number>`sum(case when ${participations.result} = 'win' then 1 else 0 end)`,
+          })
+          .from(participations)
+          .innerJoin(matches, eq(participations.matchId, matches.id))
+          .where(and(inArray(participations.deckId, ownedIds), eq(matches.status, 'completed')))
+          .groupBy(participations.deckId),
+      ]);
+      const cmdById = new Map(ownedCmds.map((c) => [c.id, c]));
+      const statById = new Map(ownedStats.map((r) => [r.deckId, r]));
+      ownedDecksList = ownedDecks
+        .map((deck) => {
+          const m = Number(statById.get(deck.id)?.matches ?? 0);
+          const w = Number(statById.get(deck.id)?.wins ?? 0);
+          const deckCommanders = [deck.commanderId, deck.commanderId2]
+            .filter(Boolean)
+            .map((id) => cmdById.get(id!))
+            .filter(Boolean) as Commander[];
+          return { deck, commanders: deckCommanders, matches: m, win_rate_pct: calcWinRate(w, m) };
+        })
+        .sort((a, b) =>
+          (a.commanders[0]?.name ?? a.deck.name).localeCompare(b.commanders[0]?.name ?? b.deck.name) ||
+          a.deck.name.localeCompare(b.deck.name),
+        );
+    }
+  }
+
   // 5. Aggregate commanders in JS — both partners count independently (BR-STATS-05)
   const cmdMap = new Map<string, { matches: number; wins: number }>();
   for (const row of partRows) {
@@ -584,6 +638,7 @@ export async function getPlayerStats(
       career,
       favorite_decks: favoriteDecksList,
       favorite_commanders: favoriteCommandersList,
+      owned_decks: ownedDecksList,
     },
   };
 }
@@ -619,6 +674,13 @@ export type ColorMatchup = {
   score: number;
 };
 
+export type ColorRecord = {
+  /** 'W' | 'U' | 'B' | 'R' | 'G' | 'C' (colourless). */
+  color: string;
+  wins: number;
+  losses: number;
+};
+
 export type DeckStats = {
   deck: DeckWithCommanders;
   total_matches: number;
@@ -636,6 +698,12 @@ export type DeckStats = {
   /** How this deck's wins were achieved. Empty when no wins. */
   wins_by_condition: WinConditionCount[];
   career: CareerBreakdown;
+  /**
+   * Per colour, counted once per match: matches won with that colour across
+   * the table, and matches lost to a winning deck of that colour. WUBRG
+   * order, then 'C' for colourless. Colours never faced are omitted.
+   */
+  color_record: ColorRecord[];
 };
 
 /** Min number of DECISIVE matches against a single opposing deck for it
@@ -761,6 +829,10 @@ export async function getDeckStats(
 
   const matchIds = [...ownResultByMatch.keys()];
   const matchupTotals = new Map<string, { matches: number; wins: number; mostRecentDecisiveAt: number }>();
+  // Per match, for the colour record: who won, and which decks sat across
+  // the table from this one.
+  const winnerDeckOf = new Map<string, string>();
+  const opponentDecksOf = new Map<string, string[]>();
 
   if (matchIds.length > 0) {
     // Pull every participation in those matches, including result + match
@@ -785,6 +857,10 @@ export async function getDeckStats(
       matchCreatedAtMs.set(p.matchId, p.matchCreatedAt.getTime());
       if (p.result === 'win') {
         winnerDeckByMatch.set(p.matchId, p.deckId);
+        winnerDeckOf.set(p.matchId, p.deckId);
+      }
+      if (p.deckId !== deckId) {
+        opponentDecksOf.set(p.matchId, [...(opponentDecksOf.get(p.matchId) ?? []), p.deckId]);
       }
     }
 
@@ -809,6 +885,7 @@ export async function getDeckStats(
   let worstMatchups: MatchupBreakdown[] = [];
   let strongAgainstColors: ColorMatchup[] = [];
   let weakAgainstColors: ColorMatchup[] = [];
+  let colorRecord: ColorRecord[] = [];
   if (matchupTotals.size > 0) {
     const allOpponentIds = [...matchupTotals.keys()];
     const opponentDeckObjects = await db.select().from(decks).where(inArray(decks.id, allOpponentIds));
@@ -840,6 +917,38 @@ export async function getDeckStats(
         colorTally.set(c, cur);
       }
     }
+    // ── Colour record: counted once per MATCH, not once per opponent ──
+    //   won against X  = matches this deck won where at least one opposing
+    //                    deck had X in its identity
+    //   lost to X      = matches this deck lost where the WINNING deck had X
+    // Colourless decks count under 'C'. Draws and matches won by a deck we
+    // cannot resolve are skipped.
+    const coloursOf = (id: string): string[] => {
+      const d = opponentMap.get(id);
+      if (!d) return [];
+      const c = colorIdentityForDeck(d, cmdColorMap);
+      return c.length > 0 ? c : ['C'];
+    };
+    const record = new Map<string, { wins: number; losses: number }>();
+    const bumpRecord = (colours: Iterable<string>, key: 'wins' | 'losses') => {
+      for (const c of colours) {
+        const cur = record.get(c) ?? { wins: 0, losses: 0 };
+        cur[key] += 1;
+        record.set(c, cur);
+      }
+    };
+    for (const [matchId, result] of ownResultByMatch) {
+      const winnerDeckId = winnerDeckOf.get(matchId);
+      if (!winnerDeckId) continue;
+      if (result === 'win' && winnerDeckId === deckId) {
+        bumpRecord(new Set((opponentDecksOf.get(matchId) ?? []).flatMap(coloursOf)), 'wins');
+      } else if (result === 'lose' && winnerDeckId !== deckId) {
+        bumpRecord(new Set(coloursOf(winnerDeckId)), 'losses');
+      }
+    }
+    const COLOUR_ORDER = ['W', 'U', 'B', 'R', 'G', 'C'];
+    colorRecord = COLOUR_ORDER.filter((c) => record.has(c)).map((c) => ({ color: c, ...record.get(c)! }));
+
     const tallyList: ColorMatchup[] = [...colorTally.entries()].map(
       ([color, v]) => ({ color, wins: v.wins, losses: v.losses, score: v.wins - v.losses }),
     );
@@ -924,6 +1033,7 @@ export async function getDeckStats(
       worst_matchups: worstMatchups,
       strong_against_colors: strongAgainstColors,
       weak_against_colors: weakAgainstColors,
+      color_record: colorRecord,
       wins_by_condition: winsByCondition,
       career,
     },

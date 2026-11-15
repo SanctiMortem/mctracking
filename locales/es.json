@@ -228,9 +228,15 @@
     "nameLabel": "Nombre",
     "avgTurnTime": "turno promedio",
     "longestTurn": "turno más largo",
-    "seeAllDecks_one": "Ver el mazo ({{count}})",
-    "seeAllDecks_other": "Ver los {{count}} mazos",
-    "showTopDecks": "Ver los 5 principales"
+    "seeAllDecks_one": "Ver el mazo jugado ({{count}})",
+    "seeAllDecks_other": "Ver los {{count}} mazos jugados",
+    "showTopDecks": "Ver los 5 principales",
+    "viewOwnedDecks_one": "Todos los mazos de {{name}} ({{count}})",
+    "viewOwnedDecks_other": "Todos los mazos de {{name}} ({{count}})",
+    "allDecksTitle": "Mazos de {{name}}",
+    "deckCount_one": "{{count}} mazo",
+    "deckCount_other": "{{count}} mazos",
+    "noOwnedDecks": "Este jugador aún no tiene mazos propios."
   },
   "deck": {
     "howItWins": "Cómo gana este mazo",
@@ -674,5 +680,11 @@
       "gt90": "Más de 90 min"
     },
     "record": "{{wins}} de {{count}} ganadas"
+  },
+  "colorRecord": {
+    "title": "Contra cada color",
+    "won": "Ganadas",
+    "lost": "Perdidas",
+    "note": "Se cuenta una vez por partida: victorias con ese color en la mesa y derrotas ante un mazo ganador de ese color."
   }
 }

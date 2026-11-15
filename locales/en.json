@@ -228,9 +228,15 @@
     "nameLabel": "Name",
     "avgTurnTime": "avg turn",
     "longestTurn": "longest turn",
-    "seeAllDecks_one": "See all {{count}} deck",
-    "seeAllDecks_other": "See all {{count}} decks",
-    "showTopDecks": "Show top 5"
+    "seeAllDecks_one": "Show all {{count}} played deck",
+    "seeAllDecks_other": "Show all {{count}} played decks",
+    "showTopDecks": "Show top 5",
+    "viewOwnedDecks_one": "All of {{name}}'s decks ({{count}})",
+    "viewOwnedDecks_other": "All of {{name}}'s decks ({{count}})",
+    "allDecksTitle": "{{name}}'s decks",
+    "deckCount_one": "{{count}} deck",
+    "deckCount_other": "{{count}} decks",
+    "noOwnedDecks": "This player has no decks of their own yet."
   },
   "deck": {
     "howItWins": "How this deck wins",
@@ -674,5 +680,11 @@
       "gt90": "Over 90 min"
     },
     "record": "{{wins}} of {{count}} won"
+  },
+  "colorRecord": {
+    "title": "Against each color",
+    "won": "Won",
+    "lost": "Lost",
+    "note": "Counted once per match: wins with that color across the table, and losses to a winning deck of that color."
   }
 }
