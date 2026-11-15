@@ -11,7 +11,7 @@ import { and, asc, count, desc, eq, gte, inArray, isNull, lte, ne, or } from 'dr
 import { alias } from 'drizzle-orm/pg-core';
 
 import { db } from '@/services/db';
-import { commanders, decks, groupMembers, matchEvents, matchResults, matches, participations, players } from '@/db/schema';
+import { commanders, deckVersions, decks, groupMembers, matchEvents, matchResults, matches, participations, players } from '@/db/schema';
 import type { Commander, Deck, Match, MatchEvent, MatchResult, Participation, Player } from '@/db/index';
 import type { MatchLayout } from '@/db/schema';
 
@@ -179,6 +179,15 @@ export async function createMatch(
     }
   }
 
+  // Each deck's current list version, so stats can be split by version (DECK-007).
+  // Rows come back oldest → newest, so the last one written per deck wins.
+  const versionRows = await db
+    .select({ id: deckVersions.id, deckId: deckVersions.deckId })
+    .from(deckVersions)
+    .where(inArray(deckVersions.deckId, deckIds))
+    .orderBy(asc(deckVersions.versionNumber));
+  const currentVersion = new Map(versionRows.map((v) => [v.deckId, v.id]));
+
   // 5. Insert match then participations (neon-http does not support transactions)
   const [match] = await db
     .insert(matches)
@@ -192,6 +201,7 @@ export async function createMatch(
         matchId: match.id,
         playerId: p.player_id,
         deckId: p.deck_id,
+        deckVersionId: currentVersion.get(p.deck_id) ?? null,
         lifeTotal: startingLifeTotal,
         poisonCounters: 0,
         commanderDamage: {},

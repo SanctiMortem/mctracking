@@ -649,13 +649,106 @@
     "offIdentity": "Fuera de color",
     "formLabel": "Lista del mazo (opcional)",
     "formHintNew": "Pega una carta por línea. Se ignoran los códigos de edición y las marcas de foil.",
-    "formHintEdit": "Pega una lista para reemplazar la actual. Déjalo vacío para conservarla.",
+    "formHintEdit": "Pega una lista para guardarla como una nueva versión. Déjalo vacío para conservar la actual.",
     "moxfieldInvalid": "El enlace de Moxfield debe empezar con https://moxfield.com/",
     "importedWithUnresolved_one": "{{total}} cartas importadas. {{count}} no se encontró — abre el mazo para verla.",
     "importedWithUnresolved_other": "{{total}} cartas importadas. {{count}} no se encontraron — abre el mazo para verlas.",
     "importRetryHint": "El mazo se guardó. Edítalo para volver a intentar con la lista.",
     "getFromMoxfield": "Obtener lista de Moxfield",
-    "getFromMoxfieldHint": "En Moxfield: Export → Copy as plain text. Luego vuelve y pégala abajo."
+    "getFromMoxfieldHint": "En Moxfield: Export → Copy as plain text. Luego vuelve y pégala abajo.",
+    "history": {
+      "title": "Historial",
+      "version": "Versión {{number}}",
+      "current": "Actual",
+      "versionsCount_one": "{{count}} versión",
+      "versionsCount_other": "{{count}} versiones",
+      "uploadedBy": "por {{name}}",
+      "listRemoved": "Lista eliminada",
+      "matches_one": "{{count}} partida",
+      "matches_other": "{{count}} partidas",
+      "wins_one": "{{count}} victoria",
+      "wins_other": "{{count}} victorias",
+      "noMatches": "Sin partidas todavía",
+      "seeChanges": "Ver cambios",
+      "unknownVersion": "Versión desconocida",
+      "unknownVersionHint": "Partidas jugadas antes de que se guardara el historial de la lista.",
+      "loadFailed": "No se pudo cargar el historial."
+    }
+  },
+  "report": {
+    "title": "Análisis",
+    "analyzeDeck": "Analizar mazo",
+    "analyzeMe": "Analizar mis estadísticas",
+    "analyzeHint": "Claude lee tus partidas y tu lista. Usa tu propia clave.",
+    "loadingData": "Reuniendo tus partidas…",
+    "thinking": "Claude está leyendo tu mazo…",
+    "dataFailed": "No se pudieron cargar tus estadísticas.",
+    "retry": "Reintentar",
+    "openLabs": "Abrir Labs",
+    "shape": "Forma del mazo",
+    "curve": "Curva de maná",
+    "lands": "{{count}} tierras",
+    "avgManaValue": "Valor de maná promedio {{value}}",
+    "checkups": "Revisión",
+    "results": "Resultados",
+    "standsOut": "Lo que destaca",
+    "toTry": "Cosas para probar",
+    "record": "{{wins}} de {{matches}} ganadas",
+    "noList": "Agrega una lista a este mazo para ver la revisión y la curva de maná.",
+    "footer": "Escrito por Claude a partir de tu historial de partidas y tu lista. Son opiniones, no reglas. El análisis no se guarda.",
+    "area": {
+      "lands": "Tierras",
+      "ramp": "Aceleración",
+      "card_draw": "Robo de cartas",
+      "removal": "Remoción",
+      "board_wipes": "Limpiamesas",
+      "ways_to_win": "Formas de ganar"
+    },
+    "level": {
+      "low": "Poco",
+      "fine": "Bien",
+      "high": "Mucho"
+    },
+    "sample": {
+      "solid": "Sólido",
+      "early": "Temprano",
+      "few": "Muy pocas para saber"
+    },
+    "basedOn": {
+      "results": "Por resultados",
+      "decklist": "Por la lista",
+      "both": "Resultados + lista"
+    },
+    "stat": {
+      "overall": "Todas las partidas",
+      "color": "Con {{color}} involucrado",
+      "against": "Contra {{name}}"
+    },
+    "colors": {
+      "W": "blanco",
+      "U": "azul",
+      "B": "negro",
+      "R": "rojo",
+      "G": "verde",
+      "C": "incoloro"
+    },
+    "group": {
+      "colors": "Por color",
+      "seat": "Por orden de turno",
+      "pod": "Por tamaño de mesa",
+      "versions": "Por versión de la lista",
+      "matchups": "Contra mazos",
+      "decks": "Por mazo"
+    },
+    "error": {
+      "no_key": "Agrega tu clave de API de Claude en Labs para ejecutar el análisis.",
+      "key_rejected": "Claude rechazó tu clave de API. Revísala en Labs.",
+      "rate_limited": "Claude está ocupado en este momento. Intenta de nuevo en un minuto.",
+      "declined": "Claude no quiso escribir este análisis.",
+      "cut_off": "La respuesta se cortó. Intenta de nuevo.",
+      "network": "No se pudo contactar a Claude. Revisa tu conexión.",
+      "bad_answer": "La respuesta llegó en un formato inesperado. Intenta de nuevo."
+    }
   },
   "career": {
     "title": "Trayectoria",

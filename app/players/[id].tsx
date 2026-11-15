@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
+import { useAuth } from '@clerk/clerk-expo';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +28,7 @@ import { useTranslation } from 'react-i18next';
 import { CircularWinRate } from '@/components/ui/CircularWinRate';
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { DeckStatRow } from '@/components/match/DeckStatRow';
+import { AnalyzeButton } from '@/components/labs/AnalyzeButton';
 import { CareerBreakdown } from '@/components/stats/CareerBreakdown';
 import { WinConditionBreakdown } from '@/components/stats/WinConditionBreakdown';
 import { usePlayerStats } from '@/hooks/usePlayerStats';
@@ -77,6 +79,7 @@ export default function PlayerProfileScreen() {
   const insets = useSafeAreaInsets();
   const { contentMaxWidth, contentPadding } = useResponsive();
   const { data, loading, error } = usePlayerStats(id);
+  const { userId } = useAuth();
   const [showAllDecks, setShowAllDecks] = useState(false);
 
   if (loading) {
@@ -205,6 +208,11 @@ export default function PlayerProfileScreen() {
             </View>
           )}
         </View>
+
+        {/* Labs: "Analyze my stats" is for your own profile only. */}
+        {!!userId && data.player.accountUserId === userId && (
+          <AnalyzeButton kind="player" id={data.player.id} />
+        )}
 
         <WinConditionBreakdown title={t('player.howItWins')} rows={data.wins_by_condition} />
 

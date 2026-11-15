@@ -360,6 +360,7 @@ function AuthGate() {
       <Stack.Screen name="groups/[id]" options={{ title: t('groups.podDetail') }} />
       <Stack.Screen name="settings" options={{ title: t('settings.title') }} />
       <Stack.Screen name="about" options={{ title: t('about.title') }} />
+      <Stack.Screen name="report" options={{ title: t('report.title') }} />
     </Stack>
     </GroupProvider>
   );

@@ -189,6 +189,9 @@ export const cards = pgTable(
     // Faces joined with "\n//\n" for multi-faced cards.
     oracleText: text('oracle_text'),
     typeLine: text('type_line'),
+    // Scryfall cmc (mana value). Null on rows cached before migration 0013
+    // until the report endpoint refetches them.
+    cmc: real('cmc'),
     colors: text('colors').array().notNull().default([]),
     colorIdentity: text('color_identity').array().notNull().default([]),
     // Scryfall image_uris.normal (front face for multi-faced cards)
@@ -202,7 +205,28 @@ export const cards = pgTable(
 );
 
 // ─────────────────────────────────────────────
-// deck_cards — a deck's optional full list (DECK-001)
+// deck_versions — dated history of a deck's list (DECK-007)
+// Every import that changes the list adds a version; the highest
+// version_number is the current deck. Versions are never edited or deleted.
+// An empty version (no deck_cards rows) means the list was removed.
+// ─────────────────────────────────────────────
+export const deckVersions = pgTable(
+  'deck_versions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    deckId: uuid('deck_id').notNull().references(() => decks.id),
+    // 1-based, increasing per deck
+    versionNumber: integer('version_number').notNull(),
+    createdBy: text('created_by').notNull(), // Clerk user ID of whoever uploaded it
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('deck_versions_deck_number_unique').on(table.deckId, table.versionNumber),
+  ],
+);
+
+// ─────────────────────────────────────────────
+// deck_cards — the cards of one deck version (DECK-001, DECK-007)
 // card_id is null when Scryfall could not resolve raw_name; the line is kept
 // so the user can see and fix it. Off-colour-identity is computed on read
 // from the deck's current commander(s), never stored.
@@ -212,6 +236,9 @@ export const deckCards = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
     deckId: uuid('deck_id').notNull().references(() => decks.id),
+    // Nullable only for rows written by a server older than migration 0012;
+    // the migration backfills them and every read filters on it.
+    deckVersionId: uuid('deck_version_id').references(() => deckVersions.id),
     cardId: uuid('card_id').references(() => cards.id),
     // The name as the user pasted it (after parsing)
     rawName: text('raw_name').notNull(),
@@ -219,8 +246,9 @@ export const deckCards = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [
-    uniqueIndex('deck_cards_deck_raw_name_unique').on(table.deckId, table.rawName),
+    uniqueIndex('deck_cards_version_raw_name_unique').on(table.deckVersionId, table.rawName),
     index('deck_cards_deck_id_idx').on(table.deckId),
+    index('deck_cards_deck_version_id_idx').on(table.deckVersionId),
   ],
 );
 
@@ -276,6 +304,9 @@ export const participations = pgTable(
     matchId: uuid('match_id').notNull().references(() => matches.id),
     playerId: uuid('player_id').notNull().references(() => players.id),
     deckId: uuid('deck_id').notNull().references(() => decks.id),
+    // The deck's list version when the match was created. NULL = unknown:
+    // the match predates versioning or the deck had no list (DECK-007).
+    deckVersionId: uuid('deck_version_id').references(() => deckVersions.id),
     // NULL means match is in_progress or abandoned (BR-MATCH-06)
     result: participationResultEnum('result'),
     lifeTotal: integer('life_total').notNull().default(40),

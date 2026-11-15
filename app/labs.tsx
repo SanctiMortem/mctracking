@@ -208,8 +208,10 @@ export default function LabsScreen() {
         <View style={styles.card}>
           <View style={styles.toggleRow}>
             <View style={styles.toggleText}>
-              <Text style={styles.cardTitle}>AI match narration</Text>
-              <Text style={styles.muted}>Shows the experimental narration features on this device.</Text>
+              <Text style={styles.cardTitle}>AI features</Text>
+              <Text style={styles.muted}>
+                Shows match narration and the stats report ("Analyze") on this device.
+              </Text>
             </View>
             <Switch
               value={enabled}

@@ -69,7 +69,7 @@ export function useDecks(
     return updated;
   }, []);
 
-  /** Import pasted text as the deck's card list, replacing any existing list. */
+  /** Import pasted text as a new version of the deck's card list. */
   const importDecklist = useCallback(async (id: string, text: string): Promise<Decklist> => {
     const token = await getTokenRef.current();
     const res = await apiFetch<{ success: true; data: Decklist }>(

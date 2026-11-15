@@ -4,7 +4,10 @@
  * Read-only: the list, a card's image and rules text on tap, and the Moxfield
  * link. Adding or replacing the list and setting the link happen in the
  * create / edit deck form (DeckForm), not here. Renders nothing for a deck
- * with no list and no link.
+ * with no list, no link and no history.
+ *
+ * Every import is kept as a dated version (DECK-007); "History" opens the
+ * versions with what changed between them.
  *
  * Unresolved lines and cards outside the commander's colour identity are
  * listed first with a warning. Card names are always shown in English.
@@ -25,6 +28,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { DeckVersionHistory } from '@/components/decks/DeckVersionHistory';
 import { useDecklist } from '@/hooks/useDecklist';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { DecklistCard } from '@/services/decklists';
@@ -53,11 +57,12 @@ function typeGroup(card: DecklistCard): string {
 }
 
 export function DecklistSection({ deckId, moxfieldUrl }: DecklistSectionProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const styles = useThemedStyles(createStyles);
   const { data, loading } = useDecklist(deckId);
 
   const [expanded, setExpanded] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [selected, setSelected] = useState<DecklistCard | null>(null);
 
   const groups = useMemo(() => {
@@ -81,7 +86,10 @@ export function DecklistSection({ deckId, moxfieldUrl }: DecklistSectionProps) {
 
   const hasList = data.cards.length > 0;
   const link = moxfieldUrl ?? null;
-  if (!hasList && !link) return null;
+  // An API older than versioning sends no version fields.
+  const versionCount = data.version_count ?? 0;
+  const hasHistory = versionCount > 1;
+  if (!hasList && !link && !hasHistory) return null;
 
   const renderRow = (c: DecklistCard) => (
     <TouchableOpacity
@@ -118,6 +126,15 @@ export function DecklistSection({ deckId, moxfieldUrl }: DecklistSectionProps) {
               <Text style={styles.summaryMain}>
                 {t('decklist.cardsCount', { count: data.total_cards })}
               </Text>
+              {data.version ? (
+                <Text style={styles.summaryMeta}>
+                  {t('decklist.history.version', { number: data.version.number })}
+                  {' · '}
+                  {new Date(data.version.created_at).toLocaleDateString(i18n.language, {
+                    day: 'numeric', month: 'short', year: 'numeric',
+                  })}
+                </Text>
+              ) : null}
               {(data.unresolved_count > 0 || data.off_identity_count > 0) && (
                 <Text style={styles.summaryWarn}>
                   {[
@@ -156,6 +173,25 @@ export function DecklistSection({ deckId, moxfieldUrl }: DecklistSectionProps) {
                 {g.cards.map(renderRow)}
               </View>
             ))}
+          </View>
+        )}
+
+        {/* ── Version history ── */}
+        {hasHistory && (
+          <View style={styles.list}>
+            <TouchableOpacity
+              style={styles.summaryRow}
+              activeOpacity={0.7}
+              onPress={() => setHistoryOpen((v) => !v)}
+            >
+              <Text style={styles.summaryMeta}>
+                {t('decklist.history.title')} · {t('decklist.history.versionsCount', { count: versionCount })}
+              </Text>
+              <Text style={styles.linkText}>
+                {historyOpen ? t('decklist.hide') : t('decklist.show')}
+              </Text>
+            </TouchableOpacity>
+            {historyOpen && <DeckVersionHistory deckId={deckId} />}
           </View>
         )}
 
@@ -233,6 +269,7 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size['body-md'],
     fontWeight: t.typography.weight.semibold,
   },
+  summaryMeta: { color: t.colors.text.muted, fontSize: t.typography.size.caption },
   summaryWarn: { color: t.colors.status.error, fontSize: t.typography.size.caption },
   linkText: {
     color: t.colors.accent.primary,

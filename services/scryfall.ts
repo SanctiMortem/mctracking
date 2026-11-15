@@ -178,6 +178,8 @@ export interface ScryfallCardData {
   nameKey: string;
   oracleText: string | null;
   typeLine: string | null;
+  /** Mana value (Scryfall `cmc`). */
+  cmc: number | null;
   colors: string[];
   colorIdentity: string[];
   imageUrl: string | null;
@@ -205,6 +207,7 @@ function toCardData(card: ScryfallCard): ScryfallCardData {
     nameKey: (front?.name ?? card.name).toLowerCase(),
     oracleText: oracleText || null,
     typeLine: card.type_line ?? front?.type_line ?? null,
+    cmc: typeof card.cmc === 'number' ? card.cmc : null,
     colors: card.colors ?? front?.colors ?? [],
     colorIdentity: Array.isArray(card.color_identity) ? card.color_identity : [],
     imageUrl: card.image_uris?.normal ?? front?.image_uris?.normal ?? null,
@@ -270,6 +273,7 @@ interface ScryfallCard {
   name: string;
   colors?: string[];
   type_line?: string;
+  cmc?: number;
   oracle_text?: string;
   color_identity?: string[];
   image_uris?: ScryfallImageUris;

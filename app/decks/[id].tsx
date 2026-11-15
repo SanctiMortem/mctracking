@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
+import { useAuth } from '@clerk/clerk-expo';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { CircularWinRate } from '@/components/ui/CircularWinRate';
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { DecklistSection } from '@/components/decks/DecklistSection';
+import { AnalyzeButton } from '@/components/labs/AnalyzeButton';
 import { CareerBreakdown } from '@/components/stats/CareerBreakdown';
 import { ColorRecord } from '@/components/stats/ColorRecord';
 import { WinConditionBreakdown } from '@/components/stats/WinConditionBreakdown';
@@ -68,6 +70,7 @@ export default function DeckDetailScreen() {
   const insets = useSafeAreaInsets();
   const { contentMaxWidth, contentPadding } = useResponsive();
   const { data, loading, error } = useDeckStats(id);
+  const { userId } = useAuth();
 
   if (loading) {
     return (
@@ -184,6 +187,9 @@ export default function DeckDetailScreen() {
         ) : null}
 
         <DecklistSection deckId={deck.id} moxfieldUrl={deck.moxfieldUrl} />
+
+        {/* Labs: only the deck's owner can analyse it. */}
+        {deck.createdBy === userId && <AnalyzeButton kind="deck" id={deck.id} />}
 
         {/* ── Stats ── */}
         <View style={styles.section}>

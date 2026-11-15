@@ -16,6 +16,8 @@ export type NewDeck = typeof schema.decks.$inferInsert;
 export type Card = typeof schema.cards.$inferSelect;
 export type NewCard = typeof schema.cards.$inferInsert;
 
+export type DeckVersion = typeof schema.deckVersions.$inferSelect;
+
 export type DeckCard = typeof schema.deckCards.$inferSelect;
 export type NewDeckCard = typeof schema.deckCards.$inferInsert;
 

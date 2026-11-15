@@ -649,13 +649,106 @@
     "offIdentity": "Off-color",
     "formLabel": "Decklist (optional)",
     "formHintNew": "Paste one card per line. Set codes and foil tags are ignored.",
-    "formHintEdit": "Paste a list to replace the current one. Leave empty to keep it.",
+    "formHintEdit": "Paste a list to save it as a new version. Leave empty to keep the current one.",
     "moxfieldInvalid": "The Moxfield link must start with https://moxfield.com/",
     "importedWithUnresolved_one": "{{total}} cards imported. {{count}} was not found — open the deck to see it.",
     "importedWithUnresolved_other": "{{total}} cards imported. {{count}} were not found — open the deck to see them.",
     "importRetryHint": "The deck was saved. Edit it to try the list again.",
     "getFromMoxfield": "Get list from Moxfield",
-    "getFromMoxfieldHint": "On Moxfield: Export → Copy as plain text. Then come back and paste it below."
+    "getFromMoxfieldHint": "On Moxfield: Export → Copy as plain text. Then come back and paste it below.",
+    "history": {
+      "title": "History",
+      "version": "Version {{number}}",
+      "current": "Current",
+      "versionsCount_one": "{{count}} version",
+      "versionsCount_other": "{{count}} versions",
+      "uploadedBy": "by {{name}}",
+      "listRemoved": "List removed",
+      "matches_one": "{{count}} match",
+      "matches_other": "{{count}} matches",
+      "wins_one": "{{count}} win",
+      "wins_other": "{{count}} wins",
+      "noMatches": "No matches yet",
+      "seeChanges": "See changes",
+      "unknownVersion": "Unknown version",
+      "unknownVersionHint": "Matches played before list history was recorded.",
+      "loadFailed": "Could not load the history."
+    }
+  },
+  "report": {
+    "title": "Analysis",
+    "analyzeDeck": "Analyze deck",
+    "analyzeMe": "Analyze my stats",
+    "analyzeHint": "Claude reads your matches and list. Uses your own key.",
+    "loadingData": "Gathering your matches…",
+    "thinking": "Claude is reading your deck…",
+    "dataFailed": "Could not load your stats.",
+    "retry": "Try again",
+    "openLabs": "Open Labs",
+    "shape": "Deck shape",
+    "curve": "Mana curve",
+    "lands": "{{count}} lands",
+    "avgManaValue": "Average mana value {{value}}",
+    "checkups": "Checkups",
+    "results": "Results",
+    "standsOut": "What stands out",
+    "toTry": "Things to try",
+    "record": "{{wins}} of {{matches}} won",
+    "noList": "Add a decklist to this deck to get checkups and a mana curve.",
+    "footer": "Written by Claude from your match history and list. These are opinions, not rules. The report is not saved.",
+    "area": {
+      "lands": "Lands",
+      "ramp": "Ramp",
+      "card_draw": "Card draw",
+      "removal": "Removal",
+      "board_wipes": "Board wipes",
+      "ways_to_win": "Ways to win"
+    },
+    "level": {
+      "low": "Low",
+      "fine": "Fine",
+      "high": "A lot"
+    },
+    "sample": {
+      "solid": "Solid",
+      "early": "Early",
+      "few": "Too few to tell"
+    },
+    "basedOn": {
+      "results": "From results",
+      "decklist": "From the list",
+      "both": "Results + list"
+    },
+    "stat": {
+      "overall": "All matches",
+      "color": "With {{color}} involved",
+      "against": "Against {{name}}"
+    },
+    "colors": {
+      "W": "white",
+      "U": "blue",
+      "B": "black",
+      "R": "red",
+      "G": "green",
+      "C": "colorless"
+    },
+    "group": {
+      "colors": "By color",
+      "seat": "By turn order",
+      "pod": "By pod size",
+      "versions": "By list version",
+      "matchups": "Against decks",
+      "decks": "By deck"
+    },
+    "error": {
+      "no_key": "Add your Claude API key in Labs to run the analysis.",
+      "key_rejected": "Claude rejected your API key. Check it in Labs.",
+      "rate_limited": "Claude is busy right now. Try again in a minute.",
+      "declined": "Claude declined to write this report.",
+      "cut_off": "The answer was cut off. Try again.",
+      "network": "Could not reach Claude. Check your connection.",
+      "bad_answer": "The answer came back in an unexpected form. Try again."
+    }
   },
   "career": {
     "title": "Career",

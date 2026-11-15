@@ -1,7 +1,7 @@
 /**
- * GET    /api/decks/:id/decklist — the deck's card list (anyone who can view the deck)
- * POST   /api/decks/:id/decklist — import pasted text, replacing the list (owner only)
- * DELETE /api/decks/:id/decklist — remove the list (owner only)
+ * GET    /api/decks/:id/decklist — the deck's current card list (anyone who can view the deck)
+ * POST   /api/decks/:id/decklist — import pasted text as a new version (owner only)
+ * DELETE /api/decks/:id/decklist — remove the list; history is kept (owner only)
  *
  * POST body: { text: string } — the raw pasted list. Parsing happens here so
  * every client strips set codes, foil tags and headers the same way.

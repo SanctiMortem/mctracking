@@ -2,19 +2,30 @@
  * Decklist service — a deck's optional full card list.
  *
  * Import flow: parsed lines → look up the `cards` cache → fetch what is
- * missing from Scryfall (exact, then fuzzy for typos) → cache → replace the
- * deck's `deck_cards` rows. Lines Scryfall cannot resolve are kept with a
- * null card so the user can see and fix them.
+ * missing from Scryfall (exact, then fuzzy for typos) → cache → save the
+ * list as a new `deck_versions` row with its `deck_cards`. Lines Scryfall
+ * cannot resolve are kept with a null card so the user can see and fix them.
  *
- * Neon HTTP has no transactions: the replace is delete-then-insert, and the
- * whole import is safe to run again with the same input.
+ * Versions (DECK-007): the highest version_number is the current deck. Older
+ * versions are never edited or deleted. Importing a list identical to the
+ * current one adds nothing, so an import is safe to run again with the same
+ * input (Neon HTTP has no transactions).
  *
- * DECK-003, DECK-004 (EPIC-07)
+ * DECK-003, DECK-004, DECK-007 (EPIC-07)
  */
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 
-import { cards, commanders, deckCards, decks } from '@/db/schema';
-import type { Card } from '@/db/index';
+import {
+  cards,
+  commanders,
+  deckCards,
+  deckVersions,
+  decks,
+  matches,
+  participations,
+  players,
+} from '@/db/schema';
+import type { Card, DeckVersion } from '@/db/index';
 import { db } from '@/services/db';
 import type { DecklistLine } from '@/services/decklistParser';
 import { fetchCardFuzzy, fetchCardsByNames, type ScryfallCardData } from '@/services/scryfall';
@@ -51,6 +62,10 @@ export type Decklist = {
   unresolved_count: number;
   off_identity_count: number;
   cards: DecklistCard[];
+  /** The version shown — the deck's newest. Null when it never had a list. */
+  version: { id: string; number: number; created_at: string } | null;
+  /** How many versions the deck has. */
+  version_count: number;
 };
 
 export type DecklistResult =
@@ -69,18 +84,32 @@ async function getDeckRow(deckId: string) {
 
 // ─── Read ─────────────────────────────────────────────────────────────────────
 
+/** The deck's newest version — the list that is the deck today. */
+async function getCurrentVersion(deckId: string): Promise<DeckVersion | null> {
+  const [version] = await db
+    .select()
+    .from(deckVersions)
+    .where(eq(deckVersions.deckId, deckId))
+    .orderBy(desc(deckVersions.versionNumber))
+    .limit(1);
+  return version ?? null;
+}
+
 async function buildDecklist(
   deck: NonNullable<Awaited<ReturnType<typeof getDeckRow>>>,
   userId: string,
 ): Promise<Decklist> {
+  const version = await getCurrentVersion(deck.id);
   const commanderIds = [deck.commanderId, deck.commanderId2].filter(Boolean) as string[];
 
   const [rows, commanderRows] = await Promise.all([
-    db
-      .select({ line: deckCards, card: cards })
-      .from(deckCards)
-      .leftJoin(cards, eq(deckCards.cardId, cards.id))
-      .where(eq(deckCards.deckId, deck.id)),
+    version
+      ? db
+          .select({ line: deckCards, card: cards })
+          .from(deckCards)
+          .leftJoin(cards, eq(deckCards.cardId, cards.id))
+          .where(eq(deckCards.deckVersionId, version.id))
+      : Promise.resolve([]),
     db
       .select({ colorIdentity: commanders.colorIdentity })
       .from(commanders)
@@ -122,6 +151,10 @@ async function buildDecklist(
     unresolved_count: list.filter((c) => c.card === null).length,
     off_identity_count: list.filter((c) => c.off_identity).length,
     cards: list,
+    version: version
+      ? { id: version.id, number: version.versionNumber, created_at: version.createdAt.toISOString() }
+      : null,
+    version_count: version?.versionNumber ?? 0,
   };
 }
 
@@ -161,6 +194,7 @@ async function upsertCards(data: ScryfallCardData[]): Promise<Card[]> {
           nameKey: sql`excluded.name_key`,
           oracleText: sql`excluded.oracle_text`,
           typeLine: sql`excluded.type_line`,
+          cmc: sql`excluded.cmc`,
           colors: sql`excluded.colors`,
           colorIdentity: sql`excluded.color_identity`,
           imageUrl: sql`excluded.image_url`,
@@ -171,6 +205,25 @@ async function upsertCards(data: ScryfallCardData[]): Promise<Card[]> {
     out.push(...rows);
   }
   return out;
+}
+
+/**
+ * Fill in mana value for cards cached before it was stored (migration 0013).
+ * Refetches only the rows that lack it and returns the list with fresh rows
+ * swapped in. If Scryfall is unreachable the list comes back unchanged — a
+ * missing mana value is not worth failing a report over.
+ */
+export async function ensureManaValues(list: Card[]): Promise<Card[]> {
+  const missing = list.filter((c) => c.cmc === null);
+  if (missing.length === 0) return list;
+  try {
+    const fetched = await fetchCardsByNames(missing.map((c) => c.name.split('//')[0].trim()));
+    const fresh = new Map((await upsertCards(fetched)).map((c) => [c.id, c]));
+    return list.map((c) => fresh.get(c.id) ?? c);
+  } catch (e) {
+    console.error('[decklist] mana value refetch failed', e);
+    return list;
+  }
 }
 
 /**
@@ -234,24 +287,82 @@ export async function importDecklist(
   // existing decklist intact.
   const resolved = await resolveNames(lines.map((l) => l.name));
 
-  await db.delete(deckCards).where(eq(deckCards.deckId, deckId));
+  // One row per raw name — the same card pasted twice adds up.
+  const byName = new Map<string, { cardId: string | null; rawName: string; quantity: number }>();
+  for (const l of lines) {
+    const rawName = l.name.slice(0, 200);
+    const prev = byName.get(rawName);
+    const quantity = Math.min(Math.max(l.quantity, 1) + (prev?.quantity ?? 0), 99);
+    byName.set(rawName, { cardId: resolved.get(lookupKey(l.name))?.id ?? null, rawName, quantity });
+  }
+  const incoming = [...byName.values()];
 
-  const values = lines.map((l) => ({
-    deckId,
-    cardId: resolved.get(lookupKey(l.name))?.id ?? null,
-    rawName: l.name.slice(0, 200),
-    quantity: Math.min(Math.max(l.quantity, 1), 99),
-  }));
-  for (let i = 0; i < values.length; i += INSERT_CHUNK) {
-    await db
-      .insert(deckCards)
-      .values(values.slice(i, i + INSERT_CHUNK))
-      .onConflictDoNothing();
+  // Same list as the current version → nothing new to record.
+  const current = await getCurrentVersion(deckId);
+  if (current) {
+    const currentRows = await db
+      .select({ cardId: deckCards.cardId, rawName: deckCards.rawName, quantity: deckCards.quantity })
+      .from(deckCards)
+      .where(eq(deckCards.deckVersionId, current.id));
+    if (sameList(currentRows, incoming)) return { data: await buildDecklist(deck, userId) };
   }
 
+  await saveVersion(deckId, userId, (current?.versionNumber ?? 0) + 1, incoming);
   return { data: await buildDecklist(deck, userId) };
 }
 
+type VersionLine = { cardId: string | null; rawName: string; quantity: number };
+
+/** What identifies a line across versions: the card, or the raw text if unresolved. */
+function lineKey(l: { cardId: string | null; rawName: string }): string {
+  return l.cardId ?? `raw:${l.rawName.trim().toLowerCase()}`;
+}
+
+function quantities(list: VersionLine[]): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const l of list) out.set(lineKey(l), (out.get(lineKey(l)) ?? 0) + l.quantity);
+  return out;
+}
+
+function sameList(a: VersionLine[], b: VersionLine[]): boolean {
+  const qa = quantities(a);
+  const qb = quantities(b);
+  if (qa.size !== qb.size) return false;
+  for (const [k, q] of qa) if (qb.get(k) !== q) return false;
+  return true;
+}
+
+/**
+ * Insert a version and its cards. No transactions on Neon HTTP: if the cards
+ * fail to save, the half-written version is removed so it never becomes the
+ * current deck.
+ */
+async function saveVersion(
+  deckId: string,
+  userId: string,
+  versionNumber: number,
+  list: VersionLine[],
+): Promise<void> {
+  const [version] = await db
+    .insert(deckVersions)
+    .values({ deckId, versionNumber, createdBy: userId })
+    .returning();
+  try {
+    const values = list.map((l) => ({ ...l, deckId, deckVersionId: version.id }));
+    for (let i = 0; i < values.length; i += INSERT_CHUNK) {
+      await db.insert(deckCards).values(values.slice(i, i + INSERT_CHUNK)).onConflictDoNothing();
+    }
+  } catch (e) {
+    await db.delete(deckCards).where(eq(deckCards.deckVersionId, version.id)).catch(() => {});
+    await db.delete(deckVersions).where(eq(deckVersions.id, version.id)).catch(() => {});
+    throw e;
+  }
+}
+
+/**
+ * Remove the deck's list. History is kept: this records a new, empty version
+ * rather than deleting cards.
+ */
 export async function clearDecklist(
   userId: string,
   deckId: string,
@@ -259,6 +370,151 @@ export async function clearDecklist(
   const deck = await getDeckRow(deckId);
   if (!deck) return { notFound: true };
   if (deck.createdBy !== userId) return { forbidden: true };
-  await db.delete(deckCards).where(eq(deckCards.deckId, deckId));
+
+  const current = await getCurrentVersion(deckId);
+  if (!current) return { ok: true };
+  const [hasCards] = await db
+    .select({ id: deckCards.id })
+    .from(deckCards)
+    .where(eq(deckCards.deckVersionId, current.id))
+    .limit(1);
+  if (hasCards) await saveVersion(deckId, userId, current.versionNumber + 1, []);
   return { ok: true };
+}
+
+// ─── History ──────────────────────────────────────────────────────────────────
+
+export type VersionDiffCard = { name: string; quantity: number };
+export type VersionDiffChange = { name: string; from: number; to: number };
+
+export type DeckVersionSummary = {
+  id: string;
+  number: number;
+  created_at: string;
+  /** Player name of whoever uploaded it, when they have an account player. */
+  uploaded_by: string | null;
+  total_cards: number;
+  /** Change from the previous version. Null for the first version. */
+  diff: {
+    added: VersionDiffCard[];
+    removed: VersionDiffCard[];
+    changed: VersionDiffChange[];
+  } | null;
+  /** Completed matches played with this version. */
+  matches: number;
+  wins: number;
+};
+
+export type DeckVersionHistory = {
+  deck_id: string;
+  /** Newest first. */
+  versions: DeckVersionSummary[];
+  /** Completed matches with no recorded version (played before versioning, or with no list). */
+  unknown_version: { matches: number; wins: number };
+};
+
+export type DeckVersionHistoryResult =
+  | { data: DeckVersionHistory }
+  | { notFound: true }
+  | { forbidden: true };
+
+export async function getDeckVersionHistory(
+  userId: string,
+  deckId: string,
+): Promise<DeckVersionHistoryResult> {
+  const deck = await getDeckRow(deckId);
+  if (!deck) return { notFound: true };
+  if (!(await userCanViewDeck(userId, deck))) return { forbidden: true };
+
+  const [versions, cardRows, recordRows] = await Promise.all([
+    db
+      .select()
+      .from(deckVersions)
+      .where(eq(deckVersions.deckId, deckId))
+      .orderBy(asc(deckVersions.versionNumber)),
+    db
+      .select({
+        versionId: deckCards.deckVersionId,
+        cardId: deckCards.cardId,
+        rawName: deckCards.rawName,
+        quantity: deckCards.quantity,
+        cardName: cards.name,
+      })
+      .from(deckCards)
+      .leftJoin(cards, eq(deckCards.cardId, cards.id))
+      .where(eq(deckCards.deckId, deckId)),
+    db
+      .select({
+        versionId: participations.deckVersionId,
+        matches: sql<number>`count(*)::int`,
+        wins: sql<number>`count(*) filter (where ${participations.result} = 'win')::int`,
+      })
+      .from(participations)
+      .innerJoin(matches, eq(participations.matchId, matches.id))
+      .where(and(eq(participations.deckId, deckId), eq(matches.status, 'completed')))
+      .groupBy(participations.deckVersionId),
+  ]);
+
+  const uploaderIds = [...new Set(versions.map((v) => v.createdBy))];
+  const uploaderRows = uploaderIds.length
+    ? await db
+        .select({ userId: players.accountUserId, name: players.name })
+        .from(players)
+        .where(and(inArray(players.accountUserId, uploaderIds), isNull(players.deletedAt)))
+    : [];
+  const uploaderName = new Map(uploaderRows.map((r) => [r.userId, r.name]));
+
+  // version id → (line key → { name, quantity })
+  const byVersion = new Map<string, Map<string, VersionDiffCard>>();
+  for (const r of cardRows) {
+    if (!r.versionId) continue;
+    const lines = byVersion.get(r.versionId) ?? new Map<string, VersionDiffCard>();
+    const key = lineKey(r);
+    const prev = lines.get(key);
+    lines.set(key, { name: r.cardName ?? r.rawName, quantity: (prev?.quantity ?? 0) + r.quantity });
+    byVersion.set(r.versionId, lines);
+  }
+  const record = new Map(recordRows.map((r) => [r.versionId, r]));
+  const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name);
+
+  const summaries = versions.map((v, i): DeckVersionSummary => {
+    const now = byVersion.get(v.id) ?? new Map<string, VersionDiffCard>();
+    let diff: DeckVersionSummary['diff'] = null;
+    if (i > 0) {
+      const before = byVersion.get(versions[i - 1].id) ?? new Map<string, VersionDiffCard>();
+      const added: VersionDiffCard[] = [];
+      const removed: VersionDiffCard[] = [];
+      const changed: VersionDiffChange[] = [];
+      for (const [key, line] of now) {
+        const old = before.get(key);
+        if (!old) added.push(line);
+        else if (old.quantity !== line.quantity) {
+          changed.push({ name: line.name, from: old.quantity, to: line.quantity });
+        }
+      }
+      for (const [key, line] of before) if (!now.has(key)) removed.push(line);
+      diff = { added: added.sort(byName), removed: removed.sort(byName), changed: changed.sort(byName) };
+    }
+    return {
+      id: v.id,
+      number: v.versionNumber,
+      created_at: v.createdAt.toISOString(),
+      uploaded_by: uploaderName.get(v.createdBy) ?? null,
+      total_cards: [...now.values()].reduce((sum, l) => sum + l.quantity, 0),
+      diff,
+      matches: record.get(v.id)?.matches ?? 0,
+      wins: record.get(v.id)?.wins ?? 0,
+    };
+  });
+
+  return {
+    data: {
+      deck_id: deckId,
+      versions: summaries.reverse(),
+      unknown_version: {
+        matches: record.get(null)?.matches ?? 0,
+        wins: record.get(null)?.wins ?? 0,
+      },
+    },
+  };
 }
