@@ -36,6 +36,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { useFrameExperiment, useLifeCenterOffset } from '@/components/match/frameExperiment';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { motion } from '@/styles/tokens';
@@ -125,10 +126,21 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
     });
   }, []);
 
-  const dynamicFontSize = useMemo(
-    () => computeFontSize(String(displayValue), containerSize.w, containerSize.h),
-    [displayValue, containerSize.w, containerSize.h],
-  );
+  // ── Frame experiment (casual only) ──
+  // Every frame's content box is the same size there, so sizing against a
+  // fixed two-digit reference gives one number height for the whole table —
+  // 7, 40 and 23 match on every seat. Three or more digits fall back to
+  // adjustsFontSizeToFit on the <Text>. The usable width is what is left
+  // once the number is centred on the box: the narrower side, doubled.
+  const { enabled: expEnabled } = useFrameExperiment();
+  const centerOffset = useLifeCenterOffset();
+
+  const dynamicFontSize = useMemo(() => {
+    if (expEnabled) {
+      return computeFontSize('88', containerSize.w - 2 * Math.abs(centerOffset), containerSize.h);
+    }
+    return computeFontSize(String(displayValue), containerSize.w, containerSize.h);
+  }, [expEnabled, centerOffset, displayValue, containerSize.w, containerSize.h]);
 
   const showDeltaBadge = useCallback((value: number) => {
     setDisplayedDelta(value);
@@ -196,17 +208,20 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
   // ── Gesture handlers ──
   // We use the tap X coordinate to determine left (-1) vs right (+1)
   const containerWidthRef = useRef(0);
+  // − / + split follows the number: 0 normally, shifted in the frame experiment.
+  const centerOffsetRef = useRef(0);
+  centerOffsetRef.current = centerOffset;
   useEffect(() => {
     containerWidthRef.current = containerSize.w;
   }, [containerSize.w]);
 
   const handleTap = useCallback((x: number) => {
-    const mid = containerWidthRef.current / 2;
+    const mid = containerWidthRef.current / 2 + centerOffsetRef.current;
     applyDelta(x < mid ? -1 : 1);
   }, [applyDelta]);
 
   const handleLongPress = useCallback((x: number) => {
-    const mid = containerWidthRef.current / 2;
+    const mid = containerWidthRef.current / 2 + centerOffsetRef.current;
     startHold(x < mid ? -1 : 1);
   }, [startHold]);
 
@@ -258,6 +273,7 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
           style={[
             styles.flashHalf,
             styles.flashLeft,
+            centerOffset !== 0 && { width: Math.max(0, containerSize.w / 2 + centerOffset) },
             { backgroundColor: theme.colors.lifeTotal.critical },
             minusFlashStyle,
           ]}
@@ -267,12 +283,16 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
           style={[
             styles.flashHalf,
             styles.flashRight,
+            centerOffset !== 0 && { width: Math.max(0, containerSize.w / 2 - centerOffset) },
             { backgroundColor: theme.colors.lifeTotal.high },
             plusFlashStyle,
           ]}
         />
         {/* HP number — transparent to hits (pointerEvents="none") */}
-        <View style={styles.lifeTotalOverlay} pointerEvents="none">
+        <View
+          style={[styles.lifeTotalOverlay, centerOffset !== 0 && { transform: [{ translateX: centerOffset }] }]}
+          pointerEvents="none"
+        >
           <Text
             style={[
               styles.lifeTotal,

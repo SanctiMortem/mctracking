@@ -32,6 +32,8 @@
  * TRACK-003 (EPIC-03)
  */
 import { useCallback, useMemo, useState } from 'react';
+
+import { LifeCenterOffsetContext, useFrameExperiment, useFramePad } from '@/components/match/frameExperiment';
 import { Image, type LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import { GHPressable } from '@/components/ui/GHPressable';
 import { useTranslation } from 'react-i18next';
@@ -86,6 +88,9 @@ function pickDeathMessage(): string {
 /** Fixed size for the Dead button (high-risk, always hittable). Zone B
  *  (counter footer) matches this exact height. */
 const DEAD_BTN_SIZE = 44;
+
+/** Width of the rule between sidebar and main zone (styles.divider). */
+const DIVIDER_WIDTH = 1.5;
 
 /** Sidebar hard minimum so it stays usable even on narrow frames. */
 const SIDEBAR_MIN_WIDTH = 75;
@@ -144,6 +149,8 @@ export function PlayerDashboard({
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
   const flip = usePlayerFlip();
+  const experiment = useFrameExperiment();
+  const framePad = useFramePad();
   const [mode, setMode] = useState<DisplayMode>('life');
   const [dashSize, setDashSize] = useState({ w: 0, h: 0 });
   // Stable random message — picked once when player dies
@@ -180,6 +187,14 @@ export function PlayerDashboard({
     ? t('tracker.saveAndClose', { defaultValue: 'Save & close' })
     : t('common.close', { defaultValue: 'Close' });
 
+  // Frame experiment: the life total is centred on the content box. The main
+  // zone starts after the sidebar + divider, so its centre sits half of that
+  // to the right of the frame's centre — shift the number back by that much.
+  const lifeCenterOffset =
+    experiment.enabled && dashSize.w > 0
+      ? -(Math.max(dashSize.w * 0.2, SIDEBAR_MIN_WIDTH) + DIVIDER_WIDTH) / 2
+      : 0;
+
   // Responsive sidebar typography.
   const sidebarFontScale = isUltraCompact ? 0.72 : isCompact ? 0.86 : 1;
   const baseNameSize = theme.typography.size['body-sm'];
@@ -187,12 +202,20 @@ export function PlayerDashboard({
 
   return (
     <View
-      style={[styles.dashboard, isDead && styles.dashboardDead]}
+      // Frame experiment: the content box is smaller than the frame, so let
+      // the art backdrop spill past it (the frame itself clips).
+      style={[styles.dashboard, isDead && styles.dashboardDead, experiment.enabled && { overflow: 'visible' as const }]}
       onLayout={onDashboardLayout}
     >
       {/* ── Commander art backdrop (faded, cover) ── */}
       {artCrop && (
-        <View style={styles.artBackdropWrap} pointerEvents="none">
+        <View
+          style={[
+            styles.artBackdropWrap,
+            experiment.enabled && { top: -framePad.y, bottom: -framePad.y, left: -framePad.x, right: -framePad.x },
+          ]}
+          pointerEvents="none"
+        >
           <Image
             source={{ uri: artCrop }}
             style={styles.artBackdrop}
@@ -311,7 +334,9 @@ export function PlayerDashboard({
             {/* ZONE A — HP absolute-centred */}
             <View style={styles.zoneA}>
               <View style={styles.lifeAbsoluteFill} pointerEvents="box-none">
-                {lifeCounter}
+                <LifeCenterOffsetContext.Provider value={lifeCenterOffset}>
+                  {lifeCounter}
+                </LifeCenterOffsetContext.Provider>
               </View>
             </View>
 
@@ -514,7 +539,7 @@ const createStyles = (t: AppTheme) => ({
 
   // ── Divider ──
   divider: {
-    width: 1.5,
+    width: DIVIDER_WIDTH,
     backgroundColor: '#A8B2C1',
     marginVertical: 6,
   },

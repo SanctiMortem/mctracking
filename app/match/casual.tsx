@@ -10,6 +10,7 @@
 import { useCallback } from 'react';
 import { useRouter } from 'expo-router';
 
+import { FrameExperimentProvider } from '@/components/match/frameExperiment';
 import { CasualMatch } from '@/components/match/CasualMatch';
 
 export default function CasualMatchScreen() {
@@ -26,5 +27,11 @@ export default function CasualMatchScreen() {
     }
   }, [router]);
 
-  return <CasualMatch onExit={handleExit} />;
+  // Frame experiment sandbox: on for the signed-in casual match only. The
+  // guest tracker and account matches render the frames as before.
+  return (
+    <FrameExperimentProvider>
+      <CasualMatch onExit={handleExit} />
+    </FrameExperimentProvider>
+  );
 }

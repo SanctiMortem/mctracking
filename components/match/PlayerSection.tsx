@@ -33,10 +33,13 @@
  *
  * TRACK-003 (EPIC-03)
  */
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useMemo, useState } from 'react';
 import { type LayoutChangeEvent, View } from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { useThemedStyles } from '@/hooks/useThemedStyles';
+import { useTheme } from '@/contexts/ThemeContext';
+import { FramePadContext, useFrameExperiment } from './frameExperiment';
 import type { AppTheme } from '@/styles/themes/types';
 
 export type CardinalAxis = 'NS' | 'EW';
@@ -92,6 +95,8 @@ export function usePlayerFlip(): FlipContextValue {
 
 export function PlayerSection({ children, rotation = 0, isActive = false, style }: PlayerSectionProps) {
   const styles = useThemedStyles(createStyles);
+  const experiment = useFrameExperiment();
+  const { theme } = useTheme();
   const [manualFlipped, setManualFlipped] = useState(false);
   const [slot, setSlot] = useState({ w: 0, h: 0 });
 
@@ -119,12 +124,35 @@ export function PlayerSection({ children, rotation = 0, isActive = false, style 
   // Content dims: for EW-axis players we swap W/H so that after the 90°/270°
   // rotation the content fills the slot. For NS-axis players content dims
   // match the slot exactly.
-  const contentW = isSideways ? slot.h : slot.w;
-  const contentH = isSideways ? slot.w : slot.h;
+  const fullW = isSideways ? slot.h : slot.w;
+  const fullH = isSideways ? slot.w : slot.h;
+
+  // Frame experiment: report the space this frame has, then lay the content
+  // out in the box every frame in the match shares, centred in the frame.
+  const frameId = useId();
+  const { enabled: expEnabled, reportBox, sharedBox } = experiment;
+  useEffect(() => {
+    if (!expEnabled || fullW <= 0 || fullH <= 0) return;
+    reportBox(frameId, { w: fullW, h: fullH });
+    return () => reportBox(frameId, null);
+  }, [expEnabled, reportBox, frameId, fullW, fullH]);
+
+  const contentW = expEnabled && sharedBox ? Math.min(sharedBox.w, fullW) : fullW;
+  const contentH = expEnabled && sharedBox ? Math.min(sharedBox.h, fullH) : fullH;
+  const framePad = useMemo(
+    () => ({ x: (fullW - contentW) / 2, y: (fullH - contentH) / 2 }),
+    [fullW, fullH, contentW, contentH],
+  );
 
   return (
     <View
-      style={[styles.frame, isActive && styles.frameActive, style]}
+      style={[
+        styles.frame,
+        isActive && styles.frameActive,
+        experiment.enabled && styles.frameExp,
+        experiment.enabled && isActive && styles.frameExpActive,
+        style,
+      ]}
       onLayout={onSlotLayout}
     >
       {measured && (
@@ -140,10 +168,58 @@ export function PlayerSection({ children, rotation = 0, isActive = false, style 
             },
           ]}
         >
-          <FlipContext.Provider value={flipCtx}>{children}</FlipContext.Provider>
+          <FlipContext.Provider value={flipCtx}>
+            <FramePadContext.Provider value={framePad}>{children}</FramePadContext.Provider>
+          </FlipContext.Provider>
         </View>
       )}
+      {experiment.enabled && isActive && measured && (
+        <ActiveGlow width={slot.w} height={slot.h} color={theme.colors.accent.primary} />
+      )}
     </View>
+  );
+}
+
+// ─── Active glow (frame experiment) ──────────────────────────────────────────
+// Four gradients, one per edge, fading from the accent colour at the border
+// to nothing a short way in — the active frame looks lit from its edges.
+// Drawn above the content but never takes touches.
+
+const GLOW_PEAK_OPACITY = 0.42;
+
+function ActiveGlow({ width, height, color }: { width: number; height: number; color: string }) {
+  // Depth scales with the frame but stays inside sane bounds on any screen.
+  const depth = Math.max(18, Math.min(44, Math.min(width, height) * 0.22));
+  return (
+    <Svg
+      width={width}
+      height={height}
+      style={{ position: 'absolute', top: 0, left: 0 }}
+      pointerEvents="none"
+    >
+      <Defs>
+        <LinearGradient id="glowTop" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={color} stopOpacity={GLOW_PEAK_OPACITY} />
+          <Stop offset="1" stopColor={color} stopOpacity={0} />
+        </LinearGradient>
+        <LinearGradient id="glowBottom" x1="0" y1="1" x2="0" y2="0">
+          <Stop offset="0" stopColor={color} stopOpacity={GLOW_PEAK_OPACITY} />
+          <Stop offset="1" stopColor={color} stopOpacity={0} />
+        </LinearGradient>
+        <LinearGradient id="glowLeft" x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor={color} stopOpacity={GLOW_PEAK_OPACITY} />
+          <Stop offset="1" stopColor={color} stopOpacity={0} />
+        </LinearGradient>
+        <LinearGradient id="glowRight" x1="1" y1="0" x2="0" y2="0">
+          <Stop offset="0" stopColor={color} stopOpacity={GLOW_PEAK_OPACITY} />
+          <Stop offset="1" stopColor={color} stopOpacity={0} />
+        </LinearGradient>
+      </Defs>
+      <Rect x={0} y={0} width={width} height={depth} fill="url(#glowTop)" />
+      <Rect x={0} y={height - depth} width={width} height={depth} fill="url(#glowBottom)" />
+      <Rect x={0} y={0} width={depth} height={height} fill="url(#glowLeft)" />
+      <Rect x={width - depth} y={0} width={depth} height={height} fill="url(#glowRight)" />
+    </Svg>
   );
 }
 
@@ -162,6 +238,17 @@ const createStyles = (t: AppTheme) => ({
     borderColor: t.colors.accent.primary,
     borderWidth: 1.5,
     backgroundColor: t.colors.background.secondary + 'ee',
+  },
+  // ── Frame experiment (casual only) ──
+  // One border thickness in both states so the content never shifts when the
+  // turn passes; inactive frames are faint so the gap reads as the divider.
+  frameExp: {
+    borderWidth: 1.5,
+    borderRadius: 10,
+    borderColor: 'rgba(238, 191, 115, 0.16)',
+  },
+  frameExpActive: {
+    borderColor: t.colors.accent.primary,
   },
   content: {
     position: 'absolute' as const,
