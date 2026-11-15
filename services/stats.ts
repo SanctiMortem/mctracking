@@ -15,6 +15,25 @@ import { commanders, decks, groupMembers, matchEvents, matchResults, matches, pa
 import { getPodMemberUserIds } from '@/services/pods';
 import type { Commander, Deck, Player } from '@/db/index';
 
+/**
+ * Personal scope, shared by every "my matches" surface so they agree with
+ * History (listMatches): matches the user hosted, plus matches their account
+ * player played in — whichever device/account recorded them.
+ */
+function personalMatchScope(userId: string): SQL {
+  return or(
+    eq(matches.createdBy, userId),
+    inArray(
+      matches.id,
+      db
+        .select({ matchId: participations.matchId })
+        .from(participations)
+        .innerJoin(players, eq(participations.playerId, players.id))
+        .where(and(eq(players.accountUserId, userId), isNull(players.deletedAt))),
+    ),
+  )!;
+}
+
 // Pod members may view each other's deck + commander stats whenever those
 // entities show up in a match the viewer also has access to. "Access" here
 // means either the viewer created the match or the match is scoped to a group
@@ -41,7 +60,7 @@ export async function userCanViewDeck(userId: string, deck: Deck): Promise<boole
     .where(
       and(
         eq(participations.deckId, deck.id),
-        or(eq(matches.createdBy, userId), isNotNull(groupMembers.id)),
+        or(personalMatchScope(userId), isNotNull(groupMembers.id)),
       ),
     )
     .limit(1);
@@ -88,7 +107,7 @@ async function userCanViewPlayer(userId: string, player: Player): Promise<boolea
     .where(
       and(
         eq(participations.playerId, player.id),
-        or(eq(matches.createdBy, userId), isNotNull(groupMembers.id)),
+        or(personalMatchScope(userId), isNotNull(groupMembers.id)),
       ),
     )
     .limit(1);
@@ -109,7 +128,7 @@ async function userCanViewCommander(userId: string, commanderId: string, ownerId
     .where(
       and(
         or(eq(decks.commanderId, commanderId), eq(decks.commanderId2, commanderId)),
-        or(eq(matches.createdBy, userId), isNotNull(groupMembers.id)),
+        or(personalMatchScope(userId), isNotNull(groupMembers.id)),
       ),
     )
     .limit(1);
@@ -1545,10 +1564,10 @@ export async function getGlobalStats(
 ): Promise<{ data: GlobalStats }> {
   const limit = options.limit === undefined ? 5 : options.limit;
   // Scope: when groupId is set, include any match with that groupId (the API route
-  // validates membership). Otherwise, personal scope = matches created by the user.
+  // validates membership). Otherwise, personal scope = matches the user hosted or played in (personalMatchScope).
   const matchScope = groupId
     ? and(eq(matches.groupId, groupId), eq(matches.status, 'completed'))
-    : and(eq(matches.createdBy, userId), eq(matches.status, 'completed'));
+    : and(personalMatchScope(userId), eq(matches.status, 'completed'));
 
   // Phase 1: All aggregation queries in parallel
   const [totalMatchRows, playerStatRows, deckStatRows, commanderPartRows, perPlayerDeckRows] = await Promise.all([
@@ -2368,8 +2387,8 @@ const TOP_WINNER_MIN_MATCHES = 3;
  *
  *  - Pod scope (`groupId != null`): the route layer must have already
  *    validated that `userId` is a member of `groupId`.
- *  - Personal scope (`groupId == null`): matches authored by `userId`
- *    (matches.createdBy = userId), same as the personal-scope hero.
+ *  - Personal scope (`groupId == null`): matches `userId` hosted or played in
+ *    (personalMatchScope), same as the personal-scope hero and History.
  */
 export async function getPodHighlights(
   userId: string,
@@ -2377,7 +2396,7 @@ export async function getPodHighlights(
 ): Promise<GetPodHighlightsResult> {
   const matchScope = groupId
     ? and(eq(matches.groupId, groupId), eq(matches.status, 'completed'))
-    : and(eq(matches.createdBy, userId), eq(matches.status, 'completed'));
+    : and(personalMatchScope(userId), eq(matches.status, 'completed'));
 
   // Fan-out the independent aggregations in parallel.
   const [
