@@ -61,6 +61,22 @@ export async function setLabsEnabled(enabled: boolean): Promise<void> {
   else await SecureStore.deleteItemAsync(LABS_ENABLED);
 }
 
+/** Labs: experimental player frames in the signed-in casual match. */
+const FRAME_EXPERIMENT = 'labs_frame_experiment';
+
+export async function isFrameExperimentEnabled(): Promise<boolean> {
+  try {
+    return (await SecureStore.getItemAsync(FRAME_EXPERIMENT)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function setFrameExperimentEnabled(enabled: boolean): Promise<void> {
+  if (enabled) await SecureStore.setItemAsync(FRAME_EXPERIMENT, '1');
+  else await SecureStore.deleteItemAsync(FRAME_EXPERIMENT);
+}
+
 export type KeyTestResult = { ok: true } | { ok: false; message: string };
 
 const TEST_TIMEOUT_MS = 15_000;

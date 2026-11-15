@@ -36,7 +36,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { useFrameExperiment, useLifeCenterOffset } from '@/components/match/frameExperiment';
+import { COUNTER_FOOTER_HEIGHT, MAX_LIFE_FONT_SIZE, useFrameExperiment } from '@/components/match/frameExperiment';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { motion } from '@/styles/tokens';
@@ -127,20 +127,24 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
   }, []);
 
   // ── Frame experiment (casual only) ──
-  // Every frame's content box is the same size there, so sizing against a
-  // fixed two-digit reference gives one number height for the whole table —
-  // 7, 40 and 23 match on every seat. Three or more digits fall back to
-  // adjustsFontSizeToFit on the <Text>. The usable width is what is left
-  // once the number is centred on the box: the narrower side, doubled.
-  const { enabled: expEnabled } = useFrameExperiment();
-  const centerOffset = useLifeCenterOffset();
+  // One number size for the table: sized for a two-digit total in the space
+  // the tightest frame gives its life total, so 7, 40 and 23 match on every
+  // seat. Three or more digits fall back to adjustsFontSizeToFit on <Text>.
+  const { enabled: expEnabled, lifeBox } = useFrameExperiment();
 
   const dynamicFontSize = useMemo(() => {
-    if (expEnabled) {
-      return computeFontSize('88', containerSize.w - 2 * Math.abs(centerOffset), containerSize.h);
+    if (expEnabled && lifeBox) {
+      return Math.min(MAX_LIFE_FONT_SIZE, computeFontSize('88', lifeBox.w, lifeBox.h));
     }
     return computeFontSize(String(displayValue), containerSize.w, containerSize.h);
-  }, [expEnabled, centerOffset, displayValue, containerSize.w, containerSize.h]);
+  }, [expEnabled, lifeBox, displayValue, containerSize.w, containerSize.h]);
+
+  // The counter sits above the footer buttons, so a number centred in it
+  // looks high in the frame. Nudge it down toward the frame's middle (half
+  // the footer) — but never so far that the digits reach the footer.
+  const verticalNudge = expEnabled
+    ? Math.max(0, Math.min(COUNTER_FOOTER_HEIGHT / 2, (containerSize.h - dynamicFontSize * 0.8) / 2))
+    : 0;
 
   const showDeltaBadge = useCallback((value: number) => {
     setDisplayedDelta(value);
@@ -208,20 +212,17 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
   // ── Gesture handlers ──
   // We use the tap X coordinate to determine left (-1) vs right (+1)
   const containerWidthRef = useRef(0);
-  // − / + split follows the number: 0 normally, shifted in the frame experiment.
-  const centerOffsetRef = useRef(0);
-  centerOffsetRef.current = centerOffset;
   useEffect(() => {
     containerWidthRef.current = containerSize.w;
   }, [containerSize.w]);
 
   const handleTap = useCallback((x: number) => {
-    const mid = containerWidthRef.current / 2 + centerOffsetRef.current;
+    const mid = containerWidthRef.current / 2;
     applyDelta(x < mid ? -1 : 1);
   }, [applyDelta]);
 
   const handleLongPress = useCallback((x: number) => {
-    const mid = containerWidthRef.current / 2 + centerOffsetRef.current;
+    const mid = containerWidthRef.current / 2;
     startHold(x < mid ? -1 : 1);
   }, [startHold]);
 
@@ -273,7 +274,6 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
           style={[
             styles.flashHalf,
             styles.flashLeft,
-            centerOffset !== 0 && { width: Math.max(0, containerSize.w / 2 + centerOffset) },
             { backgroundColor: theme.colors.lifeTotal.critical },
             minusFlashStyle,
           ]}
@@ -283,16 +283,12 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
           style={[
             styles.flashHalf,
             styles.flashRight,
-            centerOffset !== 0 && { width: Math.max(0, containerSize.w / 2 - centerOffset) },
             { backgroundColor: theme.colors.lifeTotal.high },
             plusFlashStyle,
           ]}
         />
         {/* HP number — transparent to hits (pointerEvents="none") */}
-        <View
-          style={[styles.lifeTotalOverlay, centerOffset !== 0 && { transform: [{ translateX: centerOffset }] }]}
-          pointerEvents="none"
-        >
+        <View style={styles.lifeTotalOverlay} pointerEvents="none">
           <Text
             style={[
               styles.lifeTotal,
@@ -300,7 +296,7 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
                 color: lifeColor,
                 fontSize: dynamicFontSize,
                 lineHeight: dynamicFontSize * 1.05,
-                transform: [{ translateY: dynamicFontSize * 0.04 }],
+                transform: [{ translateY: dynamicFontSize * 0.04 + verticalNudge }],
               },
             ]}
             numberOfLines={1}

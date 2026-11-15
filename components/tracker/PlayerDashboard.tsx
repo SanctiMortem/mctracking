@@ -33,7 +33,7 @@
  */
 import { useCallback, useMemo, useState } from 'react';
 
-import { LifeCenterOffsetContext, useFrameExperiment, useFramePad } from '@/components/match/frameExperiment';
+import { useFrameExperiment } from '@/components/match/frameExperiment';
 import { Image, type LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import { GHPressable } from '@/components/ui/GHPressable';
 import { useTranslation } from 'react-i18next';
@@ -150,7 +150,6 @@ export function PlayerDashboard({
   const { theme } = useTheme();
   const flip = usePlayerFlip();
   const experiment = useFrameExperiment();
-  const framePad = useFramePad();
   const [mode, setMode] = useState<DisplayMode>('life');
   const [dashSize, setDashSize] = useState({ w: 0, h: 0 });
   // Stable random message — picked once when player dies
@@ -187,14 +186,6 @@ export function PlayerDashboard({
     ? t('tracker.saveAndClose', { defaultValue: 'Save & close' })
     : t('common.close', { defaultValue: 'Close' });
 
-  // Frame experiment: the life total is centred on the content box. The main
-  // zone starts after the sidebar + divider, so its centre sits half of that
-  // to the right of the frame's centre — shift the number back by that much.
-  const lifeCenterOffset =
-    experiment.enabled && dashSize.w > 0
-      ? -(Math.max(dashSize.w * 0.2, SIDEBAR_MIN_WIDTH) + DIVIDER_WIDTH) / 2
-      : 0;
-
   // Responsive sidebar typography.
   const sidebarFontScale = isUltraCompact ? 0.72 : isCompact ? 0.86 : 1;
   const baseNameSize = theme.typography.size['body-sm'];
@@ -202,20 +193,12 @@ export function PlayerDashboard({
 
   return (
     <View
-      // Frame experiment: the content box is smaller than the frame, so let
-      // the art backdrop spill past it (the frame itself clips).
-      style={[styles.dashboard, isDead && styles.dashboardDead, experiment.enabled && { overflow: 'visible' as const }]}
+      style={[styles.dashboard, isDead && styles.dashboardDead]}
       onLayout={onDashboardLayout}
     >
       {/* ── Commander art backdrop (faded, cover) ── */}
       {artCrop && (
-        <View
-          style={[
-            styles.artBackdropWrap,
-            experiment.enabled && { top: -framePad.y, bottom: -framePad.y, left: -framePad.x, right: -framePad.x },
-          ]}
-          pointerEvents="none"
-        >
+        <View style={styles.artBackdropWrap} pointerEvents="none">
           <Image
             source={{ uri: artCrop }}
             style={styles.artBackdrop}
@@ -226,7 +209,8 @@ export function PlayerDashboard({
       )}
 
       {/* ── SIDEBAR (20 %, minWidth 75) ── */}
-      <View style={styles.sidebar}>
+      {/* Frame experiment: one sidebar width for the whole table. */}
+      <View style={[styles.sidebar, experiment.sidebarWidth ? { width: experiment.sidebarWidth } : null]}>
         {/* Top tap zone — timer + long-press flip */}
         <GHPressable
           onPress={handleSidebarTap}
@@ -334,9 +318,7 @@ export function PlayerDashboard({
             {/* ZONE A — HP absolute-centred */}
             <View style={styles.zoneA}>
               <View style={styles.lifeAbsoluteFill} pointerEvents="box-none">
-                <LifeCenterOffsetContext.Provider value={lifeCenterOffset}>
-                  {lifeCounter}
-                </LifeCenterOffsetContext.Provider>
+                {lifeCounter}
               </View>
             </View>
 

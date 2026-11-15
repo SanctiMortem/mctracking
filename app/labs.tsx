@@ -26,10 +26,12 @@ import {
   type AiProvider,
   KEY_CONSOLE_URLS,
   getAiKey,
+  isFrameExperimentEnabled,
   isLabsEnabled,
   maskKey,
   removeAiKey,
   saveAiKey,
+  setFrameExperimentEnabled,
   setLabsEnabled,
   testAiKey,
 } from '@/services/labs/aiKeys';
@@ -185,6 +187,15 @@ export default function LabsScreen() {
     setLabsEnabled(value).catch(() => setEnabled(!value));
   }, []);
 
+  const [frames, setFrames] = useState(false);
+  useEffect(() => {
+    isFrameExperimentEnabled().then(setFrames);
+  }, []);
+  const onToggleFrames = useCallback((value: boolean) => {
+    setFrames(value);
+    setFrameExperimentEnabled(value).catch(() => setFrames(!value));
+  }, []);
+
   return (
     <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']}>
       <Stack.Screen options={{ title: 'Labs' }} />
@@ -205,6 +216,24 @@ export default function LabsScreen() {
               onValueChange={onToggle}
               trackColor={{ false: theme.colors.border.strong, true: theme.colors.accent.primary + '88' }}
               thumbColor={enabled ? theme.colors.accent.primary : theme.colors.text.muted}
+            />
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleText}>
+              <Text style={styles.cardTitle}>New player frames</Text>
+              <Text style={styles.muted}>
+                Casual matches only. Same number size and sidebar width for every player, and a glow on the active
+                frame. Switch off to compare with the current frames.
+              </Text>
+            </View>
+            <Switch
+              value={frames}
+              onValueChange={onToggleFrames}
+              trackColor={{ false: theme.colors.border.strong, true: theme.colors.accent.primary + '88' }}
+              thumbColor={frames ? theme.colors.accent.primary : theme.colors.text.muted}
             />
           </View>
         </View>

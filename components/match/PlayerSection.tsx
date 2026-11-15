@@ -39,7 +39,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { useTheme } from '@/contexts/ThemeContext';
-import { FramePadContext, useFrameExperiment } from './frameExperiment';
+import { MAX_FRAME_ASPECT, MAX_FRAME_STRETCH, useFrameExperiment } from './frameExperiment';
 import type { AppTheme } from '@/styles/themes/types';
 
 export type CardinalAxis = 'NS' | 'EW';
@@ -127,8 +127,9 @@ export function PlayerSection({ children, rotation = 0, isActive = false, style 
   const fullW = isSideways ? slot.h : slot.w;
   const fullH = isSideways ? slot.w : slot.h;
 
-  // Frame experiment: report the space this frame has, then lay the content
-  // out in the box every frame in the match shares, centred in the frame.
+  // Frame experiment: report the space this frame has so the table can share
+  // one sidebar width and one life-total size. The content itself still
+  // fills the frame edge to edge.
   const frameId = useId();
   const { enabled: expEnabled, reportBox, sharedBox } = experiment;
   useEffect(() => {
@@ -137,22 +138,64 @@ export function PlayerSection({ children, rotation = 0, isActive = false, style 
     return () => reportBox(frameId, null);
   }, [expEnabled, reportBox, frameId, fullW, fullH]);
 
-  const contentW = expEnabled && sharedBox ? Math.min(sharedBox.w, fullW) : fullW;
-  const contentH = expEnabled && sharedBox ? Math.min(sharedBox.h, fullH) : fullH;
-  const framePad = useMemo(
-    () => ({ x: (fullW - contentW) / 2, y: (fullH - contentH) / 2 }),
-    [fullW, fullH, contentW, contentH],
-  );
+  // Stretch limit (experiment): a frame is never longer than 1.5× the
+  // shortest frame at the table, nor longer than 3.2× its own thickness.
+  // The frame itself is shortened and centred in its slot, so the border
+  // still hugs the content. The uncapped size is what gets reported above,
+  // so the limit never feeds back into the shared measurements.
+  const maxLength =
+    expEnabled && sharedBox
+      ? Math.min(sharedBox.w * MAX_FRAME_STRETCH, fullH * MAX_FRAME_ASPECT)
+      : Infinity;
+  const contentW = Math.min(fullW, maxLength);
+  const contentH = fullH;
+
+  if (expEnabled) {
+    // On-screen size of the (possibly shortened) frame.
+    const frameW = isSideways ? contentH : contentW;
+    const frameH = isSideways ? contentW : contentH;
+    return (
+      <View style={[styles.cell, style]} onLayout={onSlotLayout}>
+        {measured && (
+          <View
+            style={[
+              styles.frame,
+              styles.frameExp,
+              isActive && styles.frameExpActive,
+              {
+                position: 'absolute' as const,
+                flex: 0,
+                width: frameW,
+                height: frameH,
+                left: (slot.w - frameW) / 2,
+                top: (slot.h - frameH) / 2,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.content,
+                {
+                  width: contentW,
+                  height: contentH,
+                  left: (frameW - contentW) / 2,
+                  top: (frameH - contentH) / 2,
+                  transform: [{ rotate: `${effectiveRotation}deg` }],
+                },
+              ]}
+            >
+              <FlipContext.Provider value={flipCtx}>{children}</FlipContext.Provider>
+            </View>
+            {isActive && <ActiveGlow width={frameW} height={frameH} color={theme.colors.accent.primary} />}
+          </View>
+        )}
+      </View>
+    );
+  }
 
   return (
     <View
-      style={[
-        styles.frame,
-        isActive && styles.frameActive,
-        experiment.enabled && styles.frameExp,
-        experiment.enabled && isActive && styles.frameExpActive,
-        style,
-      ]}
+      style={[styles.frame, isActive && styles.frameActive, style]}
       onLayout={onSlotLayout}
     >
       {measured && (
@@ -168,13 +211,8 @@ export function PlayerSection({ children, rotation = 0, isActive = false, style 
             },
           ]}
         >
-          <FlipContext.Provider value={flipCtx}>
-            <FramePadContext.Provider value={framePad}>{children}</FramePadContext.Provider>
-          </FlipContext.Provider>
+          <FlipContext.Provider value={flipCtx}>{children}</FlipContext.Provider>
         </View>
-      )}
-      {experiment.enabled && isActive && measured && (
-        <ActiveGlow width={slot.w} height={slot.h} color={theme.colors.accent.primary} />
       )}
     </View>
   );
@@ -185,7 +223,7 @@ export function PlayerSection({ children, rotation = 0, isActive = false, style 
 // to nothing a short way in — the active frame looks lit from its edges.
 // Drawn above the content but never takes touches.
 
-const GLOW_PEAK_OPACITY = 0.42;
+const GLOW_PEAK_OPACITY = 0.27;
 
 function ActiveGlow({ width, height, color }: { width: number; height: number; color: string }) {
   // Depth scales with the frame but stays inside sane bounds on any screen.
@@ -240,6 +278,13 @@ const createStyles = (t: AppTheme) => ({
     backgroundColor: t.colors.background.secondary + 'ee',
   },
   // ── Frame experiment (casual only) ──
+  // The slot the grid hands out; the frame is drawn inside it.
+  cell: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 0,
+    position: 'relative' as const,
+  },
   // One border thickness in both states so the content never shifts when the
   // turn passes; inactive frames are faint so the gap reads as the divider.
   frameExp: {

@@ -7,14 +7,19 @@
  *
  * Hosted as a fullScreenModal in the root Stack.
  */
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 
 import { FrameExperimentProvider } from '@/components/match/frameExperiment';
 import { CasualMatch } from '@/components/match/CasualMatch';
+import { isFrameExperimentEnabled } from '@/services/labs/aiKeys';
 
 export default function CasualMatchScreen() {
   const router = useRouter();
+  const [frameExperiment, setFrameExperiment] = useState(false);
+  useEffect(() => {
+    isFrameExperimentEnabled().then(setFrameExperiment);
+  }, []);
 
   // fullScreenModal needs dismiss(), not back(). When there's nothing on the
   // stack to dismiss (deep link, etc.) fall through to /(tabs) so the exit
@@ -27,10 +32,11 @@ export default function CasualMatchScreen() {
     }
   }, [router]);
 
-  // Frame experiment sandbox: on for the signed-in casual match only. The
-  // guest tracker and account matches render the frames as before.
+  // Frame experiment sandbox: signed-in casual match only, and only when the
+  // Labs switch is on. The provider is always mounted so flipping the value
+  // after the async read never remounts the match.
   return (
-    <FrameExperimentProvider>
+    <FrameExperimentProvider enabled={frameExperiment}>
       <CasualMatch onExit={handleExit} />
     </FrameExperimentProvider>
   );
