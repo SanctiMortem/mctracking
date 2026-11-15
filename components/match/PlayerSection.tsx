@@ -172,6 +172,9 @@ export function PlayerSection({ children, rotation = 0, isActive = false, style 
               },
             ]}
           >
+            {/* Glow first, so it sits UNDER the name, counters and buttons
+                and never washes out their text. */}
+            {isActive && <ActiveGlow width={frameW} height={frameH} color={theme.colors.accent.primary} />}
             <View
               style={[
                 styles.content,
@@ -186,7 +189,6 @@ export function PlayerSection({ children, rotation = 0, isActive = false, style 
             >
               <FlipContext.Provider value={flipCtx}>{children}</FlipContext.Provider>
             </View>
-            {isActive && <ActiveGlow width={frameW} height={frameH} color={theme.colors.accent.primary} />}
           </View>
         )}
       </View>
@@ -221,7 +223,7 @@ export function PlayerSection({ children, rotation = 0, isActive = false, style 
 // ─── Active glow (frame experiment) ──────────────────────────────────────────
 // Four gradients, one per edge, fading from the accent colour at the border
 // to nothing a short way in — the active frame looks lit from its edges.
-// Drawn above the content but never takes touches.
+// Drawn under the content (so text stays crisp) and never takes touches.
 
 const GLOW_PEAK_OPACITY = 0.27;
 

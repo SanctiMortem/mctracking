@@ -274,6 +274,7 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
           style={[
             styles.flashHalf,
             styles.flashLeft,
+            expEnabled && styles.flashHalfFull,
             { backgroundColor: theme.colors.lifeTotal.critical },
             minusFlashStyle,
           ]}
@@ -283,6 +284,7 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
           style={[
             styles.flashHalf,
             styles.flashRight,
+            expEnabled && styles.flashHalfFull,
             { backgroundColor: theme.colors.lifeTotal.high },
             plusFlashStyle,
           ]}
@@ -314,10 +316,14 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
         </View>
 
         {/* Delta badge */}
-        <Animated.View style={[styles.deltaBadge, deltaAnimStyle]} pointerEvents="none">
+        <Animated.View
+          style={[styles.deltaBadge, expEnabled && styles.deltaBadgeExp, deltaAnimStyle]}
+          pointerEvents="none"
+        >
           <Text
             style={[
               styles.deltaBadgeText,
+              expEnabled && styles.deltaBadgeTextExp,
               { color: displayedDelta > 0 ? theme.colors.lifeTotal.high : theme.colors.lifeTotal.critical },
             ]}
           >
@@ -376,5 +382,21 @@ const createStyles = (t: AppTheme) => ({
   deltaBadgeText: {
     fontSize: t.typography.size['body-lg'],
     fontFamily: t.typography.fontFamily.lifeTotalBold,
+  },
+
+  // ── Frame experiment (casual only) ──
+  // The tap flash runs the full height of the frame, down through the
+  // counter footer, instead of stopping above Poison / CMD. The footer is a
+  // later sibling, so its text still draws on top of the flash.
+  flashHalfFull: { bottom: -COUNTER_FOOTER_HEIGHT },
+  // Floating "+3 / −2": a little larger and pulled in from the corner.
+  deltaBadgeExp: {
+    right: '11%' as const,
+    top: '20%' as const,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+  },
+  deltaBadgeTextExp: {
+    fontSize: Math.round(t.typography.size['body-lg'] * 1.4),
   },
 });
