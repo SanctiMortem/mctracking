@@ -31,7 +31,8 @@
  * device — content floated in long frames and the number crowded the
  * sidebar — and were removed.
  */
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { Component, createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { Text } from 'react-native';
 
 export interface Box {
   w: number;
@@ -129,4 +130,38 @@ export function FrameExperimentProvider({
   }, [enabled, sharedBox, reportBox]);
 
   return <FrameExperimentContext.Provider value={value}>{children}</FrameExperimentContext.Provider>;
+}
+
+/**
+ * Safety net for the experiment. If anything under it throws while rendering
+ * (which closes the app in a release build), the tracker is rendered again
+ * with the experiment off — the classic frames — and a one-line notice says
+ * why. Match state lives above this boundary, so the game carries on.
+ * An error with the experiment already off is rethrown by React as usual.
+ */
+export class FrameExperimentBoundary extends Component<
+  { children: React.ReactNode },
+  { error: string | null }
+> {
+  state = { error: null as string | null };
+
+  static getDerivedStateFromError(error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { error: message.slice(0, 160) };
+  }
+
+  render() {
+    if (this.state.error === null) return this.props.children;
+    return (
+      <FrameExperimentContext.Provider value={OFF}>
+        <Text
+          numberOfLines={2}
+          style={{ color: '#e8c06a', fontSize: 11, textAlign: 'center', paddingVertical: 4, paddingHorizontal: 12 }}
+        >
+          New frames hit an error and are off for this match: {this.state.error}
+        </Text>
+        {this.props.children}
+      </FrameExperimentContext.Provider>
+    );
+  }
 }

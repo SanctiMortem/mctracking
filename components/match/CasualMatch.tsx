@@ -28,6 +28,7 @@ import { LifeCounter } from '@/components/tracker/LifeCounter';
 import { PlayerDashboard } from '@/components/tracker/PlayerDashboard';
 import { PoisonCounter } from '@/components/tracker/PoisonCounter';
 import { TrackerLayout } from '@/components/match/TrackerLayout';
+import { FrameExperimentBoundary } from '@/components/match/frameExperiment';
 import { LayoutPreview } from '@/components/match/LayoutPreview';
 import { useGuestTracker } from '@/hooks/useGuestTracker';
 import { DEFAULT_SLOT_ROTATIONS, LAYOUT_VARIANTS } from '@/hooks/useMatchSetup';
@@ -381,7 +382,9 @@ function CasualTrackerView({
       </View>
 
       <View style={styles.trackerBody}>
-        <TrackerLayout sections={sections} layoutVariant={layoutVariant} />
+        <FrameExperimentBoundary>
+          <TrackerLayout sections={sections} layoutVariant={layoutVariant} />
+        </FrameExperimentBoundary>
       </View>
     </SafeAreaView>
   );

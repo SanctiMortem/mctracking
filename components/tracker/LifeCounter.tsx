@@ -393,7 +393,8 @@ const createStyles = (t: AppTheme) => ({
   deltaBadgeExp: {
     // Translucent, so the life total stays visible behind it.
     backgroundColor: t.colors.background.elevated + 'A6',
-    borderColor: t.colors.border.default + '80',
+    // border.default already carries its own alpha (#rrggbbaa) — appending
+    // another alpha pair made an invalid 10-digit colour, so it is used as is.
     right: '11%' as const,
     top: '20%' as const,
     paddingHorizontal: 11,
