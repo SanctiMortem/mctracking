@@ -98,6 +98,30 @@ export function parseDecklist(text: string): DecklistLine[] {
 }
 
 /**
+ * What a card name is matched on: the lowercased front-face name
+ * ("Fire // Ice" → "fire"). Same value as `cards.name_key`.
+ */
+export function cardNameKey(name: string): string {
+  return name.split('//')[0].trim().toLowerCase();
+}
+
+/**
+ * How many cards of a list are the deck's own commander(s).
+ *
+ * A pasted list often includes the commander (Moxfield exports it under a
+ * "Commander" header), and sometimes does not. Counting those lines apart
+ * lets the deck always read "99 cards + commander", whichever way the list
+ * was pasted.
+ */
+export function countCommanderCards(
+  lines: { nameKey: string; quantity: number }[],
+  commanderNames: string[],
+): number {
+  const keys = new Set(commanderNames.map(cardNameKey));
+  return lines.reduce((sum, l) => (keys.has(l.nameKey) ? sum + l.quantity : sum), 0);
+}
+
+/**
  * True when `text` reads like a decklist: at least 10 lines that start with
  * a quantity. Used to decide whether to offer "Import copied list?".
  */

@@ -640,6 +640,8 @@
     "hide": "Ocultar",
     "cardsCount_one": "{{count}} carta",
     "cardsCount_other": "{{count}} cartas",
+    "plusCommander": "+ commander",
+    "plusCommanders": "+ {{count}} commanders",
     "unresolvedCount_one": "{{count}} no encontrada",
     "unresolvedCount_other": "{{count}} no encontradas",
     "offIdentityCount_one": "{{count}} fuera de la identidad de color",

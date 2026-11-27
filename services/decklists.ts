@@ -27,7 +27,7 @@ import {
 } from '@/db/schema';
 import type { Card, DeckVersion } from '@/db/index';
 import { db } from '@/services/db';
-import type { DecklistLine } from '@/services/decklistParser';
+import { type DecklistLine, cardNameKey, countCommanderCards } from '@/services/decklistParser';
 import { fetchCardFuzzy, fetchCardsByNames, type ScryfallCardData } from '@/services/scryfall';
 import { userCanViewDeck } from '@/services/stats';
 
@@ -40,6 +40,8 @@ const INSERT_CHUNK = 100;
 export type DecklistCard = {
   raw_name: string;
   quantity: number;
+  /** True when this line is one of the deck's own commanders. */
+  is_commander: boolean;
   /** True when the card's colour identity is outside the commander(s)'. */
   off_identity: boolean;
   card: {
@@ -57,8 +59,12 @@ export type Decklist = {
   deck_id: string;
   /** Only the deck's owner can import, replace or remove the list. */
   can_edit: boolean;
-  /** Sum of quantities. */
+  /** Sum of quantities of every line, the deck's commander(s) included when listed. */
   total_cards: number;
+  /** Of those, how many are the deck's own commander(s). 0 when the list leaves them out. */
+  commander_cards: number;
+  /** How many commanders the deck has: 1, or 2 for partners. */
+  commander_count: number;
   unresolved_count: number;
   off_identity_count: number;
   cards: DecklistCard[];
@@ -111,17 +117,20 @@ async function buildDecklist(
           .where(eq(deckCards.deckVersionId, version.id))
       : Promise.resolve([]),
     db
-      .select({ colorIdentity: commanders.colorIdentity })
+      .select({ name: commanders.name, colorIdentity: commanders.colorIdentity })
       .from(commanders)
       .where(inArray(commanders.id, commanderIds)),
   ]);
 
   // Deck identity = union of its commander(s) (BR-DECK-03 partners).
   const identity = new Set(commanderRows.flatMap((c) => c.colorIdentity));
+  const commanderNames = commanderRows.map((c) => c.name);
+  const commanderKeys = new Set(commanderNames.map(cardNameKey));
 
   const list: DecklistCard[] = rows.map(({ line, card }) => ({
     raw_name: line.rawName,
     quantity: line.quantity,
+    is_commander: commanderKeys.has(card ? card.nameKey : cardNameKey(line.rawName)),
     off_identity: card ? card.colorIdentity.some((c) => !identity.has(c)) : false,
     card: card
       ? {
@@ -148,6 +157,14 @@ async function buildDecklist(
     deck_id: deck.id,
     can_edit: deck.createdBy === userId,
     total_cards: list.reduce((sum, c) => sum + c.quantity, 0),
+    commander_cards: countCommanderCards(
+      rows.map(({ line, card }) => ({
+        nameKey: card ? card.nameKey : cardNameKey(line.rawName),
+        quantity: line.quantity,
+      })),
+      commanderNames,
+    ),
+    commander_count: commanderIds.length,
     unresolved_count: list.filter((c) => c.card === null).length,
     off_identity_count: list.filter((c) => c.off_identity).length,
     cards: list,
@@ -174,7 +191,7 @@ export async function getDecklist(userId: string, deckId: string): Promise<Deckl
  * stored in `cards.name_key`.
  */
 function lookupKey(name: string): string {
-  return name.split('//')[0].trim().toLowerCase();
+  return cardNameKey(name);
 }
 
 async function upsertCards(data: ScryfallCardData[]): Promise<Card[]> {
@@ -458,7 +475,10 @@ export type DeckVersionSummary = {
   created_at: string;
   /** Player name of whoever uploaded it, when they have an account player. */
   uploaded_by: string | null;
+  /** Sum of quantities of every line, the deck's commander(s) included when listed. */
   total_cards: number;
+  /** Of those, how many are the deck's own commander(s). */
+  commander_cards: number;
   /** Change from the previous version. Null for the first version. */
   diff: {
     added: VersionDiffCard[];
@@ -472,6 +492,8 @@ export type DeckVersionSummary = {
 
 export type DeckVersionHistory = {
   deck_id: string;
+  /** How many commanders the deck has: 1, or 2 for partners. */
+  commander_count: number;
   /** Newest first. */
   versions: DeckVersionSummary[];
   /** Completed matches with no recorded version (played before versioning, or with no list). */
@@ -491,7 +513,9 @@ export async function getDeckVersionHistory(
   if (!deck) return { notFound: true };
   if (!(await userCanViewDeck(userId, deck))) return { forbidden: true };
 
-  const [versions, cardRows, recordRows] = await Promise.all([
+  const commanderIds = [deck.commanderId, deck.commanderId2].filter(Boolean) as string[];
+
+  const [versions, cardRows, recordRows, commanderRows] = await Promise.all([
     db
       .select()
       .from(deckVersions)
@@ -504,6 +528,7 @@ export async function getDeckVersionHistory(
         rawName: deckCards.rawName,
         quantity: deckCards.quantity,
         cardName: cards.name,
+        nameKey: cards.nameKey,
       })
       .from(deckCards)
       .leftJoin(cards, eq(deckCards.cardId, cards.id))
@@ -518,7 +543,9 @@ export async function getDeckVersionHistory(
       .innerJoin(matches, eq(participations.matchId, matches.id))
       .where(and(eq(participations.deckId, deckId), eq(matches.status, 'completed')))
       .groupBy(participations.deckVersionId),
+    db.select({ name: commanders.name }).from(commanders).where(inArray(commanders.id, commanderIds)),
   ]);
+  const commanderNames = commanderRows.map((c) => c.name);
 
   const uploaderIds = [...new Set(versions.map((v) => v.createdBy))];
   const uploaderRows = uploaderIds.length
@@ -566,6 +593,12 @@ export async function getDeckVersionHistory(
       created_at: v.createdAt.toISOString(),
       uploaded_by: uploaderName.get(v.createdBy) ?? null,
       total_cards: [...now.values()].reduce((sum, l) => sum + l.quantity, 0),
+      commander_cards: countCommanderCards(
+        cardRows
+          .filter((r) => r.versionId === v.id)
+          .map((r) => ({ nameKey: r.nameKey ?? cardNameKey(r.rawName), quantity: r.quantity })),
+        commanderNames,
+      ),
       diff,
       matches: record.get(v.id)?.matches ?? 0,
       wins: record.get(v.id)?.wins ?? 0,
@@ -575,6 +608,7 @@ export async function getDeckVersionHistory(
   return {
     data: {
       deck_id: deckId,
+      commander_count: commanderIds.length,
       versions: summaries.reverse(),
       unknown_version: {
         matches: record.get(null)?.matches ?? 0,

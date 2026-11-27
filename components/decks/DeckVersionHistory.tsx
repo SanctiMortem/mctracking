@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { formatDeckCount } from '@/components/decks/deckCount';
 import { useDeckVersions } from '@/hooks/useDeckVersions';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { DeckVersionSummary } from '@/services/decklists';
@@ -56,7 +57,7 @@ export function DeckVersionHistory({ deckId }: { deckId: string }) {
             {[
               v.total_cards === 0
                 ? t('decklist.history.listRemoved')
-                : t('decklist.cardsCount', { count: v.total_cards }),
+                : formatDeckCount(t, v.total_cards, v.commander_cards, data.commander_count),
               v.uploaded_by ? t('decklist.history.uploadedBy', { name: v.uploaded_by }) : null,
             ]
               .filter(Boolean)

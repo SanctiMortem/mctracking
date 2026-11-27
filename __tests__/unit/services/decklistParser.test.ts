@@ -1,4 +1,4 @@
-import { looksLikeDecklist, parseDecklist } from '@/services/decklistParser';
+import { cardNameKey, countCommanderCards, looksLikeDecklist, parseDecklist } from '@/services/decklistParser';
 
 describe('parseDecklist', () => {
   it('parses plain "1 Card Name" lines', () => {
@@ -95,5 +95,36 @@ describe('looksLikeDecklist', () => {
   it('is false for prose and short lists', () => {
     expect(looksLikeDecklist('hey are we playing friday?\nbring the atraxa deck')).toBe(false);
     expect(looksLikeDecklist('1 Sol Ring\n1 Island')).toBe(false);
+  });
+});
+
+describe('cardNameKey', () => {
+  it('is the lowercased front-face name', () => {
+    expect(cardNameKey('Captain Kirk, Boldly Going')).toBe('captain kirk, boldly going');
+    expect(cardNameKey('Blaster, Combat DJ // Blaster, Morale Booster')).toBe('blaster, combat dj');
+    expect(cardNameKey('  Fire // Ice ')).toBe('fire');
+  });
+});
+
+describe('countCommanderCards', () => {
+  const line = (name: string, quantity = 1) => ({ nameKey: cardNameKey(name), quantity });
+
+  it('counts the deck\'s own commander when the list includes it', () => {
+    const list = [line('Captain Kirk, Boldly Going'), line('Forest', 4), line('Sol Ring')];
+    expect(countCommanderCards(list, ['Captain Kirk, Boldly Going'])).toBe(1);
+  });
+
+  it('is 0 when the list leaves the commander out', () => {
+    expect(countCommanderCards([line('Forest', 4), line('Sol Ring')], ['Captain Kirk, Boldly Going'])).toBe(0);
+  });
+
+  it('counts both partners, and a double-faced commander by its front face', () => {
+    const list = [line('Tymna the Weaver'), line('Thrasios, Triton Hero'), line('Blaster, Combat DJ'), line('Island', 9)];
+    expect(countCommanderCards(list, ['Tymna the Weaver', 'Thrasios, Triton Hero'])).toBe(2);
+    expect(countCommanderCards(list, ['Blaster, Combat DJ // Blaster, Morale Booster'])).toBe(1);
+  });
+
+  it('does not confuse another legend with the commander', () => {
+    expect(countCommanderCards([line('Kaalia, Zenith Seeker')], ['Kaalia of the Vast'])).toBe(0);
   });
 });

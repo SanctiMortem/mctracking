@@ -28,6 +28,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { formatDeckCount, mainDeckCount } from '@/components/decks/deckCount';
 import { DeckVersionHistory } from '@/components/decks/DeckVersionHistory';
 import { useDecklist } from '@/hooks/useDecklist';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -67,10 +68,17 @@ export function DecklistSection({ deckId, moxfieldUrl }: DecklistSectionProps) {
 
   const groups = useMemo(() => {
     const problems: DecklistCard[] = [];
+    // The deck's own commander(s), when the pasted list includes them: shown
+    // in their own group and left out of the card count.
+    const commanders: DecklistCard[] = [];
     const byType = new Map<string, DecklistCard[]>();
     for (const c of data?.cards ?? []) {
       if (!c.card || c.off_identity) {
         problems.push(c);
+        continue;
+      }
+      if (c.is_commander) {
+        commanders.push(c);
         continue;
       }
       const g = typeGroup(c);
@@ -78,6 +86,7 @@ export function DecklistSection({ deckId, moxfieldUrl }: DecklistSectionProps) {
     }
     return {
       problems,
+      commanders,
       typed: TYPE_ORDER.filter((g) => byType.has(g)).map((g) => ({ type: g, cards: byType.get(g)! })),
     };
   }, [data]);
@@ -111,7 +120,9 @@ export function DecklistSection({ deckId, moxfieldUrl }: DecklistSectionProps) {
     <View style={styles.section}>
       <Text style={styles.title}>
         {t('decklist.title')}
-        {hasList ? <Text style={styles.count}>{`  ${data.total_cards}`}</Text> : null}
+        {hasList ? (
+          <Text style={styles.count}>{`  ${mainDeckCount(data.total_cards, data.commander_cards)}`}</Text>
+        ) : null}
       </Text>
 
       <View style={styles.card}>
@@ -124,7 +135,7 @@ export function DecklistSection({ deckId, moxfieldUrl }: DecklistSectionProps) {
           >
             <View style={styles.summaryText}>
               <Text style={styles.summaryMain}>
-                {t('decklist.cardsCount', { count: data.total_cards })}
+                {formatDeckCount(t, data.total_cards, data.commander_cards, data.commander_count)}
               </Text>
               {data.version ? (
                 <Text style={styles.summaryMeta}>
@@ -163,6 +174,14 @@ export function DecklistSection({ deckId, moxfieldUrl }: DecklistSectionProps) {
               <View style={styles.group}>
                 <Text style={styles.groupTitleWarn}>{t('decklist.needsAttention')}</Text>
                 {groups.problems.map(renderRow)}
+              </View>
+            )}
+            {groups.commanders.length > 0 && (
+              <View style={styles.group}>
+                <Text style={styles.groupTitle}>
+                  Commander ({groups.commanders.reduce((n, c) => n + c.quantity, 0)})
+                </Text>
+                {groups.commanders.map(renderRow)}
               </View>
             )}
             {groups.typed.map((g) => (
