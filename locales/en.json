@@ -183,6 +183,7 @@
     "undoLastAction": "Undo last action",
     "toggleEventLog": "Toggle event log",
     "undoBtn": "↩ Undo",
+    "tapToRevive": "Tap to undo",
     "logBtn": "📋 Log",
     "layoutBtn": "⤧ Layout",
     "adjustLayoutLabel": "Adjust seat layout",

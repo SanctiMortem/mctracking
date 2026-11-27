@@ -56,6 +56,8 @@ interface LifeCounterProps {
   onDelta: (participationId: string, delta: number) => void;
   /** Called when the user sets HP directly via double-tap prompt. */
   onSetAbsolute?: (participationId: string, nextLifeTotal: number) => void;
+  /** The player is dead: the total is shown but taps and holds do nothing. */
+  disabled?: boolean;
 }
 
 // Big Shoulders Display is a condensed font — narrower character widths.
@@ -80,7 +82,7 @@ function computeFontSize(text: string, w: number, h: number): number {
   return Math.floor(Math.min(byWidth, byHeight));
 }
 
-export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute }: LifeCounterProps) {
+export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute, disabled = false }: LifeCounterProps) {
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
   const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -156,6 +158,7 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
   }, [deltaOpacity]);
 
   const applyDelta = useCallback((d: number) => {
+    if (disabled) return;
     // 1. Tell the parent — it updates lifeTotal synchronously.
     onDelta(participationId, d);
     // 2. Flash the side that was tapped.
@@ -168,7 +171,7 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
     badgeResetTimerRef.current = setTimeout(() => {
       badgeAccumRef.current = 0;
     }, BADGE_RESET_MS);
-  }, [onDelta, participationId, showDeltaBadge, flashSide]);
+  }, [onDelta, participationId, showDeltaBadge, flashSide, disabled]);
 
   const stopHold = useCallback(() => {
     if (holdTimerRef.current) {
@@ -185,6 +188,11 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
     if (deltaTimerRef.current) clearTimeout(deltaTimerRef.current);
     if (badgeResetTimerRef.current) clearTimeout(badgeResetTimerRef.current);
   }, []);
+
+  // A hold-to-repeat in progress stops the moment the player dies.
+  useEffect(() => {
+    if (disabled) stopHold();
+  }, [disabled, stopHold]);
 
   // ── Direct entry via Alert.prompt (double-tap) ──
   const handleDirectEntry = useCallback(() => {
@@ -232,6 +240,7 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
 
   // Single tap — left/right split based on X coordinate
   const tapGesture = Gesture.Tap()
+    .enabled(!disabled)
     .onEnd((e) => {
       'worklet';
       runOnJS(handleTap)(e.x);
@@ -247,6 +256,7 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
 
   // Long press — hold repeat
   const longPressGesture = Gesture.LongPress()
+    .enabled(!disabled)
     .minDuration(400)
     .onStart((e) => {
       'worklet';

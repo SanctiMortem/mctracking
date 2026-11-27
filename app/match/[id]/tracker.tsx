@@ -220,6 +220,8 @@ function useTurnTimers(
 
   const toggle = useCallback((id: string) => {
     setActiveId((prev) => {
+      // A dead player cannot take, pause or resume the turn.
+      if (deadRef.current.has(id)) return prev;
       // Re-tap currently active player → pause; the timer stops but no
       // counters move. Tapping again resumes (handled by the next branch).
       if (prev === id) return null;
@@ -824,6 +826,7 @@ export default function MatchTrackerScreen() {
               lifeTotal={p.lifeTotal}
               participationId={p.id}
               onDelta={applyLifeChange}
+              disabled={deadPlayerIds.has(p.id)}
             />
           }
           poisonOverlay={

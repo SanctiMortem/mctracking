@@ -326,14 +326,27 @@ function CasualTrackerView({
           timerSeconds={turnTimers.elapsed[p.id] ?? 0}
           timerActive={turnTimers.activeId === p.id}
           turnCount={turnTimers.turnCounts[p.id] ?? 0}
-          onToggleTimer={() => turnTimers.toggle(p.id)}
+          onToggleTimer={() => {
+            // A dead player cannot take the turn.
+            if (!deadIds.has(p.id)) turnTimers.toggle(p.id);
+          }}
           isDead={deadIds.has(p.id)}
           onMarkDead={() => setDeadIds((prev) => new Set(prev).add(p.id))}
+          // Death is not part of this tracker's Undo, so the ☠ badge itself
+          // brings the player back after a mis-tap.
+          onRevive={() =>
+            setDeadIds((prev) => {
+              const next = new Set(prev);
+              next.delete(p.id);
+              return next;
+            })
+          }
           lifeCounter={
             <LifeCounter
               lifeTotal={p.lifeTotal}
               participationId={p.id}
               onDelta={applyLifeChange}
+              disabled={deadIds.has(p.id)}
             />
           }
           poisonOverlay={

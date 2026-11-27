@@ -302,7 +302,14 @@ export default function HomeScreen() {
 
         {/* ── Account Stats ── */}
         {!loading && accountStats && (
-          <AccountStatsCard stats={accountStats} />
+          <AccountStatsCard
+            stats={accountStats}
+            onPress={
+              accountStats.player
+                ? () => router.push(`/players/${accountStats.player!.id}`)
+                : undefined
+            }
+          />
         )}
 
         {/* ── Global Stats ── */}

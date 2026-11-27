@@ -6,9 +6,12 @@
  *   state when the user hasn't created an account player yet, and to a "play your
  *   first match" message when the player exists but has no completed games.
  *
+ * With `onPress` and an account player, the whole card is a button (it opens
+ * the player's profile) and shows a caret beside the title.
+ *
  * PLAT-010 (EPIC-05)
  */
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { useTranslation } from 'react-i18next';
 
@@ -21,28 +24,45 @@ import { WinRateRing } from './WinRateRing';
 
 interface AccountStatsCardProps {
   stats: AccountHomeStats;
+  /** Tapping the card. Ignored while the user has no account player. */
+  onPress?: () => void;
 }
 
-export function AccountStatsCard({ stats }: AccountStatsCardProps) {
+export function AccountStatsCard({ stats, onPress }: AccountStatsCardProps) {
   const { t } = useTranslation();
   const styles = useThemedStyles(createStyles);
 
-  if (!stats.player) {
-    return (
+  const title = t('home.accountStatsTitle');
+  const tappable = !!onPress && !!stats.player;
+
+  // The card itself: a button when it leads somewhere, a plain box otherwise.
+  const shell = (children: React.ReactNode) =>
+    tappable ? (
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+        accessibilityRole="button"
+        accessibilityLabel={`${title}: ${stats.player?.name ?? ''}`}
+      >
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.caret}>›</Text>
+        </View>
+        {children}
+      </Pressable>
+    ) : (
       <View style={styles.card}>
-        <Text style={styles.title}>{t('home.accountStatsTitle')}</Text>
-        <Text style={styles.emptyText}>{t('home.accountStatsNoPlayer')}</Text>
+        <Text style={styles.title}>{title}</Text>
+        {children}
       </View>
     );
+
+  if (!stats.player) {
+    return shell(<Text style={styles.emptyText}>{t('home.accountStatsNoPlayer')}</Text>);
   }
 
   if (stats.total_matches === 0) {
-    return (
-      <View style={styles.card}>
-        <Text style={styles.title}>{t('home.accountStatsTitle')}</Text>
-        <Text style={styles.emptyText}>{t('home.accountStatsEmpty')}</Text>
-      </View>
-    );
+    return shell(<Text style={styles.emptyText}>{t('home.accountStatsEmpty')}</Text>);
   }
 
   const wincon = stats.most_common_wincon
@@ -55,20 +75,17 @@ export function AccountStatsCard({ stats }: AccountStatsCardProps) {
     ? formatTurn(stats.avg_win_turn)
     : '—';
 
-  return (
-    <View style={styles.card}>
-      <Text style={styles.title}>{t('home.accountStatsTitle')}</Text>
-      <View style={styles.body}>
-        <WinRateRing winRatePct={stats.win_rate_pct} size={132} strokeWidth={12} />
-        <View style={styles.grid}>
-          <StatTile label={t('home.statTotalMatches')} value={String(stats.total_matches)} />
-          <StatTile label={t('home.statWins')} value={String(stats.wins)} />
-          <StatTile label={t('home.statMostPlayedDeck')} value={topDeckLabel} />
-          <StatTile label={t('home.statMostCommonWincon')} value={wincon} />
-          <StatTile label={t('home.statAvgWinTurn')} value={avgTurnLabel} />
-        </View>
+  return shell(
+    <View style={styles.body}>
+      <WinRateRing winRatePct={stats.win_rate_pct} size={132} strokeWidth={12} />
+      <View style={styles.grid}>
+        <StatTile label={t('home.statTotalMatches')} value={String(stats.total_matches)} />
+        <StatTile label={t('home.statWins')} value={String(stats.wins)} />
+        <StatTile label={t('home.statMostPlayedDeck')} value={topDeckLabel} />
+        <StatTile label={t('home.statMostCommonWincon')} value={wincon} />
+        <StatTile label={t('home.statAvgWinTurn')} value={avgTurnLabel} />
       </View>
-    </View>
+    </View>,
   );
 }
 
@@ -99,12 +116,23 @@ const createStyles = (t: AppTheme) => ({
     padding: spacing[4],
     gap: spacing[4],
   },
+  cardPressed: { opacity: 0.85 },
   title: {
     color: t.colors.text.muted,
     fontSize: t.typography.size.caption,
     fontWeight: t.typography.weight.semibold,
     letterSpacing: 0.8,
     textTransform: 'uppercase' as const,
+  },
+  titleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+  },
+  caret: {
+    color: t.colors.text.muted,
+    fontSize: t.typography.size['body-lg'],
+    lineHeight: t.typography.size['body-lg'],
   },
   body: {
     flexDirection: 'column' as const,

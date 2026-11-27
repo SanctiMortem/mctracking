@@ -225,11 +225,11 @@ export function PlayerSection({ children, rotation = 0, isActive = false, style 
 // to nothing a short way in — the active frame looks lit from its edges.
 // Drawn under the content (so text stays crisp) and never takes touches.
 
-const GLOW_PEAK_OPACITY = 0.27;
+const GLOW_PEAK_OPACITY = 0.24;
 
 function ActiveGlow({ width, height, color }: { width: number; height: number; color: string }) {
   // Depth scales with the frame but stays inside sane bounds on any screen.
-  const depth = Math.max(18, Math.min(44, Math.min(width, height) * 0.22));
+  const depth = Math.max(15, Math.min(36, Math.min(width, height) * 0.18));
   return (
     <Svg
       width={width}

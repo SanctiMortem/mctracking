@@ -31,7 +31,7 @@
  *
  * TRACK-003 (EPIC-03)
  */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useFrameExperiment } from '@/components/match/frameExperiment';
 import { Image, type LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
@@ -109,8 +109,19 @@ interface PlayerDashboardProps {
   /** How many turns this player has taken (rotations to them as active). */
   turnCount?: number;
   onToggleTimer: () => void;
+  /**
+   * A dead player is out of the game: this frame stops taking life, poison
+   * and commander-damage changes, and can no longer take the turn. The
+   * LifeCounter passed in should get `disabled` too.
+   */
   isDead?: boolean;
   onMarkDead?: () => void;
+  /**
+   * Bring a dead player back by tapping the ☠ badge. For trackers where
+   * death is not an undoable event (casual / guest); the account tracker
+   * revives through Undo instead and leaves this unset.
+   */
+  onRevive?: () => void;
   /** The LifeCounter component — rendered in Zone A. */
   lifeCounter: React.ReactNode;
   /** Poison counter overlay content (just controls, no chrome). */
@@ -139,6 +150,7 @@ export function PlayerDashboard({
   onToggleTimer,
   isDead = false,
   onMarkDead,
+  onRevive,
   lifeCounter,
   poisonOverlay,
   cmdDamageOverlay,
@@ -174,14 +186,20 @@ export function PlayerDashboard({
     setMode(newMode);
   }, []);
 
+  // Dying closes any open overlay: nothing more can be entered for this player.
+  useEffect(() => {
+    if (isDead) setMode('life');
+  }, [isDead]);
+
   // Sidebar tap toggles timer (or dismisses an overlay if one is open).
+  // A dead player cannot take the turn.
   const handleSidebarTap = useCallback(() => {
     if (mode !== 'life') {
       switchMode('life');
-    } else {
+    } else if (!isDead) {
       onToggleTimer();
     }
-  }, [mode, switchMode, onToggleTimer]);
+  }, [mode, switchMode, onToggleTimer, isDead]);
 
   const onDashboardLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -291,7 +309,7 @@ export function PlayerDashboard({
               <Text style={styles.turnHintActive} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
                 {t('tracker.activePlayer', { defaultValue: 'Active player' })}
               </Text>
-            ) : (
+            ) : isDead ? null : (
               <Text style={[styles.turnHint, bright && styles.sidebarTextBright]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
                 {t('tracker.pushForTurn', { defaultValue: 'Push for turn' })}
               </Text>
@@ -311,7 +329,7 @@ export function PlayerDashboard({
               <Text style={styles.deadBtnText}>{t('tracker.dead', { defaultValue: 'Dead' })}</Text>
             </GHPressable>
           )}
-          {isDead && (
+          {isDead && !onRevive && (
             <View style={styles.deadBadge}>
               <Text style={styles.deadBadgeText}>☠</Text>
               {!isUltraCompact && (
@@ -320,6 +338,21 @@ export function PlayerDashboard({
                 </Text>
               )}
             </View>
+          )}
+          {isDead && onRevive && (
+            <GHPressable
+              onPress={onRevive}
+              style={styles.deadBadge}
+              accessibilityRole="button"
+              accessibilityLabel={t('tracker.tapToRevive', { defaultValue: 'Tap to undo' })}
+            >
+              <Text style={styles.deadBadgeText}>☠</Text>
+              {!isUltraCompact && (
+                <Text style={styles.deadMessageText} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.5}>
+                  {t('tracker.tapToRevive', { defaultValue: 'Tap to undo' })}
+                </Text>
+              )}
+            </GHPressable>
           )}
         </View>
       </View>
@@ -333,7 +366,7 @@ export function PlayerDashboard({
           <>
             {/* ZONE A — HP absolute-centred */}
             <View style={styles.zoneA}>
-              <View style={styles.lifeAbsoluteFill} pointerEvents="box-none">
+              <View style={styles.lifeAbsoluteFill} pointerEvents={isDead ? 'none' : 'box-none'}>
                 {lifeCounter}
               </View>
             </View>
@@ -342,6 +375,7 @@ export function PlayerDashboard({
             <View style={styles.zoneB}>
               <GHPressable
                 onPress={() => switchMode('poison')}
+                disabled={isDead}
                 style={styles.footerCounter}
               >
                 <Text
@@ -357,6 +391,7 @@ export function PlayerDashboard({
               </GHPressable>
               <GHPressable
                 onPress={() => switchMode('cmd')}
+                disabled={isDead}
                 style={styles.footerCounter}
               >
                 <Text style={[styles.footerCounterText, bright && styles.footerCounterTextBright]} numberOfLines={1}>
