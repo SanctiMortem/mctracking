@@ -28,11 +28,13 @@ import {
   getAiKey,
   isFrameExperimentEnabled,
   isLabsEnabled,
+  isNewStatsEnabled,
   maskKey,
   removeAiKey,
   saveAiKey,
   setFrameExperimentEnabled,
   setLabsEnabled,
+  setNewStatsEnabled,
   testAiKey,
 } from '@/services/labs/aiKeys';
 import { spacing } from '@/styles/tokens';
@@ -196,6 +198,15 @@ export default function LabsScreen() {
     setFrameExperimentEnabled(value).catch(() => setFrames(!value));
   }, []);
 
+  const [newStats, setNewStats] = useState(false);
+  useEffect(() => {
+    isNewStatsEnabled().then(setNewStats);
+  }, []);
+  const onToggleNewStats = useCallback((value: boolean) => {
+    setNewStats(value);
+    setNewStatsEnabled(value).catch(() => setNewStats(!value));
+  }, []);
+
   return (
     <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']}>
       <Stack.Screen options={{ title: 'Labs' }} />
@@ -237,6 +248,26 @@ export default function LabsScreen() {
               onValueChange={onToggleFrames}
               trackColor={{ false: theme.colors.border.strong, true: theme.colors.accent.primary + '88' }}
               thumbColor={frames ? theme.colors.accent.primary : theme.colors.text.muted}
+            />
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleText}>
+              <Text style={styles.cardTitle}>New stats</Text>
+              <Text style={styles.muted}>
+                On this device only. Rankings need a minimum number of matches and show wins vs expected, deck pages
+                show one colour section with numbers, head-to-head explains the matches a third player won, and player
+                pages add placement. Switch off to go back to the current stats; open the screen again to see the
+                change.
+              </Text>
+            </View>
+            <Switch
+              value={newStats}
+              onValueChange={onToggleNewStats}
+              trackColor={{ false: theme.colors.border.strong, true: theme.colors.accent.primary + '88' }}
+              thumbColor={newStats ? theme.colors.accent.primary : theme.colors.text.muted}
             />
           </View>
         </View>

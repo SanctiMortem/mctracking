@@ -17,6 +17,8 @@ import { DeckRankRow } from '@/components/stats/DeckRankRow';
 import { StatsAllScreenHeader } from '@/components/stats/StatsAllScreenHeader';
 import { StatsScopePicker } from '@/components/stats/StatsScopePicker';
 import { useGlobalStats } from '@/hooks/useGlobalStats';
+import { useNewStatsEnabled, useRankingsV2 } from '@/hooks/useStatsV2';
+import { orderByRanking } from '@/services/stats2/view';
 import { useGroups } from '@/hooks/useGroups';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -54,7 +56,11 @@ export default function StatsAllDecksScreen() {
     ...groups.map((g) => ({ id: g.group.id, label: g.group.name })),
   ];
 
-  const decks = data?.top_decks ?? [];
+  // LABS — stats v2: same rows in v2 order (ties broken by matches, then
+  // recency; deleted decks left out). Current order while v2 loads or fails.
+  const newStats = useNewStatsEnabled();
+  const v2 = useRankingsV2(scopeGroupId, newStats);
+  const decks = orderByRanking(data?.top_decks ?? [], (entry) => entry.deck.id, v2.data?.decks);
 
   return (
     <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>

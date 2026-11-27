@@ -9,8 +9,10 @@
  * #1 additionally gets a slightly larger avatar to anchor the eye.
  */
 import { Image, Pressable, View, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import type { PlayerRanking } from '@/services/stats';
+import { signedOneDecimal } from '@/services/stats2/view';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { spacing } from '@/styles/tokens';
 import type { AppTheme } from '@/styles/themes/types';
@@ -22,6 +24,10 @@ interface PlayerRankRowProps {
   /** Commander name shown in the "often [Commander]" subline. */
   topCommanderName?: string | null;
   onPress?: () => void;
+  /** Stats v2 (Labs): wins minus what an average player would have won. Shown under the win rate. */
+  winsVsExpected?: number | null;
+  /** Stats v2 (Labs): under the minimum number of matches — no rank number, dimmed. */
+  unranked?: boolean;
 }
 
 function getInitials(name: string): string {
@@ -32,8 +38,16 @@ function getInitials(name: string): string {
     .join('');
 }
 
-export function PlayerRankRow({ ranking, topDeckArtCrop, topCommanderName, onPress }: PlayerRankRowProps) {
+export function PlayerRankRow({
+  ranking,
+  topDeckArtCrop,
+  topCommanderName,
+  onPress,
+  winsVsExpected = null,
+  unranked = false,
+}: PlayerRankRowProps) {
   const styles = useThemedStyles(createStyles);
+  const { t } = useTranslation();
 
   const { player, total_matches, win_rate_pct, rank } = ranking;
   const isPodium = rank >= 1 && rank <= 3;
@@ -45,12 +59,12 @@ export function PlayerRankRow({ ranking, topDeckArtCrop, topCommanderName, onPre
     <Pressable
       onPress={onPress}
       disabled={!onPress}
-      style={({ pressed }) => [styles.row, pressed && onPress && { opacity: 0.85 }]}
+      style={({ pressed }) => [styles.row, unranked && styles.rowUnranked, pressed && onPress && { opacity: 0.85 }]}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={player.name}
     >
       <View style={[styles.rankCircle, isPodium && styles.rankCirclePodium, isTop && styles.rankCircleTop]}>
-        <Text style={[styles.rankText, isPodium && styles.rankTextPodium]}>{rank}</Text>
+        <Text style={[styles.rankText, isPodium && styles.rankTextPodium]}>{unranked ? '–' : rank}</Text>
       </View>
 
       {showArt ? (
@@ -70,7 +84,16 @@ export function PlayerRankRow({ ranking, topDeckArtCrop, topCommanderName, onPre
         </Text>
       </View>
 
-      <Text style={[styles.wr, isPodium && styles.wrPodium]}>{winRateText}</Text>
+      {typeof winsVsExpected === 'number' ? (
+        <View style={styles.wrCol}>
+          <Text style={[styles.wr, isPodium && styles.wrPodium]}>{winRateText}</Text>
+          <Text style={styles.vsExpected} numberOfLines={1}>
+            {t('stats2.vsExpected', { value: signedOneDecimal(winsVsExpected) })}
+          </Text>
+        </View>
+      ) : (
+        <Text style={[styles.wr, isPodium && styles.wrPodium]}>{winRateText}</Text>
+      )}
     </Pressable>
   );
 }
@@ -172,5 +195,15 @@ const createStyles = (t: AppTheme) => ({
   },
   wrPodium: {
     color: t.colors.accent.primary,
+  },
+
+  // Stats v2 (Labs)
+  rowUnranked: { opacity: 0.6 },
+  wrCol: { alignItems: 'flex-end' as const, flexShrink: 0 },
+  vsExpected: {
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size.caption,
+    fontFamily: t.typography.fontFamily.body,
+    fontVariant: ['tabular-nums' as const],
   },
 });

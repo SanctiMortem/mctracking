@@ -805,5 +805,30 @@
     "won": "Ganadas",
     "lost": "Perdidas",
     "note": "Se cuenta una vez por partida: victorias con ese color en la mesa y derrotas ante un mazo ganador de ese color."
+  },
+  "stats2": {
+    "vsExpected": "{{value}} vs lo esperado",
+    "unranked": "Sin clasificar · menos de {{count}} partidas",
+    "sampleFew": "pocas partidas",
+    "sampleEarly": "muestra inicial",
+    "colorsNote": "Una victoria cuenta contra cada oponente en la mesa; una derrota, contra el mazo que ganó. Con pocas partidas, los porcentajes se acercan al 50%.",
+    "colorCountTitle": "Por número de colores",
+    "colorCount0": "Incoloro",
+    "colorCount1": "Mono",
+    "colorCountN": "{{count}} colores",
+    "neitherAheadOne": "{{count}} partida en la que ninguno terminó por delante del otro",
+    "neitherAheadMany": "{{count}} partidas en las que ninguno terminó por delante del otro",
+    "extrasTitle": "Resultados a fondo",
+    "winsVsExpected": "Victorias vs lo esperado",
+    "winsVsExpectedNote": "{{wins}} victorias, donde un jugador promedio en las mismas mesas tendría {{expected}}.",
+    "avgPlacement": "Posición media",
+    "top2": "Top 2",
+    "firstOut": "Primero en caer",
+    "placementBasedOn": "La posición se basa en {{used}} de {{total}} partidas, aquellas en las que se sabe en qué orden cayeron los jugadores.",
+    "placementNotEnough": "La posición necesita al menos 5 partidas en las que se sepa en qué orden cayeron los jugadores."
+  },
+  "commanderCard": {
+    "view": "Ver carta",
+    "unavailable": "No se pudo cargar esta carta. Inténtalo de nuevo en un momento."
   }
 }

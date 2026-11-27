@@ -71,7 +71,7 @@ export async function userCanViewDeck(userId: string, deck: Deck): Promise<boole
 // match with. Account-linked players (account_user_id set) are also visible
 // to any pod-mate of that account user — so tapping Peter on the Stats screen
 // drills into his profile if you're in the same pod.
-async function userCanViewPlayer(userId: string, player: Player): Promise<boolean> {
+export async function userCanViewPlayer(userId: string, player: Player): Promise<boolean> {
   if (player.createdBy === userId) return true;
 
   // Same pod as the player's account user.

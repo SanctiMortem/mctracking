@@ -268,6 +268,71 @@ async function resolveNames(names: string[]): Promise<Map<string, Card>> {
   return resolved;
 }
 
+// ─── Commander cards ──────────────────────────────────────────────────────────
+
+export type CommanderCardView = {
+  commander_id: string;
+  /** The commander's name as stored on the deck. */
+  name: string;
+  /** Null when the card could not be loaded (Scryfall unreachable and not cached). */
+  card: DecklistCard['card'];
+};
+
+export type CommanderCardsResult =
+  | { data: { commanders: CommanderCardView[] } }
+  | { notFound: true }
+  | { forbidden: true };
+
+/**
+ * The deck's commander(s) as full cards — image, type line and rules text —
+ * so they can be read on the deck screen like any card in the list. Uses the
+ * same `cards` cache and Scryfall lookup as a decklist import, so a commander
+ * is only fetched from Scryfall the first time anyone opens it.
+ */
+export async function getDeckCommanderCards(userId: string, deckId: string): Promise<CommanderCardsResult> {
+  const deck = await getDeckRow(deckId);
+  if (!deck) return { notFound: true };
+  if (!(await userCanViewDeck(userId, deck))) return { forbidden: true };
+
+  const ids = [deck.commanderId, deck.commanderId2].filter(Boolean) as string[];
+  const rows = await db
+    .select({ id: commanders.id, name: commanders.name })
+    .from(commanders)
+    .where(inArray(commanders.id, ids));
+
+  let resolved = new Map<string, Card>();
+  try {
+    resolved = await resolveNames(rows.map((r) => r.name));
+  } catch (e) {
+    // Scryfall down and the card is not cached: the screen shows the name only.
+    console.error('[decklist] commander card lookup failed', e);
+  }
+
+  // Deck order: commander, then partner.
+  const list: CommanderCardView[] = [];
+  for (const id of ids) {
+    const row = rows.find((r) => r.id === id);
+    if (!row) continue;
+    const card = resolved.get(lookupKey(row.name)) ?? null;
+    list.push({
+      commander_id: row.id,
+      name: row.name,
+      card: card
+        ? {
+            id: card.id,
+            name: card.name,
+            type_line: card.typeLine,
+            oracle_text: card.oracleText,
+            colors: card.colors,
+            color_identity: card.colorIdentity,
+            image_url: card.imageUrl,
+          }
+        : null,
+    });
+  }
+  return { data: { commanders: list } };
+}
+
 // ─── Write ────────────────────────────────────────────────────────────────────
 
 export type ImportDecklistResult = DecklistResult | { tooManyLines: true } | { empty: true };

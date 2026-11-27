@@ -29,9 +29,12 @@ import { CircularWinRate } from '@/components/ui/CircularWinRate';
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
 import { DeckStatRow } from '@/components/match/DeckStatRow';
 import { AnalyzeButton } from '@/components/labs/AnalyzeButton';
+import { NewStatsBoundary } from '@/components/labs/NewStatsBoundary';
 import { CareerBreakdown } from '@/components/stats/CareerBreakdown';
+import { PlayerExtrasBlock } from '@/components/stats/PlayerExtrasBlock';
 import { WinConditionBreakdown } from '@/components/stats/WinConditionBreakdown';
 import { usePlayerStats } from '@/hooks/usePlayerStats';
+import { useNewStatsEnabled, usePlayerExtrasV2 } from '@/hooks/useStatsV2';
 import { useResponsive } from '@/hooks/useResponsive';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -79,6 +82,11 @@ export default function PlayerProfileScreen() {
   const insets = useSafeAreaInsets();
   const { contentMaxWidth, contentPadding } = useResponsive();
   const { data, loading, error } = usePlayerStats(id);
+
+  // LABS — stats v2: wins vs expected and placement. Additive: the block
+  // only appears once its data is in, and never if the request fails.
+  const newStats = useNewStatsEnabled();
+  const extrasV2 = usePlayerExtrasV2(id, newStats);
   const { userId } = useAuth();
   const [showAllDecks, setShowAllDecks] = useState(false);
 
@@ -212,6 +220,12 @@ export default function PlayerProfileScreen() {
         {/* Labs: "Analyze my stats" is for your own profile only. */}
         {!!userId && data.player.accountUserId === userId && (
           <AnalyzeButton kind="player" id={data.player.id} />
+        )}
+
+        {extrasV2.data && (
+          <NewStatsBoundary>
+            <PlayerExtrasBlock data={extrasV2.data} />
+          </NewStatsBoundary>
         )}
 
         <WinConditionBreakdown title={t('player.howItWins')} rows={data.wins_by_condition} />

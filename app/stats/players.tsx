@@ -16,6 +16,8 @@ import { PlayerRankRow } from '@/components/stats/PlayerRankRow';
 import { StatsAllScreenHeader } from '@/components/stats/StatsAllScreenHeader';
 import { StatsScopePicker } from '@/components/stats/StatsScopePicker';
 import { useGlobalStats } from '@/hooks/useGlobalStats';
+import { useNewStatsEnabled, useRankingsV2 } from '@/hooks/useStatsV2';
+import { mergePlayerRankings } from '@/services/stats2/view';
 import { useGroups } from '@/hooks/useGroups';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -51,7 +53,14 @@ export default function StatsAllPlayersScreen() {
     ...groups.map((g) => ({ id: g.group.id, label: g.group.name })),
   ];
 
-  const rankings = data?.player_rankings ?? [];
+  // LABS — stats v2: v2 order, unranked players last. Falls back to the
+  // current list while v2 loads or if it fails.
+  const newStats = useNewStatsEnabled();
+  const v2 = useRankingsV2(scopeGroupId, newStats);
+  const rankings = useMemo(
+    () => mergePlayerRankings(data?.player_rankings ?? [], v2.data?.players),
+    [data?.player_rankings, v2.data?.players],
+  );
 
   // Player → most-used commander name + art crop, surfaced on every row
   // (not just the podium) so the full list reads consistently.
@@ -91,9 +100,10 @@ export default function StatsAllPlayersScreen() {
       ) : (
         <FlatList
           data={rankings}
-          keyExtractor={(r) => r.player.id}
+          keyExtractor={(r) => r.ranking.player.id}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => {
+          renderItem={({ item: row }) => {
+            const item = row.ranking;
             const meta = playerArt.get(item.player.id);
             const isPodium = item.rank >= 1 && item.rank <= 3;
             return (
@@ -102,6 +112,8 @@ export default function StatsAllPlayersScreen() {
                 topDeckArtCrop={isPodium ? meta?.artCrop ?? null : null}
                 topCommanderName={meta?.commanderName ?? null}
                 onPress={() => router.push(`/players/${item.player.id}`)}
+                winsVsExpected={row.winsVsExpected}
+                unranked={row.unranked}
               />
             );
           }}

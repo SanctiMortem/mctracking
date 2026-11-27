@@ -25,12 +25,16 @@ import { useTranslation } from 'react-i18next';
 
 import { CircularWinRate } from '@/components/ui/CircularWinRate';
 import { ManaIdentityRow } from '@/components/ui/ManaSymbol';
+import { useCommanderCardViewer } from '@/components/decks/CommanderCardModal';
 import { DecklistSection } from '@/components/decks/DecklistSection';
 import { AnalyzeButton } from '@/components/labs/AnalyzeButton';
+import { NewStatsBoundary } from '@/components/labs/NewStatsBoundary';
 import { CareerBreakdown } from '@/components/stats/CareerBreakdown';
 import { ColorRecord } from '@/components/stats/ColorRecord';
+import { ColorStatsSection } from '@/components/stats/ColorStatsSection';
 import { WinConditionBreakdown } from '@/components/stats/WinConditionBreakdown';
 import { useDeckStats } from '@/hooks/useDeckStats';
+import { useDeckColorsV2, useNewStatsEnabled } from '@/hooks/useStatsV2';
 import { useResponsive } from '@/hooks/useResponsive';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -39,11 +43,29 @@ import { useTheme } from '@/contexts/ThemeContext';
 
 // ─── Commander card (partner-aware) ──────────────────────────────────────────
 
-function CommanderCard({ name, cardColors, isPartner }: { name: string; cardColors: string[]; isPartner: boolean }) {
+function CommanderCard({
+  name,
+  cardColors,
+  isPartner,
+  onPress,
+}: {
+  name: string;
+  cardColors: string[];
+  isPartner: boolean;
+  /** Opens the commander's card (image and rules text). */
+  onPress: () => void;
+}) {
   const styles = useThemedStyles(createStyles);
+  const { t } = useTranslation();
 
   return (
-    <View style={styles.commanderCard}>
+    <TouchableOpacity
+      style={styles.commanderCard}
+      activeOpacity={0.7}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${t('commanderCard.view')}: ${name}`}
+    >
       <View style={styles.commanderHeader}>
         <Text style={styles.commanderName} numberOfLines={1}>{name}</Text>
         {isPartner && (
@@ -52,8 +74,11 @@ function CommanderCard({ name, cardColors, isPartner }: { name: string; cardColo
           </View>
         )}
       </View>
-      <ManaIdentityRow colors={cardColors} size="sm" />
-    </View>
+      <View style={styles.commanderFooter}>
+        <ManaIdentityRow colors={cardColors} size="sm" />
+        <Text style={styles.commanderViewLink}>{t('commanderCard.view')} ›</Text>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -70,6 +95,22 @@ export default function DeckDetailScreen() {
   const insets = useSafeAreaInsets();
   const { contentMaxWidth, contentPadding } = useResponsive();
   const { data, loading, error } = useDeckStats(id);
+  // Tap a commander to read its card, like a card in the list.
+  const commanderCard = useCommanderCardViewer(id);
+
+  // LABS — stats v2: one colour section instead of the Colour record plus the
+  // Strong / Weak chips. While it loads the colour blocks are simply absent
+  // (so numbers never swap under the reader); if it fails, the current
+  // blocks show as usual.
+  const newStats = useNewStatsEnabled();
+  const colorsV2 = useDeckColorsV2(id, newStats);
+  const colorsMode: 'current' | 'loading' | 'v2' = !newStats
+    ? 'current'
+    : colorsV2.data
+      ? 'v2'
+      : colorsV2.loading
+        ? 'loading'
+        : 'current';
   const { userId } = useAuth();
 
   if (loading) {
@@ -161,6 +202,7 @@ export default function DeckDetailScreen() {
             name={deck.commander.name}
             cardColors={deck.commander.colorIdentity}
             isPartner={deck.commander.isPartner}
+            onPress={() => commanderCard.open(deck.commander.id, deck.commander.name)}
           />
           {deck.commander2 && (
             <>
@@ -173,6 +215,7 @@ export default function DeckDetailScreen() {
                 name={deck.commander2.name}
                 cardColors={deck.commander2.colorIdentity}
                 isPartner={deck.commander2.isPartner}
+                onPress={() => commanderCard.open(deck.commander2!.id, deck.commander2!.name)}
               />
             </>
           )}
@@ -217,12 +260,17 @@ export default function DeckDetailScreen() {
 
         <WinConditionBreakdown title={t('deck.howItWins')} rows={data.wins_by_condition} />
 
-        <ColorRecord title={t('colorRecord.title')} rows={data.color_record} />
+        {colorsMode === 'current' && <ColorRecord title={t('colorRecord.title')} rows={data.color_record} />}
+        {colorsMode === 'v2' && (
+          <NewStatsBoundary fallback={<ColorRecord title={t('colorRecord.title')} rows={data.color_record} />}>
+            <ColorStatsSection title={t('colorRecord.title')} data={colorsV2.data!} />
+          </NewStatsBoundary>
+        )}
 
         <CareerBreakdown title={t('career.title')} career={data.career} />
 
         {/* ── Color matchups ── */}
-        {(strong_against_colors.length > 0 || weak_against_colors.length > 0) && (
+        {colorsMode === 'current' && (strong_against_colors.length > 0 || weak_against_colors.length > 0) && (
           <View style={styles.section}>
             <View style={styles.colorMatchupRow}>
               {strong_against_colors.length > 0 && (
@@ -345,6 +393,8 @@ export default function DeckDetailScreen() {
           </View>
         )}
       </ScrollView>
+
+      {commanderCard.modal}
     </View>
   );
 }
@@ -455,6 +505,17 @@ const createStyles = (t: AppTheme) => ({
     borderColor: t.colors.border.default,
   },
   commanderHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
+  commanderFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing[2],
+  },
+  commanderViewLink: {
+    color: t.colors.accent.primary,
+    fontSize: t.typography.size['body-sm'],
+    fontWeight: t.typography.weight.semibold,
+  },
   commanderName: {
     flex: 1,
     color: t.colors.text.primary,

@@ -23,9 +23,15 @@ interface MatchupCardProps {
   entityBName: string | null;
   data: MatchupResult | null;
   loading: boolean;
+  /**
+   * Stats v2 (Labs): shared matches a third player won, so neither side
+   * finished ahead of the other. Explains why wins + draws is less than the
+   * shared total.
+   */
+  undecidedMatches?: number | null;
 }
 
-export function MatchupCard({ entityAName, entityBName, data, loading }: MatchupCardProps) {
+export function MatchupCard({ entityAName, entityBName, data, loading, undecidedMatches = null }: MatchupCardProps) {
   const { theme } = useTheme();
 
   const styles = useThemedStyles(createStyles);
@@ -114,6 +120,14 @@ export function MatchupCard({ entityAName, entityBName, data, loading }: Matchup
             ]}
           />
         </View>
+      )}
+
+      {typeof undecidedMatches === 'number' && undecidedMatches > 0 && (
+        <Text style={styles.undecided}>
+          {undecidedMatches === 1
+            ? t('stats2.neitherAheadOne', { count: undecidedMatches })
+            : t('stats2.neitherAheadMany', { count: undecidedMatches })}
+        </Text>
       )}
     </View>
   );
@@ -218,6 +232,11 @@ const createStyles = (t: AppTheme) => ({
   },
   barSegment: {
     borderRadius: 2,
+  },
+  undecided: {
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+    textAlign: 'center',
   },
   barSegmentA: { backgroundColor: t.colors.accent.primary },
   barSegmentB: { backgroundColor: t.colors.accent.primary },

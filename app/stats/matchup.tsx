@@ -21,6 +21,7 @@ import { MatchupCard } from '@/components/stats/MatchupCard';
 import { useGroups } from '@/hooks/useGroups';
 import { useMatchupOptions } from '@/hooks/useMatchupOptions';
 import { useMatchupStats } from '@/hooks/useMatchupStats';
+import { useMatchupV2, useNewStatsEnabled } from '@/hooks/useStatsV2';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
@@ -159,6 +160,19 @@ export default function MatchupStatsScreen() {
     scopeGroupId,
   );
 
+  // LABS — stats v2: same card, with ties counted and the matches a third
+  // player won explained. The current result stays as the fallback.
+  const newStats = useNewStatsEnabled();
+  const matchupV2 = useMatchupV2(entityType, entityAId, entityBId, scope, scopeGroupId, newStats);
+  const cardData = matchupV2.data
+    ? {
+        entity_a_wins: matchupV2.data.a_wins,
+        entity_b_wins: matchupV2.data.b_wins,
+        draws: matchupV2.data.ties,
+        total_matches: matchupV2.data.shared_matches,
+      }
+    : matchupData;
+
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <ScrollView
@@ -246,8 +260,9 @@ export default function MatchupStatsScreen() {
         <MatchupCard
           entityAName={entityAName}
           entityBName={entityBName}
-          data={matchupData}
-          loading={matchupLoading}
+          data={cardData}
+          loading={matchupLoading || matchupV2.loading}
+          undecidedMatches={matchupV2.data?.undecided_matches ?? null}
         />
       </ScrollView>
     </View>

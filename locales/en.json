@@ -805,5 +805,30 @@
     "won": "Won",
     "lost": "Lost",
     "note": "Counted once per match: wins with that color across the table, and losses to a winning deck of that color."
+  },
+  "stats2": {
+    "vsExpected": "{{value}} vs expected",
+    "unranked": "Unranked · fewer than {{count}} matches",
+    "sampleFew": "few games",
+    "sampleEarly": "early sample",
+    "colorsNote": "A win counts against every opponent at the table, a loss against the deck that won. Percentages lean toward 50% when there are few matches.",
+    "colorCountTitle": "By number of colors",
+    "colorCount0": "Colorless",
+    "colorCount1": "Mono",
+    "colorCountN": "{{count}} colors",
+    "neitherAheadOne": "{{count}} match where neither finished ahead of the other",
+    "neitherAheadMany": "{{count}} matches where neither finished ahead of the other",
+    "extrasTitle": "Results in depth",
+    "winsVsExpected": "Wins vs expected",
+    "winsVsExpectedNote": "{{wins}} wins, where an average player at the same tables would have {{expected}}.",
+    "avgPlacement": "Avg placement",
+    "top2": "Top 2",
+    "firstOut": "First out",
+    "placementBasedOn": "Placement is based on {{used}} of {{total}} matches, the ones where the order players went out is known.",
+    "placementNotEnough": "Placement needs at least 5 matches where the order players went out is known."
+  },
+  "commanderCard": {
+    "view": "View card",
+    "unavailable": "This card could not be loaded. Try again in a moment."
   }
 }

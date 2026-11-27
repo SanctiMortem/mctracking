@@ -77,6 +77,22 @@ export async function setFrameExperimentEnabled(enabled: boolean): Promise<void>
   else await SecureStore.deleteItemAsync(FRAME_EXPERIMENT);
 }
 
+/** Labs: stats v2 (services/stats2) on the stats screens of this device. */
+const NEW_STATS = 'labs_new_stats';
+
+export async function isNewStatsEnabled(): Promise<boolean> {
+  try {
+    return (await SecureStore.getItemAsync(NEW_STATS)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function setNewStatsEnabled(enabled: boolean): Promise<void> {
+  if (enabled) await SecureStore.setItemAsync(NEW_STATS, '1');
+  else await SecureStore.deleteItemAsync(NEW_STATS);
+}
+
 export type KeyTestResult = { ok: true } | { ok: false; message: string };
 
 const TEST_TIMEOUT_MS = 15_000;

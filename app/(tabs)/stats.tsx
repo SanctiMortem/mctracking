@@ -14,7 +14,7 @@
  *
  * HIST-011 (EPIC-04)
  */
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -32,7 +32,10 @@ import { TopDecksPodium, type PodiumDeckEntry } from '@/components/stats/TopDeck
 import { useGlobalStats } from '@/hooks/useGlobalStats';
 import { useGroups } from '@/hooks/useGroups';
 import { useStatsHighlights } from '@/hooks/useStatsHighlights';
+import { fullGlobalStatsPath, useNewStatsEnabled, useRankingsV2, useStatsV2 } from '@/hooks/useStatsV2';
 import { useResponsive } from '@/hooks/useResponsive';
+import type { GlobalStats } from '@/services/stats';
+import { mergePlayerRankings, orderByRanking } from '@/services/stats2/view';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppTheme } from '@/styles/themes/types';
@@ -66,6 +69,14 @@ export default function StatsScreen() {
   const { groups } = useGroups();
   const { data, loading, error } = useGlobalStats(scopeGroupId);
   const { data: podHighlightsData, loading: podHighlightsLoading } = useStatsHighlights(scopeGroupId);
+
+  // LABS — stats v2. v2 decides who is ranked and in what order; the rows
+  // themselves are still the current ones. `full` is the current payload
+  // without its top-5 cap, so every deck and commander v2 ranks has its row.
+  // If either request fails or is still loading, the current lists show.
+  const newStats = useNewStatsEnabled();
+  const v2 = useRankingsV2(scopeGroupId, newStats);
+  const full = useStatsV2<GlobalStats>(newStats ? fullGlobalStatsPath(scopeGroupId) : null);
 
   // If the user belongs to exactly one pod and hasn't picked a scope yet,
   // default to that pod on first render so the carousel + rankings show
@@ -167,7 +178,17 @@ export default function StatsScreen() {
     );
   }
 
-  const podiumEntries: PodiumDeckEntry[] = data.top_decks.slice(0, 3).map((e) => ({
+  const v2Lists = v2.data && full.data && Array.isArray(full.data.top_decks) && Array.isArray(full.data.top_commanders);
+  const topDecks = v2Lists
+    ? orderByRanking(full.data!.top_decks, (e) => e.deck.id, v2.data!.decks).slice(0, 5)
+    : data.top_decks;
+  const topCommanders = v2Lists
+    ? orderByRanking(full.data!.top_commanders, (e) => e.commander.id, v2.data!.commanders).slice(0, 5)
+    : data.top_commanders;
+  const playerRows = mergePlayerRankings(data.player_rankings, v2.data?.players).slice(0, 6);
+  const firstUnranked = playerRows.findIndex((row) => row.unranked);
+
+  const podiumEntries: PodiumDeckEntry[] = topDecks.slice(0, 3).map((e) => ({
     deck: e.deck,
     commanders: e.commanders,
     total_matches: e.total_matches,
@@ -194,7 +215,7 @@ export default function StatsScreen() {
         <PodHighlightsCarousel data={podHighlightsData} loading={podHighlightsLoading} />
 
         {/* THE HALL — Top Decks */}
-        {data.top_decks.length > 0 && (
+        {topDecks.length > 0 && (
           <View style={styles.section}>
             <SectionHeader
               eyebrow={t('stats.sectionHallEyebrow')}
@@ -202,7 +223,7 @@ export default function StatsScreen() {
               onAllPress={navigateToAllDecks}
             />
             <TopDecksPodium decks={podiumEntries} onPressDeck={(deck) => router.push(`/decks/${deck.id}`)} />
-            {data.top_decks.slice(3).map((entry, idx) => (
+            {topDecks.slice(3).map((entry, idx) => (
               <DeckRankRow
                 key={entry.deck.id}
                 rank={idx + 4}
@@ -225,7 +246,7 @@ export default function StatsScreen() {
         />
 
         {/* THE STANDINGS — Player Ranking */}
-        {data.player_rankings.length > 0 && (
+        {playerRows.length > 0 && (
           <View style={styles.section}>
             <SectionHeader
               eyebrow={t('stats.sectionStandingsEyebrow')}
@@ -233,19 +254,28 @@ export default function StatsScreen() {
               onAllPress={navigateToAllPlayers}
             />
             <View>
-              {data.player_rankings.slice(0, 6).map((ranking) => {
+              {playerRows.map((row, idx) => {
+                const { ranking } = row;
                 const isPodium = ranking.rank >= 1 && ranking.rank <= 3;
                 const podiumDeck = isPodium
                   ? data.top_player_decks?.find((e) => e.playerId === ranking.player.id) ?? null
                   : null;
                 return (
-                  <PlayerRankRow
-                    key={ranking.player.id}
-                    ranking={ranking}
-                    topDeckArtCrop={podiumDeck?.commanders[0]?.artCrop ?? null}
-                    topCommanderName={playerTopCommanderName.get(ranking.player.id) ?? null}
-                    onPress={() => router.push(`/players/${ranking.player.id}`)}
-                  />
+                  <Fragment key={ranking.player.id}>
+                    {idx === firstUnranked && (
+                      <Text style={styles.unrankedLabel}>
+                        {t('stats2.unranked', { count: v2.data?.players.min_matches ?? 3 })}
+                      </Text>
+                    )}
+                    <PlayerRankRow
+                      ranking={ranking}
+                      topDeckArtCrop={podiumDeck?.commanders[0]?.artCrop ?? null}
+                      topCommanderName={playerTopCommanderName.get(ranking.player.id) ?? null}
+                      onPress={() => router.push(`/players/${ranking.player.id}`)}
+                      winsVsExpected={row.winsVsExpected}
+                      unranked={row.unranked}
+                    />
+                  </Fragment>
                 );
               })}
             </View>
@@ -253,7 +283,7 @@ export default function StatsScreen() {
         )}
 
         {/* MOST HONOURED — Top Commanders */}
-        {data.top_commanders.length > 0 && (
+        {topCommanders.length > 0 && (
           <View style={styles.section}>
             <SectionHeader
               eyebrow={t('stats.sectionHonouredEyebrow')}
@@ -261,7 +291,7 @@ export default function StatsScreen() {
               onAllPress={navigateToAllCommanders}
             />
             <View>
-              {data.top_commanders.map((entry, idx) => (
+              {topCommanders.map((entry, idx) => (
                 <CommanderRankRow
                   key={entry.commander.id}
                   rank={idx + 1}
@@ -335,6 +365,16 @@ const createStyles = (t: AppTheme) => ({
   },
 
   section: { gap: spacing[3] },
+
+  // Stats v2 (Labs): divider above the players under the minimum.
+  unrankedLabel: {
+    color: t.colors.text.muted,
+    fontSize: t.typography.size.caption,
+    fontFamily: t.typography.fontFamily.body,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase' as const,
+    paddingTop: spacing[3],
+  },
 
   empty: {
     alignItems: 'center' as const,

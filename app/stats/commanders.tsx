@@ -15,6 +15,8 @@ import { CommanderRankRow } from '@/components/stats/CommanderRankRow';
 import { StatsAllScreenHeader } from '@/components/stats/StatsAllScreenHeader';
 import { StatsScopePicker } from '@/components/stats/StatsScopePicker';
 import { useGlobalStats } from '@/hooks/useGlobalStats';
+import { useNewStatsEnabled, useRankingsV2 } from '@/hooks/useStatsV2';
+import { orderByRanking } from '@/services/stats2/view';
 import { useGroups } from '@/hooks/useGroups';
 import { spacing } from '@/styles/tokens';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -50,7 +52,10 @@ export default function StatsAllCommandersScreen() {
     ...groups.map((g) => ({ id: g.group.id, label: g.group.name })),
   ];
 
-  const commanders = data?.top_commanders ?? [];
+  // LABS — stats v2: same rows in v2 order. Current order while v2 loads or fails.
+  const newStats = useNewStatsEnabled();
+  const v2 = useRankingsV2(scopeGroupId, newStats);
+  const commanders = orderByRanking(data?.top_commanders ?? [], (entry) => entry.commander.id, v2.data?.commanders);
 
   return (
     <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
