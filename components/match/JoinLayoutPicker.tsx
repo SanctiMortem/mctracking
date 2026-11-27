@@ -54,6 +54,8 @@ interface JoinLayoutPickerProps {
   confirmLabel?: string;
   /** Optional secondary action (Cancel). When set, renders a Cancel button. */
   onCancel?: () => void;
+  /** Optional extra content under the layout preview (the tracker's Labs frame switch). */
+  extraSection?: React.ReactNode;
 }
 
 function defaultRotationsForCount(variant: string): number[] {
@@ -68,6 +70,7 @@ export function JoinLayoutPicker({
   initialPlayerOrder,
   confirmLabel,
   onCancel,
+  extraSection,
 }: JoinLayoutPickerProps) {
   const styles = useThemedStyles(createStyles);
   const { t } = useTranslation();
@@ -183,6 +186,8 @@ export function JoinLayoutPicker({
           onRotate={handleRotate}
           onLayoutChange={handleLayoutChange}
         />
+
+        {extraSection}
 
         <View style={styles.spacer} />
       </ScrollView>

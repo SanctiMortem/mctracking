@@ -2,10 +2,12 @@
  * Frame experiment — a sandbox for player-frame look and consistency.
  *
  * Only screens that wrap their tracker in <FrameExperimentProvider enabled>
- * get the experimental behaviour (today: the signed-in casual match, when
- * the Labs switch is on). Everywhere else the hook returns the "off"
- * defaults, so account matches and the guest tracker render exactly as
- * before. To retire it: remove the provider from app/match/casual.tsx, or
+ * get the experimental behaviour (today: the signed-in casual match and the
+ * account match tracker, when the Labs switch is on; the account tracker
+ * can also switch it off for one match from its Layout sheet). Everywhere
+ * else the hook returns the "off" defaults, so the guest tracker and any
+ * device with the switch off render exactly as before. To retire it: remove
+ * the provider from app/match/casual.tsx and app/match/[id]/tracker.tsx, or
  * make its behaviour the default and delete this file.
  *
  * Frames keep filling their slot edge to edge, exactly as before. What the
@@ -25,6 +27,9 @@
  *   FRAME LOOK          Constant border thickness, faint inactive border,
  *                       rounded corners, and a glow that fades inward from
  *                       the active frame's edges.
+ *   BRIGHTER            Commander art at about double strength with no grey
+ *                       wash; it is shaded only behind the sidebar and the
+ *                       counter footer so small text keeps its contrast.
  *
  * An earlier version laid every player's content out in one shared, centred
  * box and centred the life total on the whole frame. Both looked wrong on a

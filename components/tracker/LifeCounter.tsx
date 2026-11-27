@@ -126,7 +126,7 @@ export function LifeCounter({ lifeTotal, participationId, onDelta, onSetAbsolute
     });
   }, []);
 
-  // ── Frame experiment (casual only) ──
+  // ── Frame experiment ──
   // One number size for the table: sized for a two-digit total in the space
   // the tightest frame gives its life total, so 7, 40 and 23 match on every
   // seat. Three or more digits fall back to adjustsFontSizeToFit on <Text>.
@@ -384,7 +384,7 @@ const createStyles = (t: AppTheme) => ({
     fontFamily: t.typography.fontFamily.lifeTotalBold,
   },
 
-  // ── Frame experiment (casual only) ──
+  // ── Frame experiment ──
   // The tap flash runs the full height of the frame, down through the
   // counter footer, instead of stopping above Poison / CMD. The footer is a
   // later sibling, so its text still draws on top of the flash.

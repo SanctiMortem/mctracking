@@ -18,6 +18,7 @@ import {
   Modal,
   Pressable,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from 'react-native';
@@ -28,12 +29,14 @@ import { useTranslation } from 'react-i18next';
 
 import { CommanderDamagePanel } from '@/components/tracker/CommanderDamagePanel';
 import { EventLogPanel } from '@/components/tracker/EventLogPanel';
+import { FrameExperimentBoundary, FrameExperimentProvider } from '@/components/match/frameExperiment';
 import { JoinLayoutPicker, type JoinLayoutPickerResult } from '@/components/match/JoinLayoutPicker';
 import { LifeCounter } from '@/components/tracker/LifeCounter';
 import { PlayerDashboard } from '@/components/tracker/PlayerDashboard';
 import { PoisonCounter } from '@/components/tracker/PoisonCounter';
 import { TrackerLayout } from '@/components/match/TrackerLayout';
 import { useTracker } from '@/hooks/useTracker';
+import { isFrameExperimentEnabled } from '@/services/labs/aiKeys';
 import { loadMatchLayout, saveMatchLayout } from '@/services/matchLayout';
 import { clockwiseParticipationIds, nextAliveClockwise } from '@/services/clockwiseOrder';
 import { spacing } from '@/styles/tokens';
@@ -421,6 +424,25 @@ export default function MatchTrackerScreen() {
   // pre-filled with the device's current layout so the user can fix a
   // misconfigured seat arrangement without abandoning the match.
   const [layoutEditorVisible, setLayoutEditorVisible] = useState(false);
+
+  // LABS — new player frames. `framesAvailable` is the Labs switch on this
+  // device; `framesOn` starts from it and can be flipped for this match from
+  // the Layout sheet, so a frame that looks wrong mid-game is one switch away
+  // from the classic frames. Match state lives in this screen, above the
+  // frames, so flipping it never touches life totals, turns or the log.
+  const [framesAvailable, setFramesAvailable] = useState(false);
+  const [framesOn, setFramesOn] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    isFrameExperimentEnabled().then((on) => {
+      if (cancelled) return;
+      setFramesAvailable(on);
+      setFramesOn(on);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Parse rotation map from setup screen (playerId → degrees). If the URL
   // params are missing (user resumed after closing the app), we fall back to
@@ -873,8 +895,15 @@ export default function MatchTrackerScreen() {
       </View>
 
       {/* Tracker layout (Level 1 → Level 2 → Level 3) */}
+      {/* The provider is always mounted, so the async read of the Labs switch
+          (and the in-match switch) never remounts the layout. The boundary
+          falls back to the classic frames if the new ones throw. */}
       <View style={styles.layoutContainer}>
-        <TrackerLayout sections={sections} layoutVariant={resolvedLayoutVariant} />
+        <FrameExperimentProvider enabled={framesOn}>
+          <FrameExperimentBoundary>
+            <TrackerLayout sections={sections} layoutVariant={resolvedLayoutVariant} />
+          </FrameExperimentBoundary>
+        </FrameExperimentProvider>
       </View>
 
       {/* Toast error */}
@@ -945,6 +974,24 @@ export default function MatchTrackerScreen() {
           initialRotations={rotationMap}
           initialPlayerOrder={playerOrder}
           confirmLabel={t('tracker.saveLayout')}
+          extraSection={
+            framesAvailable ? (
+              <View style={styles.framesRow}>
+                <View style={styles.framesRowText}>
+                  <Text style={styles.framesRowTitle}>New frames (Labs)</Text>
+                  <Text style={styles.framesRowHint}>
+                    Applies right away, for this match only. Switch off if a frame looks wrong.
+                  </Text>
+                </View>
+                <Switch
+                  value={framesOn}
+                  onValueChange={setFramesOn}
+                  trackColor={{ false: theme.colors.border.strong, true: theme.colors.accent.primary + '88' }}
+                  thumbColor={framesOn ? theme.colors.accent.primary : theme.colors.text.muted}
+                />
+              </View>
+            ) : null
+          }
           onCancel={() => setLayoutEditorVisible(false)}
           onConfirm={(result) => {
             // Persist for this device, then update local state so the
@@ -1084,5 +1131,28 @@ const createStyles = (t: AppTheme) => ({
   },
   floatingBtnTextDisabled: {
     color: t.colors.text.muted,
+  },
+
+  // LABS — frame switch inside the Layout sheet.
+  framesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    marginTop: spacing[4],
+    padding: spacing[4],
+    backgroundColor: t.colors.background.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: t.colors.border.default,
+  },
+  framesRowText: { flex: 1, gap: 2 },
+  framesRowTitle: {
+    color: t.colors.text.primary,
+    fontSize: t.typography.size['body-md'],
+    fontWeight: t.typography.weight.semibold,
+  },
+  framesRowHint: {
+    color: t.colors.text.secondary,
+    fontSize: t.typography.size['body-sm'],
   },
 })

@@ -35,6 +35,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { useFrameExperiment } from '@/components/match/frameExperiment';
 import { Image, type LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { GHPressable } from '@/components/ui/GHPressable';
 import { useTranslation } from 'react-i18next';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -155,6 +156,14 @@ export function PlayerDashboard({
   // Stable random message — picked once when player dies
   const deathMessage = useMemo(pickDeathMessage, []);
 
+  // Frame experiment: brighter look. The art is shown stronger and without
+  // the grey wash; the small text keeps its contrast because the art is
+  // shaded only behind the sidebar and the counter footer (ChromeShade), and
+  // the overlays get a dark backing.
+  const bright = experiment.enabled;
+  const brightArt = bright && !!artCrop;
+  const shadeSidebarWidth = experiment.sidebarWidth ?? Math.max(SIDEBAR_MIN_WIDTH, dashSize.w * 0.2);
+
   const isCompact = dashSize.h > 0 && dashSize.h < COMPACT_THRESHOLD;
   const isUltraCompact = dashSize.h > 0 && dashSize.h < ULTRA_COMPACT_THRESHOLD;
 
@@ -201,10 +210,16 @@ export function PlayerDashboard({
         <View style={styles.artBackdropWrap} pointerEvents="none">
           <Image
             source={{ uri: artCrop }}
-            style={styles.artBackdrop}
+            style={[styles.artBackdrop, bright && styles.artBackdropBright]}
             resizeMode="cover"
           />
-          <View style={styles.artScrim} />
+          {bright ? (
+            dashSize.w > 0 && dashSize.h > 0 && (
+              <ChromeShade width={dashSize.w} height={dashSize.h} sidebarWidth={shadeSidebarWidth} />
+            )
+          ) : (
+            <View style={styles.artScrim} />
+          )}
         </View>
       )}
 
@@ -251,6 +266,7 @@ export function PlayerDashboard({
           <Text
             style={[
               styles.timer,
+              bright && styles.sidebarTextBright,
               timerActive && styles.timerActive,
               { fontSize: baseTimerSize * sidebarFontScale },
             ]}
@@ -262,7 +278,7 @@ export function PlayerDashboard({
           </Text>
           {turnCount > 0 && (
             <Text
-              style={[styles.turnBadge, { fontSize: baseTimerSize * sidebarFontScale * 0.9 }]}
+              style={[styles.turnBadge, bright && styles.sidebarTextBright, { fontSize: baseTimerSize * sidebarFontScale * 0.9 }]}
               numberOfLines={1}
               adjustsFontSizeToFit
               minimumFontScale={0.6}
@@ -276,7 +292,7 @@ export function PlayerDashboard({
                 {t('tracker.activePlayer', { defaultValue: 'Active player' })}
               </Text>
             ) : (
-              <Text style={styles.turnHint} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+              <Text style={[styles.turnHint, bright && styles.sidebarTextBright]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
                 {t('tracker.pushForTurn', { defaultValue: 'Push for turn' })}
               </Text>
             )
@@ -329,7 +345,11 @@ export function PlayerDashboard({
                 style={styles.footerCounter}
               >
                 <Text
-                  style={[styles.footerCounterText, poisonCount >= 10 && styles.footerCounterTextAlert]}
+                  style={[
+                    styles.footerCounterText,
+                    bright && styles.footerCounterTextBright,
+                    poisonCount >= 10 && styles.footerCounterTextAlert,
+                  ]}
                   numberOfLines={1}
                 >
                   ☣ {t('tracker.poison', { defaultValue: 'Poison' })} {poisonCount}
@@ -339,7 +359,7 @@ export function PlayerDashboard({
                 onPress={() => switchMode('cmd')}
                 style={styles.footerCounter}
               >
-                <Text style={styles.footerCounterText} numberOfLines={1}>
+                <Text style={[styles.footerCounterText, bright && styles.footerCounterTextBright]} numberOfLines={1}>
                   ⚔ {t('tracker.cmd', { defaultValue: 'CMD' })} {cmdDamageTotal}
                 </Text>
               </GHPressable>
@@ -348,18 +368,52 @@ export function PlayerDashboard({
         )}
 
         {mode === 'poison' && (
-          <View style={styles.overlayZone}>
+          <View style={[styles.overlayZone, brightArt && styles.overlayShade]}>
             {poisonOverlay}
           </View>
         )}
 
         {mode === 'cmd' && (
-          <View style={styles.overlayZone}>
+          <View style={[styles.overlayZone, brightArt && styles.overlayShade]}>
             {cmdDamageOverlay}
           </View>
         )}
       </View>
     </View>
+  );
+}
+
+// ─── Chrome shade (frame experiment) ─────────────────────────────────────────
+// Two soft gradients over the art, under the UI: one behind the sidebar and
+// one behind the counter footer. They darken the art only where the small
+// text sits and fade out toward the life total, so the art stays bright
+// without washing out the name, timer and counters. The stop positions are
+// the same in every frame, so the gradient ids can be shared.
+
+const SHADE_PEAK = 0.46;
+/** Share of the side gradient that sits under the sidebar itself. */
+const SHADE_SIDE_SOLID = 0.7;
+
+function ChromeShade({ width, height, sidebarWidth }: { width: number; height: number; sidebarWidth: number }) {
+  const sideW = Math.min(width, sidebarWidth / SHADE_SIDE_SOLID);
+  const footH = Math.min(height, (DEAD_BTN_SIZE + 8) * 1.9);
+  return (
+    <Svg width={width} height={height} style={{ position: 'absolute', top: 0, left: 0 }} pointerEvents="none">
+      <Defs>
+        <LinearGradient id="chromeSide" x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor="#000" stopOpacity={SHADE_PEAK} />
+          <Stop offset={SHADE_SIDE_SOLID} stopColor="#000" stopOpacity={SHADE_PEAK * 0.8} />
+          <Stop offset="1" stopColor="#000" stopOpacity={0} />
+        </LinearGradient>
+        <LinearGradient id="chromeFoot" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#000" stopOpacity={0} />
+          <Stop offset="0.5" stopColor="#000" stopOpacity={SHADE_PEAK * 0.7} />
+          <Stop offset="1" stopColor="#000" stopOpacity={SHADE_PEAK} />
+        </LinearGradient>
+      </Defs>
+      <Rect x={0} y={0} width={sideW} height={height} fill="url(#chromeSide)" />
+      <Rect x={0} y={height - footH} width={width} height={footH} fill="url(#chromeFoot)" />
+    </Svg>
   );
 }
 
@@ -407,6 +461,24 @@ const createStyles = (t: AppTheme) => ({
     // Mid-tone grey-blue (vs dark background) so the wash softens the art
     // instead of darkening it. Sits above the image, below the UI chrome.
     backgroundColor: t.colors.onSurfaceVariant + '26',
+  },
+
+  // ── Frame experiment: brighter look ──
+  // Art at roughly double strength, with no grey wash over it.
+  artBackdropBright: {
+    opacity: 0.42,
+  },
+  // Poison / commander damage overlays sit on the art itself: darker backing.
+  overlayShade: {
+    backgroundColor: 'rgba(0, 0, 0, 0.52)',
+  },
+  // Timer, turn count and "Push for turn": near-white instead of the dim tone.
+  sidebarTextBright: {
+    color: t.colors.text.primary,
+    opacity: 0.86,
+  },
+  footerCounterTextBright: {
+    color: t.colors.accent.primary,
   },
 
   // ── Sidebar (20 %, minWidth 75, flexShrink 0) ──

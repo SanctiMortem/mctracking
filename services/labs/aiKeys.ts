@@ -61,7 +61,7 @@ export async function setLabsEnabled(enabled: boolean): Promise<void> {
   else await SecureStore.deleteItemAsync(LABS_ENABLED);
 }
 
-/** Labs: experimental player frames in the signed-in casual match. */
+/** Labs: experimental player frames (casual matches and account matches). */
 const FRAME_EXPERIMENT = 'labs_frame_experiment';
 
 export async function isFrameExperimentEnabled(): Promise<boolean> {

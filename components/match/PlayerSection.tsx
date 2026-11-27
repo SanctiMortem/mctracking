@@ -279,7 +279,7 @@ const createStyles = (t: AppTheme) => ({
     borderWidth: 1.5,
     backgroundColor: t.colors.background.secondary + 'ee',
   },
-  // ── Frame experiment (casual only) ──
+  // ── Frame experiment ──
   // The slot the grid hands out; the frame is drawn inside it.
   cell: {
     flex: 1,
@@ -292,7 +292,10 @@ const createStyles = (t: AppTheme) => ({
   frameExp: {
     borderWidth: 1.5,
     borderRadius: 10,
-    borderColor: 'rgba(238, 191, 115, 0.16)',
+    borderColor: 'rgba(238, 191, 115, 0.30)',
+    // One step lighter than the classic frame, so a frame without art is
+    // not a flat dark block.
+    backgroundColor: t.colors.background.surface,
   },
   frameExpActive: {
     borderColor: t.colors.accent.primary,

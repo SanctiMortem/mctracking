@@ -121,7 +121,9 @@ const createStyles = (t: AppTheme) => ({
     color: t.colors.status.error,
   },
   total: {
-    color: t.colors.text.muted,
+    // The running total is the number players read most on this panel, so it
+    // gets the accent colour; `text.muted` was close to invisible here.
+    color: t.colors.accent.primary,
     fontVariant: ['tabular-nums' as const],
   },
   controls: {

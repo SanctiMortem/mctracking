@@ -227,8 +227,9 @@ export default function LabsScreen() {
             <View style={styles.toggleText}>
               <Text style={styles.cardTitle}>New player frames</Text>
               <Text style={styles.muted}>
-                Casual matches only. Same number size and sidebar width for every player, and a glow on the active
-                frame. Switch off to compare with the current frames.
+                Casual and account matches, on this device only. Same number size and sidebar width for every player,
+                brighter commander art, and a glow on the active frame. In an account match you can switch back to
+                the current frames from Layout.
               </Text>
             </View>
             <Switch
