@@ -12,10 +12,17 @@
  * list is one column in a narrow frame and two in a wide one, so a
  * four-player table usually needs no scrolling.
  *
- * LEGIBILITY  PlayerDashboard dims a dead frame, but not this panel: it
- * renders at full strength, and every button has a solid background, so the
- * labels read the same over bright commander art (the "New player frames"
- * experiment), faint art or no art at all, in either theme.
+ * LEGIBILITY  PlayerDashboard dims a dead frame, but not this panel: while
+ * nothing is selected it renders at full strength, and every button has a
+ * solid background, so the labels read the same over bright commander art
+ * (the "New player frames" experiment), faint art or no art at all, in
+ * either theme.
+ *
+ * ONCE ANSWERED IT STEPS BACK  As soon as something is selected the whole
+ * panel fades most of the way to the dead frame's grey, so a bright button
+ * in a dead player's frame does not pull eyes for the rest of the game. It
+ * stays readable and tappable: the choice can still be changed or cleared,
+ * and clearing it brings the panel back to full strength.
  *
  * Like every control in a frame it lives inside the rotated content, so it
  * faces the dead player, and uses GHPressable so a tap here never waits on
@@ -80,9 +87,10 @@ export function KilledByPanel({ options, selection, onSelect }: KilledByPanelPro
   // 290.5 reported as 291), hence whole pixels, rounded down, minus one.
   const columnWidth: number | '100%' = twoColumns ? Math.floor((box.w - GAP - 1) / 2) : '100%';
   const selfSelected = selection?.deathCause === 'self';
+  const answered = !!selection && selection.deathCause !== null;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, answered && styles.containerAnswered]}>
       <Text style={[styles.title, compact && styles.titleCompact]} numberOfLines={1}>
         {t('tracker.killedBy', { defaultValue: 'Killed by' })}
       </Text>
@@ -157,6 +165,12 @@ const createStyles = (t: AppTheme) => ({
     width: '100%' as const,
     minHeight: 0,
     gap: 4,
+  },
+  // A dead frame is faded to 0.45 (PlayerDashboard). An answered panel sits
+  // just above that: clearly greyed, with the chosen button still the one
+  // thing that stands out in it.
+  containerAnswered: {
+    opacity: 0.55,
   },
   title: {
     color: t.colors.accent.primaryAlt,
