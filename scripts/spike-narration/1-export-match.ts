@@ -6,6 +6,9 @@
  *
  * Writes out/<match-id>/match.json: players, decks, commanders, decklists and
  * every non-undone log event with its timestamp. Only SELECTs are issued.
+ *
+ * The timestamp columns are `timestamp` (no zone) holding UTC; they are read
+ * `at time zone 'utc'` so the driver does not reinterpret them as local time.
  */
 import path from 'node:path';
 
@@ -19,7 +22,7 @@ async function main() {
 
   if (args.list) {
     const rows = (await sql.query(
-      `select m.id, m.created_at, m.ended_at, m.status,
+      `select m.id, m.created_at at time zone 'utc' as created_at, m.ended_at, m.status,
               (select count(*) from match_events e where e.match_id = m.id and not e.is_undone)::int as events,
               (select string_agg(p.name, ', ' order by p.name)
                  from participations pa join players p on p.id = pa.player_id
@@ -43,7 +46,7 @@ async function main() {
   }
 
   const [match] = (await sql.query(
-    `select id, created_at, ended_at, status from matches where id = $1`,
+    `select id, created_at at time zone 'utc' as created_at, ended_at at time zone 'utc' as ended_at, status from matches where id = $1`,
     [matchId],
   )) as any[];
   if (!match) {
@@ -77,7 +80,7 @@ async function main() {
   const playerByParticipation = new Map(parts.map((p) => [p.participation_id, p.player]));
 
   const eventRows = (await sql.query(
-    `select e.id, e.created_at, e.event_type, e.participation_id, e.delta,
+    `select e.id, e.created_at at time zone 'utc' as created_at, e.event_type, e.participation_id, e.delta,
             e.turn_duration_seconds, c.name as source_commander
        from match_events e
        left join commanders c on c.id = e.commander_id_source

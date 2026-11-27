@@ -31,14 +31,24 @@ const CONTENT_TYPES: Record<string, string> = {
 const MAX_KEYTERMS = 90;
 const MAX_KEYTERM_TOKENS = 450;
 /** Rough token estimate — the real tokenizer is Deepgram's; stay well under the cap. */
-const estimateTokens = (term: string) => Math.ceil(term.length / 3);
+// Worst case, one token per character: Deepgram rejected both length/3 (78
+// terms) and length/2 (52 terms) as over its 500-token cap.
+const estimateTokens = (term: string) => term.length;
+
+function interleave(lists: string[][]): string[] {
+  const out: string[] = [];
+  const longest = Math.max(0, ...lists.map((l) => l.length));
+  for (let i = 0; i < longest; i++) for (const l of lists) if (i < l.length) out.push(l[i]);
+  return out;
+}
 
 function buildKeyterms(match: MatchExport): string[] {
   const ordered = [
     ...match.players.flatMap((p) => p.commanders),
     ...match.players.map((p) => p.player),
-    // Card names last: they are the bulk and the first to be cut.
-    ...match.players.flatMap((p) => p.decklist),
+    // Card names last: they are the bulk and the first to be cut. Taken one
+    // deck at a time in turn, so the cut does not fall on a single player.
+    ...interleave(match.players.map((p) => p.decklist)),
   ];
   const seen = new Set<string>();
   const out: string[] = [];
@@ -50,7 +60,8 @@ function buildKeyterms(match: MatchExport): string[] {
     // Basic lands and one-word common nouns add noise, not signal.
     if (!term || seen.has(key) || /^(plains|island|swamp|mountain|forest)$/i.test(term)) continue;
     const cost = estimateTokens(term);
-    if (out.length >= MAX_KEYTERMS || tokens + cost > MAX_KEYTERM_TOKENS) break;
+    if (out.length >= MAX_KEYTERMS) break;
+    if (tokens + cost > MAX_KEYTERM_TOKENS) continue;
     seen.add(key);
     out.push(term);
     tokens += cost;
@@ -80,7 +91,9 @@ async function main() {
   const params = new URLSearchParams({
     model: 'nova-3',
     language: 'multi', // Spanish + English mixed
-    diarize_model: 'latest',
+    // Classic diarizer. `diarize_model: 'latest'` (v2) put a whole 3-player
+    // table on one speaker in the 2026-11-26 test; this one split it 20/24/11 min.
+    diarize: 'true',
     utterances: 'true',
     punctuate: 'true',
     smart_format: 'true',
