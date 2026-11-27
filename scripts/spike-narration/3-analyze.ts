@@ -9,6 +9,10 @@
  * match start time is used, which is only right if you hit record as the
  * match started. --offset-seconds nudges the alignment if it looks shifted.
  *
+ * If out/<match-id>/corrections.txt exists, its lines are given to the model as
+ * facts from the players (a wrong card name, a changed result, who really said
+ * something).
+ *
  * Writes out/<match-id>/analysis-<model>.json, report-<model>.md (read this)
  * and review-<model>.csv (mark each row y/n, then run 4-score.ts).
  */
@@ -93,9 +97,16 @@ Rules:
 - If players argue about a rule, record the question and how it was settled. If the table's ruling disagrees with the log, the log wins.
 - The narrative is short: two or three paragraphs, 150 words at most in total. Tell the arc of the game and the turning point; do not retell every play. It must read as a coherent story of this game, not as transcript fragments attached to log entries. Key moments: six at most, one line each.
 
+The <result> block is the recorded outcome and is final: the narrative must end with that winner, even when the talk at the table sounded like someone else was winning. If a <corrections> block is present, it comes from the players after reading an earlier draft: treat every line as fact, above the transcript and above your own deductions, and make the whole answer consistent with it.
+
 Return one entry in "events" for every non-turn log entry, using its event_id.`;
 
-function buildUserMessage(match: MatchExport, utterances: Utterance[], audioStartMs: number): string {
+function buildUserMessage(
+  match: MatchExport,
+  utterances: Utterance[],
+  audioStartMs: number,
+  corrections: string,
+): string {
   const matchStart = new Date(match.match.createdAt).getTime();
   const rel = (ms: number) => clock((ms - matchStart) / 1000);
 
@@ -116,7 +127,19 @@ function buildUserMessage(match: MatchExport, utterances: Utterance[], audioStar
     .map((u) => `${rel(audioStartMs + u.start * 1000)}  spk${u.speaker}: ${u.text}`)
     .join('\n');
 
+  const r = match.result;
+  const result = !r
+    ? 'not recorded'
+    : r.isDraw
+      ? 'draw'
+      : `${r.winner ?? 'unknown'} won (recorded as: ${r.winCondition ?? 'unknown'})`;
+  const fixes = corrections.trim()
+    ? `\n\n<corrections>\nFrom the players, after reading an earlier draft. These are facts.\n${corrections.trim()}\n</corrections>`
+    : '';
+
   return `<players>\n${players}\n</players>
+
+<result>${result}</result>${fixes}
 
 <match_log>
 Times are minutes:seconds from the start of the match.
@@ -157,6 +180,11 @@ async function main() {
   }
   audioStartMs += offset * 1000;
 
+  // Optional out/<match-id>/corrections.txt: what the players said an earlier draft got wrong.
+  const correctionsFile = path.join(dir, 'corrections.txt');
+  const corrections = fs.existsSync(correctionsFile) ? fs.readFileSync(correctionsFile, 'utf8') : '';
+  if (corrections.trim()) console.log(`Using the players' corrections in ${correctionsFile}`);
+
   const gameEvents = match.events.filter((e) => e.type !== 'turn_passed');
   console.log(`${model} (effort ${effort}): ${gameEvents.length} events to explain, ${utterances.length} utterances…`);
 
@@ -170,7 +198,7 @@ async function main() {
     max_tokens: 64000,
     system: SYSTEM,
     output_config: { effort, format: zodOutputFormat(Analysis) },
-    messages: [{ role: 'user', content: buildUserMessage(match, utterances, audioStartMs) }],
+    messages: [{ role: 'user', content: buildUserMessage(match, utterances, audioStartMs, corrections) }],
   });
 
   let message: Anthropic.Message;
