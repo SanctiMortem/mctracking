@@ -24,7 +24,7 @@ function getBaseUrl(): string {
   return PRODUCTION_API_URL;
 }
 
-type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export async function apiFetch<T = unknown>(
   path: string,

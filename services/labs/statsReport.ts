@@ -65,12 +65,12 @@ export async function fetchReportData(
   return res.data;
 }
 
-type AnthropicMessage = {
+export type AnthropicMessage = {
   stop_reason?: string;
   content?: { type: string; text?: string }[];
 };
 
-type ClaudeRequest = {
+export type ClaudeRequest = {
   system: string;
   user: string;
   schema: unknown;
@@ -118,7 +118,7 @@ async function postMessage(key: string, req: ClaudeRequest, withFallback: boolea
  */
 let fallbackSupported = true;
 
-async function callClaude(key: string, req: ClaudeRequest): Promise<Response> {
+export async function callClaude(key: string, req: ClaudeRequest): Promise<Response> {
   let res = await postMessage(key, req, fallbackSupported);
   if (res.status === 400 && fallbackSupported) {
     const retry = await postMessage(key, req, false);

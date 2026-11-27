@@ -53,6 +53,13 @@ async function main() {
     process.exit(1);
   }
 
+  // Flags point at parts of the saved narration by position, approvals are for
+  // that exact text, and the roast was written from it — so all three go
+  // whenever the narration is removed or replaced.
+  for (const table of ['match_roasts', 'narration_approvals', 'narration_flags']) {
+    await sql.query(`delete from ${table} where match_id = $1`, [matchId]);
+  }
+
   if (args.remove) {
     await sql.query(`delete from match_event_annotations where match_id = $1`, [matchId]);
     await sql.query(`delete from match_narrations where match_id = $1`, [matchId]);

@@ -11,7 +11,22 @@ import { and, asc, count, desc, eq, gte, inArray, isNull, lte, ne, or } from 'dr
 import { alias } from 'drizzle-orm/pg-core';
 
 import { db } from '@/services/db';
-import { commanders, deckVersions, decks, groupMembers, matchEvents, matchResults, matches, participations, players } from '@/db/schema';
+import {
+  commanders,
+  deckVersions,
+  decks,
+  groupMembers,
+  matchEventAnnotations,
+  matchEvents,
+  matchNarrations,
+  matchResults,
+  matchRoasts,
+  matches,
+  narrationApprovals,
+  narrationFlags,
+  participations,
+  players,
+} from '@/db/schema';
 import type { Commander, Deck, Match, MatchEvent, MatchResult, Participation, Player } from '@/db/index';
 import type { MatchLayout } from '@/db/schema';
 
@@ -1015,7 +1030,13 @@ export async function deleteMatch(
   if (!(await canManageMatch(userId, match))) return { forbidden: true };
   if (match.status === 'in_progress') return { activeMatch: true };
 
-  // Delete in order: results → events → participations → match
+  // Delete in order: narration (LABS) → results → events → participations → match.
+  // The narration rows reference the match and its events, so they go first.
+  await db.delete(matchRoasts).where(eq(matchRoasts.matchId, matchId));
+  await db.delete(narrationApprovals).where(eq(narrationApprovals.matchId, matchId));
+  await db.delete(narrationFlags).where(eq(narrationFlags.matchId, matchId));
+  await db.delete(matchEventAnnotations).where(eq(matchEventAnnotations.matchId, matchId));
+  await db.delete(matchNarrations).where(eq(matchNarrations.matchId, matchId));
   await db.delete(matchResults).where(eq(matchResults.matchId, matchId));
   await db.delete(matchEvents).where(eq(matchEvents.matchId, matchId));
   await db.delete(participations).where(eq(participations.matchId, matchId));

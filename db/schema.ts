@@ -439,6 +439,62 @@ export const matchEventAnnotations = pgTable(
 );
 
 // ─────────────────────────────────────────────
+// narration_flags — LABS: a part of a narration a player asked to hide (RCP-003)
+// kind + key name the part: 'paragraph' | 'moment' | 'debate' use its index
+// in the saved narration ("0", "1", …); 'event' uses the match_events id.
+// A flagged part is left out of every read. Saving a new narration for the
+// match must delete its flags, since the indexes no longer mean the same.
+// ─────────────────────────────────────────────
+export const narrationFlags = pgTable(
+  'narration_flags',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    matchId: uuid('match_id').notNull().references(() => matches.id),
+    kind: text('kind').notNull(),
+    key: text('key').notNull(),
+    createdBy: text('created_by').notNull(), // Clerk user ID
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('narration_flags_part_unique').on(table.matchId, table.kind, table.key)],
+);
+
+// ─────────────────────────────────────────────
+// narration_approvals — LABS: a player's OK on the draft (RCP-003)
+// When every account player seated in the match has a row, the narration is
+// published. Flagging clears the flagger's own approval.
+// ─────────────────────────────────────────────
+export const narrationApprovals = pgTable(
+  'narration_approvals',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    matchId: uuid('match_id').notNull().references(() => matches.id),
+    userId: text('user_id').notNull(), // Clerk user ID
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('narration_approvals_match_user_unique').on(table.matchId, table.userId)],
+);
+
+// ─────────────────────────────────────────────
+// match_roasts — LABS: the optional satirical retelling (RCP-005)
+// One per match; regenerating replaces it. Written on a phone from the
+// visible narration only, and deleted whenever a part is flagged so a hidden
+// moment cannot live on inside it.
+// ─────────────────────────────────────────────
+export const matchRoasts = pgTable(
+  'match_roasts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    matchId: uuid('match_id').notNull().references(() => matches.id),
+    length: text('length').notNull(), // 'short' | 'long'
+    content: text('content').notNull(),
+    model: text('model'),
+    createdBy: text('created_by').notNull(), // Clerk user ID
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('match_roasts_match_id_unique').on(table.matchId)],
+);
+
+// ─────────────────────────────────────────────
 // stats_reports — LABS: the last AI stats report per user and subject (RPT-004)
 // One row per (user, kind, subject); re-analysing replaces it. `data` is the
 // data package the report was written from, so the saved numbers always

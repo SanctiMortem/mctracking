@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
-import { NarrationCause, NarrationRecap, useNarration } from '@/components/labs/MatchNarration';
+import { NarrationCause, NarrationRecap, causeLabel, useNarration } from '@/components/labs/MatchNarration';
 import { EventLogItem } from '@/components/tracker/EventLogItem';
 import { ParticipantResultRow } from '@/components/match/ParticipantResultRow';
 import { useMatchDetail } from '@/hooks/useMatchDetail';
@@ -80,7 +80,7 @@ export default function MatchDetailScreen() {
   const insets = useSafeAreaInsets();
   const { data, loading, error } = useMatchDetail(id);
   // LABS: AI recap + per-event causes. Empty unless Labs is on and the match has one.
-  const { narration, causes } = useNarration(id);
+  const { narration, causes, review } = useNarration(id);
 
   if (loading) {
     return (
@@ -102,6 +102,11 @@ export default function MatchDetailScreen() {
   }
 
   const { match, participations, result, formattedEvents, outcome, winner, winConditionDisplay, duration, turnCounts, turnTimes } = data;
+  // LABS: the log entries that have a visible cause, as the roast is told them.
+  const roastLog = formattedEvents.flatMap((e) => {
+    const cause = causes.get(e.id);
+    return cause && !e.isUndone ? [{ description: e.description, cause: causeLabel(cause) }] : [];
+  });
   const sc = statusConfig(match.status, t, theme);
   const oc = outcomeLabelConfig(outcome, t, theme);
 
@@ -210,7 +215,7 @@ export default function MatchDetailScreen() {
               </View>
             </View>
 
-            <NarrationRecap narration={narration} />
+            <NarrationRecap narration={narration} review={review} log={roastLog} />
 
             {/* ── Event Log header ── */}
             <View style={styles.section}>
@@ -223,7 +228,10 @@ export default function MatchDetailScreen() {
         renderItem={({ item }) => (
           <View style={styles.eventItem}>
             <EventLogItem event={item} />
-            <NarrationCause cause={causes.get(item.id)} />
+            <NarrationCause
+              cause={causes.get(item.id)}
+              onFlag={narration?.can_review && !review.busy ? () => review.flag('event', item.id) : undefined}
+            />
           </View>
         )}
 
