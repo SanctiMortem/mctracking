@@ -18,11 +18,15 @@
  * (the "New player frames" experiment), faint art or no art at all, in
  * either theme.
  *
- * ONCE ANSWERED IT STEPS BACK  As soon as something is selected the whole
- * panel fades most of the way to the dead frame's grey, so a bright button
- * in a dead player's frame does not pull eyes for the rest of the game. It
- * stays readable and tappable: the choice can still be changed or cleared,
- * and clearing it brings the panel back to full strength.
+ * IT STEPS BACK  The panel is only at full strength while it is asking.
+ * It fades most of the way to the dead frame's grey
+ *   - as soon as something is selected, and
+ *   - on its own, slowly, if nobody touches it for 30 seconds,
+ * so a dead player's frame does not pull eyes for the rest of the game. The
+ * selected button is deliberately quiet too: a dark fill and an accent
+ * outline, not a bright block. Faded, it stays readable and tappable: a
+ * choice can still be made, changed or cleared, and clearing it brings the
+ * panel back to full strength (and starts the 30 seconds again).
  *
  * Like every control in a frame it lives inside the rotated content, so it
  * faces the dead player, and uses GHPressable so a tap here never waits on
@@ -31,8 +35,8 @@
  * Which options are offered is decided by `killerOptionsForDeath` in
  * services/killedBy.ts.
  */
-import { useCallback, useState } from 'react';
-import { type LayoutChangeEvent, ScrollView, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, Easing, type LayoutChangeEvent, Platform, ScrollView, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { GHPressable } from '@/components/ui/GHPressable';
@@ -52,6 +56,21 @@ const MIN_TWO_COLUMN_BUTTON_WIDTH = 104;
 const GAP = 5;
 /** Below this panel height the title and buttons tighten up. */
 const COMPACT_HEIGHT = 130;
+
+/**
+ * How far the panel fades. A dead frame is faded to 0.45 (PlayerDashboard);
+ * the panel sits just above that, so it reads as part of the greyed frame
+ * while its labels stay legible.
+ */
+const FADED_OPACITY = 0.55;
+/** Untouched for this long with nothing selected, the panel fades by itself. */
+const IDLE_BEFORE_FADE_MS = 30_000;
+/** Fading because nobody touched it: slow enough not to catch the eye. */
+const IDLE_FADE_MS = 4000;
+/** Fading because a choice was just made: quick, but not a jump. */
+const ANSWERED_FADE_MS = 700;
+/** Coming back after the choice is cleared. */
+const WAKE_MS = 200;
 
 interface KilledByPanelProps {
   /** Opposing commanders to offer, in seat order. */
@@ -89,8 +108,39 @@ export function KilledByPanel({ options, selection, onSelect }: KilledByPanelPro
   const selfSelected = selection?.deathCause === 'self';
   const answered = !!selection && selection.deathCause !== null;
 
+  // Nothing selected and nobody has touched the panel for a while. Scrolling
+  // the list counts as touching (`touches`); a tap on a button changes
+  // `answered`, which restarts this effect on its own.
+  const [idle, setIdle] = useState(false);
+  const [touches, setTouches] = useState(0);
+  const noteTouch = useCallback(() => setTouches((n) => n + 1), []);
+  useEffect(() => {
+    setIdle(false);
+    if (answered) return;
+    const timer = setTimeout(() => setIdle(true), IDLE_BEFORE_FADE_MS);
+    return () => clearTimeout(timer);
+  }, [answered, touches]);
+
+  // One opacity for the whole panel. A panel that mounts already answered
+  // (resumed match, or chosen on another device) starts faded, no animation.
+  const faded = answered || idle;
+  const opacity = useRef(new Animated.Value(answered ? FADED_OPACITY : 1)).current;
+  const answeredRef = useRef(answered);
+  answeredRef.current = answered;
+  useEffect(() => {
+    const animation = Animated.timing(opacity, {
+      toValue: faded ? FADED_OPACITY : 1,
+      duration: !faded ? WAKE_MS : answeredRef.current ? ANSWERED_FADE_MS : IDLE_FADE_MS,
+      easing: Easing.inOut(Easing.quad),
+      // No native animation module on web; there the JS driver does it.
+      useNativeDriver: Platform.OS !== 'web',
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [faded, opacity]);
+
   return (
-    <View style={[styles.container, answered && styles.containerAnswered]}>
+    <Animated.View style={[styles.container, { opacity }]}>
       <Text style={[styles.title, compact && styles.titleCompact]} numberOfLines={1}>
         {t('tracker.killedBy', { defaultValue: 'Killed by' })}
       </Text>
@@ -101,6 +151,7 @@ export function KilledByPanel({ options, selection, onSelect }: KilledByPanelPro
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled
         onLayout={onLayout}
+        onScrollBeginDrag={noteTouch}
       >
         {/* Nothing is drawn until the width is known, so the buttons never
             jump from one column to two. */}
@@ -155,7 +206,7 @@ export function KilledByPanel({ options, selection, onSelect }: KilledByPanelPro
           </>
         )}
       </ScrollView>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -165,12 +216,6 @@ const createStyles = (t: AppTheme) => ({
     width: '100%' as const,
     minHeight: 0,
     gap: 4,
-  },
-  // A dead frame is faded to 0.45 (PlayerDashboard). An answered panel sits
-  // just above that: clearly greyed, with the chosen button still the one
-  // thing that stands out in it.
-  containerAnswered: {
-    opacity: 0.55,
   },
   title: {
     color: t.colors.accent.primaryAlt,
@@ -210,13 +255,14 @@ const createStyles = (t: AppTheme) => ({
     minHeight: 34,
     paddingVertical: 2,
   },
-  // Selected = a solid accent button with dark text: the strongest contrast
-  // the theme has, so the choice is readable at a glance from across the
-  // table and cannot be mistaken for an unselected button.
+  // Selected = a dark accent fill with an accent outline. Enough to tell it
+  // from the others at a glance, without being the brightest thing on the
+  // table (a solid accent block was). The whole panel fades around it once
+  // a choice is made.
   optionSelected: {
     borderStyle: 'solid' as const,
     borderColor: t.colors.accent.primary,
-    backgroundColor: t.colors.accent.primary,
+    backgroundColor: t.colors.accent.primaryContainer,
   },
   commanderName: {
     color: t.colors.text.primary,
@@ -231,12 +277,13 @@ const createStyles = (t: AppTheme) => ({
     fontSize: t.typography.size.label - 1,
     textAlign: 'center' as const,
   },
+  // Light text on the dark fill: about 5:1 or better in both themes.
   textSelected: {
-    color: t.colors.accent.onPrimary,
+    color: t.colors.text.primary,
     fontWeight: t.typography.weight.bold,
   },
   playerNameSelected: {
-    color: t.colors.accent.onPrimary,
+    color: t.colors.text.primary,
   },
 
   fullWidth: {
