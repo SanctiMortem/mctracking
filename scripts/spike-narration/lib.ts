@@ -20,6 +20,8 @@ export interface MatchExport {
     player: string;
     deck: string;
     commanders: string[];
+    /** Deck colour identity from its commanders: subset of W U B R G, empty = colourless. */
+    colors?: string[];
     /** Card names from the deck's decklist, when it has one. */
     decklist: string[];
   }[];

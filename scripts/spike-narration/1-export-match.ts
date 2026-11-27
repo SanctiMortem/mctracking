@@ -56,7 +56,8 @@ async function main() {
 
   const parts = (await sql.query(
     `select pa.id as participation_id, pa.deck_id, p.name as player, d.name as deck,
-            c1.name as commander1, c2.name as commander2
+            c1.name as commander1, c2.name as commander2,
+            c1.color_identity as colors1, c2.color_identity as colors2
        from participations pa
        join players p on p.id = pa.player_id
        join decks d on d.id = pa.deck_id
@@ -111,6 +112,7 @@ async function main() {
       player: p.player,
       deck: p.deck,
       commanders: [p.commander1, p.commander2].filter(Boolean),
+      colors: [...new Set([...(p.colors1 ?? []), ...(p.colors2 ?? [])])],
       decklist: cardsByDeck.get(p.deck_id) ?? [],
     })),
     events: eventRows.map((e) => ({

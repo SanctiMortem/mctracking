@@ -54,11 +54,11 @@ const Analysis = z.object({
       source_card: z.string().nullable().describe('English card name, or null'),
       damage_type: z.enum(['combat', 'commander', 'spell', 'ability', 'lifegain', 'other', 'unknown']),
       confidence: z.number().describe('0 to 1'),
-      evidence_quote: z.string().describe('Short game-talk quote from the transcript, or empty'),
+      evidence_quote: z.string().describe('Short game-talk quote, obvious mishearings repaired, or empty'),
     }),
   ),
   headline: z.string(),
-  narrative: z.string().describe('The match told in a few short paragraphs'),
+  narrative: z.string().describe('The match in two or three short paragraphs, 150 words at most, separated by a blank line'),
   key_moments: z.array(z.string()),
   rules_debates: z.array(z.object({ question: z.string(), outcome: z.string() })),
 });
@@ -72,17 +72,26 @@ You are given two things:
 
 Your job is to explain WHY each log entry happened, using only what was said.
 
-Step 1 — map speakers to players. Use these signals together: who talks during whose turn (the log says whose turn it is); who says "I cast / I attack / paso" about a card that is in one player's decklist or is their commander; who is addressed by name right before reacting; who reacts right after their own life total changes. If a speaker cannot be tied to a player, say so with player = null. More speakers than players usually means one player was split across labels: map both labels to that player.
+Step 1 — work out who is speaking, line by line. The speaker labels come from an automatic diarizer and are a weak hint only: one label often contains two or three people, and one person is often split across labels. The decks are the strong evidence:
+- Each player's commander, deck colours (W U B R G) and full decklist are given. A card that someone casts, plays, activates, holds in hand, reveals or says they "had" belongs to the player whose decklist contains it. If it is in nobody's list, use its colours: a card can only be in a deck whose colour identity includes it.
+- Also use: whose turn it is (the log says), who is addressed by name right before reacting, who reacts right after their own life total changes, and anyone who says their own name.
+- When the label and the deck evidence disagree, the deck evidence wins. Never credit a player with casting or holding a card their deck's colours could not contain.
+In "speakers", give the player each label MOSTLY is, with lower confidence when the label is clearly mixed, and say so in the evidence line.
 
 Step 2 — for every life_change, poison_change, commander_damage and player_died entry in the log, find the cause in the talk from roughly 60 seconds before to 15 seconds after the entry (the app logs an entry a moment after it is announced). Give the player who caused it, the card if one is named, and the kind of damage. For commander_damage entries the log already names the commander; use the talk to confirm and to name the attacker. Skip turn_passed entries.
+
+Reading the transcript: it is machine speech-to-text of Mexican Spanish mixed with English card names, and it mishears. Read it for meaning, not letter by letter. Repair what the context makes obvious: a word that sounds like a game term next to a matching log entry is that game term ("pierdo dos bebidas" right before a −2 life entry is "pierdo dos vidas"); a garbled name that sounds like a card in the speaker's decklist is that card. Do not repair into something the log or the decks contradict.
 
 Rules:
 - Only attribute what the transcript supports. If the cause is not clear from the talk, set attributed = false, damage_type = "unknown", and leave the rest null. A wrong guess is worse than a blank.
 - Confidence is your honest estimate that the attribution is correct.
-- Evidence quotes are short, verbatim from the transcript, and about the game only. Never quote personal conversation.
+- Name a card only when it is in a decklist, or is said clearly and fits that player's colours. If you can tell what a card did but not which card it was, describe the effect ("a spell that gave the commander hexproof") and leave source_card null. Never swap in a better-known card with a similar effect.
+- Before writing any statement about who cast, held or regretted not using a card, check it against that player's decklist and colours. If it does not fit, the speaker is someone else: find who, or leave the player out.
+- Evidence quotes are short, about the game only, and readable: take them from the transcript but with the obvious mishearings repaired, so the quote makes sense next to the log entry. Never quote personal conversation.
 - Card names are always given in English, spelled as in the decklists when the card is there.
 - Ignore everything that is not about the game.
 - If players argue about a rule, record the question and how it was settled. If the table's ruling disagrees with the log, the log wins.
+- The narrative is short: two or three paragraphs, 150 words at most in total. Tell the arc of the game and the turning point; do not retell every play. It must read as a coherent story of this game, not as transcript fragments attached to log entries. Key moments: six at most, one line each.
 
 Return one entry in "events" for every non-turn log entry, using its event_id.`;
 
@@ -94,6 +103,7 @@ function buildUserMessage(match: MatchExport, utterances: Utterance[], audioStar
     .map(
       (p) =>
         `- ${p.player} — deck "${p.deck}", commander ${p.commanders.join(' + ')}` +
+        (p.colors ? `, colours ${p.colors.length ? p.colors.join('') : 'colourless'}` : '') +
         (p.decklist.length ? `\n  decklist: ${p.decklist.join('; ')}` : '\n  decklist: not available'),
     )
     .join('\n');
