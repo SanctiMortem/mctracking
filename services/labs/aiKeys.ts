@@ -93,6 +93,25 @@ export async function setNewStatsEnabled(enabled: boolean): Promise<void> {
   else await SecureStore.deleteItemAsync(NEW_STATS);
 }
 
+/**
+ * Labs: "Killed by" panel in a dead player's frame (account matches only).
+ * Needs migration 0016 on the server; without it the panel stays hidden.
+ */
+const KILLED_BY = 'labs_killed_by';
+
+export async function isKilledByEnabled(): Promise<boolean> {
+  try {
+    return (await SecureStore.getItemAsync(KILLED_BY)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function setKilledByEnabled(enabled: boolean): Promise<void> {
+  if (enabled) await SecureStore.setItemAsync(KILLED_BY, '1');
+  else await SecureStore.deleteItemAsync(KILLED_BY);
+}
+
 export type KeyTestResult = { ok: true } | { ok: false; message: string };
 
 const TEST_TIMEOUT_MS = 15_000;

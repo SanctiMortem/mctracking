@@ -134,6 +134,13 @@ interface PlayerDashboardProps {
   cmdDamageTotal: number;
   /** Optional Scryfall art_crop URL — renders as faded background. */
   artCrop?: string | null;
+  /**
+   * LABS "Killed by" (account tracker only). When set and the player is
+   * dead, it takes the place of the life total and counter footer, at full
+   * strength, while the rest of the frame stays greyed and locked. Leave
+   * unset everywhere else: the frame then behaves exactly as before.
+   */
+  killedByPanel?: React.ReactNode;
 }
 
 function formatTimer(seconds: number): string {
@@ -157,6 +164,7 @@ export function PlayerDashboard({
   poisonCount,
   cmdDamageTotal,
   artCrop = null,
+  killedByPanel,
 }: PlayerDashboardProps) {
   const { t } = useTranslation();
   const styles = useThemedStyles(createStyles);
@@ -175,6 +183,14 @@ export function PlayerDashboard({
   const bright = experiment.enabled;
   const brightArt = bright && !!artCrop;
   const shadeSidebarWidth = experiment.sidebarWidth ?? Math.max(SIDEBAR_MIN_WIDTH, dashSize.w * 0.2);
+
+  // "Killed by": a dead frame normally fades as a whole (dashboardDead), and
+  // a child can never be more opaque than its parent — so when the panel is
+  // shown, the fade moves from the frame onto each part EXCEPT the panel
+  // (art, sidebar, divider). Same greyed look, readable buttons.
+  const showKilledBy = isDead && !!killedByPanel;
+  const fadeWhole = isDead && !showKilledBy;
+  const fadePart = showKilledBy ? styles.deadFade : null;
 
   const isCompact = dashSize.h > 0 && dashSize.h < COMPACT_THRESHOLD;
   const isUltraCompact = dashSize.h > 0 && dashSize.h < ULTRA_COMPACT_THRESHOLD;
@@ -220,12 +236,12 @@ export function PlayerDashboard({
 
   return (
     <View
-      style={[styles.dashboard, isDead && styles.dashboardDead]}
+      style={[styles.dashboard, fadeWhole && styles.dashboardDead]}
       onLayout={onDashboardLayout}
     >
       {/* ── Commander art backdrop (faded, cover) ── */}
       {artCrop && (
-        <View style={styles.artBackdropWrap} pointerEvents="none">
+        <View style={[styles.artBackdropWrap, fadePart]} pointerEvents="none">
           <Image
             source={{ uri: artCrop }}
             style={[styles.artBackdrop, bright && styles.artBackdropBright]}
@@ -243,7 +259,7 @@ export function PlayerDashboard({
 
       {/* ── SIDEBAR (20 %, minWidth 75) ── */}
       {/* Frame experiment: one sidebar width for the whole table. */}
-      <View style={[styles.sidebar, experiment.sidebarWidth ? { width: experiment.sidebarWidth } : null]}>
+      <View style={[styles.sidebar, experiment.sidebarWidth ? { width: experiment.sidebarWidth } : null, fadePart]}>
         {/* Top tap zone — timer + long-press flip */}
         <GHPressable
           onPress={handleSidebarTap}
@@ -358,11 +374,15 @@ export function PlayerDashboard({
       </View>
 
       {/* ── Divider ── */}
-      <View style={styles.divider} />
+      <View style={[styles.divider, fadePart]} />
 
       {/* ── MAIN ZONE (80 %) — Zone A over Zone B ── */}
       <View style={styles.mainZone}>
-        {mode === 'life' && (
+        {/* Dead + "Killed by": the panel replaces the life total and the
+            counter footer, both of which are locked for a dead player. */}
+        {showKilledBy && <View style={styles.killedByZone}>{killedByPanel}</View>}
+
+        {!showKilledBy && mode === 'life' && (
           <>
             {/* ZONE A — HP absolute-centred */}
             <View style={styles.zoneA}>
@@ -402,13 +422,13 @@ export function PlayerDashboard({
           </>
         )}
 
-        {mode === 'poison' && (
+        {!showKilledBy && mode === 'poison' && (
           <View style={[styles.overlayZone, brightArt && styles.overlayShade]}>
             {poisonOverlay}
           </View>
         )}
 
-        {mode === 'cmd' && (
+        {!showKilledBy && mode === 'cmd' && (
           <View style={[styles.overlayZone, brightArt && styles.overlayShade]}>
             {cmdDamageOverlay}
           </View>
@@ -462,6 +482,18 @@ const createStyles = (t: AppTheme) => ({
   },
   dashboardDead: {
     opacity: 0.45,
+  },
+  // Same fade as dashboardDead, applied part by part when the "Killed by"
+  // panel is shown (the panel itself is left out).
+  deadFade: {
+    opacity: 0.45,
+  },
+  // Where the "Killed by" panel sits: the whole main zone.
+  killedByZone: {
+    flex: 1,
+    minHeight: 0,
+    paddingHorizontal: 6,
+    paddingVertical: 5,
   },
   exitGlyph: {
     color: t.colors.accent.primary,

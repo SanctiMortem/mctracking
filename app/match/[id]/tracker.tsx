@@ -31,12 +31,15 @@ import { CommanderDamagePanel } from '@/components/tracker/CommanderDamagePanel'
 import { EventLogPanel } from '@/components/tracker/EventLogPanel';
 import { FrameExperimentBoundary, FrameExperimentProvider } from '@/components/match/frameExperiment';
 import { JoinLayoutPicker, type JoinLayoutPickerResult } from '@/components/match/JoinLayoutPicker';
+import { KilledByPanel } from '@/components/tracker/KilledByPanel';
 import { LifeCounter } from '@/components/tracker/LifeCounter';
 import { PlayerDashboard } from '@/components/tracker/PlayerDashboard';
 import { PoisonCounter } from '@/components/tracker/PoisonCounter';
 import { TrackerLayout } from '@/components/match/TrackerLayout';
+import { useKilledBy } from '@/hooks/useKilledBy';
 import { useTracker } from '@/hooks/useTracker';
-import { isFrameExperimentEnabled } from '@/services/labs/aiKeys';
+import { deadBefore, killerOptionsForDeath, type KillerParticipant } from '@/services/killedBy';
+import { isFrameExperimentEnabled, isKilledByEnabled } from '@/services/labs/aiKeys';
 import { loadMatchLayout, saveMatchLayout } from '@/services/matchLayout';
 import { clockwiseParticipationIds, nextAliveClockwise } from '@/services/clockwiseOrder';
 import { spacing } from '@/styles/tokens';
@@ -446,6 +449,20 @@ export default function MatchTrackerScreen() {
     };
   }, []);
 
+  // LABS — "Killed by". The switch on this device; read once when the
+  // tracker opens. Off (the default) means no panel, no extra data asked of
+  // the sync poll, and no request ever sent: the tracker is exactly as before.
+  const [killedByOn, setKilledByOn] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    isKilledByEnabled().then((on) => {
+      if (!cancelled) setKilledByOn(on);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Parse rotation map from setup screen (playerId → degrees). If the URL
   // params are missing (user resumed after closing the app), we fall back to
   // the values in `storedLayout` below.
@@ -519,7 +536,9 @@ export default function MatchTrackerScreen() {
     undoLastEvent,
     addLocalEvent,
     remoteSync,
-  } = useTracker(id);
+    remoteSyncRequestedAtMs,
+    initialDeathKillers,
+  } = useTracker(id, { includeKillers: killedByOn });
 
   // Declared after useTracker so it can read the match's real start time.
   const timer = useMatchTimer(match?.createdAt);
@@ -587,6 +606,19 @@ export default function MatchTrackerScreen() {
     : participations.map((p) => p.id);
   const clockwiseIds = clockwiseParticipationIds(resolvedLayoutVariant, sortedParticipationIds);
   const turnTimers = useTurnTimers(clockwiseIds, deadPlayerIds, recordTurnPassed);
+
+  // LABS — "Killed by". Reads the dead set and the sync snapshot; writes
+  // nothing back into either. Its own state (who killed whom) lives beside
+  // the tracker's, so turns, life totals, Undo and the event log never see it.
+  const killedBy = useKilledBy({
+    matchId: id,
+    enabled: killedByOn,
+    loading,
+    initialDeathKillers,
+    remoteSync,
+    remoteSyncRequestedAtMs,
+    deadIds: deadPlayerIds,
+  });
   markTurnWriteRef.current = {
     begin: turnTimers.beginLocalTurnWrite,
     end: turnTimers.endLocalTurnWrite,
@@ -785,6 +817,21 @@ export default function MatchTrackerScreen() {
     Alert.alert('🎲', t('match.randomStarterResult', { name: chosen.player.name }));
   };
 
+  // "Killed by": every player with their commanders, in seat order (partners
+  // as separate entries, like the commander-damage picker).
+  const killerParticipants: KillerParticipant[] = killedBy.available
+    ? sortedParticipations.map((other) => ({
+        participationId: other.id,
+        playerName: other.player.name,
+        commanders: other.commander2
+          ? [
+              { id: other.commander.id, name: other.commander.name },
+              { id: other.commander2.id, name: other.commander2.name },
+            ]
+          : [{ id: other.commander.id, name: other.commander.name }],
+      }))
+    : [];
+
   // Build sections: Level 1 (Grid) gets Level 2 (Frame) wrapping Level 3 (Dashboard)
   const sections = sortedParticipations.map((p) => {
     const enemyCommanders = sortedParticipations
@@ -819,8 +866,24 @@ export default function MatchTrackerScreen() {
           isDead={deadPlayerIds.has(p.id)}
           onMarkDead={() => {
             setDeadPlayerIds((prev) => new Set(prev).add(p.id));
-            recordEvent({ participationId: p.id, eventType: 'player_died', delta: 0 });
+            const deathWrite = recordEvent({ participationId: p.id, eventType: 'player_died', delta: 0 });
+            // A killer tapped before this save comes back waits for it.
+            killedBy.trackDeathWrite(p.id, deathWrite);
           }}
+          killedByPanel={
+            killedBy.available && deadPlayerIds.has(p.id) ? (
+              <KilledByPanel
+                options={killerOptionsForDeath({
+                  deadParticipationId: p.id,
+                  participants: killerParticipants,
+                  deadBefore: deadBefore(killedBy.deathOrder, p.id),
+                  selection: killedBy.selections[p.id],
+                })}
+                selection={killedBy.selections[p.id]}
+                onSelect={(next) => killedBy.select(p.id, next)}
+              />
+            ) : undefined
+          }
           lifeCounter={
             <LifeCounter
               lifeTotal={p.lifeTotal}

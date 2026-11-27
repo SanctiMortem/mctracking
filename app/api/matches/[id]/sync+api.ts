@@ -18,7 +18,11 @@ export async function GET(req: Request) {
   const id = getRouteParam(req, 'id');
   if (!id) return Response.json({ error: 'BAD_REQUEST', message: 'Missing id' }, { status: 400 });
 
-  const result = await getMatchSyncState(userId, id);
+  // "Killed by" (Labs): only devices with the switch on ask for the killer
+  // selections, so every other poll is exactly what it was before.
+  const includeKillers = new URL(req.url).searchParams.get('killers') === '1';
+
+  const result = await getMatchSyncState(userId, id, { includeKillers });
 
   if ('notFound' in result) {
     return Response.json({ error: 'NOT_FOUND', message: 'Match not found' }, { status: 404 });

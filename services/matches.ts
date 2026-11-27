@@ -27,8 +27,11 @@ import {
   participations,
   players,
 } from '@/db/schema';
+import { matchEventsCore, withNoKiller } from '@/db/matchEventsCore';
 import type { Commander, Deck, Match, MatchEvent, MatchResult, Participation, Player } from '@/db/index';
 import type { MatchLayout } from '@/db/schema';
+import { loadDeathKillers } from '@/services/deathKillers';
+import type { DeathKillerEntry } from '@/services/killedBy';
 
 // ─────────────────────────────────────────────
 // Pod membership helper
@@ -356,7 +359,8 @@ export async function closeMatch(
 // updateMatchResult (15-min edit window)
 // ─────────────────────────────────────────────
 
-const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+/** How long after a match ends its result — and its "Killed by" choices — can still be edited. */
+export const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 export type UpdateResultAction =
   | { action: 'update_result'; winner_participation_id: string; win_condition: string }
@@ -473,7 +477,20 @@ export type ParticipationDetail = Pick<
 };
 
 export type GetMatchByIdResult =
-  | { data: { match: Match; participations: ParticipationDetail[]; result: MatchResult | null; events: MatchEvent[] } }
+  | {
+      data: {
+        match: Match;
+        participations: ParticipationDetail[];
+        result: MatchResult | null;
+        events: MatchEvent[];
+        /**
+         * "Killed by": the current selection of each dead player, in the
+         * order they died. null = not available (the killer columns are not
+         * in this database yet, or reading them failed).
+         */
+        deathKillers: DeathKillerEntry[] | null;
+      };
+    }
   | { notFound: true };
 
 /**
@@ -508,6 +525,18 @@ export type MatchSyncState = {
   /** Drives the Undo button's enabled state across devices. */
   undoableEventCount: number;
   /**
+   * "Killed by" (Labs): the current selection of each dead player, in the
+   * order they died — one entry per dead player, including those with nothing
+   * selected, so the list also gives the order of deaths.
+   *
+   * Only present when the caller asked for it (`?killers=1`), so devices
+   * without the Labs switch cost and risk nothing extra per poll.
+   *   array      the selections
+   *   null       the killer columns are not in this database yet
+   *   left out   not asked for, or reading them failed this time
+   */
+  deathKillers?: DeathKillerEntry[] | null;
+  /**
    * Server time when this snapshot was built. A client compares its own
    * just-written events against it to tell "the server hasn't seen my write
    * yet" apart from "the server says this was undone elsewhere".
@@ -522,6 +551,7 @@ export type GetMatchSyncStateResult =
 export async function getMatchSyncState(
   userId: string,
   matchId: string,
+  options: { includeKillers?: boolean } = {},
 ): Promise<GetMatchSyncStateResult> {
   const [match] = await db
     .select()
@@ -536,7 +566,9 @@ export async function getMatchSyncState(
   // life_change rows but only one turn_passed per turn, so this keeps the
   // per-poll read small. neon-http has no transactions; these are independent
   // reads, so a Promise.all is safe (same pattern as getMatchById).
-  const [participationRows, turnRows, deathRows, undoableRows] = await Promise.all([
+  // The killer read is last and cannot reject (it catches its own errors), so
+  // it can neither fail this Promise.all nor change the four reads before it.
+  const [participationRows, turnRows, deathRows, undoableRows, killers] = await Promise.all([
     db
       .select({
         id: participations.id,
@@ -575,6 +607,7 @@ export async function getMatchSyncState(
       .select({ count: count() })
       .from(matchEvents)
       .where(and(eq(matchEvents.matchId, matchId), eq(matchEvents.isUndone, false))),
+    options.includeKillers ? loadDeathKillers(matchId) : null,
   ]);
 
   // Same pairing rule as the match detail screen: the duration recorded on a
@@ -604,6 +637,11 @@ export async function getMatchSyncState(
       lastTurnPassedAt: lastTurn ? new Date(lastTurn.createdAt).toISOString() : null,
       deadParticipationIds: Array.from(new Set(deathRows.map((r) => r.participationId))),
       undoableEventCount: undoableRows[0]?.count ?? 0,
+      ...(killers?.status === 'ok'
+        ? { deathKillers: killers.entries }
+        : killers?.status === 'unavailable'
+          ? { deathKillers: null }
+          : {}),
       syncedAt: new Date().toISOString(),
     },
   };
@@ -695,8 +733,13 @@ export async function getMatchById(userId: string, matchId: string): Promise<Get
       : null,
   }));
 
-  // 3. Fetch match result (null when in_progress or abandoned) + events in parallel
-  const [matchResult, events] = await Promise.all([
+  // 3. Fetch match result (null when in_progress or abandoned) + events in parallel.
+  //
+  // The events are read through `matchEventsCore` — the columns every
+  // database has — so opening a match cannot fail on a database without the
+  // "Killed by" columns. Those come from their own read, which answers
+  // "unavailable" instead of throwing (and so cannot reject this Promise.all).
+  const [matchResult, coreEvents, killers] = await Promise.all([
     db
       .select()
       .from(matchResults)
@@ -705,10 +748,28 @@ export async function getMatchById(userId: string, matchId: string): Promise<Get
       .then(([r]) => r ?? null),
     db
       .select()
-      .from(matchEvents)
-      .where(eq(matchEvents.matchId, matchId))
-      .orderBy(asc(matchEvents.createdAt)),
+      .from(matchEventsCore)
+      .where(eq(matchEventsCore.matchId, matchId))
+      .orderBy(asc(matchEventsCore.createdAt)),
+    loadDeathKillers(matchId),
   ]);
+
+  // A killer is reported only on a death that is not undone: `killers.rows`
+  // holds nothing else, and every other event gets explicit nulls.
+  const killerByEventId = new Map(
+    killers.status === 'ok' ? killers.rows.map((k) => [k.id, k] as const) : [],
+  );
+  const events: MatchEvent[] = coreEvents.map((e) => {
+    const k = killerByEventId.get(e.id);
+    return k
+      ? {
+          ...e,
+          deathCause: k.deathCause,
+          killerParticipationId: k.killerParticipationId,
+          killerCommanderId: k.killerCommanderId,
+        }
+      : withNoKiller(e);
+  });
 
   return {
     data: {
@@ -716,6 +777,7 @@ export async function getMatchById(userId: string, matchId: string): Promise<Get
       participations: participationDetails,
       result: matchResult,
       events,
+      deathKillers: killers.status === 'ok' ? killers.entries : null,
     },
   };
 }

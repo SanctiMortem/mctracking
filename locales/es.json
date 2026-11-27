@@ -199,7 +199,9 @@
     "dead": "Muerto",
     "activePlayer": "Jugador activo",
     "pushForTurn": "Pulsa para turno",
-    "saveAndClose": "Guardar y cerrar"
+    "saveAndClose": "Guardar y cerrar",
+    "killedBy": "Eliminado por",
+    "selfInflicted": "Autoinfligido"
   },
   "player": {
     "howItWins": "Cómo gana",

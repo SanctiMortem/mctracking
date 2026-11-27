@@ -27,12 +27,14 @@ import {
   KEY_CONSOLE_URLS,
   getAiKey,
   isFrameExperimentEnabled,
+  isKilledByEnabled,
   isLabsEnabled,
   isNewStatsEnabled,
   maskKey,
   removeAiKey,
   saveAiKey,
   setFrameExperimentEnabled,
+  setKilledByEnabled,
   setLabsEnabled,
   setNewStatsEnabled,
   testAiKey,
@@ -207,6 +209,15 @@ export default function LabsScreen() {
     setNewStatsEnabled(value).catch(() => setNewStats(!value));
   }, []);
 
+  const [killedBy, setKilledBy] = useState(false);
+  useEffect(() => {
+    isKilledByEnabled().then(setKilledBy);
+  }, []);
+  const onToggleKilledBy = useCallback((value: boolean) => {
+    setKilledBy(value);
+    setKilledByEnabled(value).catch(() => setKilledBy(!value));
+  }, []);
+
   return (
     <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']}>
       <Stack.Screen options={{ title: 'Labs' }} />
@@ -268,6 +279,26 @@ export default function LabsScreen() {
               onValueChange={onToggleNewStats}
               trackColor={{ false: theme.colors.border.strong, true: theme.colors.accent.primary + '88' }}
               thumbColor={newStats ? theme.colors.accent.primary : theme.colors.text.muted}
+            />
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleText}>
+              <Text style={styles.cardTitle}>Killed by</Text>
+              <Text style={styles.muted}>
+                Account matches, on this device only. When a player is marked dead, their frame shows the opposing
+                commanders and "Self-inflicted": tap one to record who killed them, tap it again to clear. It is
+                optional and never blocks the match. Other devices in the match see the choice only if they have this
+                switch on too. Takes effect the next time you open a match.
+              </Text>
+            </View>
+            <Switch
+              value={killedBy}
+              onValueChange={onToggleKilledBy}
+              trackColor={{ false: theme.colors.border.strong, true: theme.colors.accent.primary + '88' }}
+              thumbColor={killedBy ? theme.colors.accent.primary : theme.colors.text.muted}
             />
           </View>
         </View>

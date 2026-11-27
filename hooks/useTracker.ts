@@ -20,6 +20,7 @@ import { apiFetch } from '@/services/api';
 import type { Match, MatchEvent, MatchResult } from '@/db/index';
 import type { MatchSyncState, ParticipationDetail } from '@/services/matches';
 import type { EventType } from '@/services/matchEvents';
+import type { DeathKillerEntry } from '@/services/killedBy';
 
 // ─────────────────────────────────────────────
 // Types
@@ -57,6 +58,19 @@ export type UseTrackerReturn = {
    * this carries the turn, death and undo state for the tracker to apply.
    */
   remoteSync: MatchSyncState | null;
+  /**
+   * This device's clock (ms) when the poll that produced `remoteSync` was
+   * SENT; 0 before the first poll. "Killed by" compares it with the moment
+   * its own write came back, to tell a snapshot that cannot contain that
+   * write from one that must — without trusting the server's clock.
+   */
+  remoteSyncRequestedAtMs: number;
+  /**
+   * "Killed by": each dead player's selection as of the initial load, in the
+   * order they died. null = the server cannot store killers yet; undefined =
+   * not loaded, or a server that predates the feature.
+   */
+  initialDeathKillers: DeathKillerEntry[] | null | undefined;
   loading: boolean;
   error: string | null;
   toastError: string | null;
@@ -116,8 +130,22 @@ function sameCommanderDamage(a: Record<string, number>, b: Record<string, number
 // Hook
 // ─────────────────────────────────────────────
 
-export function useTracker(matchId: string): UseTrackerReturn {
+export type UseTrackerOptions = {
+  /**
+   * Labs "Killed by": ask the sync poll for each dead player's killer
+   * selection. Off by default, so a device without the switch polls exactly
+   * as before.
+   */
+  includeKillers?: boolean;
+};
+
+export function useTracker(matchId: string, options: UseTrackerOptions = {}): UseTrackerReturn {
   const { getToken } = useAuth();
+
+  // Ref-held: the Labs switch is read asynchronously after mount, and
+  // flipping it must not restart the poll loop.
+  const includeKillersRef = useRef(false);
+  includeKillersRef.current = options.includeKillers === true;
 
   const [match, setMatch] = useState<Match | null>(null);
   const [participations, setParticipations] = useState<TrackerParticipation[]>([]);
@@ -125,6 +153,8 @@ export function useTracker(matchId: string): UseTrackerReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toastError, setToastError] = useState<string | null>(null);
+  const [initialDeathKillers, setInitialDeathKillers] =
+    useState<DeathKillerEntry[] | null | undefined>(undefined);
 
   // Keep a ref to participations for use inside async callbacks without stale closure
   const participationsRef = useRef<TrackerParticipation[]>([]);
@@ -186,6 +216,8 @@ export function useTracker(matchId: string): UseTrackerReturn {
             participations: ParticipationDetail[];
             result: MatchResult | null;
             events: MatchEvent[];
+            // Absent on a server that predates "Killed by".
+            deathKillers?: DeathKillerEntry[] | null;
           };
         }>(`/api/matches/${matchId}`, 'GET', undefined, token ?? undefined);
 
@@ -201,6 +233,7 @@ export function useTracker(matchId: string): UseTrackerReturn {
 
         setMatch(res.data.match);
         setParticipations(trackerParticipations);
+        setInitialDeathKillers(res.data.deathKillers);
         // Seed the log with the match's full server-side history (ordered by
         // created_at). Previously this was dropped and `events` started empty,
         // which meant a resumed match had no undo history and the tracker had
@@ -609,7 +642,12 @@ export function useTracker(matchId: string): UseTrackerReturn {
   // ── Live sync ──────────────────────────────
   // Every device with this match open polls a compact server-derived snapshot
   // and converges on it. See services/matches.ts `getMatchSyncState`.
-  const [remoteSync, setRemoteSync] = useState<MatchSyncState | null>(null);
+  // The snapshot and the moment its request was sent are one piece of state,
+  // so a consumer can never see one without the other.
+  const [syncSnapshot, setSyncSnapshot] =
+    useState<{ data: MatchSyncState; requestedAtMs: number } | null>(null);
+  const remoteSync = syncSnapshot?.data ?? null;
+  const remoteSyncRequestedAtMs = syncSnapshot?.requestedAtMs ?? 0;
 
   /**
    * Adopt the server's counter snapshot.
@@ -684,15 +722,16 @@ export function useTracker(matchId: string): UseTrackerReturn {
       }
       try {
         const token = await getTokenRef.current();
+        const requestedAtMs = Date.now();
         const res = await apiFetch<{ success: true; data: MatchSyncState }>(
-          `/api/matches/${matchId}/sync`,
+          `/api/matches/${matchId}/sync${includeKillersRef.current ? '?killers=1' : ''}`,
           'GET',
           undefined,
           token ?? undefined,
         );
         if (cancelled) return;
         applyRemoteParticipations(res.data.participations, new Date(res.data.syncedAt).getTime());
-        setRemoteSync(res.data);
+        setSyncSnapshot({ data: res.data, requestedAtMs });
         // Another device closed the match — mirror the status so the tracker's
         // existing redirect effect moves this screen to the results screen.
         if (res.data.status !== 'in_progress') {
@@ -740,6 +779,8 @@ export function useTracker(matchId: string): UseTrackerReturn {
     participations,
     events,
     remoteSync,
+    remoteSyncRequestedAtMs,
+    initialDeathKillers,
     loading,
     error,
     toastError,

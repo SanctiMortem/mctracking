@@ -7,12 +7,18 @@
  * Both are updated sequentially (neon-http does not support transactions).
  * Undo marks the event as is_undone=true and reverts the participation snapshot.
  *
+ * Every match_events query here goes through `matchEventsCore`, not
+ * `matchEvents`: these are the tracker's hot paths and must keep working on a
+ * database that does not have the "Killed by" columns yet. See
+ * db/matchEventsCore.ts.
+ *
  * TRACK-002 (EPIC-03)
  */
 import { and, desc, eq, sql } from 'drizzle-orm';
 
 import { db } from '@/services/db';
-import { matchEvents, matches, participations } from '@/db/schema';
+import { matches, participations } from '@/db/schema';
+import { matchEventsCore, withNoKiller } from '@/db/matchEventsCore';
 import type { MatchEvent } from '@/db/index';
 
 // ─────────────────────────────────────────────
@@ -87,7 +93,7 @@ export async function recordEvent(input: RecordEventInput): Promise<RecordEventR
 
   // 1. Insert MatchEvent
   const [inserted] = await db
-    .insert(matchEvents)
+    .insert(matchEventsCore)
     .values({
       matchId,
       participationId,
@@ -129,7 +135,9 @@ export async function recordEvent(input: RecordEventInput): Promise<RecordEventR
       .where(eq(participations.id, participationId));
   }
 
-  return { data: inserted };
+  // A new event never has a killer; one is added later, to a player_died
+  // row, by services/setDeathKiller.ts.
+  return { data: withNoKiller(inserted) };
 }
 
 // ─────────────────────────────────────────────
@@ -155,18 +163,20 @@ export async function undoLastEvent(matchId: string): Promise<UndoResult> {
   // Find the last non-undone event
   const [lastEvent] = await db
     .select()
-    .from(matchEvents)
-    .where(and(eq(matchEvents.matchId, matchId), eq(matchEvents.isUndone, false)))
-    .orderBy(desc(matchEvents.createdAt))
+    .from(matchEventsCore)
+    .where(and(eq(matchEventsCore.matchId, matchId), eq(matchEventsCore.isUndone, false)))
+    .orderBy(desc(matchEventsCore.createdAt))
     .limit(1);
 
   if (!lastEvent) return { noEvents: true };
 
-  // Mark event as undone
+  // Mark event as undone. For a player_died event this is also what removes
+  // its killer: the "Killed by" columns are left as they are, and a killer
+  // on an undone row counts for nothing (see the rule on `matchEvents`).
   const [updated] = await db
-    .update(matchEvents)
+    .update(matchEventsCore)
     .set({ isUndone: true })
-    .where(eq(matchEvents.id, lastEvent.id))
+    .where(eq(matchEventsCore.id, lastEvent.id))
     .returning();
 
   // Revert participation snapshot (apply inverse delta)
@@ -196,5 +206,5 @@ export async function undoLastEvent(matchId: string): Promise<UndoResult> {
       .where(eq(participations.id, lastEvent.participationId));
   }
 
-  return { data: updated };
+  return { data: withNoKiller(updated) };
 }

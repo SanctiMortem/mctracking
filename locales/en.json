@@ -199,7 +199,9 @@
     "dead": "Dead",
     "activePlayer": "Active player",
     "pushForTurn": "Push for turn",
-    "saveAndClose": "Save & close"
+    "saveAndClose": "Save & close",
+    "killedBy": "Killed by",
+    "selfInflicted": "Self-inflicted"
   },
   "player": {
     "howItWins": "How they win",

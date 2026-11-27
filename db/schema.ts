@@ -62,6 +62,13 @@ export const groupRoleEnum = pgEnum('group_role', ['owner', 'member']);
 export const languageEnum = pgEnum('language', ['en', 'es', 'auto']);
 
 // ─────────────────────────────────────────────
+// enums — "Killed by" (migration 0016)
+// docs/STATS_REDESIGN_SPEC.md section 1a
+// ─────────────────────────────────────────────
+// Why a player died. NULL in the column means "not specified".
+export const deathCauseEnum = pgEnum('death_cause', ['opponent', 'self']);
+
+// ─────────────────────────────────────────────
 // groups
 // E-003 · BR-GROUP-04 · BR-GROUP-05 · PLAT-001
 // Defined before players/decks/matches (FK source)
@@ -328,25 +335,56 @@ export const participations = pgTable(
 // E-006 · ADR-002 (Option A) · ADR-003 (Option A)
 // BR-TRACK-09 (debounce) · BR-TRACK-11 (undo)
 // ─────────────────────────────────────────────
+/**
+ * The match_events columns that exist in every deployed database (migrations
+ * 0000–0008). Kept apart from the "Killed by" columns below so the tracker's
+ * hot paths can go through `matchEventsCore` (db/matchEventsCore.ts) and send
+ * exactly the SQL they sent before migration 0016 existed.
+ *
+ * A new column that EVERY event write must carry goes here. A column that
+ * only one feature reads or writes goes on `matchEvents` itself.
+ */
+export const matchEventCoreColumns = {
+  id: uuid('id').defaultRandom().primaryKey(),
+  matchId: uuid('match_id').notNull().references(() => matches.id),
+  participationId: uuid('participation_id').notNull().references(() => participations.id),
+  eventType: eventTypeEnum('event_type').notNull(),
+  // positive = gained, negative = lost (life/poison). For commander_damage always positive.
+  delta: integer('delta').notNull(),
+  // Required when event_type = 'commander_damage'. Validated at API layer.
+  commanderIdSource: uuid('commander_id_source').references(() => commanders.id),
+  // Soft undo: event stays in log, marked undone (BR-TRACK-11)
+  isUndone: boolean('is_undone').notNull().default(false),
+  // How many seconds the outgoing player spent on the turn that just ended.
+  // Only populated on event_type = 'turn_passed' events recorded by clients
+  // running the per-turn-time feature (migration 0008+). Older events stay
+  // null and are silently excluded from time-based stats.
+  turnDurationSeconds: integer('turn_duration_seconds'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+};
+
 export const matchEvents = pgTable(
   'match_events',
   {
-    id: uuid('id').defaultRandom().primaryKey(),
-    matchId: uuid('match_id').notNull().references(() => matches.id),
-    participationId: uuid('participation_id').notNull().references(() => participations.id),
-    eventType: eventTypeEnum('event_type').notNull(),
-    // positive = gained, negative = lost (life/poison). For commander_damage always positive.
-    delta: integer('delta').notNull(),
-    // Required when event_type = 'commander_damage'. Validated at API layer.
-    commanderIdSource: uuid('commander_id_source').references(() => commanders.id),
-    // Soft undo: event stays in log, marked undone (BR-TRACK-11)
-    isUndone: boolean('is_undone').notNull().default(false),
-    // How many seconds the outgoing player spent on the turn that just ended.
-    // Only populated on event_type = 'turn_passed' events recorded by clients
-    // running the per-turn-time feature (migration 0008+). Older events stay
-    // null and are silently excluded from time-based stats.
-    turnDurationSeconds: integer('turn_duration_seconds'),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
+    ...matchEventCoreColumns,
+    // ── "Killed by" (migration 0016) ──
+    // Meaningful only on event_type = 'player_died' rows; NULL on every other
+    // row and on every death nobody has annotated.
+    //
+    // RULE FOR READERS: a killer counts only on a player_died row that is NOT
+    // undone. Undo does not clear these columns (neon-http has no
+    // transactions, so a clear could half-fail and readers would need the
+    // filter anyway); an undone death simply has no killer. Use
+    // `loadDeathKillers` in services/deathKillers.ts rather than reading the
+    // columns directly.
+    //
+    // Who dealt the killing blow. NULL when unspecified or self-inflicted.
+    killerParticipationId: uuid('killer_participation_id').references(() => participations.id),
+    // Which of the killer's commanders, for partner decks. NULL = not specified.
+    killerCommanderId: uuid('killer_commander_id').references(() => commanders.id),
+    // NULL = not specified. 'opponent' always comes with killerParticipationId;
+    // 'self' always comes with both killer columns NULL.
+    deathCause: deathCauseEnum('death_cause'),
   },
   (table) => [
     // Supports: find last non-undone event for undo, and event log queries

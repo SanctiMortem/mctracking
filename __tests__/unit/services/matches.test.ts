@@ -55,6 +55,20 @@ jest.mock('@/db/schema', () => ({
   players: { id: 'players.id', name: 'players.name' },
 }));
 
+// getMatchById reads events through this narrow view of match_events (the
+// columns every database has). Mocked like the tables above, because this
+// file's 'drizzle-orm/pg-core' mock has no pgTable to build the real one.
+jest.mock('@/db/matchEventsCore', () => ({
+  matchEventsCore: { id: 'matchEvents.id', matchId: 'matchEvents.matchId', createdAt: 'matchEvents.createdAt' },
+  withNoKiller: (row: any) => ({ ...row, killerParticipationId: null, killerCommanderId: null, deathCause: null }),
+}));
+
+// "Killed by" has its own suite (deathKillers.test.ts). Here it answers
+// "unavailable", so it adds no db.select() call to the sequences below.
+jest.mock('@/services/deathKillers', () => ({
+  loadDeathKillers: jest.fn().mockResolvedValue({ status: 'unavailable' }),
+}));
+
 import { db } from '@/services/db';
 import { createMatch, closeMatch, getMatchById, listMatches, isDeckInActiveMatch } from '@/services/matches';
 
